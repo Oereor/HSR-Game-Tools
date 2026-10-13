@@ -13,6 +13,7 @@
     "allowImportingTsExtensions": true
   },
   "include": [
+    "env.d.ts",
     "vite.config.ts",
     "vitest.config.ts",
     "eslint.config.ts",

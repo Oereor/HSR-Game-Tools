@@ -3,7 +3,7 @@
 ## Repository and phase boundaries
 
 - This is the independent HSR-Game-Tools repository. Modify only this repository within the user's authorized scope.
-- Phase 1A is authorized: build the independent Vue foundation, migrate the fixed engine, generate local data/assets and verify isolation. Do not implement the Phase 1B editor or other simulators.
+- Phase 1A foundation and Phase 1B-0 component-library/design-system spike are authorized. The Action Planner workspace is a local UI prototype, not the full Phase 1B editor. Do not implement additional engine features or other simulators.
 - HSR-Database, TurnBasedGameData and StarRailRes are read-only investigation sources. Never edit, format, stage, commit, reset, clean, switch branches or run mutating generation commands in them.
 - Read HSR-Database/develop at a recorded Commit. If another branch is checked out, inspect develop through Git without changing the checkout.
 - Never initialize Git in the shared parent directory or make sibling repositories submodules or subtrees.
@@ -34,3 +34,12 @@
 - Finish by comparing the original branch, HEAD and worktree status of all three source repositories and inspecting the new repository's files and Git status.
 
 Use Node 24 (minimum 24.12), npm and one package-lock.json. No Pinia, SSR or parent-directory runtime dependencies. Phase 0 remains historical evidence; the Phase 1A report must distinguish measured results from pending UI/deployment and licensing acceptance.
+
+## UI prototype and design system
+
+- Use PrimeVue 4.5.5 Styled Mode with @primeuix/themes 2.0.3, Tailwind CSS 4 and @lucide/vue. Keep direct dependency versions exact; do not mix theme major versions or reintroduce deprecated @primevue/themes.
+- Centralize theme tokens in src/theme/preset.ts. Keep .app-dark on the document root; PrimeVue and Tailwind share the selector and the theme/base/primevue/components/utilities layer order.
+- Basic controls belong to PrimeVue; workspace layout and semantic operation/action cards belong to the tool. Avoid broad internal .p-* overrides, full component/icon registration and unnecessary wrapper libraries.
+- Prototype state lives in src/tools/action-planner/prototype and must not write to SimulationPlan. Fixed engine records and locally committed operation cards are separate. Node/stage changes discard drafts without confirmation; cancel preserves committed state.
+- Keep both zh-CN and en labels, accessible icon-button names, InputNumber error associations and a non-color selected indicator. Read docs/design-notes.md before extending the UI language.
+- Verify 1440/1024/390px in a real browser as well as engineering checks. Do not describe the spike as a completed planner or start full Phase 1B automatically.

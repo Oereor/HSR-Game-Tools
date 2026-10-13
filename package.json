@@ -20,28 +20,32 @@
     "bench:engine": "node --import tsx scripts/benchmark-engine.ts"
   },
   "dependencies": {
+    "@lucide/vue": "1.55.0",
+    "@primeuix/themes": "2.0.3",
+    "primevue": "4.5.5",
+    "tailwindcss-primeui": "0.6.1",
     "vue": "3.5.43",
-    "vue-router": "4.6.4",
-    "vue-i18n": "11.4.14"
+    "vue-i18n": "11.4.14",
+    "vue-router": "4.6.4"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "4.3.3",
     "@types/node": "24.19.0",
     "@vitejs/plugin-vue": "6.0.10",
-    "@vue/tsconfig": "0.9.1",
-    "@vue/eslint-config-typescript": "14.9.0",
     "@vue/eslint-config-prettier": "10.2.0",
-    "@tailwindcss/vite": "4.3.3",
-    "tailwindcss": "4.3.3",
+    "@vue/eslint-config-typescript": "14.9.0",
+    "@vue/tsconfig": "0.9.1",
     "eslint": "10.12.0",
     "eslint-plugin-vue": "10.11.1",
     "jiti": "2.7.0",
     "prettier": "3.9.10",
+    "sharp": "0.35.3",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
     "typescript": "5.9.3",
     "typescript-eslint": "8.71.2",
-    "vue-tsc": "3.3.13",
     "vite": "8.3.4",
     "vitest": "4.1.11",
-    "sharp": "0.35.3",
-    "tsx": "4.23.15"
+    "vue-tsc": "3.3.13"
   }
 }
