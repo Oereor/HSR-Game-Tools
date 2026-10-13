@@ -18,7 +18,8 @@
     "update:game-data": "node --import tsx scripts/update-game-data.ts",
     "validate:game-data": "node --import tsx scripts/validate-game-data.ts",
     "bench:engine": "node --import tsx scripts/benchmark-engine.ts",
-    "validate:i18n": "node --import tsx scripts/validate-i18n.ts"
+    "validate:i18n": "node --import tsx scripts/validate-i18n.ts",
+    "validate:planner-templates": "node --import tsx scripts/validate-planner-templates.ts"
   },
   "dependencies": {
     "@lucide/vue": "1.55.0",

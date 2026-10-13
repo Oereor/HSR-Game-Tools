@@ -144,6 +144,7 @@ const campLabel = (node: { kind?: string; camp?: string }) =>
           :src="image(card.id)"
           :name="label(card.id)"
           :event="card.kind === 'scheduledEvent'"
+          :enemy="card.camp === 'enemy'"
         /><span class="node-info"
           ><span class="node-name" :title="label(card.id)">{{ label(card.id) }}</span
           ><span class="node-meta"

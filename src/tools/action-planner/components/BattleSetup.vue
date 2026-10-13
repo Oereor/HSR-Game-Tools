@@ -7,8 +7,10 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { Plus, Trash2 } from '@lucide/vue'
 import GameIcon from '../../../components/ui/GameIcon.vue'
-import { gameData, characterName, assetUrl } from '../../../data/adapters/game-data'
-import { HARD_LIMITS } from '../../../engine/action-planner/queue'
+import { gameData, characterName } from '../../../data/adapters/game-data'
+import { buildBattleSetup, setupDraft, type AllySlot, type EnemyDraft } from '../model/battle-setup'
+import EnemySetup from './EnemySetup.vue'
+import UnitPortrait from './UnitPortrait.vue'
 import type { ActorConfig, SimulationPlan } from '../../../engine/action-planner/types'
 import type { ToolLocale } from '../../../locales/types'
 import type { CharacterRecord } from '../../../data/schema'
@@ -28,27 +30,17 @@ const emit = defineEmits<{
   ]
 }>()
 const { t, locale } = useI18n()
-type Slot = {
-  id: string
-  characterId: string
-  baseSpeed: number | undefined
-  panelSpeed: number | undefined
-}
+type Slot = AllySlot
 const slots = ref<Slot[]>([])
+const enemies = ref<EnemyDraft[]>([])
 const maxNodes = ref<number | undefined>()
 const maxAV = ref<number | undefined>()
 const errors = ref<string[]>([])
-const dirty = ref(false)
+const dirty = defineModel<boolean>('dirty', { default: false })
 function load() {
-  slots.value = Array.from({ length: 4 }, (_, position) => {
-    const a = props.plan.actors.find((a) => a.camp === 'ally' && a.position === position)
-    return {
-      id: a?.id ?? '',
-      characterId: a ? (props.characterIds[a.id] ?? '') : '',
-      baseSpeed: a?.baseSpeed,
-      panelSpeed: a?.panelSpeed,
-    }
-  })
+  const setup = setupDraft(props.plan, { characterIds: props.characterIds, customNames: {} })
+  slots.value = setup.allies
+  enemies.value = setup.enemies
   maxNodes.value = props.plan.maxNodes
   maxAV.value = props.plan.maxAV
   errors.value = []
@@ -73,6 +65,12 @@ const choices = computed(() => {
   return [...byName, ...matched.filter((c) => !byName.some((x) => x.id === c.id))]
 })
 const current = (slot: Slot) => gameData.characters.find((c) => c.id === slot.characterId)
+const slotLabel = (slot: Slot) => {
+  const c = current(slot)
+  return c
+    ? characterName(c, locale.value as ToolLocale)
+    : (slot.original?.name ?? t('ui.emptySlot'))
+}
 const choiceName = (c: CharacterRecord) =>
   c.form.gender
     ? t('planner.characterForm', {
@@ -96,6 +94,16 @@ function replace(c: CharacterRecord) {
       characterId: c.id,
       baseSpeed: c.baseSpeed,
       panelSpeed: c.baseSpeed,
+      original: {
+        id: '',
+        name: c.names['zh-CN'],
+        kind: 'actor',
+        camp: 'ally',
+        category: 'character',
+        position: choosing.value,
+        baseSpeed: c.baseSpeed ?? 0,
+        panelSpeed: c.baseSpeed ?? 0,
+      },
     }
   dirty.value = true
   visible.value = false
@@ -104,49 +112,11 @@ function clear(index: number) {
   slots.value[index] = { id: '', characterId: '', baseSpeed: undefined, panelSpeed: undefined }
   dirty.value = true
 }
-const positive = (v: number | undefined) => v !== undefined && Number.isFinite(v) && v > 0
 function apply() {
-  const invalid: string[] = []
-  slots.value.forEach((s, i) => {
-    if (s.characterId) {
-      if (!positive(s.baseSpeed)) invalid.push(`base-${i}`)
-      if (!positive(s.panelSpeed)) invalid.push(`panel-${i}`)
-    }
-  })
-  if (
-    !positive(maxNodes.value) ||
-    !Number.isSafeInteger(maxNodes.value) ||
-    maxNodes.value! > HARD_LIMITS.maxNodes
-  )
-    invalid.push('maxNodes')
-  if (!positive(maxAV.value) || maxAV.value! > HARD_LIMITS.maxAV) invalid.push('maxAV')
-  errors.value = invalid
-  if (invalid.length) return
-  const actors: ActorConfig[] = slots.value.flatMap((s, position) => {
-    const c = current(s)
-    return c
-      ? [
-          {
-            id: s.id,
-            name: c.names['zh-CN'],
-            iconUrl: assetUrl(c.assetKey),
-            kind: 'actor' as const,
-            camp: 'ally' as const,
-            category: 'character' as const,
-            position,
-            baseSpeed: s.baseSpeed!,
-            panelSpeed: s.panelSpeed!,
-          },
-        ]
-      : []
-  })
-  emit(
-    'apply',
-    actors,
-    maxNodes.value!,
-    maxAV.value!,
-    Object.fromEntries(slots.value.filter((s) => s.characterId).map((s) => [s.id, s.characterId])),
-  )
+  const setup = buildBattleSetup(slots.value, enemies.value, maxNodes.value, maxAV.value)
+  errors.value = setup.invalid
+  if (setup.invalid.length) return
+  emit('apply', setup.actors, maxNodes.value!, maxAV.value!, setup.characters)
 }
 </script>
 <template>
@@ -160,7 +130,7 @@ function apply() {
         <div class="slot-top">
           <span class="slot-number">0{{ index + 1 }}</span
           ><Button
-            v-if="slot.characterId"
+            v-if="slot.id"
             v-tooltip="t('ui.clear')"
             text
             rounded
@@ -188,17 +158,16 @@ function apply() {
             :asset-key="current(slot)?.assetKey"
             :name="characterName(current(slot)!, locale as ToolLocale)"
             :fallback="t('planner.imageMissing')"
-          /><span v-else class="empty-portrait"><Plus :size="28" :stroke-width="1.75" /></span>
+          /><UnitPortrait v-else-if="slot.id" :name="slotLabel(slot)" /><span
+            v-else
+            class="empty-portrait"
+            ><Plus :size="28" :stroke-width="1.75"
+          /></span>
         </button>
-        <h3
-          class="character-name"
-          :title="current(slot) ? characterName(current(slot)!, locale as ToolLocale) : ''"
-        >
-          {{
-            current(slot) ? characterName(current(slot)!, locale as ToolLocale) : t('ui.emptySlot')
-          }}
+        <h3 class="character-name" :title="slotLabel(slot)">
+          {{ slotLabel(slot) }}
         </h3>
-        <div v-if="slot.characterId" class="slot-speeds">
+        <div v-if="slot.id" class="slot-speeds">
           <div class="field">
             <label :for="`base-${index}`">{{ t('ui.baseSpeed') }}</label
             ><InputNumber
@@ -256,6 +225,7 @@ function apply() {
         </div>
       </section>
     </div>
+    <EnemySetup v-model="enemies" :next-id="nextId" :errors="errors" @dirty="dirty = true" />
     <section class="range-section">
       <h2>{{ t('ui.range') }}</h2>
       <div class="form-grid">

@@ -15,6 +15,62 @@
   },
   "planner": {
     "title": "行动规划",
+    "enemy": {
+      "title": "敌方单位",
+      "defaultName": "敌方单位 {number}",
+      "speed": "SPD",
+      "add": "添加敌方单位",
+      "remove": "删除 {name}",
+      "nameRequired": "请填写有效的单位名称。"
+    },
+    "files": {
+      "title": "方案管理",
+      "name": "方案名称",
+      "unnamed": "未命名方案",
+      "import": "导入 JSON",
+      "export": "导出 JSON",
+      "new": "新建方案",
+      "templates": "常见配队",
+      "noTemplates": "暂无已审阅的配队模板。你可以先配置并导出自己的方案。",
+      "useTemplate": "使用此配队",
+      "templateVersion": "游戏版本：{version}",
+      "reload": "载入存档版本",
+      "backupRaw": "备份原始存档",
+      "overwrite": "用当前方案覆盖存档",
+      "retry": "重试保存",
+      "externalHint": "存档已在其他标签页中修改，自动保存暂停。可导出本页方案备份，再选择载入或覆盖。",
+      "protectedHint": "本地存档无法恢复，原始内容已保留，自动保存暂停。",
+      "confirmTitle": "确认替换",
+      "confirm": "确认",
+      "replaceConfirm": "替换当前方案并丢弃尚未提交的输入？可取消后先导出备份。",
+      "overwriteConfirm": "用本页当前已提交的方案覆盖本地存档？",
+      "storageReplaceConfirm": "此操作也将覆盖受保护或由其他标签页修改的存档。",
+      "resources": "{count} 条资源提示",
+      "resource": {
+        "missingCharacter": "未找到 {name} 的角色资源，已保留原始配置。",
+        "unsafeImage": "未使用 {name} 的图片路径，已保留单位配置。"
+      },
+      "status": {
+        "idle": "自动保存已就绪",
+        "saved": "已保存",
+        "failed": "保存失败，请导出备份",
+        "unavailable": "自动保存不可用，请导出备份",
+        "protected": "存档恢复失败",
+        "external": "外部修改，保存暂停"
+      },
+      "error": {
+        "json": "无法读取 JSON，请检查文件内容。",
+        "format": "此文件不是行动规划方案。",
+        "version": "暂不支持此方案版本。",
+        "structure": "方案字段或数值无效，当前配置未被替换。",
+        "limit": "方案超出文件、编队或字段的允许范围。",
+        "identity": "方案含重复、冲突或不安全的身份字段。",
+        "metadata": "方案名称映射与单位或操作不一致。",
+        "simulation": "方案推演未能完成，当前配置未被替换。",
+        "read": "文件读取失败，请重试。",
+        "changed": "存档再次变化，请重新选择载入或覆盖。"
+      }
+    },
     "imageMissing": "暂无图标",
     "genderMale": "男",
     "genderFemale": "女",

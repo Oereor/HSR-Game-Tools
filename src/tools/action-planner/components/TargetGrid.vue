@@ -75,7 +75,8 @@ function toggle(id: string) {
               ><UnitPortrait
                 :src="image(p.id)"
                 :name="label(p.id)"
-                :event="p.kind === 'scheduledEvent'" /><Check
+                :event="p.kind === 'scheduledEvent'"
+                :enemy="p.camp === 'enemy'" /><Check
                 v-if="draft.selectedIds.includes(p.id)"
                 class="target-check"
                 :size="14" /></span

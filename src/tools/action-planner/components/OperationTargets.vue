@@ -19,11 +19,17 @@ const { t, locale } = useI18n()
 const popover = ref<InstanceType<typeof Popover>>()
 const isEvent = (id: string) =>
   props.participants.some((p) => p.id === id && p.kind === 'scheduledEvent')
+const isEnemy = (id: string) => props.participants.some((p) => p.id === id && p.camp === 'enemy')
 </script>
 <template>
   <div class="operation-targets">
     <span v-if="ids?.length === 1" class="compact-target">
-      <UnitPortrait :src="image(ids[0]!)" :name="label(ids[0]!)" :event="isEvent(ids[0]!)" />
+      <UnitPortrait
+        :src="image(ids[0]!)"
+        :name="label(ids[0]!)"
+        :event="isEvent(ids[0]!)"
+        :enemy="isEnemy(ids[0]!)"
+      />
       <span>{{ label(ids[0]!) }}</span>
     </span>
     <div v-else-if="ids && ids.length > 1" class="target-portraits" :aria-label="t('ui.targets')">
@@ -34,7 +40,12 @@ const isEvent = (id: string) =>
         tabindex="0"
         v-tooltip="label(id)"
       >
-        <UnitPortrait :src="image(id)" :name="label(id)" :event="isEvent(id)" />
+        <UnitPortrait
+          :src="image(id)"
+          :name="label(id)"
+          :event="isEvent(id)"
+          :enemy="isEnemy(id)"
+        />
       </span>
       <Button
         v-if="ids.length > 4"
@@ -54,7 +65,12 @@ const isEvent = (id: string) =>
       >
         <ul class="all-targets">
           <li v-for="id in ids" :key="id" class="compact-target">
-            <UnitPortrait :src="image(id)" :name="label(id)" :event="isEvent(id)" />
+            <UnitPortrait
+              :src="image(id)"
+              :name="label(id)"
+              :event="isEvent(id)"
+              :enemy="isEnemy(id)"
+            />
             <span>{{ label(id) }}</span>
           </li>
         </ul>

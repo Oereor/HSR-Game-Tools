@@ -4,7 +4,11 @@ import {
   previewOperationState,
   DEFAULT_LIMITS,
 } from '../../../engine/action-planner/engine'
-import { anchorKey } from '../../../engine/action-planner/queue'
+import {
+  anchorKey,
+  spawnedParticipantId,
+  countdownParticipantId,
+} from '../../../engine/action-planner/queue'
 import { validatePlan } from '../../../engine/action-planner/validation'
 import { operationTargets } from '../../../engine/action-planner/targeting'
 import type {
@@ -15,11 +19,23 @@ import type {
 import { saveOperation, moveOperation } from '../model/effect-config'
 import { buildCurrentQueueView } from '../model/current-queue'
 import {
+  emptyDocument,
+  serializePlannerDocument,
+  validatePlannerFile,
+  preparePlannerDocument,
+  PLANNER_FORMAT,
+  PlannerFileError,
+  referencedIds,
+  type FileErrorCode,
+  type ResourceIssue,
+} from '../model/document-file'
+import {
   buildOperation,
   contextAt,
   operationDraft,
   operationsAt,
   previewDraft,
+  metadataValue,
   type OperationDraft,
   type PlannerDocument,
   type PlannerMetadata,
@@ -44,8 +60,13 @@ const canonical = (value: unknown): string => {
 export function useActionPlanner(
   initialPlan: SimulationPlan = emptyPlan(),
   initialMetadata: PlannerMetadata = { customNames: {}, characterIds: {} },
+  initialName = '',
 ) {
-  const document = shallowRef<PlannerDocument>({ plan: initialPlan, metadata: initialMetadata })
+  const document = shallowRef<PlannerDocument>({
+    name: initialName,
+    plan: initialPlan,
+    metadata: initialMetadata,
+  })
   const plan = computed(() => document.value.plan)
   const result = shallowRef(simulatePlan(initialPlan))
   const selected = ref<EventAnchor>({ kind: 'start' })
@@ -54,15 +75,23 @@ export function useActionPlanner(
   const queueCursor = ref<EventAnchor>({ kind: 'start' })
   const draft = ref<OperationDraft>()
   const invalid = ref<string[]>([])
+  const documentError = ref<FileErrorCode>()
+  const resourceIssues = shallowRef<ResourceIssue[]>([])
+  const setupRevision = ref(0)
+  let reservedIds = referencedIds(initialPlan)
+  const allocatedIds = new Set<string>()
   let serial = 0
   const nextId = () => {
     let id: string
     do {
       id = `editor-${++serial}`
     } while (
-      plan.value.actors.some((a) => a.id === id) ||
-      plan.value.events.some((e) => e.operations.some((o) => o.id === id))
+      reservedIds.has(id) ||
+      reservedIds.has(spawnedParticipantId(id)) ||
+      reservedIds.has(countdownParticipantId(id))
     )
+    reservedIds.add(id)
+    allocatedIds.add(id)
     return id
   }
   const operations = computed(() => operationsAt(plan.value, selected.value))
@@ -118,16 +147,37 @@ export function useActionPlanner(
   }
   function replacePlan(next: SimulationPlan, metadata = document.value.metadata) {
     const ids = new Set(next.events.flatMap((e) => e.operations.map((o) => o.id)))
-    document.value = {
+    const candidate: PlannerDocument = {
+      name: document.value.name,
       plan: next,
       metadata: {
         ...metadata,
         customNames: Object.fromEntries(
           Object.entries(metadata.customNames).filter(([id]) => ids.has(id)),
         ),
+        characterIds: Object.fromEntries(
+          Object.entries(metadata.characterIds).filter(([id]) =>
+            next.actors.some((actor) => actor.id === id && actor.camp === 'ally'),
+          ),
+        ),
       },
     }
-    result.value = simulatePlan(next)
+    try {
+      serializePlannerDocument(candidate)
+      const simulated = simulatePlan(next)
+      result.value = simulated
+      document.value = candidate
+      documentError.value = undefined
+      resourceIssues.value = validatePlannerFile({
+        format: PLANNER_FORMAT,
+        version: 1,
+        document: candidate,
+      }).issues
+      referencedIds(next).forEach((id) => reservedIds.add(id))
+    } catch (error) {
+      documentError.value = error instanceof PlannerFileError ? error.code : 'simulation'
+      return false
+    }
     if (
       queueCursor.value.kind !== 'start' &&
       !result.value.records.some(
@@ -135,6 +185,7 @@ export function useActionPlanner(
       )
     )
       queueCursor.value = { kind: 'start' }
+    return true
   }
   function applySetup(
     actors: SimulationPlan['actors'],
@@ -145,16 +196,15 @@ export function useActionPlanner(
     const next = { ...plan.value, actors, maxNodes, maxAV }
     if (validatePlan(next).length) return false
     cancel()
-    replacePlan(next, {
+    return replacePlan(next, {
       ...document.value.metadata,
-      characterIds: { ...document.value.metadata.characterIds, ...characterIds },
+      characterIds,
     })
-    return true
   }
   function edit(operation?: EffectOperation) {
     const next = operationDraft(
       operation,
-      operation ? document.value.metadata.customNames[operation.id] : '',
+      operation ? metadataValue(document.value.metadata.customNames, operation.id) : '',
     )
     if (!operation && context.value) {
       const p = previewDraft(context.value, operations.value, selected.value, next)
@@ -170,7 +220,7 @@ export function useActionPlanner(
     const key = anchorKey(selected.value)
     const events = plan.value.events.filter((e) => anchorKey(e.anchor) !== key)
     if (next.length) events.push({ anchor: { ...selected.value }, operations: next })
-    replacePlan({ ...plan.value, events }, metadata)
+    return replacePlan({ ...plan.value, events }, metadata)
   }
   function submit() {
     if (!draft.value) return false
@@ -188,13 +238,23 @@ export function useActionPlanner(
     else delete customNames[op.id]
     // Display-only edits do not replay the simulation.
     const old = operations.value.find((o) => o.id === op.id)
-    if (old && canonical(old) === canonical(op))
-      document.value = { ...document.value, metadata: { ...document.value.metadata, customNames } }
-    else
-      updateOperations(saveOperation(operations.value, op, selected.value), {
+    if (old && canonical(old) === canonical(op)) {
+      const candidate = { ...document.value, metadata: { ...document.value.metadata, customNames } }
+      try {
+        serializePlannerDocument(candidate)
+      } catch (error) {
+        documentError.value = error instanceof PlannerFileError ? error.code : 'structure'
+        return false
+      }
+      document.value = candidate
+      documentError.value = undefined
+    } else if (
+      !updateOperations(saveOperation(operations.value, op, selected.value), {
         ...document.value.metadata,
         customNames,
       })
+    )
+      return false
     cancel()
     return true
   }
@@ -223,12 +283,44 @@ export function useActionPlanner(
     select(queueCursor.value)
   }
   function reset() {
+    return restoreDocument(emptyDocument())
+  }
+  function restoreDocument(input: PlannerDocument) {
+    try {
+      restorePrepared(preparePlannerDocument(input))
+    } catch (error) {
+      documentError.value = error instanceof PlannerFileError ? error.code : 'simulation'
+      return false
+    }
+    return true
+  }
+  function restorePrepared(prepared: ReturnType<typeof preparePlannerDocument>) {
     cancel()
-    replacePlan(emptyPlan(), { customNames: {}, characterIds: {} })
+    result.value = prepared.result
+    document.value = prepared.document
+    resourceIssues.value = prepared.issues
+    documentError.value = undefined
+    reservedIds = referencedIds(prepared.document.plan)
+    allocatedIds.forEach((id) => reservedIds.add(id))
+    serial = 0
     selected.value = { kind: 'start' }
     queueCursor.value = { kind: 'start' }
     stage.value = 'setup'
     view.value = 'future'
+    setupRevision.value++
+    return true
+  }
+  function rename(name: string) {
+    const candidate = { ...document.value, name: name.trim() }
+    try {
+      serializePlannerDocument(candidate)
+    } catch (error) {
+      documentError.value = error instanceof PlannerFileError ? error.code : 'structure'
+      return false
+    }
+    if (candidate.name !== document.value.name) document.value = candidate
+    documentError.value = undefined
+    return true
   }
   // Execution contexts depend on the plan and anchor, never translated presentation.
   const operationContexts = computed(
@@ -253,6 +345,12 @@ export function useActionPlanner(
   }
   return {
     document: shallowReadonly(document),
+    documentError,
+    resourceIssues,
+    setupRevision,
+    restoreDocument,
+    restorePrepared,
+    rename,
     plan,
     result: shallowReadonly(result),
     selected,

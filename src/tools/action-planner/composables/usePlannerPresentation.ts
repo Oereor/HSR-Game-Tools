@@ -8,8 +8,10 @@ import type {
 } from '../../../engine/action-planner/types'
 import type { MessageTranslator, ToolLocale } from '../../../locales/types'
 import type { PlannerDocument } from '../model/editor'
+import { metadataValue } from '../model/editor'
 import { participantLabels } from '../model/naming'
 import { operationName, renderMessage } from '../model/presentation'
+import { safeImagePath } from '../model/document-file'
 export function usePlannerPresentation(
   document: Readonly<Ref<PlannerDocument>>,
   locale: Ref<string>,
@@ -17,7 +19,9 @@ export function usePlannerPresentation(
 ) {
   const catalog = computed(() => participantCatalog(document.value.plan))
   const character = (id: string) =>
-    gameData.characters.find((c) => c.id === document.value.metadata.characterIds[id])
+    gameData.characters.find(
+      (c) => c.id === metadataValue(document.value.metadata.characterIds, id),
+    )
   const rawName = (id: string) => {
     const c = character(id)
     return c
@@ -26,8 +30,13 @@ export function usePlannerPresentation(
   }
   const labels = computed(() => participantLabels(catalog.value, rawName))
   const label = (id: string) => labels.value.get(id) ?? rawName(id)
-  const image = (id: string) =>
-    assetUrl(character(id)?.assetKey) ?? catalog.value.find((p) => p.id === id)?.iconUrl
+  const image = (id: string) => {
+    const path = safeImagePath(catalog.value.find((p) => p.id === id)?.iconUrl)
+    return (
+      assetUrl(character(id)?.assetKey) ??
+      (path ? import.meta.env.BASE_URL.replace(/\/?$/, '/') + path : undefined)
+    )
+  }
   const title = (operation: EffectOperation, state?: SimulationState) =>
     operationName(
       operation,
@@ -35,7 +44,7 @@ export function usePlannerPresentation(
       t,
       label,
       state,
-      document.value.metadata.customNames[operation.id],
+      metadataValue(document.value.metadata.customNames, operation.id),
     )
   const anchorLabel = (anchor: EventAnchor) =>
     anchor.kind === 'start'

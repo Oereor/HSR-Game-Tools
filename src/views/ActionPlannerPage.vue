@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Tabs from 'primevue/tabs'
 import TabList from 'primevue/tablist'
@@ -9,16 +9,18 @@ import TabPanel from 'primevue/tabpanel'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
 import Button from 'primevue/button'
-import Dialog from 'primevue/dialog'
 import { SlidersHorizontal, ListOrdered, RotateCcw } from '@lucide/vue'
 import BattleSetup from '../tools/action-planner/components/BattleSetup.vue'
 import ActionNavigator from '../tools/action-planner/components/ActionNavigator.vue'
 import ActionInspector from '../tools/action-planner/components/ActionInspector.vue'
-import { useActionPlanner } from '../tools/action-planner/composables/useActionPlanner'
+import { usePlannerSession } from '../tools/action-planner/composables/usePlannerSession'
+import PlanManagement from '../tools/action-planner/components/PlanManagement.vue'
 import { usePlannerPresentation } from '../tools/action-planner/composables/usePlannerPresentation'
 import type { ActorConfig } from '../engine/action-planner/types'
 const { t, locale } = useI18n()
-const planner = useActionPlanner()
+const { planner, persistence, saveStatus } = usePlannerSession()
+const planManagement = ref<InstanceType<typeof PlanManagement>>()
+const setupDirty = ref(false)
 const {
   document,
   plan,
@@ -45,13 +47,17 @@ const {
   stepQueue,
   nextId,
   operationContext,
+  setupRevision,
+  documentError,
 } = planner
+watch(
+  setupRevision,
+  () => {
+    setupDirty.value = false
+  },
+  { flush: 'sync' },
+)
 const { label, image, title, anchorLabel } = usePlannerPresentation(document, locale, t)
-const resetVisible = ref(false)
-function confirmReset() {
-  planner.reset()
-  resetVisible.value = false
-}
 function apply(
   actors: ActorConfig[],
   nodes: number,
@@ -109,12 +115,14 @@ onBeforeUnmount(() => {
     <div class="page-intro functional-intro">
       <h1>{{ t('planner.title') }}</h1>
       <Button
-        v-tooltip="t('ui.reset')"
+        v-tooltip="t('planner.files.new')"
         text
         severity="secondary"
-        :aria-label="t('ui.reset')"
-        @click="resetVisible = true"
-        ><RotateCcw :size="18" :stroke-width="1.75" /><span>{{ t('ui.reset') }}</span></Button
+        :aria-label="t('planner.files.new')"
+        @click="planManagement?.newDocument()"
+        ><RotateCcw :size="18" :stroke-width="1.75" /><span>{{
+          t('planner.files.new')
+        }}</span></Button
       >
     </div>
     <Tabs v-model:value="stage"
@@ -128,12 +136,22 @@ onBeforeUnmount(() => {
         ></TabList
       ><TabPanels
         ><TabPanel value="setup"
-          ><BattleSetup
+          ><PlanManagement
+            ref="planManagement"
+            :planner="planner"
+            :persistence="persistence"
+            :save-status="saveStatus"
+            :setup-dirty="setupDirty" /><BattleSetup
+            :key="setupRevision"
+            v-model:dirty="setupDirty"
             :plan="plan"
             :character-ids="document.metadata.characterIds"
             :next-id="nextId"
             @apply="apply" /></TabPanel
         ><TabPanel value="planning">
+          <p v-if="documentError" class="field-error" role="alert">
+            {{ t(`planner.files.error.${documentError}`) }}
+          </p>
           <details
             v-if="result.diagnostics.length"
             class="diagnostics"
@@ -218,21 +236,5 @@ onBeforeUnmount(() => {
             </div>
           </section> </TabPanel></TabPanels
     ></Tabs>
-    <Dialog
-      v-model:visible="resetVisible"
-      modal
-      :header="t('ui.reset')"
-      :close-button-props="{ 'aria-label': t('ui.close') }"
-      :style="{ width: '420px', maxWidth: 'calc(100vw - 32px)' }"
-      ><p>{{ t('ui.resetConfirm') }}</p>
-      <template #footer
-        ><Button
-          text
-          severity="secondary"
-          :label="t('ui.cancel')"
-          @click="resetVisible = false" /><Button
-          :label="t('ui.reset')"
-          @click="confirmReset" /></template
-    ></Dialog>
   </div>
 </template>

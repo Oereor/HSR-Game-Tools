@@ -40,7 +40,11 @@ export interface PlannerMetadata {
   customNames: Record<string, string>
   characterIds: Record<string, string>
 }
+/** Imported IDs may match ordinary Object prototype members. */
+export const metadataValue = (values: Record<string, string>, id: string): string | undefined =>
+  Object.hasOwn(values, id) ? values[id] : undefined
 export interface PlannerDocument {
+  name: string
   plan: SimulationPlan
   metadata: PlannerMetadata
 }

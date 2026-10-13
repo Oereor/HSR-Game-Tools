@@ -49,6 +49,77 @@
   }
 }
 @layer components {
+  .plan-management {
+    padding: 20px 0;
+    border-bottom: 1px solid var(--color-line);
+    margin-bottom: 20px;
+  }
+  .plan-management-row,
+  .plan-actions,
+  .storage-actions,
+  .template-portraits {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .plan-management-row {
+    align-items: flex-end;
+    gap: 16px;
+  }
+  .plan-name-field {
+    flex: 1 1 220px;
+    max-width: 360px;
+  }
+  .storage-actions p {
+    flex-basis: 100%;
+  }
+  .resource-diagnostics {
+    margin-top: 12px;
+    font-size: 12px;
+  }
+  .enemy-section {
+    margin-top: 24px;
+  }
+  .enemy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
+    margin: 12px 0;
+  }
+  .enemy-slot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--color-line);
+    border-radius: 6px;
+  }
+  .enemy-portrait {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .enemy-portrait .event-avatar,
+  .template-portraits .game-icon,
+  .template-portraits .event-avatar {
+    width: 42px;
+    height: 42px;
+  }
+  .enemy-fields {
+    min-width: 0;
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 100px;
+    gap: 10px;
+  }
+  .template-entry {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .template-portraits {
+    margin: 10px 0;
+  }
   .app-shell {
     max-width: 1440px;
     margin: 0 auto;

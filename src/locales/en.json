@@ -15,6 +15,62 @@
   },
   "planner": {
     "title": "Action Planner",
+    "enemy": {
+      "title": "Enemy units",
+      "defaultName": "Enemy unit {number}",
+      "speed": "SPD",
+      "add": "Add enemy unit",
+      "remove": "Remove {name}",
+      "nameRequired": "Enter a valid unit name."
+    },
+    "files": {
+      "title": "Plan management",
+      "name": "Plan name",
+      "unnamed": "Untitled plan",
+      "import": "Import JSON",
+      "export": "Export JSON",
+      "new": "New plan",
+      "templates": "Common teams",
+      "noTemplates": "No reviewed team templates yet. Configure and export your own plan to get started.",
+      "useTemplate": "Use this team",
+      "templateVersion": "Game version: {version}",
+      "reload": "Load saved version",
+      "backupRaw": "Back up original save",
+      "overwrite": "Overwrite save with current plan",
+      "retry": "Retry saving",
+      "externalHint": "Another tab changed the save. Autosave is paused. Export this tab's plan before loading or overwriting the saved version.",
+      "protectedHint": "The local save could not be restored. Its original content is preserved and autosave is paused.",
+      "confirmTitle": "Confirm replacement",
+      "confirm": "Confirm",
+      "replaceConfirm": "Replace the current plan and discard uncommitted inputs? Cancel to export a backup first.",
+      "overwriteConfirm": "Overwrite the local save with this tab's committed plan?",
+      "storageReplaceConfirm": "This also overwrites the protected save or changes made by another tab.",
+      "resources": "{count} resource notices",
+      "resource": {
+        "missingCharacter": "Character resources for {name} were not found. The original configuration is preserved.",
+        "unsafeImage": "The image path for {name} was not used. The unit configuration is preserved."
+      },
+      "status": {
+        "idle": "Autosave ready",
+        "saved": "Saved",
+        "failed": "Save failed; export a backup",
+        "unavailable": "Autosave unavailable; export a backup",
+        "protected": "Save recovery failed",
+        "external": "External changes; saving paused"
+      },
+      "error": {
+        "json": "Could not parse JSON. Check the file contents.",
+        "format": "This is not an Action Planner file.",
+        "version": "This plan version is not supported.",
+        "structure": "Invalid plan fields or values. The current configuration was not replaced.",
+        "limit": "The plan exceeds file, roster or field limits.",
+        "identity": "The plan contains duplicate, conflicting or unsafe identities.",
+        "metadata": "Name mappings do not match the plan's units or operations.",
+        "simulation": "Could not simulate the plan. The current configuration was not replaced.",
+        "read": "Could not read the file. Try again.",
+        "changed": "The save changed again. Choose load or overwrite again."
+      }
+    },
     "imageMissing": "No icon",
     "genderMale": "Male",
     "genderFemale": "Female",
