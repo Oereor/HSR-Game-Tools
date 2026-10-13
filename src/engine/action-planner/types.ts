@@ -36,7 +36,7 @@ export interface ActionChangeTrace {
   phase?: EffectPhase
   targetAnchor: NodeAnchor
   elapsedAV: number
-  type: 'advance' | 'delay'
+  type: 'advance' | 'delay' | 'immediatelyAct'
   beforeAG: number
   afterAG: number
   effectiveSpeed: number

@@ -1,6 +1,6 @@
 # HSR-Game-Tools Design Notes
 
-Phase 1B-1，真实 Action Planner 编辑器。沿用已验收的 Phase 1B-0 主题，独立于 HSR-Database 的样式体系。
+Phase 1B-1 真实编辑器及 UI Polish Round 1。沿用已验收的 Phase 1B-0 主题，独立于 HSR-Database 的样式体系。视觉效果最终由用户验收。
 
 ## 主题与职责
 
@@ -27,28 +27,38 @@ PrimeVue 负责 Tabs、表单、按钮、Dialog、Tooltip、Splitter；Tailwind 
 
 桌面先用 35%／65% Splitter；最小宽度换算包含 gutter 余量，Navigator 至少约 320px、Inspector 约 440px。低于 960px 上下布局，Navigator 最大 280px，Inspector 随页面展开。桌面两侧分别滚动，避免再给整个工作区添加第三层滚动容器。
 
-未来行动展示累计 AV／+推进 AV；当前队列展示快照剩余 AV／有效速度。AV 固定两位，内部数值不四舍五入。箭头只读取与目标 anchorKey 匹配的真实 Trace，AG 变化或零 AV 插队才显示；蓝／红可共存。配置图标是独立语义，不能充当受影响箭头。长名称截断且保留完整 title，Inspector 名称允许换行。
+未来行动在上方弱化显示 +推进 AV、下方突出累计 AV，右对齐并启用 tabular numbers；当前队列保留快照剩余 AV／有效速度语义。AV 固定两位，内部数值不四舍五入。9px 实心圆点表示阵营：我方绿、敌方红、事件／系统／未知节点黄，黄色来自主题 `event.500` Token；配套本地化 Tooltip 与可访问名称。
 
-操作卡按实际结算窗口分组，标题采用集中命名模块，自定义名称优先，空白恢复自动命名。单目标显示名称，多目标显示实际执行时点的数量；不可靠时使用范围名称。目标以小头像／名称显示，速度生命周期单独展示，创建实体信息独立于操作名称，不机械拼接所有 Metadata。上下移动限制在同一窗口，阶段变更进入新窗口末尾。
+标记只读取与目标 anchorKey 匹配的已提交 Trace：蓝色 ArrowUp、红色 ArrowDown、蓝色 Zap 可共存。按本轮用户确认，合法效果即使没有 AG／AV 或排序变化也显示。零百分比效果亦保留；不以净变化互相抵消。Trace 的原始数值和 zeroAVInsertion 仍描述真实数学／插队，立即行动保持独立类型。配置图标是独立中性语义，不能充当受影响标记。长名称截断且保留完整 title，Inspector 名称允许换行。
+
+操作卡按实际结算窗口分组，标题采用集中语义命名模块与 Site Messages，自定义名称优先，空白恢复自动命名。右上角保留上移、下移、编辑、删除四个 PrimeVue 图标按钮，不占底部整行。Padding 12px，Metadata 正文约 13px，参数组可换行；避免嵌套 Card、占位短横线及机械点分隔。
+
+单目标始终显示头像与名称；多目标使用实际执行时点的头像组，每个头像有名称 Tooltip，预览四个并通过 +N Popover 查看完整名单。缺少可靠上下文时显示范围及不可解析状态，不使用初始队伍数量或最终目录虚构实际目标。Metadata 始终由配置生成：提前／延后的百分比、速度修正模式和有符号数值、回合或倒计时名称与速度、创建实体名称及其适用属性，独立于标题。上下移动限制在同一窗口，阶段变更进入新窗口末尾。
 
 概览和编辑互斥。节点、工作阶段或导航模式切换丢弃操作草稿；取消不改变已提交操作。配置草稿由“应用配置”提交，独立于操作草稿。页面唯一业务输入为 PlannerDocument.plan，提交后真实重算；metadata 保存自定义操作名称和初始角色关联，改名不重算。没有存储／导出。
 
 目标 Grid 使用 previewOperationState 的执行时点上下文和 targeting.ts 的资格，不使用最终目录。倒计时限定单目标提前／延后。同名参与者按稳定 ID 派生区分标签。不可达事件集中显示且保持锚点，无上下文禁用添加／编辑，保留删除与配置修复入口。错误诊断展开，普通警告可折叠。
 
-EffectFields、ParticipantFields 和 TargetGrid 分别负责效果、实体与目标字段，OperationEditor 负责类型／阶段／名称和提交。事件触发与战斗开始没有阶段选择。创建操作编辑锁定实体种类；字段错误关联实际输入，窄屏进入／退出编辑定位标题。
+EffectFields、ParticipantFields 和 TargetGrid 分别负责效果、实体与目标字段，OperationEditor 负责类型／阶段／名称和提交。统一 operationDraft 将新建普通草稿默认设为 postAction；编辑保留原阶段，隐式旧阶段仍按 preAction 处理。事件触发与战斗开始没有阶段选择。创建操作编辑锁定实体种类；字段错误关联实际输入，窄屏进入／退出编辑定位标题。
+
+## 国际化职责
+
+`src/locales/zh-CN.json` 与 `en.json` 维护完整自然语言模板。`SiteMessages` Schema 从中文消息结构推导，两个目录通过类型约束及 `validate:i18n` 的 Key／参数／格式校验保持一致。模型返回 MessageDescriptor 与原始参数；Presentation 注入轻量 t 接口，在 Vue Setup 中连接 useI18n，递归翻译嵌套描述并格式化数字。保留合理 ui.* Key，新消息按稳定业务语义分组。
+
+官方名称来自规范化双语游戏数据；用户名称不翻译；自动名称不写入计划。语言只改变展示和数字格式；operationContext 以计划和选中锚点为依赖缓存，语言变化不重新预览执行状态。测试主要断言语义和业务身份，不锁定用户可维护的翻译措辞。详细维护步骤见 README。
 
 ## 图标与可访问性
 
 Lucide 按名称导入，常用尺寸 18px、线宽 1.75；紧凑标记 13–16px，事件头像 22–28px。
 
-| 语义                   | 图标                |
-| ---------------------- | ------------------- |
-| 提前／延后             | ArrowUp / ArrowDown |
-| 速度／战斗事件         | Gauge / Timer       |
-| 编辑／删除             | Pencil / Trash2     |
-| 返回／添加             | ArrowLeft / Plus    |
-| 后续立即行动／创建单位 | Zap / UserRoundPlus |
+| 语义               | 图标                |
+| ------------------ | ------------------- |
+| 提前／延后         | ArrowUp / ArrowDown |
+| 速度／战斗事件     | Gauge / Timer       |
+| 编辑／删除         | Pencil / Trash2     |
+| 返回／添加         | ArrowLeft / Plus    |
+| 立即行动／创建单位 | Zap / UserRoundPlus |
 
-主要操作使用图标加文字；辅助图标按钮必须有 aria-label 和 Tooltip。阵营有文字，选中节点和目标有勾选标记及 aria-pressed，不能只靠颜色。InputNumber 的错误关联通过 `pt.pcInputText.root` 传入实际 input，避免把 aria-describedby 留在外层 span。
+主要操作使用图标加文字；辅助图标按钮必须有 aria-label 和 Tooltip。阵营有文字及可访问名称。行动卡选中态使用边框／背景和 aria-pressed，移除选中对勾；目标选择器继续保留 Check 与 aria-pressed。InputNumber 的错误关联通过 `pt.pcInputText.root` 传入实际 input，避免把 aria-describedby 留在外层 span。
 
 避免紫色 Primary、Neon、玻璃拟态、多层卡片、装饰图标、满屏金色边框和常驻长说明。后续新增控件先检查 Token、键盘、浮层、双语与窄屏，再判断是否需要专属 CSS。

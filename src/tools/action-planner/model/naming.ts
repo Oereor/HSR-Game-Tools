@@ -8,7 +8,7 @@ import type {
   SimulationState,
   Target,
 } from '../../../engine/action-planner/types'
-import type { ToolLocale } from '../../../locales/types'
+import type { MessageDescriptor } from '../../../locales/types'
 
 export function participantLabels(
   participants: readonly ParticipantInfo[],
@@ -40,93 +40,68 @@ export function namingTargets(
   const queued = new Set(orderedParticipants(state).map((p) => p.id))
   return ids.filter((id) => queued.has(id))
 }
-export function targetLabel(
+export function targetDescription(
   target: Target,
-  locale: ToolLocale,
   name: (id: string) => string,
   ids?: readonly string[],
-): string {
-  const zh = locale === 'zh-CN'
+): string | MessageDescriptor {
   if (ids?.length === 1) return name(ids[0]!)
-  if (ids && ids.length > 1) return zh ? `${ids.length} 个目标` : `${ids.length} targets`
+  if (ids) return { key: 'planner.target.count', params: { count: ids.length } }
   if (target.kind === 'participants' && target.participantIds.length === 1)
     return name(target.participantIds[0]!)
-  return target.kind === 'allies'
-    ? zh
-      ? '我方全体'
-      : 'all allies'
-    : target.kind === 'enemies'
-      ? zh
-        ? '敌方全体'
-        : 'all enemies'
-      : zh
-        ? '指定目标'
-        : 'selected targets'
+  return { key: `planner.target.${target.kind}` }
 }
-export function operationName(
+export function operationNameDescriptor(
   operation: EffectOperation,
-  locale: ToolLocale,
   name: (id: string) => string,
   state?: SimulationState,
-  customName?: string,
-): string {
-  if (customName?.trim()) return customName.trim()
-  const zh = locale === 'zh-CN'
-  const number = (v: number) =>
-    new Intl.NumberFormat(locale, { maximumFractionDigits: 6 }).format(v)
+): MessageDescriptor {
   if (operation.type === 'spawnParticipant') {
     const p = operation.participant
     const kind =
       p.kind === 'scheduledEvent'
-        ? zh
-          ? '事件'
-          : 'Event'
+        ? 'createEvent'
         : p.camp === 'enemy'
-          ? zh
-            ? '敌方单位'
-            : 'Enemy'
+          ? 'createEnemy'
           : p.category === 'summon'
-            ? zh
-              ? '召唤物'
-              : 'Summon'
+            ? 'createSummon'
             : p.category === 'memosprite'
-              ? zh
-                ? '忆灵'
-                : 'Memosprite'
-              : zh
-                ? '行动单位'
-                : 'Actor'
-    return zh ? `创建${kind}：${p.name}` : `Create ${kind}: ${p.name}`
+              ? 'createMemosprite'
+              : 'createActor'
+    return { key: `planner.operationName.${kind}`, params: { name: p.name } }
   }
-  const label = targetLabel(operation.target, locale, name, namingTargets(operation, state))
-  if (operation.type === 'advance')
-    return zh
-      ? `使 ${label} 行动提前 ${number(operation.percent)}%`
-      : `Advance ${label} by ${number(operation.percent)}%`
-  if (operation.type === 'delay')
-    return zh
-      ? `使 ${label} 行动延后 ${number(operation.percent)}%`
-      : `Delay ${label} by ${number(operation.percent)}%`
+  const target = targetDescription(operation.target, name, namingTargets(operation, state))
+  if (operation.type === 'advance' || operation.type === 'delay')
+    return {
+      key: `planner.operationName.${operation.type}`,
+      params: { target, percent: operation.percent },
+    }
   if (operation.type === 'immediatelyAct')
-    return zh ? `使 ${label} 立即行动` : `Make ${label} act immediately`
-  const amount = number(Math.abs(operation.amount)),
-    positive = operation.amount >= 0,
-    percent = operation.mode === 'percent'
-  return zh
-    ? `使 ${label} ${percent ? '基础' : '固定'}速度${positive ? '提高' : '降低'} ${amount}${percent ? '%' : ''}`
-    : `${positive ? 'Increase' : 'Decrease'} ${percent ? 'base' : 'flat'} speed of ${label} by ${amount}${percent ? '%' : ''}`
+    return { key: 'planner.operationName.immediatelyAct', params: { target } }
+  const direction = operation.amount >= 0 ? 'increase' : 'decrease'
+  const mode = operation.mode === 'percent' ? 'Percent' : 'Flat'
+  return {
+    key: `planner.operationName.${direction}${mode}`,
+    params: { target, amount: Math.abs(operation.amount) },
+  }
 }
 export function actionDirections(
   anchor: EventAnchor,
   changes: readonly ActionChangeTrace[],
-): { advance: boolean; delay: boolean } {
-  const relevant = changes.filter(
-    (c) =>
-      anchorKey(c.targetAnchor) === anchorKey(anchor) &&
-      (c.beforeAG !== c.afterAG || c.zeroAVInsertion),
-  )
+): { advance: boolean; delay: boolean; immediatelyAct: boolean } {
+  const relevant = changes.filter((c) => anchorKey(c.targetAnchor) === anchorKey(anchor))
   return {
     advance: relevant.some((c) => c.type === 'advance'),
     delay: relevant.some((c) => c.type === 'delay'),
+    immediatelyAct: relevant.some((c) => c.type === 'immediatelyAct'),
   }
+}
+
+/** Unknown display nodes use the neutral fallback without weakening engine validation. */
+export function nodeCamp(node: {
+  kind?: string
+  camp?: string
+}): 'ally' | 'enemy' | 'event' | 'unknown' {
+  if (node.kind === 'scheduledEvent') return 'event'
+  return node.camp === 'ally' || node.camp === 'enemy' ? node.camp : 'unknown'
 }

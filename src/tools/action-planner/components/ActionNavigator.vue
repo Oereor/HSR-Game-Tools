@@ -6,7 +6,7 @@ import SelectButton from 'primevue/selectbutton'
 import {
   ArrowUp,
   ArrowDown,
-  Check,
+  Zap,
   SlidersHorizontal,
   Flag,
   ChevronLeft,
@@ -20,9 +20,9 @@ import type {
   QueueSnapshot,
   SimulationPlan,
 } from '../../../engine/action-planner/types'
-import { actionDirections } from '../model/naming'
+import { actionDirections, nodeCamp } from '../model/naming'
 import { operationsAt } from '../model/editor'
-import { formatAV } from '../model/presentation'
+import { formatAV, formatNumber } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
 const props = defineProps<{
   records: NodeRecord[]
@@ -49,6 +49,8 @@ const cards = computed(() =>
         delta: q.remainingAV,
       })),
 )
+const campLabel = (node: { kind?: string; camp?: string }) =>
+  t(`planner.navigator.${nodeCamp(node)}`)
 </script>
 <template>
   <section class="navigator" :aria-label="t('ui.navigator')">
@@ -71,9 +73,12 @@ const cards = computed(() =>
         :aria-label="t('ui.previous')"
         @click="emit('step', -1)"
         ><ChevronLeft :size="16" /></Button
-      ><span
-        >{{ t('ui.completed', { count: queueIndex }) }} ·
-        {{ formatAV(snapshot?.elapsedAV ?? 0, locale as ToolLocale) }} AV</span
+      ><span>{{
+        t('planner.navigator.queueProgress', {
+          count: formatNumber(queueIndex, locale as ToolLocale),
+          value: formatAV(snapshot?.elapsedAV ?? 0, locale as ToolLocale),
+        })
+      }}</span
       ><Button
         text
         severity="secondary"
@@ -91,6 +96,12 @@ const cards = computed(() =>
         data-node="start"
         @click="emit('select', { kind: 'start' })"
       >
+        <span
+          class="camp-dot camp-dot-system"
+          v-tooltip="t('planner.navigator.system')"
+          role="img"
+          :aria-label="t('planner.navigator.system')"
+        ></span>
         <span class="event-avatar"><Flag :size="18" :stroke-width="1.75" /></span
         ><span class="node-info"
           ><span class="node-name">{{ t('ui.start') }}</span></span
@@ -98,19 +109,37 @@ const cards = computed(() =>
           v-if="operationsAt(plan, { kind: 'start' }).length"
           :size="14"
           :aria-label="t('ui.configured', { count: operationsAt(plan, { kind: 'start' }).length })"
-        /><span class="node-values"><strong>0.00</strong></span>
+        /><span class="node-values"
+          ><small v-if="view === 'future'">+{{ formatAV(0, locale as ToolLocale) }}</small
+          ><strong>{{ formatAV(0, locale as ToolLocale) }}</strong></span
+        >
       </button>
       <button
-        v-for="(card, index) in cards"
+        v-for="card in cards"
         :key="anchorKey(card.anchor)"
         class="node-card"
         :class="{ 'node-selected': anchorKey(selected) === anchorKey(card.anchor) }"
         :aria-pressed="anchorKey(selected) === anchorKey(card.anchor)"
         :data-node="anchorKey(card.anchor)"
-        :aria-label="`${label(card.id)} · ${card.anchor.kind === 'action' ? t('ui.turn', { turn: card.anchor.turn }) : t('ui.eventNode')} · ${formatAV(card.total, locale as ToolLocale)} AV`"
+        :aria-label="
+          t('planner.navigator.node', {
+            name: label(card.id),
+            node:
+              card.anchor.kind === 'action'
+                ? t('ui.turn', { turn: formatNumber(card.anchor.turn, locale as ToolLocale) })
+                : t('ui.eventNode'),
+            value: formatAV(card.total, locale as ToolLocale),
+          })
+        "
         @click="emit('select', card.anchor)"
       >
-        <span class="node-index">{{ String(index + 1).padStart(2, '0') }}</span
+        <span
+          class="camp-dot"
+          :class="`camp-dot-${nodeCamp(card)}`"
+          v-tooltip="campLabel(card)"
+          role="img"
+          :aria-label="campLabel(card)"
+        ></span
         ><UnitPortrait
           :src="image(card.id)"
           :name="label(card.id)"
@@ -122,9 +151,9 @@ const cards = computed(() =>
               :class="
                 card.camp === 'ally' ? 'camp-ally' : card.camp === 'enemy' ? 'delay-color' : ''
               "
-              >{{ card.kind === 'scheduledEvent' ? t('ui.eventNode') : t(`ui.${card.camp}`) }}</span
+              >{{ campLabel(card) }}</span
             ><span v-if="card.anchor.kind === 'action'">{{
-              t('ui.turn', { turn: card.anchor.turn })
+              t('ui.turn', { turn: formatNumber(card.anchor.turn, locale as ToolLocale) })
             }}</span
             ><SlidersHorizontal
               v-if="operationsAt(plan, card.anchor).length"
@@ -134,26 +163,37 @@ const cards = computed(() =>
               " /></span
         ></span>
         <span class="node-values"
-          ><strong :title="t(view === 'future' ? 'ui.elapsedAV' : 'ui.remainingAV')">{{
+          ><small v-if="view === 'future'" :title="t('planner.navigator.deltaAV')"
+            >+{{ formatAV(card.delta, locale as ToolLocale) }}</small
+          >
+          <strong :title="t(view === 'future' ? 'ui.elapsedAV' : 'ui.remainingAV')">{{
             formatAV(card.total, locale as ToolLocale)
           }}</strong
-          ><small v-if="view === 'future'">+{{ formatAV(card.delta, locale as ToolLocale) }}</small
-          ><small v-else>{{ card.effectiveSpeed }} SPD</small
+          ><small v-if="view === 'queue'">{{
+            t('planner.metadata.speed', {
+              speed: formatNumber(card.effectiveSpeed, locale as ToolLocale),
+            })
+          }}</small
           ><span class="change-signals"
             ><ArrowUp
               v-if="actionDirections(card.anchor, card.actionChanges).advance"
               class="advance-color"
-              :size="18"
+              v-tooltip="t('ui.affectedAdvance')"
+              :size="20"
               :stroke-width="2"
               :aria-label="t('ui.affectedAdvance')" /><ArrowDown
               v-if="actionDirections(card.anchor, card.actionChanges).delay"
               class="delay-color"
-              :size="18"
+              v-tooltip="t('ui.affectedDelay')"
+              :size="20"
               :stroke-width="2"
-              :aria-label="t('ui.affectedDelay')" /><Check
-              v-if="anchorKey(selected) === anchorKey(card.anchor)"
-              :size="13"
-              :aria-label="t('ui.selected')" /></span
+              :aria-label="t('ui.affectedDelay')" /><Zap
+              v-if="actionDirections(card.anchor, card.actionChanges).immediatelyAct"
+              class="advance-color"
+              v-tooltip="t('planner.navigator.affectedImmediate')"
+              :size="20"
+              :stroke-width="2"
+              :aria-label="t('planner.navigator.affectedImmediate')" /></span
         ></span>
       </button>
       <p v-if="!cards.length" class="fine-print empty-sequence">{{ t('ui.emptySequence') }}</p>

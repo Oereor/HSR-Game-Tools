@@ -64,7 +64,7 @@ export function operationDraft(operation?: EffectOperation, customName = ''): Op
     original: operation?.id ? operation : undefined,
     customName,
     type: operation?.type ?? 'advance',
-    phase: operation?.phase ?? 'preAction',
+    phase: operation?.phase ?? (operation?.id ? 'preAction' : 'postAction'),
     targetKind:
       operation && operation.type !== 'spawnParticipant' ? operation.target.kind : 'participants',
     selectedIds:

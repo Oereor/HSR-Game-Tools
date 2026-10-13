@@ -25,7 +25,7 @@ const pt = (key: string) => ({
       :locale="locale"
       :max-fraction-digits="20"
       :use-grouping="false"
-      suffix=" %"
+      :suffix="t('common.percentSuffix')"
       :invalid="bad('percent')"
       :pt="pt('percent')"
       fluid
@@ -54,7 +54,7 @@ const pt = (key: string) => ({
         :locale="locale"
         :max-fraction-digits="20"
         :use-grouping="false"
-        :suffix="draft.mode === 'percent' ? ' %' : ' SPD'"
+        :suffix="t(draft.mode === 'percent' ? 'common.percentSuffix' : 'common.speedSuffix')"
         :invalid="bad('amount')"
         :pt="pt('amount')"
         fluid

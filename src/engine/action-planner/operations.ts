@@ -105,22 +105,19 @@ export function applyOperations(
         } else {
           const originalOrder = orderedParticipants(next)
           const group = originalOrder.filter((participant) => ids.includes(participant.id))
-          const changes: ActionChangeTrace[] =
-            op.type === 'immediatelyAct'
-              ? []
-              : group.map((participant) => ({
-                  operationId: op.id,
-                  sourceAnchor: { ...anchor },
-                  phase: op.phase,
-                  targetAnchor: nextAnchor(participant),
-                  elapsedAV: next.elapsedAV,
-                  type: op.type as 'advance' | 'delay',
-                  beforeAG: participant.remainingAG,
-                  afterAG: participant.remainingAG,
-                  effectiveSpeed: effectiveSpeed(participant),
-                  deltaAV: 0,
-                  zeroAVInsertion: false,
-                }))
+          const changes: ActionChangeTrace[] = group.map((participant) => ({
+            operationId: op.id,
+            sourceAnchor: { ...anchor },
+            phase: op.phase,
+            targetAnchor: nextAnchor(participant),
+            elapsedAV: next.elapsedAV,
+            type: op.type,
+            beforeAG: participant.remainingAG,
+            afterAG: participant.remainingAG,
+            effectiveSpeed: effectiveSpeed(participant),
+            deltaAV: 0,
+            zeroAVInsertion: false,
+          }))
           if (ids.includes(next.activeParticipantId ?? ''))
             diagnostics.push({
               code: 'active-target',
@@ -164,8 +161,7 @@ export function applyOperations(
             change.afterAG = participant.remainingAG
             change.deltaAV = (change.afterAG - change.beforeAG) / change.effectiveSpeed
             change.zeroAVInsertion =
-              op.type === 'advance' &&
-              op.percent > 0 &&
+              (op.type === 'immediatelyAct' || (op.type === 'advance' && op.percent > 0)) &&
               change.beforeAG === 0 &&
               change.afterAG === 0 &&
               committedOrder.indexOf(participant) < originalOrder.indexOf(participant)

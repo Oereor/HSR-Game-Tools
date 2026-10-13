@@ -19,7 +19,7 @@ import type {
 } from '../../../engine/action-planner/types'
 import type { OperationDraft } from '../model/editor'
 import { provisionalOperation, operationDraft } from '../model/editor'
-import { operationName } from '../model/naming'
+import { operationName } from '../model/presentation'
 import { canUseVonwacq, presetOperation, type PresetKind } from '../model/presets'
 import type { ToolLocale } from '../../../locales/types'
 const draft = defineModel<OperationDraft>({ required: true })
@@ -47,7 +47,7 @@ const phases = computed(() =>
 const provisional = computed(() => provisionalOperation(draft.value, props.anchor))
 const automaticName = computed(() =>
   provisional.value
-    ? operationName(provisional.value, locale.value as ToolLocale, props.label, props.preview)
+    ? operationName(provisional.value, locale.value as ToolLocale, t, props.label, props.preview)
     : t(`ui.${draft.value.type}`),
 )
 const popover = ref<InstanceType<typeof Popover>>()

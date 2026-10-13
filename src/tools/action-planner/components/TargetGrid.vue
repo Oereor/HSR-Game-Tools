@@ -90,7 +90,7 @@ function toggle(id: string) {
         class="missing-target"
         @click="toggle(id)"
       >
-        {{ label(id) }} · {{ t('ui.unavailable') }} ×
+        {{ t('planner.target.unavailableName', { name: label(id) }) }}
       </button></template
     ><small v-if="invalid" id="target-error" class="field-error">{{ t('ui.targetInvalid') }}</small>
   </fieldset>

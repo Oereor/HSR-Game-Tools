@@ -17,7 +17,8 @@
     "build": "vite build",
     "update:game-data": "node --import tsx scripts/update-game-data.ts",
     "validate:game-data": "node --import tsx scripts/validate-game-data.ts",
-    "bench:engine": "node --import tsx scripts/benchmark-engine.ts"
+    "bench:engine": "node --import tsx scripts/benchmark-engine.ts",
+    "validate:i18n": "node --import tsx scripts/validate-i18n.ts"
   },
   "dependencies": {
     "@lucide/vue": "1.55.0",
@@ -46,6 +47,7 @@
     "typescript-eslint": "8.71.2",
     "vite": "8.3.4",
     "vitest": "4.1.11",
-    "vue-tsc": "3.3.13"
+    "vue-tsc": "3.3.13",
+    "@intlify/message-compiler": "11.4.14"
   }
 }

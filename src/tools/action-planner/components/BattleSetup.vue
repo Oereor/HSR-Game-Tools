@@ -13,6 +13,7 @@ import type { ActorConfig, SimulationPlan } from '../../../engine/action-planner
 import type { ToolLocale } from '../../../locales/types'
 import type { CharacterRecord } from '../../../data/schema'
 import { createCharacterSearch } from '../model/character-search'
+import { formatNumber } from '../model/presentation'
 const props = defineProps<{
   plan: SimulationPlan
   characterIds: Record<string, string>
@@ -73,10 +74,12 @@ const choices = computed(() => {
 })
 const current = (slot: Slot) => gameData.characters.find((c) => c.id === slot.characterId)
 const choiceName = (c: CharacterRecord) =>
-  characterName(c, locale.value as ToolLocale) +
-  (c.form.gender
-    ? ' · ' + t(c.form.gender === 'male' ? 'planner.genderMale' : 'planner.genderFemale')
-    : '')
+  c.form.gender
+    ? t('planner.characterForm', {
+        name: characterName(c, locale.value as ToolLocale),
+        gender: t(c.form.gender === 'male' ? 'planner.genderMale' : 'planner.genderFemale'),
+      })
+    : characterName(c, locale.value as ToolLocale)
 const occupied = (id: string) =>
   slots.value.some((s, i) => i !== choosing.value && s.characterId === id)
 function choose(index: number) {
@@ -162,14 +165,22 @@ function apply() {
             text
             rounded
             severity="secondary"
-            :aria-label="`${t('ui.clear')} ${index + 1}`"
+            :aria-label="
+              t('planner.accessibility.clearSlot', {
+                slot: formatNumber(index + 1, locale as ToolLocale),
+              })
+            "
             @click="clear(index)"
             ><Trash2 :size="16" :stroke-width="1.75"
           /></Button>
         </div>
         <button
           class="portrait-button"
-          :aria-label="`${t('ui.choose')} ${index + 1}`"
+          :aria-label="
+            t('planner.accessibility.chooseSlot', {
+              slot: formatNumber(index + 1, locale as ToolLocale),
+            })
+          "
           @click="choose(index)"
         >
           <GameIcon
@@ -305,7 +316,9 @@ function apply() {
         fluid
         autofocus
       />
-      <p class="fine-print search-count">{{ t('ui.characters', { count: choices.length }) }}</p>
+      <p class="fine-print search-count">
+        {{ t('ui.characters', { count: formatNumber(choices.length, locale as ToolLocale) }) }}
+      </p>
       <div class="chooser-grid character-choices">
         <button
           v-for="c in choices"

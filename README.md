@@ -6,6 +6,8 @@
 
 ## 本地运行
 
+**UI Polish Round 1 / Site Messages** 已收敛自动命名与卡片 Metadata，新增立即行动 Trace 和阵营圆点；新建普通操作默认在动作后结算。视觉验收由用户完成，本轮工程验证和已观察到的浏览器行为见 [UI 与本地化报告](docs/investigations/action-planner-ui-polish-localization.md)。
+
 需要 Node 24（最低 24.12，本轮验证版本 24.19.0）与 npm，使用唯一 `package-lock.json`。
 
 ```sh
@@ -30,6 +32,7 @@ npm run type-check
 npm test
 npm run lint
 npm run format:check
+npm run validate:i18n
 npm run validate:game-data
 npm run build
 npm run preview
@@ -38,6 +41,20 @@ npm run preview
 `build` 输出 `dist/`，只打包现有快照，不下载数据或重新转换图片；发布前应运行上述数据校验。History 路由需要宿主配置 SPA fallback，本轮仅完成本地 dev／preview 验收。
 
 `npm run format` 用于明确需要的格式修复，lint 默认不写文件。`npm run bench:engine` 输出少量性能探针，不设置机器相关硬阈值。
+
+## Site Messages 维护
+
+中文文案修改 `src/locales/zh-CN.json`，英文文案修改 `src/locales/en.json`。两份文件只包含嵌套命名空间与字符串消息；`src/locales/types.ts` 的 `SiteMessages` 从中文结构推导，`index.ts` 使用现有 vue-i18n Composition API 加载，无全局语言回退。
+
+新增 Key 时在两份文件的相同语义路径添加消息，例如 `planner.metadata.duration`。保留合理的 `ui.*`；新增功能使用稳定的 `planner.operationName`、`planner.metadata`、`planner.navigator` 等命名空间，不以某个组件或翻译内容作为身份。
+
+动态文案用 Vue I18n 命名插值，例如中文 `"持续 {count} 回合"`、英文 `"Lasts {count} turns"`，调用 `t('planner.metadata.duration', { count })`。纯命名／Metadata 模型返回 `{ key, params }`；`renderMessage` 递归翻译嵌套目标描述并用当前 Locale 格式化原始数字。完整自然语言句式放在 JSON，避免在 TypeScript 拼接词序、冠词或增减句子。AV 固定两位，SPD／百分比最多六位小数；展示字符串不回写计划。
+
+修改后执行 `npm run validate:i18n`，检查严格 JSON、重复 Key、结构和类型、空翻译、插值参数集合及当前消息编译器的格式兼容性；失败时修复两份文件，不通过关闭告警或全局回退掩盖漏翻。
+
+UI、Tooltip、ARIA 和校验提示属于 Site Messages；官方角色／装备名称来自规范化游戏数据；用户操作、实体及倒计时名称保持用户原文。自动标题随语言变化，不持久化；自定义标题按 operation ID 保存，留空恢复自动命名。语言切换不改计划、稳定 ID 或模拟结果，执行时点上下文按计划和锚点缓存。
+
+目标／命名测试验证 ID、数量、语义 Key 与参数；自定义名称测试验证优先级及恢复。不要逐字断言全部翻译，不用翻译后的文本做业务判断。少量集成测试验证实际插值与切换语言即可。
 
 ## 显式更新游戏数据
 
@@ -72,7 +89,9 @@ npm run validate:game-data
 
 装备入口生成舞舞舞 24%、翁瓦克 40%（仅战斗开始）、翔鹰 25% 的普通草稿，目标和参数仍可编辑。预设不自动检查装备条件或执行角色技能。每类操作支持自定义名称，留空采用随语言与实际目标时点变化的自动名称；操作名称独立于实体名称。
 
-未来行动展示累计 AV 和推进 AV；当前队列展示对应快照中的剩余 AV、速度，并支持前后步进。队列只是观察视图，编辑仍绑定真实事件锚点。蓝／红箭头表示该待行动受到的提前／延后，节点上的配置图标表示这里配置了操作。
+未来行动上方显示推进 AV、下方突出累计 AV；当前队列展示对应快照中的剩余 AV、速度，并支持前后步进。队列只是观察视图，编辑仍绑定真实事件锚点。左侧绿色／红色／黄色圆点分别表示我方／敌方／事件或其他节点。蓝色上箭头、红色下箭头、蓝色闪电分别表示该待行动受到的提前、延后、立即行动；合法效果即使不改变 AV 也会显示，三种标记可以共存。节点上的中性配置图标表示这里配置了操作。
+
+新建普通草稿默认动作后；编辑旧操作保留原阶段，未显式指定阶段的旧操作保持行动前语义。Inspector 的目标头像和参数来自操作执行时点与真实结构化配置，不根据自定义标题省略参数。四个工具按钮放在右上角；超过四个目标时可通过 `+N` 查看全部目标。
 
 编辑占用整个 Inspector。取消或切换节点、工作阶段、导航模式直接丢弃未提交操作草稿。不可达事件保留原锚点，可查看、删除操作或删除整组事件；没有可靠上下文时不能新增目标操作，可返回配置调整预算。运行时错误保留真实诊断，允许修复已有配置。整体重置需确认，清空当前内存文档。
 
@@ -86,6 +105,7 @@ npm run validate:game-data
 - [Phase 1A 实施与隔离验收](docs/investigations/phase-1a-independent-foundation.md)
 - [Phase 1B-0 组件库验证与浏览器验收](docs/investigations/phase-1b-component-library-spike.md)
 - [Phase 1B-1 真实编辑器与浏览器验收](docs/investigations/phase-1b-functional-action-planner-editor.md)
+- [UI Polish Round 1 与 Site Messages](docs/investigations/action-planner-ui-polish-localization.md)
 - [第三方来源、许可证文本与发布限制](docs/third-party/README.md)
 
 整体项目许可证尚未确定。复制的引擎保留 MIT 通知；StarRailRes 索引许可与游戏美术授权需分别处理。当前数据和图片用于本地验证，未经确认不得擅自提交、推送或公开分发第三方资源。本轮没有发布或配置 Vercel。

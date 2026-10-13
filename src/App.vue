@@ -6,7 +6,10 @@ const { t, locale } = useI18n()
 const route = useRoute()
 watchEffect(() => {
   document.documentElement.lang = locale.value
-  document.title = t(String(route.meta.title ?? 'site.name')) + ' · HSR-Game-Tools'
+  document.title = t('site.pageTitle', {
+    page: t(String(route.meta.title ?? 'site.name')),
+    site: t('site.name'),
+  })
   document.querySelector('meta[name="description"]')?.setAttribute('content', t('home.description'))
 })
 </script>
@@ -14,13 +17,13 @@ watchEffect(() => {
 <template>
   <div class="app-shell">
     <header class="site-header">
-      <RouterLink to="/" class="brand">HSR-Game-Tools</RouterLink>
+      <RouterLink to="/" class="brand">{{ t('site.name') }}</RouterLink>
       <div class="language-control" :aria-label="t('site.language')">
         <button type="button" :aria-pressed="locale === 'zh-CN'" @click="locale = 'zh-CN'">
-          简体中文
+          {{ t('site.languageChinese') }}
         </button>
         <button type="button" :aria-pressed="locale === 'en'" @click="locale = 'en'">
-          English
+          {{ t('site.languageEnglish') }}
         </button>
       </div>
     </header>

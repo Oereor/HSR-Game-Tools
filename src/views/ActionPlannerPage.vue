@@ -46,7 +46,7 @@ const {
   nextId,
   operationContext,
 } = planner
-const { label, image, title, anchorLabel } = usePlannerPresentation(document, locale)
+const { label, image, title, anchorLabel } = usePlannerPresentation(document, locale, t)
 const resetVisible = ref(false)
 function confirmReset() {
   planner.reset()

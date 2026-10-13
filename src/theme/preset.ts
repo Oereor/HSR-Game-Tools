@@ -2,6 +2,7 @@ import { definePreset } from '@primeuix/themes'
 import Aura from '@primeuix/themes/aura'
 export const ToolsPreset = definePreset(Aura, {
   primitive: {
+    event: { 500: '#dfbc66' },
     gold: {
       50: '#faf7ef',
       100: '#f3e9d5',

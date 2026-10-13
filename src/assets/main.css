@@ -13,6 +13,7 @@
   --color-advance: #5fa9e7;
   --color-delay: #e16b71;
   --color-ally: #67bd96;
+  --color-event: var(--p-event-500);
 }
 @layer base {
   :root {
@@ -211,11 +212,18 @@
   .node-selected:hover {
     background: #c9a86b15;
   }
-  .node-index {
-    color: var(--color-muted);
-    font-size: 10px;
-    align-self: flex-start;
-    padding-top: 4px;
+  .camp-dot {
+    width: 9px;
+    height: 9px;
+    flex: 0 0 9px;
+    border-radius: 50%;
+    background: var(--color-event);
+  }
+  .camp-dot-ally {
+    background: var(--color-ally);
+  }
+  .camp-dot-enemy {
+    background: var(--color-delay);
   }
   .node-card .game-icon,
   .node-card .icon-fallback,
@@ -266,14 +274,17 @@
     width: 62px;
     flex-shrink: 0;
     font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
   }
   .node-values strong {
-    font-weight: 550;
+    font-weight: 650;
+    font-size: 14px;
   }
   .node-values small {
     color: var(--color-muted);
     font-size: 10px;
-    margin-top: 3px;
+    line-height: 1.4;
   }
   .change-signals {
     display: flex;
@@ -352,15 +363,16 @@
     gap: 12px;
   }
   .operation-card {
-    padding: 16px;
+    padding: 12px;
     border: 1px solid #3b404980;
     border-radius: 7px;
     background: #22252b66;
   }
   .operation-top {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
   }
   .operation-title {
     background: transparent;
@@ -378,13 +390,15 @@
     display: flex;
     gap: 8px 14px;
     flex-wrap: wrap;
-    margin: 14px 0;
+    align-items: center;
+    margin: 8px 0;
+    font-size: 13px;
   }
   .compact-target {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 11px;
+    font-size: 13px;
   }
   .compact-target .game-icon,
   .compact-target .icon-fallback {
@@ -392,12 +406,57 @@
     height: 24px;
     border-radius: 4px;
   }
-  .operation-bottom {
+  .operation-metadata {
     display: flex;
-    gap: 10px;
+    gap: 6px 16px;
     flex-wrap: wrap;
     align-items: center;
-    font-size: 10px;
+    font-size: 13px;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  .metadata-parameter {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .metadata-parameter svg {
+    flex-shrink: 0;
+    color: var(--color-muted);
+  }
+  .metadata-effect,
+  .metadata-identity {
+    font-weight: 550;
+  }
+  .target-portraits {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .portrait-tooltip {
+    border-radius: 4px;
+  }
+  .target-unresolved {
+    color: var(--color-muted);
+  }
+  .all-targets {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    max-width: min(320px, 75vw);
+  }
+  .all-targets .game-icon,
+  .all-targets .event-avatar {
+    width: 24px;
+    height: 24px;
   }
   .quiet-tag {
     border-radius: 4px;
@@ -698,7 +757,7 @@
     height: 48px;
   }
   .operation-top {
-    flex-wrap: wrap;
+    gap: 6px;
   }
   .operation-title {
     font-size: 12px;
@@ -838,7 +897,8 @@
     color: var(--color-muted);
   }
   .change-signals {
-    height: 18px;
+    min-height: 20px;
+    margin-top: 3px;
   }
   .node-values {
     width: 70px;
@@ -859,7 +919,9 @@
   .card-controls {
     display: flex;
     justify-content: flex-end;
-    margin-top: 10px;
+    margin-top: -3px;
+    gap: 0;
+    flex-shrink: 0;
   }
   .compact-target .event-avatar {
     width: 24px;
@@ -868,10 +930,6 @@
   .compact-target .event-avatar svg {
     width: 15px;
     height: 15px;
-  }
-  .operation-bottom strong {
-    color: var(--color-ink);
-    font-weight: 500;
   }
   .text-button {
     color: var(--color-accent);

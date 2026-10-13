@@ -39,6 +39,108 @@ const plan = (operations: EffectOperation[] = []): SimulationPlan => ({
 })
 
 describe('committed action-change traces', () => {
+  it('traces immediate multi-target actions at actual SPD without changing zero-AV order', () => {
+    const input = plan([
+      { id: 'immediate', type: 'immediatelyAct', target: { kind: 'allies' } },
+      { id: 'insert', type: 'immediatelyAct', target: target('b') },
+      { id: 'same-position', type: 'immediatelyAct', target: target('b') },
+    ])
+    const result = simulatePlan(input)
+    expect(result.records.slice(0, 2).map((r) => [r.id, r.elapsedAV, r.deltaAV])).toEqual([
+      ['b', 0, 0],
+      ['a', 0, 0],
+    ])
+    const b = result.records[0]!
+    expect(b.actionChanges.map((c) => [c.operationId, c.deltaAV, c.zeroAVInsertion])).toEqual([
+      ['immediate', -100, false],
+      ['insert', 0, true],
+      ['same-position', 0, false],
+    ])
+    expect(b.actionChanges.every((c) => c.type === 'immediatelyAct')).toBe(true)
+    expect(b.actionChanges[0]).toMatchObject({
+      sourceAnchor: { kind: 'start' },
+      targetAnchor: b.anchor,
+      beforeAG: 10000,
+      afterAG: 0,
+      effectiveSpeed: 100,
+    })
+    expect(
+      result.records.find((r) => r.id === 'b' && r.anchor.kind === 'action' && r.anchor.turn === 2)
+        ?.actionChanges,
+    ).toEqual([])
+    const pending = applyOperations(createInitialState(input), input.events[0]!.operations, {
+      kind: 'start',
+    }).state
+    const snapshot = queueSnapshot(pending)
+    const copy = cloneState(pending)
+    pending.participants[1]!.pendingActionChanges[0]!.targetAnchor.participantId = 'mutated'
+    expect(snapshot.queue[0]!.actionChanges[0]!.targetAnchor.participantId).toBe('b')
+    expect(copy.participants[1]!.pendingActionChanges[0]!.targetAnchor.participantId).toBe('b')
+    expect(input).not.toHaveProperty('actionChanges')
+  })
+
+  it('binds immediate self changes to the next turn and excludes invalid or failed commits', () => {
+    const input = plan()
+    input.events.push({
+      anchor: { kind: 'action', participantId: 'a', turn: 1 },
+      operations: [
+        { id: 'ignored', type: 'immediatelyAct', target: target('a'), phase: 'preAction' },
+        { id: 'self', type: 'immediatelyAct', target: target('a'), phase: 'postAction' },
+      ],
+    })
+    const result = simulatePlan(input)
+    expect(result.records[0]!.actionChanges).toEqual([])
+    expect(result.records[1]!.actionChanges).toEqual([
+      expect.objectContaining({
+        operationId: 'self',
+        targetAnchor: { kind: 'action', participantId: 'a', turn: 2 },
+      }),
+    ])
+    const state = createInitialState(plan())
+    const skipped = applyOperations(
+      state,
+      [{ id: 'missing', type: 'immediatelyAct', target: target('absent') }],
+      { kind: 'start' },
+    )
+    expect(skipped.state.participants.every((p) => !p.pendingActionChanges.length)).toBe(true)
+    expect(() =>
+      applyOperations(
+        state,
+        [
+          { id: 'immediate', type: 'immediatelyAct', target: target('b') },
+          {
+            id: 'bad-speed',
+            type: 'addSpeedModifier',
+            target: target('b'),
+            mode: 'flat',
+            amount: -200,
+            duration: { kind: 'turns', turns: null },
+          },
+        ],
+        { kind: 'start' },
+      ),
+    ).toThrow()
+    expect(state.participants.every((p) => !p.pendingActionChanges.length)).toBe(true)
+    const timer = spawnedParticipantId('timer')
+    const eventState = applyOperations(
+      state,
+      [
+        {
+          id: 'timer',
+          type: 'spawnParticipant',
+          participant: { kind: 'scheduledEvent', name: 'Timer', speed: 70 },
+        },
+      ],
+      { kind: 'start' },
+    ).state
+    const invalid = applyOperations(
+      eventState,
+      [{ id: 'invalid', type: 'immediatelyAct', target: target(timer) }],
+      { kind: 'start' },
+    )
+    expect(invalid.diagnostics[0]?.code).toBe('invalid-target')
+    expect(invalid.state.participants.every((p) => !p.pendingActionChanges.length)).toBe(true)
+  })
   it('records each instantaneous change at its own SPD on the affected action, then clears the next cycle', () => {
     const input = plan()
     input.events.push({

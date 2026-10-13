@@ -221,16 +221,26 @@ export function useActionPlanner(
     stage.value = 'setup'
     view.value = 'future'
   }
-  function operationContext(operation: EffectOperation) {
-    return context.value
-      ? previewOperationState(
-          context.value,
-          operations.value,
-          selected.value,
-          operation.phase ?? 'preAction',
+  // Execution contexts depend on the plan and anchor, never translated presentation.
+  const operationContexts = computed(
+    () =>
+      new Map(
+        operations.value.map((operation) => [
           operation.id,
-        )
-      : undefined
+          context.value
+            ? previewOperationState(
+                context.value,
+                operations.value,
+                selected.value,
+                operation.phase ?? 'preAction',
+                operation.id,
+              )
+            : undefined,
+        ]),
+      ),
+  )
+  function operationContext(operation: EffectOperation) {
+    return operationContexts.value.get(operation.id)
   }
   return {
     document: shallowReadonly(document),

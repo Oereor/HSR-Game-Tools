@@ -15,6 +15,7 @@ import {
 } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
 import OperationEditor from './OperationEditor.vue'
+import OperationTargets from './OperationTargets.vue'
 import { effectiveSpeed } from '../../../engine/action-planner/queue'
 import { phaseOperations } from '../../../engine/action-planner/effect-config'
 import type {
@@ -22,10 +23,10 @@ import type {
   EventAnchor,
   SimulationState,
 } from '../../../engine/action-planner/types'
-import { formatAV } from '../model/presentation'
+import { formatAV, formatNumber, renderMessage } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
 import type { OperationDraft } from '../model/editor'
-import { namingTargets, targetLabel } from '../model/naming'
+import { operationMetadata, type MetadataField } from '../model/metadata'
 const props = defineProps<{
   anchor: EventAnchor
   operations: EffectOperation[]
@@ -86,8 +87,30 @@ const icon = (o: EffectOperation) =>
           : o.participant.kind === 'actor'
             ? UserRoundPlus
             : Timer
-const targetsOf = (o: EffectOperation) =>
-  o.type === 'spawnParticipant' ? [] : namingTargets(o, props.operationContext(o))
+const metadata = computed(
+  () =>
+    new Map(
+      props.operations.map((operation) => {
+        const state = props.operationContext(operation)
+        return [
+          operation.id,
+          {
+            ...operationMetadata(operation, props.label, state),
+            participants: state?.participants ?? [],
+          },
+        ] as const
+      }),
+    ),
+)
+const metadataOf = (o: EffectOperation) => metadata.value.get(o.id)!
+const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
+  field.kind === 'effect'
+    ? icon(operation)
+    : field.kind === 'speed'
+      ? Gauge
+      : field.kind === 'duration' || field.kind === 'countdown'
+        ? Timer
+        : undefined
 </script>
 <template>
   <section class="inspector" :aria-label="t('ui.inspector')">
@@ -117,17 +140,27 @@ const targetsOf = (o: EffectOperation) =>
         <div class="current-identity">
           <h2 ref="overview" tabindex="-1">{{ anchorLabel(anchor) }}</h2>
           <span v-if="currentSpeed !== undefined" class="fine-print current-speed"
-            >{{ t('ui.currentSpeed') }} {{ currentSpeed }} SPD</span
+            >{{ t('ui.currentSpeed') }}
+            {{
+              t('planner.metadata.speed', {
+                speed: formatNumber(currentSpeed, locale as ToolLocale),
+              })
+            }}</span
           >
         </div>
         <div v-if="context" class="current-av">
-          <strong>{{ formatAV(context.elapsedAV, locale as ToolLocale) }}<small> AV</small></strong>
+          <strong>{{
+            t('common.av', { value: formatAV(context.elapsedAV, locale as ToolLocale) })
+          }}</strong>
         </div>
       </div>
       <p v-if="!context" class="validation-summary">{{ t('ui.contextUnavailable') }}</p>
       <div class="operations-heading">
         <h3>
-          {{ t('ui.operations') }} <span class="operation-count">{{ operations.length }}</span>
+          {{ t('ui.operations') }}
+          <span class="operation-count">{{
+            formatNumber(operations.length, locale as ToolLocale)
+          }}</span>
         </h3>
         <Button size="small" :disabled="!context" @click="emit('edit')"
           ><Plus :size="16" :stroke-width="1.75" />{{ t('ui.add') }}</Button
@@ -162,83 +195,73 @@ const targetsOf = (o: EffectOperation) =>
               /><button class="operation-title" :disabled="!context" @click="emit('edit', op)">
                 {{ title(op, operationContext(op)) }}
               </button>
+              <div class="card-controls">
+                <Button
+                  v-tooltip="t('ui.moveUp')"
+                  text
+                  size="small"
+                  severity="secondary"
+                  :disabled="index === 0"
+                  :aria-label="t('ui.moveUp')"
+                  @click="emit('move', op.id, -1)"
+                  ><ArrowUp :size="15" /></Button
+                ><Button
+                  v-tooltip="t('ui.moveDown')"
+                  text
+                  size="small"
+                  severity="secondary"
+                  :disabled="index === group.operations.length - 1"
+                  :aria-label="t('ui.moveDown')"
+                  @click="emit('move', op.id, 1)"
+                  ><ArrowDown :size="15" /></Button
+                ><Button
+                  v-tooltip="t('ui.edit')"
+                  text
+                  size="small"
+                  severity="secondary"
+                  :disabled="!context"
+                  :aria-label="
+                    t('planner.accessibility.edit', { name: title(op, operationContext(op)) })
+                  "
+                  @click="emit('edit', op)"
+                  ><Pencil :size="15" /></Button
+                ><Button
+                  v-tooltip="t('ui.remove')"
+                  text
+                  size="small"
+                  severity="secondary"
+                  :aria-label="
+                    t('planner.accessibility.remove', { name: title(op, operationContext(op)) })
+                  "
+                  @click="emit('remove', op.id)"
+                  ><Trash2 :size="15"
+                /></Button>
+              </div>
             </div>
-            <div v-if="op.type !== 'spawnParticipant'" class="operation-targets">
-              <span v-if="targetsOf(op)?.length === 1" class="compact-target"
-                ><UnitPortrait
-                  :src="image(targetsOf(op)![0]!)"
-                  :name="label(targetsOf(op)![0]!)"
-                /><span>{{ label(targetsOf(op)![0]!) }}</span></span
-              ><span v-else class="fine-print">{{
-                targetLabel(op.target, locale as ToolLocale, label, targetsOf(op))
-              }}</span>
-            </div>
-            <div v-if="op.type === 'addSpeedModifier'" class="operation-bottom">
-              <strong
-                >{{ op.amount > 0 ? '+' : '' }}{{ op.amount
-                }}{{ op.mode === 'percent' ? '%' : ' SPD' }}</strong
-              ><span class="muted">{{
-                op.duration.kind === 'turns'
-                  ? op.duration.turns === null
-                    ? t('ui.unlimited')
-                    : t('ui.turnDuration', { count: op.duration.turns })
-                  : op.duration.name + ' · ' + op.duration.speed + ' SPD'
-              }}</span>
-            </div>
-            <div v-if="op.type === 'spawnParticipant'" class="operation-bottom">
-              <template v-if="op.participant.kind === 'actor'"
-                ><span :class="op.participant.camp === 'ally' ? 'camp-ally' : 'delay-color'">{{
-                  t(`ui.${op.participant.camp}`)
-                }}</span
-                ><span>{{ t(`ui.category.${op.participant.category ?? 'custom'}`) }}</span
-                ><span>{{ op.participant.panelSpeed }} SPD</span
-                ><span class="muted">{{
-                  op.participant.actionLimit == null
-                    ? t('ui.unlimited')
-                    : t('ui.actionCount', { count: op.participant.actionLimit })
-                }}</span></template
-              ><template v-else
-                ><span>{{ op.participant.speed }} SPD</span
-                ><span class="muted">{{ t('ui.once') }}</span></template
+            <OperationTargets
+              v-if="op.type !== 'spawnParticipant'"
+              :ids="metadataOf(op).targetIds"
+              :fallback="renderMessage(metadataOf(op).target!, locale as ToolLocale, t)"
+              :participants="metadataOf(op).participants"
+              :label="label"
+              :image="image"
+            />
+            <div class="operation-metadata">
+              <span
+                v-for="(field, fieldIndex) in metadataOf(op).fields"
+                :key="fieldIndex"
+                class="metadata-parameter"
+                :class="`metadata-${field.kind}`"
               >
-            </div>
-            <div class="card-controls">
-              <Button
-                v-tooltip="t('ui.moveUp')"
-                text
-                size="small"
-                severity="secondary"
-                :disabled="index === 0"
-                :aria-label="t('ui.moveUp')"
-                @click="emit('move', op.id, -1)"
-                ><ArrowUp :size="15" /></Button
-              ><Button
-                v-tooltip="t('ui.moveDown')"
-                text
-                size="small"
-                severity="secondary"
-                :disabled="index === group.operations.length - 1"
-                :aria-label="t('ui.moveDown')"
-                @click="emit('move', op.id, 1)"
-                ><ArrowDown :size="15" /></Button
-              ><Button
-                v-tooltip="t('ui.edit')"
-                text
-                size="small"
-                severity="secondary"
-                :disabled="!context"
-                :aria-label="`${t('ui.edit')}: ${title(op, operationContext(op))}`"
-                @click="emit('edit', op)"
-                ><Pencil :size="15" /></Button
-              ><Button
-                v-tooltip="t('ui.remove')"
-                text
-                size="small"
-                severity="secondary"
-                :aria-label="`${t('ui.remove')}: ${title(op, operationContext(op))}`"
-                @click="emit('remove', op.id)"
-                ><Trash2 :size="15"
-              /></Button>
+                <component
+                  v-if="fieldIcon(field, op)"
+                  :is="fieldIcon(field, op)"
+                  :size="15"
+                  :stroke-width="1.75"
+                  aria-hidden="true"
+                />
+                <span>{{ renderMessage(field.message, locale as ToolLocale, t) }}</span>
+              </span>
             </div>
           </article>
         </div>

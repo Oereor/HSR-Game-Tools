@@ -8,7 +8,8 @@ import {
 } from '../../src/tools/action-planner/model/editor'
 import {
   actionDirections,
-  operationName,
+  operationNameDescriptor,
+  namingTargets,
   participantLabels,
 } from '../../src/tools/action-planner/model/naming'
 import {
@@ -61,6 +62,24 @@ const names = (id: string) =>
   ({ a: 'A', b: 'B', [spawnedParticipantId('spawn')]: '龙灵' })[id] ?? id
 
 describe('real planner document and drafts', () => {
+  it('defaults only new drafts to post-action and preserves implicit legacy pre-action', () => {
+    expect(operationDraft().phase).toBe('postAction')
+    expect(
+      operationDraft({ id: '', type: 'advance', target: target('b'), percent: 40 }).phase,
+    ).toBe('postAction')
+    expect(
+      operationDraft({ id: 'old', type: 'advance', target: target('b'), percent: 40 }).phase,
+    ).toBe('preAction')
+    expect(
+      operationDraft({
+        id: 'old',
+        type: 'advance',
+        target: target('b'),
+        percent: 40,
+        phase: 'postAction',
+      }).phase,
+    ).toBe('postAction')
+  })
   it('treats preset templates with empty IDs as new operations', () => {
     const draft = operationDraft({ id: '', type: 'advance', target: target('b'), percent: 40 })
     expect(draft.id).toBeUndefined()
@@ -288,53 +307,57 @@ describe('real planner document and drafts', () => {
 })
 
 describe('presentation names and affected-action arrows', () => {
-  it('names singles, dynamic groups, signs, spawn categories and locales', () => {
-    let state = createInitialState(plan())
-    state = applyOperations(state, [spawn], start).state
+  it('describes targets, directions and creation categories without translated copy', () => {
+    const state = applyOperations(createInitialState(plan()), [spawn], start).state
     const group: EffectOperation = {
       id: 'x',
       type: 'advance',
       target: { kind: 'allies' },
       percent: 50,
     }
-    expect(operationName(group, 'zh-CN', names, state)).toBe('使 3 个目标 行动提前 50%')
-    expect(operationName(group, 'en', names, state)).toBe('Advance 3 targets by 50%')
-    expect(operationName({ ...group, target: target('b') }, 'zh-CN', names, state)).toBe(
-      '使 B 行动提前 50%',
-    )
+    expect(namingTargets(group, state)).toEqual(['a', 'b', spawnedParticipantId('spawn')])
+    expect(operationNameDescriptor(group, names, state)).toEqual({
+      key: 'planner.operationName.advance',
+      params: { target: { key: 'planner.target.count', params: { count: 3 } }, percent: 50 },
+    })
+    expect(operationNameDescriptor({ ...group, target: target('b') }, names, state)).toEqual({
+      key: 'planner.operationName.advance',
+      params: { target: 'B', percent: 50 },
+    })
+    expect(operationNameDescriptor(group, names).params?.target).toEqual({
+      key: 'planner.target.allies',
+    })
+    expect(operationNameDescriptor(spawn, names)).toEqual({
+      key: 'planner.operationName.createSummon',
+      params: { name: '龙灵' },
+    })
+    if (spawn.participant.kind !== 'actor') throw new Error('fixture')
+    for (const [category, key] of [
+      ['memosprite', 'createMemosprite'],
+      ['custom', 'createActor'],
+    ] as const)
+      expect(
+        operationNameDescriptor(
+          { ...spawn, participant: { ...spawn.participant, category } },
+          names,
+        ).key,
+      ).toBe('planner.operationName.' + key)
     expect(
-      operationName({ ...group, target: target('b'), percent: 25 }, 'en', names, state, 'My name'),
-    ).toBe('My name')
-    expect(operationName(spawn, 'zh-CN', names)).toBe('创建召唤物：龙灵')
-    expect(
-      operationName(
-        {
-          ...spawn,
-          participant: {
-            ...spawn.participant,
-            kind: 'actor',
-            camp: 'ally',
-            baseSpeed: 100,
-            panelSpeed: 100,
-            name: '灵',
-            category: 'memosprite',
-          },
-        },
-        'zh-CN',
+      operationNameDescriptor(
+        { ...spawn, participant: { ...spawn.participant, camp: 'enemy' } },
         names,
-      ),
-    ).toBe('创建忆灵：灵')
+      ).key,
+    ).toBe('planner.operationName.createEnemy')
     expect(
-      operationName(
+      operationNameDescriptor(
         {
           id: 'event',
           type: 'spawnParticipant',
           participant: { kind: 'scheduledEvent', name: 'Clock', speed: 70 },
         },
-        'en',
         names,
       ),
-    ).toBe('Create Event: Clock')
+    ).toEqual({ key: 'planner.operationName.createEvent', params: { name: 'Clock' } })
     const speed: EffectOperation = {
       id: 'speed',
       type: 'addSpeedModifier',
@@ -343,11 +366,13 @@ describe('presentation names and affected-action arrows', () => {
       amount: -15.5,
       duration: { kind: 'turns', turns: null },
     }
-    expect(operationName(speed, 'zh-CN', names, state)).toContain('基础速度降低 15.5%')
-    expect(operationName(speed, 'en', names, state)).toContain('15.5%')
-    expect(operationName({ ...speed, amount: 20 }, 'zh-CN', names, state)).toContain('提高 20%')
-    const unknown = operationName(group, 'zh-CN', names)
-    expect(unknown).toContain('我方全体')
+    expect(operationNameDescriptor(speed, names, state)).toEqual({
+      key: 'planner.operationName.decreasePercent',
+      params: { target: 'B', amount: 15.5 },
+    })
+    expect(operationNameDescriptor({ ...speed, amount: 20, mode: 'flat' }, names, state).key).toBe(
+      'planner.operationName.increaseFlat',
+    )
   })
   it('stable same-name labels use IDs instead of queue order', () => {
     const labels = participantLabels(
@@ -375,22 +400,33 @@ describe('presentation names and affected-action arrows', () => {
     expect(actionDirections(a, result.records[0]!.actionChanges)).toEqual({
       advance: false,
       delay: false,
+      immediatelyAct: false,
     })
     const b = result.records.find((r) => r.id === 'b')!
-    expect(actionDirections(b.anchor, b.actionChanges)).toEqual({ advance: true, delay: true })
-    expect(actionDirections(a, b.actionChanges)).toEqual({ advance: false, delay: false })
+    expect(actionDirections(b.anchor, b.actionChanges)).toEqual({
+      advance: true,
+      delay: true,
+      immediatelyAct: false,
+    })
+    expect(actionDirections(a, b.actionChanges)).toEqual({
+      advance: false,
+      delay: false,
+      immediatelyAct: false,
+    })
     const queue = result.snapshots[1]!.queue.find((q) => q.id === 'b')!
     expect(actionDirections(queue.anchor, queue.actionChanges)).toEqual({
       advance: true,
       delay: true,
+      immediatelyAct: false,
     })
     const plain = simulatePlan({ ...input, events: [] }).records.find((r) => r.id === 'b')!
     expect(actionDirections(plain.anchor, plain.actionChanges)).toEqual({
       advance: false,
       delay: false,
+      immediatelyAct: false,
     })
   })
-  it('retains zero-AV insertion and ignores zero-percent traces without a change', () => {
+  it('retains zero-AV insertion and shows legal zero-percent effects', () => {
     const input = plan()
     input.events = [
       {
@@ -414,7 +450,7 @@ describe('presentation names and affected-action arrows', () => {
         },
       ],
     }).records.find((r) => r.id === 'b')!
-    expect(actionDirections(zero.anchor, zero.actionChanges).advance).toBe(false)
+    expect(actionDirections(zero.anchor, zero.actionChanges).advance).toBe(true)
   })
   it('the triggering event has left targeting eligibility', () => {
     const event: EffectOperation = {
