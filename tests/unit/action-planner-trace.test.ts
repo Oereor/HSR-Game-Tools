@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
 import {
   applyOperations,
@@ -32,6 +33,7 @@ const gauge = (
   percent: number,
 ): EffectOperation => ({ id, type, target: target(participantId), percent })
 const plan = (operations: EffectOperation[] = []): SimulationPlan => ({
+  cycleMode: 'none',
   actors: [actor('a', 200), actor('b', 100, 1)],
   events: [{ anchor: { kind: 'start' }, operations }],
   maxNodes: 6,
@@ -46,7 +48,9 @@ describe('committed action-change traces', () => {
       { id: 'same-position', type: 'immediatelyAct', target: target('b') },
     ])
     const result = simulatePlan(input)
-    expect(result.records.slice(0, 2).map((r) => [r.id, r.elapsedAV, r.deltaAV])).toEqual([
+    expect(
+      result.records.slice(0, 2).map((r) => [ordinaryNode(r).id, r.elapsedAV, r.deltaAV]),
+    ).toEqual([
       ['b', 0, 0],
       ['a', 0, 0],
     ])
@@ -65,8 +69,9 @@ describe('committed action-change traces', () => {
       effectiveSpeed: 100,
     })
     expect(
-      result.records.find((r) => r.id === 'b' && r.anchor.kind === 'action' && r.anchor.turn === 2)
-        ?.actionChanges,
+      result.records.find(
+        (r) => ordinaryNode(r).id === 'b' && r.anchor.kind === 'action' && r.anchor.turn === 2,
+      )?.actionChanges,
     ).toEqual([])
     const pending = applyOperations(createInitialState(input), input.events[0]!.operations, {
       kind: 'start',
@@ -162,7 +167,7 @@ describe('committed action-change traces', () => {
     })
     const result = simulatePlan(input)
     expect(result.records[0].actionChanges).toEqual([])
-    const affected = result.records.find((record) => record.id === 'b')!
+    const affected = result.records.find((record) => ordinaryNode(record).id === 'b')!
     expect(
       affected.actionChanges.map(({ operationId, deltaAV, effectiveSpeed }) => [
         operationId,
@@ -184,7 +189,9 @@ describe('committed action-change traces', () => {
     expect(
       result.records.find(
         (record) =>
-          record.anchor.kind === 'action' && record.id === 'b' && record.anchor.turn === 2,
+          record.anchor.kind === 'action' &&
+          ordinaryNode(record).id === 'b' &&
+          record.anchor.turn === 2,
       )!.actionChanges,
     ).toEqual([])
     expect(simulatePlan(input)).toEqual(result)
@@ -208,7 +215,7 @@ describe('committed action-change traces', () => {
       gauge('zero-percent', 'c', 'advance', 0),
     ]
     const result = simulatePlan(input)
-    expect(result.records.slice(0, 3).map(({ id }) => id)).toEqual(['b', 'a', 'c'])
+    expect(result.records.slice(0, 3).map((r) => ordinaryNode(r).id)).toEqual(['b', 'a', 'c'])
     expect(
       result.records[0].actionChanges.map(({ operationId, deltaAV, zeroAVInsertion }) => [
         operationId,
@@ -247,7 +254,9 @@ describe('committed action-change traces', () => {
     expect(
       result.records.find(
         (record) =>
-          record.anchor.kind === 'action' && record.id === 'a' && record.anchor.turn === 3,
+          record.anchor.kind === 'action' &&
+          ordinaryNode(record).id === 'a' &&
+          record.anchor.turn === 3,
       )!.actionChanges,
     ).toEqual([])
     input.actors[0].actionLimit = 1
@@ -283,20 +292,25 @@ describe('committed action-change traces', () => {
     ])
     input.maxNodes = 12
     const result = simulatePlan(input)
-    const childRecord = result.records.find(({ id }) => id === child)!
-    const timerRecord = result.records.find(({ id }) => id === timer)!
+    const childRecord = result.records.find((r) => ordinaryNode(r).id === child)!
+    const timerRecord = result.records.find((r) => ordinaryNode(r).id === timer)!
     expect(childRecord.actionChanges.map(({ operationId }) => operationId)).toEqual(['child-pull'])
     expect(timerRecord.actionChanges[0]).toMatchObject({
       operationId: 'timer-delay',
       targetAnchor: { kind: 'trigger', participantId: timer },
       deltaAV: 1000 / 70,
     })
-    expect(result.records.filter(({ id }) => id === child || id === timer)).toHaveLength(2)
+    expect(
+      result.records.filter((r) => ordinaryNode(r).id === child || ordinaryNode(r).id === timer),
+    ).toHaveLength(2)
     expect(result.snapshots.at(-1)!.queue.every(({ id }) => id !== child && id !== timer)).toBe(
       true,
     )
     input.events[0].operations = input.events[0].operations.filter(({ id }) => id !== 'child-pull')
-    expect(simulatePlan(input).records.find(({ id }) => id === child)!.actionChanges).toEqual([])
+    expect(
+      ordinaryNode(simulatePlan(input).records.find((r) => ordinaryNode(r).id === child)!)
+        .actionChanges,
+    ).toEqual([])
   })
 
   it('keeps skipped and failed operations out of committed history and never publishes a failed node', () => {
@@ -366,7 +380,7 @@ describe('committed action-change traces', () => {
     expect(result.snapshots[1].queue.find(({ id }) => id === 'b')!).toMatchObject({
       actionChanges: [expect.objectContaining({ operationId: 'future-pull' })],
     })
-    expect(result.records.find(({ id }) => id === 'b')!).toMatchObject({
+    expect(result.records.find((r) => ordinaryNode(r).id === 'b')!).toMatchObject({
       actionChanges: [expect.objectContaining({ operationId: 'future-pull' })],
     })
     expect(result.snapshots[2].queue.find(({ id }) => id === 'b')!.actionChanges).toEqual([])

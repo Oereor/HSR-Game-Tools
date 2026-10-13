@@ -1,4 +1,4 @@
-/** Register only reviewed ordinary Version 1 JSON files; no generated or guessed teams. */
+/** Register only reviewed ordinary Version 1 / 2 JSON files; no generated or guessed teams. */
 export interface PlannerTemplate {
   id: string
   order: number

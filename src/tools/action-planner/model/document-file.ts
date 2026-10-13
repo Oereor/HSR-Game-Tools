@@ -10,6 +10,7 @@ import type { PlannerDocument } from './editor'
 import { simulatePlan } from '../../../engine/action-planner/engine'
 
 export const PLANNER_FORMAT = 'hsr-game-tools/action-planner'
+export const PLANNER_VERSION = 2
 export const FILE_LIMITS = {
   bytes: 2 * 1024 * 1024,
   events: 1000,
@@ -32,12 +33,12 @@ export class PlannerFileError extends Error {
 export type ResourceIssue = { kind: 'missingCharacter' | 'unsafeImage'; id: string }
 export interface PlannerFile {
   format: typeof PLANNER_FORMAT
-  version: 1
+  version: typeof PLANNER_VERSION
   document: PlannerDocument
 }
 export const emptyDocument = (): PlannerDocument => ({
   name: '',
-  plan: { actors: [], events: [], ...DEFAULT_LIMITS },
+  plan: { actors: [], events: [], cycleMode: 'none', ...DEFAULT_LIMITS },
   metadata: { customNames: {}, characterIds: {} },
 })
 const fail = (code: FileErrorCode): never => {
@@ -118,7 +119,7 @@ export function safeImagePath(value?: string): string | undefined {
   return value && imagePaths.has(value) ? value : undefined
 }
 
-/** Strict Version 1 boundary. Returned input is independently owned and resource-safe. */
+/** Strict versioned boundary. Migration returns an independently owned Version 2 document. */
 export function validatePlannerFile(value: unknown): {
   document: PlannerDocument
   issues: ResourceIssue[]
@@ -126,10 +127,16 @@ export function validatePlannerFile(value: unknown): {
   inspectTree(value)
   const file = fields(value, ['format', 'version', 'document'])
   if (file.format !== PLANNER_FORMAT) fail('format')
-  if (file.version !== 1) fail('version')
+  if (file.version !== 1 && file.version !== PLANNER_VERSION) fail('version')
   const doc = fields(file.document, ['name', 'plan', 'metadata'])
   text(doc.name, FILE_LIMITS.name)
-  const p = fields(doc.plan, ['actors', 'events', 'maxNodes', 'maxAV'])
+  const p = fields(doc.plan, [
+    'actors',
+    'events',
+    'maxNodes',
+    'maxAV',
+    ...(file.version === 2 ? ['cycleMode'] : []),
+  ])
   const actors = list(p.actors)
   const events = list(p.events)
   if (events.length > FILE_LIMITS.events || actors.length > 9) fail('limit')
@@ -159,7 +166,9 @@ export function validatePlannerFile(value: unknown): {
         ? ['kind']
         : a.kind === 'action'
           ? ['kind', 'participantId', 'turn']
-          : ['kind', 'participantId'],
+          : a.kind === 'cycleBoundary' && file.version === 2
+            ? ['kind', 'ordinal']
+            : ['kind', 'participantId'],
     )
     const ops = list(e.operations)
     if ((count += ops.length) > FILE_LIMITS.operations) fail('limit')
@@ -198,7 +207,10 @@ export function validatePlannerFile(value: unknown): {
       }
     }
   }
-  const plan = p as unknown as SimulationPlan
+  const plan = {
+    ...p,
+    ...(file.version === 1 ? { cycleMode: 'none' } : {}),
+  } as unknown as SimulationPlan
   if (validatePlan(plan).length) fail('structure')
   const participants = participantCatalog(plan)
   if (participants.some((p) => opIds.has(p.id))) fail('identity')
@@ -215,6 +227,7 @@ export function validatePlannerFile(value: unknown): {
   }
   // A fresh JSON tree also removes optional undefined properties from internal drafts.
   const document = JSON.parse(JSON.stringify(doc)) as PlannerDocument
+  if (file.version === 1) document.plan.cycleMode = 'none'
   const issues: ResourceIssue[] = []
   for (const [id, characterId] of Object.entries(document.metadata.characterIds))
     if (!catalog.characters.some((c) => c.id === characterId))
@@ -238,7 +251,7 @@ export function validatePlannerFile(value: unknown): {
     for (const operation of event.operations)
       if (operation.type === 'spawnParticipant')
         image(operation.participant, spawnedParticipantId(operation.id))
-  const serialized = JSON.stringify({ format: PLANNER_FORMAT, version: 1, document })
+  const serialized = JSON.stringify({ format: PLANNER_FORMAT, version: PLANNER_VERSION, document })
   if (new TextEncoder().encode(serialized).length > FILE_LIMITS.bytes) fail('limit')
   return { document, issues }
 }
@@ -254,9 +267,17 @@ export function parsePlannerDocument(source: string) {
   return validatePlannerFile(value)
 }
 export function serializePlannerDocument(document: PlannerDocument): string {
-  const normalized = validatePlannerFile({ format: PLANNER_FORMAT, version: 1, document }).document
+  const normalized = validatePlannerFile({
+    format: PLANNER_FORMAT,
+    version: PLANNER_VERSION,
+    document,
+  }).document
   const source =
-    JSON.stringify({ format: PLANNER_FORMAT, version: 1, document: normalized }, null, 2) + '\n'
+    JSON.stringify(
+      { format: PLANNER_FORMAT, version: PLANNER_VERSION, document: normalized },
+      null,
+      2,
+    ) + '\n'
   if (new TextEncoder().encode(source).length > FILE_LIMITS.bytes) fail('limit')
   return source
 }
@@ -264,7 +285,11 @@ export function preparePlannerDocument(
   input: PlannerDocument,
   inheritedIssues: ResourceIssue[] = [],
 ) {
-  const parsed = validatePlannerFile({ format: PLANNER_FORMAT, version: 1, document: input })
+  const parsed = validatePlannerFile({
+    format: PLANNER_FORMAT,
+    version: PLANNER_VERSION,
+    document: input,
+  })
   serializePlannerDocument(parsed.document)
   try {
     return {
@@ -295,7 +320,8 @@ export function plannerFilename(name: string): string {
 export function referencedIds(plan: SimulationPlan): Set<string> {
   const ids = new Set(participantCatalog(plan).map((p) => p.id))
   for (const event of plan.events) {
-    if (event.anchor.kind !== 'start') ids.add(event.anchor.participantId)
+    if (event.anchor.kind === 'action' || event.anchor.kind === 'trigger')
+      ids.add(event.anchor.participantId)
     for (const op of event.operations) {
       ids.add(op.id)
       ids.add(spawnedParticipantId(op.id))

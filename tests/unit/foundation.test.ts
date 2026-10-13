@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -70,7 +71,7 @@ describe('independent tool boundaries', () => {
     first.replacePlan(cases.post)
     expect(
       first.result.value.records.find(
-        (r) => r.id === 'a' && r.anchor.kind === 'action' && r.anchor.turn === 2,
+        (r) => ordinaryNode(r).id === 'a' && r.anchor.kind === 'action' && r.anchor.turn === 2,
       )?.elapsedAV,
     ).toBe(110)
     expect(second.result.value.stopReason).toBe('empty')

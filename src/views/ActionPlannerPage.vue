@@ -16,7 +16,7 @@ import ActionInspector from '../tools/action-planner/components/ActionInspector.
 import { usePlannerSession } from '../tools/action-planner/composables/usePlannerSession'
 import PlanManagement from '../tools/action-planner/components/PlanManagement.vue'
 import { usePlannerPresentation } from '../tools/action-planner/composables/usePlannerPresentation'
-import type { ActorConfig } from '../engine/action-planner/types'
+import type { ActorConfig, CycleMode } from '../engine/action-planner/types'
 const { t, locale } = useI18n()
 const { planner, persistence, saveStatus } = usePlannerSession()
 const planManagement = ref<InstanceType<typeof PlanManagement>>()
@@ -35,6 +35,7 @@ const {
   preview,
   targets,
   unreached,
+  inactive,
   queueIndex,
   currentQueueView,
   select,
@@ -63,8 +64,9 @@ function apply(
   nodes: number,
   av: number,
   characters: Record<string, string>,
+  cycleMode: CycleMode,
 ) {
-  if (planner.applySetup(actors, nodes, av, characters)) stage.value = 'planning'
+  if (planner.applySetup(actors, nodes, av, characters, cycleMode)) stage.value = 'planning'
 }
 const navigatorProps = computed(() => ({
   records: result.value.records,
@@ -77,6 +79,7 @@ const navigatorProps = computed(() => ({
 }))
 const inspectorProps = computed(() => ({
   anchor: selected.value,
+  inactive: selected.value.kind === 'cycleBoundary' && plan.value.cycleMode === 'none',
   operations: operations.value,
   context: context.value,
   preview: preview.value,
@@ -217,6 +220,26 @@ onBeforeUnmount(() => {
                 @submit="submit"
             /></template>
           </div>
+          <section v-if="inactive.length" class="unreached-events">
+            <h2>{{ t('planner.cycle.inactive') }}</h2>
+            <div
+              v-for="event in inactive"
+              :key="JSON.stringify(event.anchor)"
+              class="unreached-row"
+            >
+              <button class="text-button" @click="select(event.anchor)">
+                {{ anchorLabel(event.anchor) }}
+              </button>
+              <span class="fine-print">{{ t('planner.cycle.disabled') }}</span>
+              <Button
+                text
+                severity="secondary"
+                size="small"
+                :label="t('ui.deleteEvent')"
+                @click="deleteEvent(event.anchor)"
+              />
+            </div>
+          </section>
           <section v-if="unreached.length" class="unreached-events">
             <h2>{{ t('ui.unreached') }}</h2>
             <div

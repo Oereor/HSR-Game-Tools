@@ -99,6 +99,7 @@ function worthKeeping() {
     Object.keys(doc.metadata.customNames).length ||
     doc.plan.maxNodes !== DEFAULT_LIMITS.maxNodes ||
     doc.plan.maxAV !== DEFAULT_LIMITS.maxAV ||
+    doc.plan.cycleMode !== 'none' ||
     props.setupDirty ||
     props.planner.draft.value
   )

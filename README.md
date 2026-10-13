@@ -2,13 +2,13 @@
 
 《崩坏：星穹铁道》独立游戏工具站，使用 Vue 3、TypeScript、Vite、Vue Router、Tailwind CSS 4 和 vue-i18n。
 
-当前已完成 **Phase 2A：方案持久化、配队模板入口与初始敌方编队**。`/action-planner` 使用 PrimeVue Styled Mode + Aura 深色金色主题，配置和五类操作提交后通过现有纯引擎重新推演；支持动态参与者、共享倒计时、装备预设、当前队列观察、自动存档和完整 JSON 导入／导出。
+当前已完成 **Phase 2B：Endgame 轮次系统**。`/action-planner` 使用 PrimeVue Styled Mode + Aura 深色金色主题，配置和五类操作提交后通过现有纯引擎重新推演；支持动态参与者、共享倒计时、装备预设、当前队列观察、自动存档、完整 JSON 导入／导出，以及 MoC／AA 轮次系统。
 
 ## 本地运行
 
 **UI Polish Round 1 / Site Messages** 已收敛自动命名与卡片 Metadata，新增立即行动 Trace 和阵营圆点；新建普通操作默认在动作后结算。视觉验收由用户完成，本轮工程验证和已观察到的浏览器行为见 [UI 与本地化报告](docs/investigations/action-planner-ui-polish-localization.md)。
 
-需要 Node 24（最低 24.12，本轮验证版本 24.19.0）与 npm，使用唯一 `package-lock.json`。
+需要 Node 24（最低 24.12，本轮验证版本 24.21.0）与 npm，使用唯一 `package-lock.json`。
 
 ```sh
 npm ci
@@ -84,9 +84,9 @@ npm run validate:game-data
 
 首次打开进入战斗配置：四个空槽、无操作，预算为 60 节点／600 AV。角色选择器搜索全部 98 条快照记录，支持名称、别名和本地化形态标签；不同形态按独立 ID 选择，同一角色 ID 不重复占槽。选择角色填入基础速度，面板速度可独立修改。
 
-点击“应用配置”统一提交我方、最多五名初始敌人、速度和预算。敌人可自由命名，单个 SPD 留空直到填写；基础与面板速度都使用该 SPD，默认无限自然行动。未应用的输入在切换 Tabs 后仍保留，行动规划展示已提交计划。预算最高 500 节点／100000 AV。更换角色或删除后重建单位生成新 Actor ID，修改名称或速度保留 ID；已有操作保持原引用，失效引用通过诊断处理。
+点击“应用配置”统一提交我方、最多五名初始敌人、速度、轮次模式和预算。敌人可自由命名，单个 SPD 留空直到填写；基础与面板速度都使用该 SPD，默认无限自然行动。未应用的输入在切换 Tabs 后仍保留，行动规划展示已提交计划。预算最高 500 节点／100000 AV。更换角色或删除后重建单位生成新 Actor ID，修改名称或速度保留 ID；已有操作保持原引用，失效引用通过诊断处理。
 
-行动规划可选战斗开始、角色行动或事件触发节点。支持提前、延后、立即行动、速度效果与创建 Actor／单次事件；操作可编辑、删除、在同一结算窗口内排序，修改阶段进入新窗口末尾。速度效果支持固定值、基础速度百分比、有限／无限回合或共享倒计时。空回合数和行动次数表示无限。倒计时只接受显式单目标提前／延后。
+行动规划可选战斗开始、角色行动、事件触发或轮次边界节点。支持提前、延后、立即行动、速度效果与创建 Actor／单次事件；操作可编辑、删除、在同一结算窗口内排序，修改阶段进入新窗口末尾。速度效果支持固定值、基础速度百分比、有限／无限回合或共享倒计时。空回合数和行动次数表示无限。倒计时只接受显式单目标提前／延后。
 
 装备入口生成舞舞舞 24%、翁瓦克 40%（仅战斗开始）、翔鹰 25% 的普通草稿，目标和参数仍可编辑。预设不自动检查装备条件或执行角色技能。每类操作支持自定义名称，留空采用随语言与实际目标时点变化的自动名称；操作名称独立于实体名称。
 
@@ -100,13 +100,23 @@ npm run validate:game-data
 
 本轮未实现角色专用技能、真实敌人目录、多波次、伤害／能量、账号、云同步或多方案库。主题和职责约定见 [Design Notes](docs/design-notes.md)。历史截图仅属于此前阶段，本轮没有真实浏览器验收记录。
 
+## Endgame 轮次
+
+默认关闭。战斗配置的单选控件支持混沌回忆（MoC）和异相仲裁（AA），需要点击“应用配置”后生效。第 0 轮分别为 150／300 AV，之后每轮 100 AV；第 n 个边界为首轮 AV + 100 × (n−1)。
+
+轮次是独立 System Event，不属于 Participant，没有 SPD、AG 或阵营，也不能成为任何操作的目标。同累计 AV 时，普通 Actor、Scheduled Event 及它们插入的零 AV 行动全部优先；每次结算重新检查队列，最后才进入轮次边界。边界自身产生的立即行动在边界完成后执行。轮次计入节点预算，遵守 AV 上限，空队列不会继续向未来生成轮次。
+
+轮次节点显示“第 N 轮开始”，可通过 Inspector 配置标准操作，只有一个无 phase 的结算窗口。当前队列同时显示下一轮次剩余 AV，系统节点不显示速度。操作绑定稳定的 `cycleBoundary` ordinal Anchor；MoC／AA 切换改变触发时间但保留操作。关闭模式保留操作并列为停用配置，可查看、删除，重新启用后恢复执行与编辑。轮次不重置单位 AG，也不递减速度 Buff 的回合数。
+
+暂不支持跨波次、轮次重置／保留规则、自定义轮长或其他新战斗机制。
+
 ## 方案保存与 JSON
 
 战斗配置顶部提供方案管理。方案名失焦／回车提交；其他配置和操作只有明确应用／提交后才保存。当前方案使用 localStorage 的 `hsr-game-tools/action-planner/current` 键，启动先恢复再监听提交。导航、队列游标、语言和草稿不保存；退出页面不补写旧内容。
 
-导入、导出、存档和模板共用 `format: "hsr-game-tools/action-planner"`、`version: 1`、`document: { name, plan, metadata }`。导出文件保留数学精度、Actor／Operation ID、Anchor、阶段、顺序及名称映射；不包含运行结果。导入先校验并推演，再确认完整替换，失败或取消保留当前方案。
+导入、导出、存档和模板共用 `format: "hsr-game-tools/action-planner"`、`version: 2`、`document: { name, plan, metadata }`。Version 1 文件和旧存档在严格校验后迁移，缺少轮次配置时补入 `cycleMode: "none"`，不会改变旧方案排轴；导出统一使用 Version 2。导出文件保留数学精度、Actor／Operation ID、Anchor、阶段、顺序及名称映射；不包含运行结果。导入先校验并推演，再确认完整替换，失败或取消保留当前方案。
 
-初始编队限制为四名我方、五名敌方；初始敌人导入时以基础速度统一 SPD。当前数据中缺失的 Character ID 保留原配置并提示，不换角色；自定义图片仅允许资源清单中的相对路径。Version 1 文件上限为 2 MiB、1,000 个事件、2,000 个操作；详细字段边界见本轮报告。
+初始编队限制为四名我方、五名敌方；初始敌人导入时以基础速度统一 SPD。当前数据中缺失的 Character ID 保留原配置并提示，不换角色；自定义图片仅允许资源清单中的相对路径。文件上限仍为 2 MiB、1,000 个事件、2,000 个操作；详细字段边界见 Phase 2A 报告。
 
 坏存档或不支持版本保留原始内容并暂停自动保存，可备份原始存档后明确覆盖。其他标签页修改或清空存档时，本页不自动替换，也不自动覆盖外部版本；可导出本页 JSON、载入存档或明确覆盖。存储不可用／写入失败时继续编辑并导出备份，只有成功写入才显示已保存。没有跨标签页合并或实时协作。
 
@@ -147,6 +157,7 @@ export const plannerTemplates: readonly PlannerTemplate[] = [
 - [UI Polish Round 1 与 Site Messages](docs/investigations/action-planner-ui-polish-localization.md)
 - [当前队列重构](docs/investigations/action-planner-current-queue-view-reconstruction.md)
 - [Phase 2A 持久化、模板与敌方编队](docs/investigations/action-planner-persistence-templates-enemy-setup.md)
+- [Phase 2B Endgame 轮次系统](docs/investigations/action-planner-endgame-cycle-system.md)
 - [第三方来源、许可证文本与发布限制](docs/third-party/README.md)
 
 整体项目许可证尚未确定。复制的引擎保留 MIT 通知；StarRailRes 索引许可与游戏美术授权需分别处理。当前数据和图片用于本地验证，未经确认不得擅自提交、推送或公开分发第三方资源。本轮没有发布或配置 Vercel。

@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { simulatePlan } from '../../src/engine/action-planner/engine'
@@ -25,6 +26,7 @@ const action = (participantId: string, turn = 1): NodeAnchor => ({
 })
 const target = (...participantIds: string[]) => ({ kind: 'participants' as const, participantIds })
 const plan = (): SimulationPlan => ({
+  cycleMode: 'none',
   actors: ['a', 'b', 'c'].map((id, position) => ({
     id,
     name: id,
@@ -40,7 +42,10 @@ const plan = (): SimulationPlan => ({
   maxAV: 600,
 })
 const waitingValues = (result: ReturnType<typeof simulatePlan>, index: number) =>
-  buildCurrentQueueView(result, index)?.waiting.map((entry) => [entry.id, entry.remainingAV])
+  buildCurrentQueueView(result, index)?.waiting.map((entry) => [
+    ordinaryNode(entry).id,
+    entry.remainingAV,
+  ])
 
 describe('current queue presentation', () => {
   it('uses the post-start snapshot and preserves committed start effects without mutation', () => {
@@ -73,13 +78,13 @@ describe('current queue presentation', () => {
     const first = buildCurrentQueueView(result, 1)!
     expect(first).toMatchObject({ kind: 'acting', elapsedAV: 40, current: { anchor: action('a') } })
     const cards = currentQueueCards(first)
-    expect(cards.map((card) => [card.id, card.total, card.isCurrent])).toEqual([
+    expect(cards.map((card) => [ordinaryNode(card).id, card.total, card.isCurrent])).toEqual([
       ['a', 0, true],
       ['b', 20, false],
       ['c', 50, false],
     ])
-    expect(first.waiting.some((entry) => entry.id === 'a')).toBe(false)
-    expect(new Set(cards.map((card) => card.id)).size).toBe(cards.length)
+    expect(first.waiting.some((entry) => ordinaryNode(entry).id === 'a')).toBe(false)
+    expect(new Set(cards.map((card) => ordinaryNode(card).id)).size).toBe(cards.length)
     expect(result.snapshots[1]!.queue.find((entry) => entry.id === 'a')!.anchor).toEqual(
       action('a', 2),
     )
@@ -130,21 +135,23 @@ describe('current queue presentation', () => {
     const result = simulatePlan(input)
     const first = buildCurrentQueueView(result, 1)!
     expect(currentQueueCards(first)[0]).toMatchObject({ id: 'a', total: 0, isCurrent: true })
-    expect(first.waiting.find((entry) => entry.id === 'b')).toMatchObject({
+    expect(first.waiting.find((entry) => ordinaryNode(entry).id === 'b')).toMatchObject({
       effectiveSpeed: 100,
       remainingAV: 20,
     })
-    expect(first.waiting.some((entry) => entry.id === spawnedParticipantId('summon'))).toBe(false)
+    expect(
+      first.waiting.some((entry) => ordinaryNode(entry).id === spawnedParticipantId('summon')),
+    ).toBe(false)
     const second = buildCurrentQueueView(result, 2)!
     expect(second).toMatchObject({ elapsedAV: 40, current: { id: spawnedParticipantId('summon') } })
-    expect(second.waiting.find((entry) => entry.id === 'b')).toMatchObject({
+    expect(second.waiting.find((entry) => ordinaryNode(entry).id === 'b')).toMatchObject({
       effectiveSpeed: 200,
       remainingAV: 10,
     })
-    expect(second.waiting.some((entry) => entry.id === 'a')).toBe(false)
+    expect(second.waiting.some((entry) => ordinaryNode(entry).id === 'a')).toBe(false)
     expect(
       buildCurrentQueueView(result, 3)!.waiting.some(
-        (entry) => entry.id === spawnedParticipantId('summon'),
+        (entry) => ordinaryNode(entry).id === spawnedParticipantId('summon'),
       ),
     ).toBe(false)
   })
@@ -175,14 +182,16 @@ describe('current queue presentation', () => {
       },
     ]
     const result = simulatePlan(input)
-    expect(result.records.slice(0, 3).map((record) => [record.id, record.elapsedAV])).toEqual([
+    expect(
+      result.records.slice(0, 3).map((record) => [ordinaryNode(record).id, record.elapsedAV]),
+    ).toEqual([
       ['b', 0],
       ['a', 0],
       ['c', 0],
     ])
     const first = buildCurrentQueueView(result, 1)!
     const cards = currentQueueCards(first)
-    expect(cards.map((card) => [card.id, card.total])).toEqual([
+    expect(cards.map((card) => [ordinaryNode(card).id, card.total])).toEqual([
       ['b', 0],
       ['a', 0],
       ['c', 0],
@@ -204,7 +213,7 @@ describe('current queue presentation', () => {
       delay: true,
       immediatelyAct: true,
     })
-    expect(second.find((card) => card.id === 'b')!.actionChanges).toEqual([])
+    expect(second.find((card) => ordinaryNode(card).id === 'b')!.actionChanges).toEqual([])
     expect(buildCurrentQueueView(result, 3)!.elapsedAV).toBe(0)
   })
 
@@ -240,14 +249,18 @@ describe('current queue presentation', () => {
     })
     expect(currentQueueCards(trigger)[0]).toMatchObject({ total: 0, isCurrent: true })
     expect(
-      trigger.waiting.map((entry) => [entry.id, entry.remainingAV, entry.effectiveSpeed]),
+      trigger.waiting.map((entry) => [
+        ordinaryNode(entry).id,
+        entry.remainingAV,
+        ordinaryNode(entry).effectiveSpeed,
+      ]),
     ).toEqual([
       ['a', 20, 100],
       ['b', 20, 100],
     ])
     const next = buildCurrentQueueView(result, 2)!
     expect(next).toMatchObject({ elapsedAV: 40, current: { id: 'b' } })
-    expect(next.waiting.some((entry) => entry.id === timer)).toBe(false)
+    expect(next.waiting.some((entry) => ordinaryNode(entry).id === timer)).toBe(false)
   })
 
   it('returns unavailable for missing or invalid positions and leaves normal empty results valid', () => {

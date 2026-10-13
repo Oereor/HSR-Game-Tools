@@ -19,7 +19,9 @@ export function validTargetSelection(
   return (
     participants.length > 0 &&
     (participants.every((participant) => participant.kind === 'actor') ||
-      (participants.length === 1 && (type === 'advance' || type === 'delay')))
+      (participants.length === 1 &&
+        participants[0]!.kind === 'scheduledEvent' &&
+        (type === 'advance' || type === 'delay')))
   )
 }
 export function selectableTargets(

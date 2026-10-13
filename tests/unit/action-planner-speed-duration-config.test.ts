@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
 import {
   speedDurationDraft,
@@ -21,6 +22,7 @@ const source: Extract<EffectOperation, { type: 'addSpeedModifier' }> = {
   duration: { kind: 'countdown', name: 'Synthetic expiry', speed: 70 },
 }
 const plan: SimulationPlan = {
+  cycleMode: 'none',
   actors: [
     {
       id: 'actor',
@@ -93,8 +95,8 @@ describe('speed duration drafts', () => {
       events: [{ anchor, operations: saveOperation([source], edited, anchor) }, trigger],
     }
     const result = simulatePlan(editedPlan)
-    const event = result.records.find((record) => record.id === id)!
-    expect(event.name).toBe('Synthetic renamed')
+    const event = result.records.find((record) => ordinaryNode(record).id === id)!
+    expect(ordinaryNode(event).name).toBe('Synthetic renamed')
     expect(event.elapsedAV).toBeCloseTo(10000 / 90)
     expect(result.records[result.records.indexOf(event) + 1]).toMatchObject({
       id: 'actor',
@@ -109,14 +111,16 @@ describe('speed duration drafts', () => {
         ...editedPlan,
         events: [{ anchor, operations: [{ ...edited, duration }] }, trigger],
       })
-      expect(changed.records.some((record) => record.id === id)).toBe(false)
+      expect(changed.records.some((record) => ordinaryNode(record).id === id)).toBe(false)
       expect(changed.diagnostics.some((item) => item.code === 'unreached-anchor')).toBe(true)
     }
     const deleted = simulatePlan({ ...editedPlan, events: [trigger] })
     expect(deleted.snapshots[0].queue.every((entry) => entry.modifiers.length === 0)).toBe(true)
-    expect(deleted.records.some((record) => record.id === id)).toBe(false)
+    expect(deleted.records.some((record) => ordinaryNode(record).id === id)).toBe(false)
     expect(deleted.diagnostics.some((item) => item.code === 'unreached-anchor')).toBe(true)
     expect(editedPlan.events[1]).toEqual(trigger)
-    expect(simulatePlan(editedPlan).records.some((record) => record.id === id)).toBe(true)
+    expect(simulatePlan(editedPlan).records.some((record) => ordinaryNode(record).id === id)).toBe(
+      true,
+    )
   })
 })

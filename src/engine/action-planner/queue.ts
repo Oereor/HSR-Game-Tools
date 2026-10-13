@@ -4,9 +4,11 @@ import type {
   DiagnosticCode,
   EventAnchor,
   ParticipantState,
+  ParticipantAnchor,
   QueueSnapshot,
   SimulationState,
 } from './types'
+import { pendingCycleBoundary } from './cycle'
 
 export const FULL_AG = 10000
 export const DEFAULT_LIMITS = { maxNodes: 60, maxAV: 600 } as const
@@ -14,9 +16,11 @@ export const HARD_LIMITS = { maxNodes: 500, maxAV: 100000 } as const
 export const anchorKey = (anchor: EventAnchor): string =>
   anchor.kind === 'start'
     ? 'start'
-    : anchor.kind === 'trigger'
-      ? `trigger:${encodeURIComponent(anchor.participantId)}`
-      : `action:${encodeURIComponent(anchor.participantId)}:${anchor.turn}`
+    : anchor.kind === 'cycleBoundary'
+      ? `cycleBoundary:${anchor.ordinal}`
+      : anchor.kind === 'trigger'
+        ? `trigger:${encodeURIComponent(anchor.participantId)}`
+        : `action:${encodeURIComponent(anchor.participantId)}:${anchor.turn}`
 export const spawnedParticipantId = (operationId: string): string =>
   `spawn:${encodeURIComponent(operationId)}`
 export const countdownParticipantId = (operationId: string): string =>
@@ -61,6 +65,7 @@ export function effectiveSpeed(participant: ParticipantState): number {
 export function cloneState(state: SimulationState): SimulationState {
   return {
     ...state,
+    ...(state.cycle ? { cycle: { ...state.cycle } } : {}),
     issuedParticipantIds: new Set(state.issuedParticipantIds),
     participants: state.participants.map((participant) =>
       participant.kind === 'actor'
@@ -99,13 +104,15 @@ export function orderedParticipants(state: SimulationState): ParticipantState[] 
       return a.order - b.order
     })
 }
-export function nextAnchor(participant: ParticipantState): Exclude<EventAnchor, { kind: 'start' }> {
+export function nextAnchor(participant: ParticipantState): ParticipantAnchor {
   return participant.kind === 'actor'
     ? { kind: 'action', participantId: participant.id, turn: participant.turns + 1 }
     : { kind: 'trigger', participantId: participant.id }
 }
 export function queueSnapshot(state: SimulationState): QueueSnapshot {
+  const boundary = pendingCycleBoundary(state)
   return {
+    ...(boundary ? { nextCycleBoundary: boundary } : {}),
     elapsedAV: state.elapsedAV,
     completedNodes: state.completedNodes,
     completedActions: state.completedActions,

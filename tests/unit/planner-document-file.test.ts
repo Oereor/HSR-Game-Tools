@@ -14,8 +14,8 @@ import {
 } from '../../src/tools/action-planner/model/document-file'
 import { syntheticDocument } from '../fixtures/phase-2a-document'
 
-const file = (document = syntheticDocument()) => ({ format: PLANNER_FORMAT, version: 1, document })
-describe('Version 1 planner files', () => {
+const file = (document = syntheticDocument()) => ({ format: PLANNER_FORMAT, version: 2, document })
+describe('Version 2 planner files', () => {
   it('round-trips full committed input, precision, names, identities and engine results', () => {
     const input = syntheticDocument()
     const source = serializePlannerDocument(input)
@@ -90,7 +90,7 @@ describe('Version 1 planner files', () => {
   })
   it('rejects invalid JSON, future versions, runtime fields, prototypes and broken metadata', () => {
     expect(() => parsePlannerDocument('{')).toThrow('json')
-    expect(() => validatePlannerFile({ ...file(), version: 2 })).toThrow('version')
+    expect(() => validatePlannerFile({ ...file(), version: 3 })).toThrow('version')
     expect(() => validatePlannerFile({ ...file(), format: 'other' })).toThrow('format')
     expect(() => validatePlannerFile({ ...file(), runtime: {} })).toThrow('structure')
     const prototype = serializePlannerDocument(syntheticDocument()).replace(

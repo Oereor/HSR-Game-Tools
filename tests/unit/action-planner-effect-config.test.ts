@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
 import {
   moveOperation,
@@ -36,6 +37,7 @@ const operations: EffectOperation[] = [
   },
 ]
 const plan: SimulationPlan = {
+  cycleMode: 'none',
   actors: ['a', 'b', 'c'].map((id, position) => ({
     id,
     name: id,
@@ -52,12 +54,13 @@ const plan: SimulationPlan = {
 
 describe('effect configuration replay', () => {
   it('reorders inside a window and changes actual zero-queue priority', () => {
-    expect(simulatePlan(plan).records[1].anchor.participantId).toBe('c')
+    expect(ordinaryNode(simulatePlan(plan).records[1].anchor).participantId).toBe('c')
     const moved = moveOperation(operations, 'c', -1, anchor)
     expect(moved.map((operation) => operation.id)).toEqual(['c', 'post', 'b'])
     expect(
-      simulatePlan({ ...plan, events: [{ anchor, operations: moved }] }).records[1].anchor
-        .participantId,
+      ordinaryNode(
+        simulatePlan({ ...plan, events: [{ anchor, operations: moved }] }).records[1].anchor,
+      ).participantId,
     ).toBe('b')
     expect(moveOperation(operations, 'b', -1, anchor)).toEqual(operations)
     expect(moveOperation(operations, 'post', 1, anchor)).toEqual(operations)
@@ -114,7 +117,7 @@ describe('effect configuration replay', () => {
     expect(
       simulatePlan({ ...plan, events: [{ anchor, operations: group }] })
         .records.slice(1, 3)
-        .map((record) => record.anchor.participantId),
+        .map((record) => ordinaryNode(record.anchor).participantId),
     ).toEqual(['b', 'c'])
   })
 })

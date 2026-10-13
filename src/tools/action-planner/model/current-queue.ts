@@ -1,9 +1,29 @@
 import { queueSnapshot } from '../../../engine/action-planner/queue'
-import type { NodeRecord, QueueEntry, SimulationResult } from '../../../engine/action-planner/types'
+import type {
+  NodeRecord,
+  QueueEntry,
+  QueueSnapshot,
+  PendingCycleBoundary,
+  SimulationResult,
+} from '../../../engine/action-planner/types'
+
+export type WaitingEntry = QueueEntry | (PendingCycleBoundary & { actionChanges: [] })
+function waitingEntries(snapshot: QueueSnapshot, current?: NodeRecord): WaitingEntry[] {
+  if (!snapshot.nextCycleBoundary) return snapshot.queue
+  const waiting: WaitingEntry[] = [...snapshot.queue]
+  const boundary = snapshot.nextCycleBoundary
+  if (
+    boundary &&
+    !(current?.kind === 'cycleBoundary' && current.anchor.ordinal === boundary.anchor.ordinal)
+  )
+    waiting.push({ ...boundary, actionChanges: [] })
+  // Stable sorting retains the engine's participant order; the appended boundary loses ties.
+  return waiting.sort((a, b) => a.remainingAV - b.remainingAV)
+}
 
 export type CurrentQueueView =
-  | { kind: 'start'; elapsedAV: number; waiting: QueueEntry[] }
-  | { kind: 'acting'; elapsedAV: number; current: NodeRecord; waiting: QueueEntry[] }
+  | { kind: 'start'; elapsedAV: number; waiting: WaitingEntry[] }
+  | { kind: 'acting'; elapsedAV: number; current: NodeRecord; waiting: WaitingEntry[] }
 
 /** Read event-entry states without changing the engine's post-settlement snapshots. */
 export function buildCurrentQueueView(
@@ -14,7 +34,7 @@ export function buildCurrentQueueView(
   if (index === 0) {
     const initial = result.snapshots[0]
     return initial
-      ? { kind: 'start', elapsedAV: initial.elapsedAV, waiting: initial.queue }
+      ? { kind: 'start', elapsedAV: initial.elapsedAV, waiting: waitingEntries(initial) }
       : undefined
   }
   const current = result.records[index - 1]
@@ -23,7 +43,7 @@ export function buildCurrentQueueView(
         kind: 'acting',
         elapsedAV: current.elapsedAV,
         current,
-        waiting: queueSnapshot(current.beforeEffects).queue,
+        waiting: waitingEntries(queueSnapshot(current.beforeEffects), current),
       }
     : undefined
 }

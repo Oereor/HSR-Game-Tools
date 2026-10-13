@@ -14,6 +14,7 @@ import { operationTargets } from '../../../engine/action-planner/targeting'
 import type {
   EffectOperation,
   EventAnchor,
+  CycleMode,
   SimulationPlan,
 } from '../../../engine/action-planner/types'
 import { saveOperation, moveOperation } from '../model/effect-config'
@@ -24,6 +25,7 @@ import {
   validatePlannerFile,
   preparePlannerDocument,
   PLANNER_FORMAT,
+  PLANNER_VERSION,
   PlannerFileError,
   referencedIds,
   type FileErrorCode,
@@ -41,7 +43,12 @@ import {
   type PlannerMetadata,
 } from '../model/editor'
 
-export const emptyPlan = (): SimulationPlan => ({ actors: [], events: [], ...DEFAULT_LIMITS })
+export const emptyPlan = (): SimulationPlan => ({
+  actors: [],
+  events: [],
+  cycleMode: 'none',
+  ...DEFAULT_LIMITS,
+})
 const canonical = (value: unknown): string => {
   if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']'
   if (value !== null && typeof value === 'object')
@@ -107,7 +114,14 @@ export function useActionPlanner(
       (e) =>
         e.operations.length &&
         e.anchor.kind !== 'start' &&
+        !(e.anchor.kind === 'cycleBoundary' && plan.value.cycleMode === 'none') &&
         !result.value.records.some((r) => anchorKey(r.anchor) === anchorKey(e.anchor)),
+    ),
+  )
+  const inactive = computed(() =>
+    plan.value.events.filter(
+      (e) =>
+        e.operations.length && e.anchor.kind === 'cycleBoundary' && plan.value.cycleMode === 'none',
     ),
   )
   const queueIndex = computed(() =>
@@ -170,7 +184,7 @@ export function useActionPlanner(
       documentError.value = undefined
       resourceIssues.value = validatePlannerFile({
         format: PLANNER_FORMAT,
-        version: 1,
+        version: PLANNER_VERSION,
         document: candidate,
       }).issues
       referencedIds(next).forEach((id) => reservedIds.add(id))
@@ -192,8 +206,9 @@ export function useActionPlanner(
     maxNodes: number,
     maxAV: number,
     characterIds: Record<string, string>,
+    cycleMode: CycleMode = plan.value.cycleMode,
   ) {
-    const next = { ...plan.value, actors, maxNodes, maxAV }
+    const next = { ...plan.value, actors, maxNodes, maxAV, cycleMode }
     if (validatePlan(next).length) return false
     cancel()
     return replacePlan(next, {
@@ -363,6 +378,7 @@ export function useActionPlanner(
     preview,
     targets,
     unreached,
+    inactive,
     queueIndex,
     snapshot,
     currentQueueView,

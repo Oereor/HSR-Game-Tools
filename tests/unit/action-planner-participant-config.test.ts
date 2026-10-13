@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
 import {
   buildParticipantOperation,
@@ -30,6 +31,7 @@ const actor: SpawnOperation = {
   },
 }
 const plan = (operations: EffectOperation[]): SimulationPlan => ({
+  cycleMode: 'none',
   actors: [],
   events: [{ anchor: start, operations }],
   maxNodes: 10,
@@ -90,7 +92,7 @@ describe('participant creation drafts', () => {
     }
     const result = simulatePlan(simulation)
     expect(result.records).toHaveLength(2)
-    expect(result.records.every((record) => record.id === id)).toBe(true)
+    expect(result.records.every((record) => ordinaryNode(record).id === id)).toBe(true)
     expect(result.records[0].elapsedAV).toBe(125)
     expect(result.diagnostics).toEqual([])
     const removed = simulatePlan({

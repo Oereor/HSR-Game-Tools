@@ -21,6 +21,7 @@ describe('action planner form presets', () => {
     expect(canUseVonwacq({ kind: 'action', participantId: 'unit', turn: 1 })).toBe(false)
     // The same template executes at a speed below the former 120 SPD threshold.
     const result = simulatePlan({
+      cycleMode: 'none',
       actors: [
         {
           id: 'unit',

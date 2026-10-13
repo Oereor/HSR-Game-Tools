@@ -49,16 +49,22 @@ export function usePlannerPresentation(
   const anchorLabel = (anchor: EventAnchor) =>
     anchor.kind === 'start'
       ? t('ui.start')
-      : renderMessage(
-          {
-            key: `planner.anchor.${anchor.kind}`,
-            params: {
-              name: label(anchor.participantId),
-              ...(anchor.kind === 'action' ? { turn: anchor.turn } : {}),
+      : anchor.kind === 'cycleBoundary'
+        ? renderMessage(
+            { key: 'planner.anchor.cycleBoundary', params: { ordinal: anchor.ordinal } },
+            locale.value as ToolLocale,
+            t,
+          )
+        : renderMessage(
+            {
+              key: `planner.anchor.${anchor.kind}`,
+              params: {
+                name: label(anchor.participantId),
+                ...(anchor.kind === 'action' ? { turn: anchor.turn } : {}),
+              },
             },
-          },
-          locale.value as ToolLocale,
-          t,
-        )
+            locale.value as ToolLocale,
+            t,
+          )
   return { catalog, label, image, title, anchorLabel }
 }

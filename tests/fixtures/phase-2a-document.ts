@@ -5,6 +5,7 @@ export function syntheticDocument(): PlannerDocument {
   return {
     name: 'Synthetic fixture',
     plan: {
+      cycleMode: 'none',
       actors: [
         {
           id: 'editor-1',

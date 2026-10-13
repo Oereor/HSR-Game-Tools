@@ -5,13 +5,15 @@ import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import SelectButton from 'primevue/selectbutton'
+import { CYCLE_RULES } from '../../../engine/action-planner/cycle'
 import { Plus, Trash2 } from '@lucide/vue'
 import GameIcon from '../../../components/ui/GameIcon.vue'
 import { gameData, characterName } from '../../../data/adapters/game-data'
 import { buildBattleSetup, setupDraft, type AllySlot, type EnemyDraft } from '../model/battle-setup'
 import EnemySetup from './EnemySetup.vue'
 import UnitPortrait from './UnitPortrait.vue'
-import type { ActorConfig, SimulationPlan } from '../../../engine/action-planner/types'
+import type { ActorConfig, SimulationPlan, CycleMode } from '../../../engine/action-planner/types'
 import type { ToolLocale } from '../../../locales/types'
 import type { CharacterRecord } from '../../../data/schema'
 import { createCharacterSearch } from '../model/character-search'
@@ -27,6 +29,7 @@ const emit = defineEmits<{
     maxNodes: number,
     maxAV: number,
     characters: Record<string, string>,
+    cycleMode: CycleMode,
   ]
 }>()
 const { t, locale } = useI18n()
@@ -35,6 +38,13 @@ const slots = ref<Slot[]>([])
 const enemies = ref<EnemyDraft[]>([])
 const maxNodes = ref<number | undefined>()
 const maxAV = ref<number | undefined>()
+const cycleMode = ref<CycleMode>('none')
+const cycleModes = computed(() =>
+  (['none', 'moc', 'aa'] as const).map((value) => ({ value, label: t(`planner.cycle.${value}`) })),
+)
+const cycleRule = computed(() =>
+  cycleMode.value === 'none' ? undefined : CYCLE_RULES[cycleMode.value],
+)
 const errors = ref<string[]>([])
 const dirty = defineModel<boolean>('dirty', { default: false })
 function load() {
@@ -43,12 +53,22 @@ function load() {
   enemies.value = setup.enemies
   maxNodes.value = props.plan.maxNodes
   maxAV.value = props.plan.maxAV
+  cycleMode.value = props.plan.cycleMode
   errors.value = []
   dirty.value = false
 }
-watch([() => props.plan.actors, () => props.plan.maxNodes, () => props.plan.maxAV], load, {
-  immediate: true,
-})
+watch(
+  [
+    () => props.plan.actors,
+    () => props.plan.maxNodes,
+    () => props.plan.maxAV,
+    () => props.plan.cycleMode,
+  ],
+  load,
+  {
+    immediate: true,
+  },
+)
 const visible = ref(false)
 const choosing = ref(0)
 const query = ref('')
@@ -116,7 +136,7 @@ function apply() {
   const setup = buildBattleSetup(slots.value, enemies.value, maxNodes.value, maxAV.value)
   errors.value = setup.invalid
   if (setup.invalid.length) return
-  emit('apply', setup.actors, maxNodes.value!, maxAV.value!, setup.characters)
+  emit('apply', setup.actors, maxNodes.value!, maxAV.value!, setup.characters, cycleMode.value)
 }
 </script>
 <template>
@@ -226,6 +246,27 @@ function apply() {
       </section>
     </div>
     <EnemySetup v-model="enemies" :next-id="nextId" :errors="errors" @dirty="dirty = true" />
+    <section class="range-section">
+      <h2 id="cycle-mode-label">{{ t('planner.cycle.mode') }}</h2>
+      <SelectButton
+        v-model="cycleMode"
+        :options="cycleModes"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        aria-labelledby="cycle-mode-label"
+        class="cycle-mode-control"
+        @update:model-value="dirty = true"
+      />
+      <p v-if="cycleRule" class="fine-print">
+        {{
+          t('planner.cycle.duration', {
+            first: cycleRule.firstCycleAV,
+            subsequent: cycleRule.subsequentCycleAV,
+          })
+        }}
+      </p>
+    </section>
     <section class="range-section">
       <h2>{{ t('ui.range') }}</h2>
       <div class="form-grid">

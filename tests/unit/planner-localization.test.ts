@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -29,6 +30,7 @@ const makeI18n = () =>
 const target = { kind: 'participants' as const, participantIds: ['b'] }
 const advance: EffectOperation = { id: 'pull', type: 'advance', target, percent: 50 }
 const plan = (): SimulationPlan => ({
+  cycleMode: 'none',
   actors: ['a', 'b'].map((id, position) => ({
     id,
     position,
@@ -214,7 +216,7 @@ describe('site messages and semantic presentation', () => {
     ]
     const result = simulatePlan(input)
     const record = result.records[0]!
-    expect(record.id).toBe('b')
+    expect(ordinaryNode(record).id).toBe('b')
     expect(actionDirections(record.anchor, record.actionChanges)).toEqual({
       advance: true,
       delay: true,

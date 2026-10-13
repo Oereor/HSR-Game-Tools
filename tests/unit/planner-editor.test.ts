@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { useActionPlanner } from '../../src/tools/action-planner/composables/useActionPlanner'
@@ -32,6 +33,7 @@ const a: EventAnchor = { kind: 'action', participantId: 'a', turn: 1 }
 const start: EventAnchor = { kind: 'start' }
 const target = (...participantIds: string[]) => ({ kind: 'participants' as const, participantIds })
 const plan = (): SimulationPlan => ({
+  cycleMode: 'none',
   actors: ['a', 'b'].map((id, position) => ({
     id,
     name: id,
@@ -91,7 +93,13 @@ describe('real planner document and drafts', () => {
 
   it('starts empty with engine defaults', () => {
     const p = useActionPlanner()
-    expect(p.plan.value).toEqual({ actors: [], events: [], maxNodes: 60, maxAV: 600 })
+    expect(p.plan.value).toEqual({
+      cycleMode: 'none',
+      actors: [],
+      events: [],
+      maxNodes: 60,
+      maxAV: 600,
+    })
     expect(p.stage.value).toBe('setup')
   })
   it.each(['advance', 'delay', 'immediatelyAct', 'addSpeedModifier', 'spawnParticipant'] as const)(
@@ -110,7 +118,7 @@ describe('real planner document and drafts', () => {
       expect(p.plan.value.events[0]!.operations[0]!.type).toBe(type)
       expect(p.result.value).toEqual(simulatePlan(p.plan.value))
       if (type === 'immediatelyAct') {
-        expect(p.result.value.records[1]!.id).toBe('b')
+        expect(ordinaryNode(p.result.value.records[1]!).id).toBe('b')
         expect(p.result.value.records[1]!.deltaAV).toBe(0)
         expect(p.plan.value.events[0]!.operations[0]).not.toHaveProperty('percent')
       }
@@ -402,7 +410,7 @@ describe('presentation names and affected-action arrows', () => {
       delay: false,
       immediatelyAct: false,
     })
-    const b = result.records.find((r) => r.id === 'b')!
+    const b = result.records.find((r) => ordinaryNode(r).id === 'b')!
     expect(actionDirections(b.anchor, b.actionChanges)).toEqual({
       advance: true,
       delay: true,
@@ -419,7 +427,9 @@ describe('presentation names and affected-action arrows', () => {
       delay: true,
       immediatelyAct: false,
     })
-    const plain = simulatePlan({ ...input, events: [] }).records.find((r) => r.id === 'b')!
+    const plain = simulatePlan({ ...input, events: [] }).records.find(
+      (r) => ordinaryNode(r).id === 'b',
+    )!
     expect(actionDirections(plain.anchor, plain.actionChanges)).toEqual({
       advance: false,
       delay: false,
@@ -449,7 +459,7 @@ describe('presentation names and affected-action arrows', () => {
           operations: [{ id: 'noop', type: 'advance', target: target('b'), percent: 0 }],
         },
       ],
-    }).records.find((r) => r.id === 'b')!
+    }).records.find((r) => ordinaryNode(r).id === 'b')!
     expect(actionDirections(zero.anchor, zero.actionChanges).advance).toBe(true)
   })
   it('the triggering event has left targeting eligibility', () => {

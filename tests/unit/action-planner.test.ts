@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
 import {
   anchorKey,
@@ -53,6 +54,7 @@ const speed = (
   phase,
 })
 const plan = (operations: EffectOperation[] = []): SimulationPlan => ({
+  cycleMode: 'none',
   actors: [actor('a', 160), actor('b', 134, 1)],
   events: [{ anchor: { kind: 'start' }, operations }],
   maxNodes: 12,
@@ -67,7 +69,11 @@ describe('action planner mechanism contracts', () => {
   it('uses exact natural AV and retains waiting AG when speed changes', () => {
     const input = plan()
     const result = simulatePlan(input)
-    expect(result.records.slice(0, 3).map((record) => record.id)).toEqual(['a', 'b', 'a'])
+    expect(result.records.slice(0, 3).map((record) => ordinaryNode(record).id)).toEqual([
+      'a',
+      'b',
+      'a',
+    ])
     expect(result.records[0].elapsedAV).toBe(62.5)
     expect(result.records[1].elapsedAV).toBeCloseTo(10000 / 134, 12)
     expect(result.records[2].elapsedAV).toBe(125)
@@ -297,7 +303,7 @@ describe('action planner mechanism contracts', () => {
     expect(
       simulatePlan(input)
         .records.slice(0, 3)
-        .map((record) => record.id),
+        .map((record) => ordinaryNode(record).id),
     ).toEqual(['first', 'second', 'enemy'])
   })
   it('preserves the 160/134 SPD two-window regression: second action at 125 or 110 AV', () => {
@@ -315,7 +321,7 @@ describe('action planner mechanism contracts', () => {
         result.records.find((record) => anchorKey(record.anchor) === anchorKey(action('a', 2)))
           ?.elapsedAV,
       ).toBe(expectedAV)
-      expect(result.records.find((record) => record.id === 'b')?.elapsedAV).toBe(62.5)
+      expect(result.records.find((record) => ordinaryNode(record).id === 'b')?.elapsedAV).toBe(62.5)
       expect(entry(result, 1, 'a').remainingAG).toBe(expectedAG)
     }
   })
@@ -330,7 +336,7 @@ describe('action planner mechanism contracts', () => {
     expect(step.state.participants.find((participant) => participant.id === 'a')?.remainingAG).toBe(
       2500,
     )
-    expect(stepSimulation(step.state, []).record.id).toBe('b')
+    expect(ordinaryNode(stepSimulation(step.state, []).record).id).toBe('b')
     const delay: EffectOperation = {
       id: 'delay',
       type: 'delay',
@@ -379,7 +385,11 @@ describe('action planner mechanism contracts', () => {
     ).toBe(true)
   })
   it('rejects unknown operations, malformed JSON and missing/invalid action windows', () => {
-    for (const raw of [null, {}, { actors: [], events: [null], maxNodes: 1, maxAV: 1 }])
+    for (const raw of [
+      null,
+      {},
+      { cycleMode: 'none', actors: [], events: [null], maxNodes: 1, maxAV: 1 },
+    ])
       expect(simulatePlan(raw as unknown as SimulationPlan).stopReason).toBe('error')
     const invalidCamp = plan()
     invalidCamp.actors[0].camp = JSON.parse('["ally"]')

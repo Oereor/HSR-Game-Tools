@@ -12,6 +12,7 @@ import {
   Timer,
   Zap,
   UserRoundPlus,
+  Flag,
 } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
 import OperationEditor from './OperationEditor.vue'
@@ -29,6 +30,7 @@ import type { OperationDraft } from '../model/editor'
 import { operationMetadata, type MetadataField } from '../model/metadata'
 const props = defineProps<{
   anchor: EventAnchor
+  inactive?: boolean
   operations: EffectOperation[]
   context?: SimulationState
   preview?: SimulationState
@@ -60,7 +62,7 @@ const groups = computed(() =>
 const currentSpeed = computed(() => {
   const anchor = props.anchor
   const participant =
-    anchor.kind === 'start'
+    anchor.kind === 'start' || anchor.kind === 'cycleBoundary'
       ? undefined
       : props.context?.participants.find((p) => p.id === anchor.participantId)
   return participant ? effectiveSpeed(participant) : undefined
@@ -131,8 +133,11 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
     />
     <div v-else class="inspector-overview">
       <div class="current-node">
+        <span v-if="anchor.kind === 'cycleBoundary'" class="event-avatar"
+          ><Flag :size="22" :stroke-width="1.75"
+        /></span>
         <UnitPortrait
-          v-if="anchor.kind !== 'start'"
+          v-if="anchor.kind === 'action' || anchor.kind === 'trigger'"
           :src="image(anchor.participantId)"
           :name="label(anchor.participantId)"
           :event="anchor.kind === 'trigger'"
@@ -154,7 +159,9 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
           }}</strong>
         </div>
       </div>
-      <p v-if="!context" class="validation-summary">{{ t('ui.contextUnavailable') }}</p>
+      <p v-if="!context" class="validation-summary">
+        {{ t(inactive ? 'planner.cycle.disabled' : 'ui.contextUnavailable') }}
+      </p>
       <div class="operations-heading">
         <h3>
           {{ t('ui.operations') }}

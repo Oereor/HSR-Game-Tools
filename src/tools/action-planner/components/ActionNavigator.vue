@@ -45,6 +45,12 @@ const showStart = computed(
 )
 const campLabel = (node: { kind?: string; camp?: string }) =>
   t(`planner.navigator.${nodeCamp(node)}`)
+const cardName = (card: { kind: string; anchor: EventAnchor; id?: string }) =>
+  card.anchor.kind === 'cycleBoundary'
+    ? t('planner.anchor.cycleBoundary', {
+        ordinal: formatNumber(card.anchor.ordinal, locale.value as ToolLocale),
+      })
+    : props.label(card.id!)
 </script>
 <template>
   <section class="navigator" :aria-label="t('ui.navigator')">
@@ -123,11 +129,13 @@ const campLabel = (node: { kind?: string; camp?: string }) =>
         :data-node="anchorKey(card.anchor)"
         :aria-label="
           t('planner.navigator.node', {
-            name: label(card.id),
+            name: cardName(card),
             node:
               card.anchor.kind === 'action'
                 ? t('ui.turn', { turn: formatNumber(card.anchor.turn, locale as ToolLocale) })
-                : t('ui.eventNode'),
+                : card.kind === 'cycleBoundary'
+                  ? t('planner.navigator.system')
+                  : t('ui.eventNode'),
             value: formatAV(card.total, locale as ToolLocale),
           })
         "
@@ -140,13 +148,16 @@ const campLabel = (node: { kind?: string; camp?: string }) =>
           role="img"
           :aria-label="campLabel(card)"
         ></span
+        ><span v-if="card.kind === 'cycleBoundary'" class="event-avatar"
+          ><Flag :size="18" :stroke-width="1.75" /></span
         ><UnitPortrait
+          v-else
           :src="image(card.id)"
           :name="label(card.id)"
           :event="card.kind === 'scheduledEvent'"
           :enemy="card.camp === 'enemy'"
         /><span class="node-info"
-          ><span class="node-name" :title="label(card.id)">{{ label(card.id) }}</span
+          ><span class="node-name" :title="cardName(card)">{{ cardName(card) }}</span
           ><span class="node-meta"
             ><span v-if="card.isCurrent" class="current-action-label">{{
               t('planner.navigator.currentAction')
@@ -168,7 +179,7 @@ const campLabel = (node: { kind?: string; camp?: string }) =>
           <strong :title="t(view === 'future' ? 'ui.elapsedAV' : 'ui.remainingAV')">{{
             formatAV(card.total, locale as ToolLocale)
           }}</strong
-          ><small v-if="view === 'queue'">{{
+          ><small v-if="view === 'queue' && card.kind !== 'cycleBoundary'">{{
             t('planner.metadata.speed', {
               speed: formatNumber(card.effectiveSpeed, locale as ToolLocale),
             })

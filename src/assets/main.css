@@ -741,6 +741,12 @@
   .range-section .fine-print {
     margin-top: 16px;
   }
+  .cycle-mode-control {
+    display: flex;
+    flex-wrap: wrap;
+    max-width: 100%;
+    gap: 4px;
+  }
   .setup-footer {
     display: flex;
     justify-content: flex-end;

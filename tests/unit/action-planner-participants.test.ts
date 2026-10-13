@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
 import {
   applyOperations,
@@ -45,6 +46,7 @@ const action = (participantId: string, turn = 1): EventAnchor => ({
 })
 const trigger = (participantId: string): EventAnchor => ({ kind: 'trigger', participantId })
 const plan = (operations: EffectOperation[] = []): SimulationPlan => ({
+  cycleMode: 'none',
   actors: [actor('a'), actor('b', 1)],
   events: [{ anchor: { kind: 'start' }, operations }],
   maxNodes: 12,
@@ -103,7 +105,7 @@ describe('dynamic queue participant contracts', () => {
     })
     expect(result.stopReason).toBe('empty')
     expect(result.diagnostics).toEqual([])
-    expect(result.records[1].name).toBe(summon.name)
+    expect(ordinaryNode(result.records[1]).name).toBe(summon.name)
   })
   it('settles the final actor post-action window before removal while unlimited actors repeat', () => {
     const input = plan()
@@ -117,17 +119,24 @@ describe('dynamic queue participant contracts', () => {
     })
     const result = simulatePlan(input)
     expect(
-      result.records.filter((record) => record.id === 'a').map((record) => record.anchor),
+      result.records
+        .filter((record) => ordinaryNode(record).id === 'a')
+        .map((record) => record.anchor),
     ).toEqual([action('a'), action('a', 2)])
     const last = result.records.findIndex(
-      (record) => record.id === 'a' && record.anchor.kind === 'action' && record.anchor.turn === 2,
+      (record) =>
+        ordinaryNode(record).id === 'a' &&
+        record.anchor.kind === 'action' &&
+        record.anchor.turn === 2,
     )
     expect(result.snapshots[last + 1].queue.map((participant) => participant.id)).toEqual([
       'b',
       spawnedParticipantId('last'),
     ])
     expect(result.records[last + 1]).toMatchObject({ id: 'b', deltaAV: 0 })
-    expect(result.records.filter((record) => record.id === 'b').length).toBeGreaterThan(2)
+    expect(
+      result.records.filter((record) => ordinaryNode(record).id === 'b').length,
+    ).toBeGreaterThan(2)
   })
   it('creates in operation order, keeps multiple same-name identities and preserves references on edits/deletion', () => {
     const childId = spawnedParticipantId('child'),
@@ -156,7 +165,7 @@ describe('dynamic queue participant contracts', () => {
     })
     const original = structuredClone(input),
       result = simulatePlan(input)
-    expect(result.records.slice(0, 4).map((record) => record.id)).toEqual([
+    expect(result.records.slice(0, 4).map((record) => ordinaryNode(record).id)).toEqual([
       'a',
       childId,
       'a',
@@ -170,10 +179,12 @@ describe('dynamic queue participant contracts', () => {
     expect(simulatePlan(input)).toEqual(result)
     expect(input).toEqual(original)
     input.actors[0].panelSpeed = 200
-    expect(simulatePlan(input).records.some((record) => record.id === childId)).toBe(true)
+    expect(simulatePlan(input).records.some((record) => ordinaryNode(record).id === childId)).toBe(
+      true,
+    )
     input.events[1].operations = input.events[1].operations.filter((op) => op.id !== 'child')
     const deleted = simulatePlan(input)
-    expect(deleted.records.some((record) => record.id === childId)).toBe(false)
+    expect(deleted.records.some((record) => ordinaryNode(record).id === childId)).toBe(false)
     expect(deleted.diagnostics).toContainEqual(
       expect.objectContaining({ code: 'unreached-anchor', anchor: action(childId) }),
     )
@@ -206,13 +217,13 @@ describe('dynamic queue participant contracts', () => {
     expect(
       simulatePlan(input)
         .records.slice(0, 4)
-        .map((record) => record.id),
+        .map((record) => ordinaryNode(record).id),
     ).toEqual(['a', 'b', spawnedParticipantId('event'), spawnedParticipantId('summon')])
     input.events[0].operations.reverse()
     expect(
       simulatePlan(input)
         .records.slice(0, 4)
-        .map((record) => record.id),
+        .map((record) => ordinaryNode(record).id),
     ).toEqual(['a', 'b', spawnedParticipantId('summon'), spawnedParticipantId('event')])
     input.events[0].operations.push({
       id: 'pull-event',
@@ -323,7 +334,7 @@ describe('dynamic queue participant contracts', () => {
       ...input,
       events: input.events.filter((event) => event.anchor.kind !== 'start'),
     })
-    expect(removed.records.some((record) => record.id === countdownId)).toBe(false)
+    expect(removed.records.some((record) => ordinaryNode(record).id === countdownId)).toBe(false)
     expect(
       removed.snapshots[0].queue.every((participant) => participant.modifiers.length === 0),
     ).toBe(true)
@@ -334,7 +345,8 @@ describe('dynamic queue participant contracts', () => {
       { ...timedSpeed, duration: { kind: 'countdown', name: 'Renamed', speed: 100 } },
     ])
     expect(
-      simulatePlan(slower).records.find((record) => record.id === countdownId)?.elapsedAV,
+      simulatePlan(slower).records.find((record) => ordinaryNode(record).id === countdownId)
+        ?.elapsedAV,
     ).toBe(100)
   })
   it('adds speed and countdown atomically, skips missing targets and never publishes failed expiry', () => {
@@ -460,12 +472,13 @@ describe('dynamic queue participant contracts', () => {
     })
     const result = simulatePlan(input)
     const baseline = simulatePlan({ ...input, events: [input.events[0]] })
-    const event = result.records.find((record) => record.id === id)!
+    const event = result.records.find((record) => ordinaryNode(record).id === id)!
     expect(event.elapsedAV).toBeCloseTo(11000 / 70)
     expect(
-      event.elapsedAV - baseline.records.find((record) => record.id === id)!.elapsedAV,
+      event.elapsedAV -
+        baseline.records.find((record) => ordinaryNode(record).id === id)!.elapsedAV,
     ).toBeCloseTo(1000 / 70)
-    expect(result.records.filter((record) => record.id === id)).toHaveLength(1)
+    expect(result.records.filter((record) => ordinaryNode(record).id === id)).toHaveLength(1)
     const linked = result.snapshots.slice(0, result.records.indexOf(event) + 1)
     expect(
       linked.every((snapshot) =>

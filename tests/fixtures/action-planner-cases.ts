@@ -1,3 +1,4 @@
+import { ordinaryNode } from './ordinary-node'
 import type {
   ActorConfig,
   EffectOperation,
@@ -28,6 +29,7 @@ const make = (
   operations: EffectOperation[] = [],
   events: SimulationPlan['events'] = [],
 ): SimulationPlan => ({
+  cycleMode: 'none',
   actors,
   events: [{ anchor: { kind: 'start' }, operations }, ...events],
   maxNodes: 4,
@@ -151,7 +153,7 @@ export function projectResult(result: SimulationResult) {
       anchor: r.anchor,
       elapsedAV: r.elapsedAV,
       deltaAV: r.deltaAV,
-      effectiveSpeed: r.effectiveSpeed,
+      effectiveSpeed: ordinaryNode(r).effectiveSpeed,
       actionChanges: r.actionChanges,
     })),
     snapshots: result.snapshots.map((s) => ({

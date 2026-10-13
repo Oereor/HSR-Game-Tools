@@ -77,7 +77,8 @@
     "removedUnit": "已移除单位",
     "anchor": {
       "action": "{name} | 第 {turn} 回合",
-      "trigger": "{name} | 战斗事件"
+      "trigger": "{name} | 战斗事件",
+      "cycleBoundary": "第 {ordinal} 轮开始"
     },
     "target": {
       "count": "{count} 个目标",
@@ -137,7 +138,16 @@
       "chooseSlot": "选择角色 {slot}",
       "clearSlot": "清空槽位 {slot}"
     },
-    "characterForm": "{name}（{gender}）"
+    "characterForm": "{name}（{gender}）",
+    "cycle": {
+      "mode": "轮次模式",
+      "none": "关闭",
+      "moc": "混沌回忆（MoC）",
+      "aa": "异相仲裁（AA）",
+      "duration": "{first} / {subsequent} AV",
+      "inactive": "停用配置",
+      "disabled": "轮次已关闭"
+    }
   },
   "ui": {
     "elapsedAV": "累计行动值",

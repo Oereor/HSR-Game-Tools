@@ -2,14 +2,10 @@ import {
   applyOperations,
   createInitialState,
   stepSimulation,
+  nextSimulationEvent,
   previewOperationState,
 } from '../../../engine/action-planner/engine'
-import {
-  anchorKey,
-  nextAnchor,
-  orderedParticipants,
-  SimulationError,
-} from '../../../engine/action-planner/queue'
+import { anchorKey, SimulationError } from '../../../engine/action-planner/queue'
 import {
   operationTargets,
   targetIds,
@@ -102,8 +98,8 @@ export function contextAt(
     state = applyOperations(state, operationsAt(plan, { kind: 'start' }), { kind: 'start' }).state
     for (const done of result.records)
       state = stepSimulation(state, operationsAt(plan, done.anchor)).state
-    const next = orderedParticipants(state)[0]
-    return next && anchorKey(nextAnchor(next)) === anchorKey(anchor)
+    const next = nextSimulationEvent(state)
+    return next && anchorKey(next.anchor) === anchorKey(anchor)
       ? stepSimulation(state, []).record.beforeEffects
       : undefined
   } catch (error) {

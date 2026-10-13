@@ -45,6 +45,7 @@ export function validAnchor(value: unknown): value is EventAnchor {
   return (
     object(value) &&
     (value.kind === 'start' ||
+      (value.kind === 'cycleBoundary' && count(value.ordinal)) ||
       ((value.kind === 'action' || value.kind === 'trigger') &&
         identity(value.participantId) &&
         (value.kind === 'trigger' || count(value.turn))))
@@ -145,6 +146,7 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
     !object(plan) ||
     !Array.isArray(plan.actors) ||
     !Array.isArray(plan.events) ||
+    !oneOf(plan.cycleMode, ['none', 'moc', 'aa']) ||
     !count(plan.maxNodes) ||
     plan.maxNodes > HARD_LIMITS.maxNodes ||
     !positive(plan.maxAV) ||
@@ -186,7 +188,7 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
     participants.set(participant.id, participant)
   }
   for (const event of plan.events) {
-    if (event.anchor.kind !== 'start') {
+    if (event.anchor.kind === 'action' || event.anchor.kind === 'trigger') {
       const source = participants.get(event.anchor.participantId)
       if (source && (source.kind === 'actor') !== (event.anchor.kind === 'action')) return invalid()
     }

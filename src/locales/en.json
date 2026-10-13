@@ -77,7 +77,8 @@
     "removedUnit": "Removed unit",
     "anchor": {
       "action": "{name} · Turn {turn}",
-      "trigger": "{name} · Event trigger"
+      "trigger": "{name} · Event trigger",
+      "cycleBoundary": "Cycle {ordinal} Begins"
     },
     "target": {
       "count": "{count} targets",
@@ -137,7 +138,16 @@
       "chooseSlot": "Choose character {slot}",
       "clearSlot": "Clear slot {slot}"
     },
-    "characterForm": "{name} · {gender}"
+    "characterForm": "{name} · {gender}",
+    "cycle": {
+      "mode": "Cycle mode",
+      "none": "Off",
+      "moc": "Memory of Chaos (MoC)",
+      "aa": "Anomaly Arbitration (AA)",
+      "duration": "{first} / {subsequent} AV",
+      "inactive": "Inactive configuration",
+      "disabled": "Cycles are disabled"
+    }
   },
   "ui": {
     "elapsedAV": "Elapsed AV",

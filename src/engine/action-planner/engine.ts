@@ -1,4 +1,5 @@
 import { phaseOperations } from './effect-config'
+import { pendingCycleBoundary } from './cycle'
 import { applyOperations, spawnParticipant } from './operations'
 import {
   advanceTime,
@@ -25,6 +26,9 @@ import type {
   SimulationPlan,
   SimulationResult,
   SimulationState,
+  ParticipantState,
+  ParticipantAnchor,
+  PendingCycleBoundary,
 } from './types'
 
 export { applyOperations } from './operations'
@@ -48,6 +52,9 @@ export function createInitialState(plan: SimulationPlan): SimulationState {
   const errors = validatePlan(plan)
   if (errors.length) throw new SimulationError(errors[0])
   const state: SimulationState = {
+    ...(plan.cycleMode === 'none'
+      ? {}
+      : { cycle: { mode: plan.cycleMode, nextOrdinal: 1, maxAV: plan.maxAV } }),
     participants: [],
     elapsedAV: 0,
     completedNodes: 0,
@@ -90,16 +97,61 @@ function expireCountdown(state: SimulationState, id: string): void {
   // Invalid expiry stops this node before its operations can mask the failure.
   assertState(state)
 }
+export function nextSimulationEvent(state: SimulationState):
+  | {
+      kind: 'participant'
+      participant: ParticipantState
+      anchor: ParticipantAnchor
+      deltaAV: number
+    }
+  | { kind: 'cycleBoundary'; anchor: PendingCycleBoundary['anchor']; deltaAV: number }
+  | undefined {
+  const participant = orderedParticipants(state)[0]
+  const boundary = pendingCycleBoundary(state)
+  const deltaAV = participant
+    ? finite(participant.remainingAG / effectiveSpeed(participant))
+    : undefined
+  // Compare remaining time at full precision. Re-evaluate after every ordinary event.
+  if (participant && deltaAV !== undefined && (!boundary || deltaAV <= boundary.remainingAV))
+    return { kind: 'participant', participant, anchor: nextAnchor(participant), deltaAV }
+  return boundary
+    ? { kind: 'cycleBoundary', anchor: boundary.anchor, deltaAV: boundary.remainingAV }
+    : undefined
+}
+
 export function stepSimulation(
   input: SimulationState,
   operations: readonly EffectOperation[],
 ): { state: SimulationState; record: NodeRecord; diagnostics: Diagnostic[] } {
   let state = cloneState(input)
-  const active = orderedParticipants(state)[0]
-  if (!active) fail('invalid-input')
-  const anchor = nextAnchor(active)
+  const event = nextSimulationEvent(state)
+  if (!event) fail('invalid-input')
+  const anchor = event.anchor
   const errors = validateOperations(operations, anchor)
   if (errors.length) throw new SimulationError(errors[0])
+  if (event.kind === 'cycleBoundary') {
+    try {
+      advanceTime(state, event.deltaAV)
+      const record: NodeRecord = {
+        kind: 'cycleBoundary',
+        anchor: event.anchor,
+        elapsedAV: state.elapsedAV,
+        deltaAV: event.deltaAV,
+        beforeEffects: cloneState(state),
+        actionChanges: [],
+      }
+      const applied = applyOperations(state, operations, anchor)
+      state = applied.state
+      state.cycle!.nextOrdinal++
+      state.completedNodes++
+      return { state, record, diagnostics: applied.diagnostics }
+    } catch (error) {
+      if (error instanceof SimulationError)
+        throw new SimulationError({ ...error.diagnostic, anchor })
+      throw error
+    }
+  }
+  const active = event.participant
   const speed = effectiveSpeed(active)
   const deltaAV = finite(active.remainingAG / speed)
   const oldModifiers = new Set(
@@ -118,7 +170,7 @@ export function stepSimulation(
       name: active.name,
       iconUrl: active.iconUrl,
       ...(active.kind === 'actor' ? { camp: active.camp } : {}),
-      anchor,
+      anchor: event.anchor,
       elapsedAV: state.elapsedAV,
       deltaAV,
       effectiveSpeed: speed,
@@ -179,13 +231,17 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
     result.stopReason = 'nodes'
     if (!state.participants.length)
       result.diagnostics.push({ code: 'no-participants', severity: 'info' })
-    while (state.participants.length && state.completedNodes < plan.maxNodes) {
-      const next = orderedParticipants(state)[0]
-      if (finite(state.elapsedAV + next.remainingAG / effectiveSpeed(next)) > plan.maxAV) {
+    while (state.completedNodes < plan.maxNodes) {
+      const next = nextSimulationEvent(state)
+      if (!next) {
+        result.stopReason = 'empty'
+        break
+      }
+      if (finite(state.elapsedAV + next.deltaAV) > plan.maxAV) {
         result.stopReason = 'av'
         break
       }
-      const anchor = nextAnchor(next)
+      const anchor = next.anchor
       const step = stepSimulation(state, events.get(anchorKey(anchor)) ?? [])
       const snapshot = queueSnapshot(step.state)
       state = step.state
@@ -194,14 +250,18 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
       result.snapshots.push(snapshot)
       result.diagnostics.push(...step.diagnostics)
     }
-    if (!state.participants.length) result.stopReason = 'empty'
+    if (!state.participants.length && !pendingCycleBoundary(state)) result.stopReason = 'empty'
   } catch (error) {
     if (!(error instanceof SimulationError)) throw error
     result.stopReason = 'error'
     result.diagnostics.push(error.diagnostic)
   }
   for (const event of plan.events)
-    if (event.operations.length && !reached.has(anchorKey(event.anchor)))
+    if (
+      event.operations.length &&
+      !reached.has(anchorKey(event.anchor)) &&
+      !(event.anchor.kind === 'cycleBoundary' && plan.cycleMode === 'none')
+    )
       result.diagnostics.push({
         code: 'unreached-anchor',
         severity: 'warning',

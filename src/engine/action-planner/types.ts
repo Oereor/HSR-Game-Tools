@@ -22,9 +22,12 @@ export interface ActorConfig extends ActorDefinition {
   id: string
   position: number
 }
-export type NodeAnchor =
+export type ParticipantAnchor =
   | { kind: 'action'; participantId: string; turn: number }
   | { kind: 'trigger'; participantId: string }
+export type CycleMode = 'none' | 'moc' | 'aa'
+export type CycleAnchor = { kind: 'cycleBoundary'; ordinal: number }
+export type NodeAnchor = ParticipantAnchor | CycleAnchor
 export type EventAnchor = { kind: 'start' } | NodeAnchor
 export type Target =
   { kind: 'participants'; participantIds: string[] } | { kind: 'allies' } | { kind: 'enemies' }
@@ -34,7 +37,7 @@ export interface ActionChangeTrace {
   operationId: string
   sourceAnchor: EventAnchor
   phase?: EffectPhase
-  targetAnchor: NodeAnchor
+  targetAnchor: ParticipantAnchor
   elapsedAV: number
   type: 'advance' | 'delay' | 'immediatelyAct'
   beforeAG: number
@@ -64,6 +67,7 @@ export interface PlanEvent {
   operations: EffectOperation[]
 }
 export interface SimulationPlan {
+  cycleMode: CycleMode
   actors: ActorConfig[]
   events: PlanEvent[]
   maxNodes: number
@@ -99,6 +103,7 @@ export interface ParticipantInfo {
   camp?: Camp
 }
 export interface SimulationState {
+  cycle?: { mode: Exclude<CycleMode, 'none'>; nextOrdinal: number; maxAV: number }
   participants: ParticipantState[]
   elapsedAV: number
   completedNodes: number
@@ -126,7 +131,7 @@ export interface Diagnostic {
   participantId?: string
 }
 export interface QueueEntry extends ParticipantInfo {
-  anchor: NodeAnchor
+  anchor: ParticipantAnchor
   remainingAG: number
   remainingAV: number
   effectiveSpeed: number
@@ -134,19 +139,33 @@ export interface QueueEntry extends ParticipantInfo {
   actionChanges: ActionChangeTrace[]
 }
 export interface QueueSnapshot {
+  nextCycleBoundary?: PendingCycleBoundary
   elapsedAV: number
   completedNodes: number
   completedActions: number
   queue: QueueEntry[]
 }
-export interface NodeRecord extends ParticipantInfo {
-  anchor: NodeAnchor
+export interface PendingCycleBoundary {
+  kind: 'cycleBoundary'
+  anchor: CycleAnchor
+  elapsedAV: number
+  remainingAV: number
+}
+interface RecordBase {
   elapsedAV: number
   deltaAV: number
-  effectiveSpeed: number
   beforeEffects: SimulationState
   actionChanges: ActionChangeTrace[]
 }
+export interface ParticipantNodeRecord extends ParticipantInfo, RecordBase {
+  anchor: ParticipantAnchor
+  effectiveSpeed: number
+}
+export interface CycleNodeRecord extends RecordBase {
+  kind: 'cycleBoundary'
+  anchor: CycleAnchor
+}
+export type NodeRecord = ParticipantNodeRecord | CycleNodeRecord
 export interface SimulationResult {
   records: NodeRecord[]
   snapshots: QueueSnapshot[]

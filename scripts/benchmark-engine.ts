@@ -4,6 +4,7 @@ import { simulatePlan } from '../src/engine/action-planner/engine'
 import type { SimulationPlan } from '../src/engine/action-planner/types'
 
 const normal: SimulationPlan = {
+  cycleMode: 'none',
   actors: [160, 134, 120, 100].map((speed, i) => ({
     id: 'actor:' + i,
     name: 'Actor ' + i,

@@ -1,3 +1,4 @@
+import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
 import { validatePlan } from '../../src/engine/action-planner/validation'
 import { createInitialState, simulatePlan } from '../../src/engine/action-planner/engine'
@@ -26,7 +27,7 @@ describe('reviewed template registry', () => {
     order: 0,
     nameKey: 'test.name',
     descriptionKey: 'test.description',
-    file: { format: PLANNER_FORMAT, version: 1, document: syntheticDocument() },
+    file: { format: PLANNER_FORMAT, version: 2, document: syntheticDocument() },
   })
   const messages = { test: { name: 'Synthetic fixture', description: 'Tests only' } }
   it('allows an empty production catalog and validates ordinary files and message registration', () => {
@@ -36,7 +37,7 @@ describe('reviewed template registry', () => {
     expect(() => validatePlannerTemplates([template(), template()], [messages])).toThrow()
     expect(() => validatePlannerTemplates([template()], [{}])).toThrow()
     expect(() =>
-      loadPlannerTemplate({ ...template(), file: { ...(template().file as object), version: 2 } }),
+      loadPlannerTemplate({ ...template(), file: { ...(template().file as object), version: 3 } }),
     ).toThrow('version')
   })
   it('loads independently, replaces rather than merges, and keeps invalid templates atomic', () => {
@@ -56,7 +57,7 @@ describe('reviewed template registry', () => {
     expect(() =>
       loadPlannerTemplate({
         ...source,
-        file: { format: PLANNER_FORMAT, version: 1, document: { name: 'Bad' } },
+        file: { format: PLANNER_FORMAT, version: 2, document: { name: 'Bad' } },
       }),
     ).toThrow()
     expect(p.document.value).toBe(previous)
@@ -170,7 +171,7 @@ describe('initial allied and enemy setup', () => {
         (p) => p.id === enemies[0]!.id,
       ),
     ).toBe(true)
-    expect(simulatePlan(doc.plan).records.some((r) => r.camp === 'enemy')).toBe(true)
+    expect(simulatePlan(doc.plan).records.some((r) => ordinaryNode(r).camp === 'enemy')).toBe(true)
     expect(parsePlannerDocument(serializePlannerDocument(doc)).document).toEqual(doc)
   })
   it('does not apply the initial enemy count limit to dynamic spawns', () => {
