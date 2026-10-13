@@ -1,0 +1,18 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import HomePage from '../views/HomePage.vue'
+export const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    { path: '/', component: HomePage, meta: { title: 'home.title' } },
+    {
+      path: '/action-planner',
+      component: () => import('../views/ActionPlannerPage.vue'),
+      meta: { title: 'planner.title' },
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      component: () => import('../views/NotFoundPage.vue'),
+      meta: { title: 'missing.title' },
+    },
+  ],
+})

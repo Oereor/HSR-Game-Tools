@@ -1,0 +1,31 @@
+export default {
+  site: {
+    name: 'HSR-Game-Tools',
+    home: '工具入口',
+    language: '语言',
+    phase: 'Phase 1A · 工程集成验证',
+  },
+  home: {
+    title: '星穹铁道游戏工具',
+    description: '独立工具站正在建立。目前可验证排轴引擎与本地游戏数据。',
+    open: '打开排轴验证页',
+  },
+  planner: {
+    title: '排轴引擎验证',
+    note: '此页面用于验证工程基础，正式行动规划工作区将在下一阶段实现。',
+    data: '本地游戏数据',
+    count: '{count} 个角色',
+    speed: '基础速度',
+    imageMissing: '暂无图标',
+    simulation: '固定合成计划',
+    synthetic: '两名合成单位使用 160 / 134 SPD，仅验证引擎，不代表角色技能。',
+    actor: '单位',
+    turn: '行动次数',
+    elapsed: '累计 AV',
+    delta: '推进 AV',
+    result: '{count} 个行动节点 · {diagnostics} 条诊断',
+    genderMale: '男',
+    genderFemale: '女',
+  },
+  missing: { title: '页面不存在', back: '返回工具入口' },
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-subpath/
+.cache/
+.game-data-staging/
+.game-data-backup/
+public/game-assets/
+src/data/game/
+tests/fixtures/action-planner-expected.json
+docs/third-party/
+docs/investigations/phase-0-migration-architecture.md
+package-lock.json
