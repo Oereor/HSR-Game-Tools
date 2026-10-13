@@ -27,7 +27,9 @@ PrimeVue 负责 Tabs、表单、按钮、Dialog、Tooltip、Splitter；Tailwind 
 
 桌面先用 35%／65% Splitter；最小宽度换算包含 gutter 余量，Navigator 至少约 320px、Inspector 约 440px。低于 960px 上下布局，Navigator 最大 280px，Inspector 随页面展开。桌面两侧分别滚动，避免再给整个工作区添加第三层滚动容器。
 
-未来行动在上方弱化显示 +推进 AV、下方突出累计 AV，右对齐并启用 tabular numbers；当前队列保留快照剩余 AV／有效速度语义。AV 固定两位，内部数值不四舍五入。9px 实心圆点表示阵营：我方绿、敌方红、事件／系统／未知节点黄，黄色来自主题 `event.500` Token；配套本地化 Tooltip 与可访问名称。
+未来行动在上方弱化显示 +推进 AV、下方突出累计 AV，右对齐并启用 tabular numbers；当前队列在战斗开始位置读取已结算开始操作的初始 Snapshot，其他位置读取 NodeRecord.beforeEffects。当前行动卡置顶，AV 为 0.00，使用金色轻背景和紧凑标识；下方等待卡仅显示剩余 AV／有效速度，累计 AV 由控制栏显示。AV 固定两位，内部数值不四舍五入。9px 实心圆点表示阵营：我方绿、敌方红、事件／系统／未知节点黄，黄色来自主题 `event.500` Token；配套本地化 Tooltip 与可访问名称，行动卡 Metadata 不重复输出阵营文字。
+
+队列推进位置与 Inspector 选择分别拥有状态。每次前进进入一个实际事件节点并选中它；点击等待卡只切换 Inspector。模式切换保留推进 Anchor，重算后 Anchor 不可达则队列回到战斗开始，Inspector 仍保留原 Anchor 的修复入口。当前行动卡使用 NodeRecord.actionChanges，等待卡使用 QueueEntry.actionChanges。倒计时 beforeEffects 沿用引擎先移除到期速度修正的窗口，不改变生命周期或结算后 Snapshot 语义。
 
 标记只读取与目标 anchorKey 匹配的已提交 Trace：蓝色 ArrowUp、红色 ArrowDown、蓝色 Zap 可共存。按本轮用户确认，合法效果即使没有 AG／AV 或排序变化也显示。零百分比效果亦保留；不以净变化互相抵消。Trace 的原始数值和 zeroAVInsertion 仍描述真实数学／插队，立即行动保持独立类型。配置图标是独立中性语义，不能充当受影响标记。长名称截断且保留完整 title，Inspector 名称允许换行。
 
@@ -59,6 +61,8 @@ Lucide 按名称导入，常用尺寸 18px、线宽 1.75；紧凑标记 13–16p
 | 返回／添加         | ArrowLeft / Plus    |
 | 立即行动／创建单位 | Zap / UserRoundPlus |
 
-主要操作使用图标加文字；辅助图标按钮必须有 aria-label 和 Tooltip。阵营有文字及可访问名称。行动卡选中态使用边框／背景和 aria-pressed，移除选中对勾；目标选择器继续保留 Check 与 aria-pressed。InputNumber 的错误关联通过 `pt.pcInputText.root` 传入实际 input，避免把 aria-describedby 留在外层 span。
+主要操作使用图标加文字；辅助图标按钮必须有 aria-label 和 Tooltip。阵营圆点保留 Tooltip 与可访问名称，不在行动卡上显示重复文字。行动卡选中态使用边框／背景和 aria-pressed，当前行动另以 aria-current="step" 表达，两者不叠加边框；不显示选中对勾，目标选择器继续保留 Check 与 aria-pressed。InputNumber 的错误关联通过 `pt.pcInputText.root` 传入实际 input，避免把 aria-describedby 留在外层 span。
+
+UI 视觉和真实浏览器交互由用户在本地人工验收；Codex 默认仅执行类型检查、定向单元测试、静态检查和构建，不启动浏览器或截图。只有用户明确要求某次浏览器自动化验收时才例外执行。
 
 避免紫色 Primary、Neon、玻璃拟态、多层卡片、装饰图标、满屏金色边框和常驻长说明。后续新增控件先检查 Token、键盘、浮层、双语与窄屏，再判断是否需要专属 CSS。

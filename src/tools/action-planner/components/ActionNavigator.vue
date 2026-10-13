@@ -14,23 +14,18 @@ import {
 } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
 import { anchorKey } from '../../../engine/action-planner/queue'
-import type {
-  EventAnchor,
-  NodeRecord,
-  QueueSnapshot,
-  SimulationPlan,
-} from '../../../engine/action-planner/types'
+import type { EventAnchor, NodeRecord, SimulationPlan } from '../../../engine/action-planner/types'
 import { actionDirections, nodeCamp } from '../model/naming'
 import { operationsAt } from '../model/editor'
 import { formatAV, formatNumber } from '../model/presentation'
+import { currentQueueCards, type CurrentQueueView } from '../model/current-queue'
 import type { ToolLocale } from '../../../locales/types'
 const props = defineProps<{
   records: NodeRecord[]
   selected: EventAnchor
   plan: SimulationPlan
-  snapshot?: QueueSnapshot
+  currentQueueView?: CurrentQueueView
   queueIndex: number
-  snapshotCount: number
   label: (id: string) => string
   image: (id: string) => string | undefined
 }>()
@@ -42,12 +37,11 @@ const modes = computed(() =>
 )
 const cards = computed(() =>
   view.value === 'future'
-    ? props.records.map((r) => ({ ...r, total: r.elapsedAV, delta: r.deltaAV }))
-    : (props.snapshot?.queue ?? []).map((q) => ({
-        ...q,
-        total: q.remainingAV,
-        delta: q.remainingAV,
-      })),
+    ? props.records.map((r) => ({ ...r, total: r.elapsedAV, delta: r.deltaAV, isCurrent: false }))
+    : currentQueueCards(props.currentQueueView),
+)
+const showStart = computed(
+  () => view.value === 'future' || props.currentQueueView?.kind === 'start',
 )
 const campLabel = (node: { kind?: string; camp?: string }) =>
   t(`planner.navigator.${nodeCamp(node)}`)
@@ -69,20 +63,21 @@ const campLabel = (node: { kind?: string; camp?: string }) =>
       <Button
         text
         severity="secondary"
-        :disabled="queueIndex === 0"
+        :disabled="!currentQueueView || queueIndex === 0"
         :aria-label="t('ui.previous')"
         @click="emit('step', -1)"
         ><ChevronLeft :size="16" /></Button
       ><span>{{
         t('planner.navigator.queueProgress', {
           count: formatNumber(queueIndex, locale as ToolLocale),
-          value: formatAV(snapshot?.elapsedAV ?? 0, locale as ToolLocale),
+          total: formatNumber(records.length, locale as ToolLocale),
+          value: formatAV(currentQueueView?.elapsedAV ?? 0, locale as ToolLocale),
         })
       }}</span
       ><Button
         text
         severity="secondary"
-        :disabled="queueIndex >= snapshotCount - 1"
+        :disabled="!currentQueueView || queueIndex >= records.length"
         :aria-label="t('ui.next')"
         @click="emit('step', 1)"
         ><ChevronRight :size="16"
@@ -90,6 +85,7 @@ const campLabel = (node: { kind?: string; camp?: string }) =>
     </div>
     <div class="node-list">
       <button
+        v-if="showStart"
         class="node-card start-card"
         :class="{ 'node-selected': selected.kind === 'start' }"
         :aria-pressed="selected.kind === 'start'"
@@ -118,8 +114,12 @@ const campLabel = (node: { kind?: string; camp?: string }) =>
         v-for="card in cards"
         :key="anchorKey(card.anchor)"
         class="node-card"
-        :class="{ 'node-selected': anchorKey(selected) === anchorKey(card.anchor) }"
+        :class="{
+          'node-selected': anchorKey(selected) === anchorKey(card.anchor),
+          'node-current': card.isCurrent,
+        }"
         :aria-pressed="anchorKey(selected) === anchorKey(card.anchor)"
+        :aria-current="card.isCurrent ? 'step' : undefined"
         :data-node="anchorKey(card.anchor)"
         :aria-label="
           t('planner.navigator.node', {
@@ -147,11 +147,9 @@ const campLabel = (node: { kind?: string; camp?: string }) =>
         /><span class="node-info"
           ><span class="node-name" :title="label(card.id)">{{ label(card.id) }}</span
           ><span class="node-meta"
-            ><span
-              :class="
-                card.camp === 'ally' ? 'camp-ally' : card.camp === 'enemy' ? 'delay-color' : ''
-              "
-              >{{ campLabel(card) }}</span
+            ><span v-if="card.isCurrent" class="current-action-label">{{
+              t('planner.navigator.currentAction')
+            }}</span
             ><span v-if="card.anchor.kind === 'action'">{{
               t('ui.turn', { turn: formatNumber(card.anchor.turn, locale as ToolLocale) })
             }}</span

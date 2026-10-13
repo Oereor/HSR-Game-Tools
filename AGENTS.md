@@ -28,6 +28,8 @@
 
 ## Verification and reporting
 
+- UI 视觉和真实浏览器交互由用户负责人工验收。Codex 默认不执行 Computer Use、Playwright、Puppeteer、浏览器截图或其他繁琐的真实浏览器自动化验收。开发时优先使用类型检查、定向单元测试、静态检查与构建验证。完成后提供简洁的人工验收清单，由用户在本地浏览器中检查。
+- 只有用户以后明确要求某一次浏览器自动化验收，才可以例外执行。未来 Codex Prompt 默认遵循此政策；不得为默认验收安装额外浏览器工具，普通测试命令不得自动触发浏览器测试。
 - Prefer existing deterministic mechanism tests and a small set of migration comparisons; avoid large UI snapshots, CSS assertions or tests of mutable copy.
 - Baseline generation and isolation verification belong in the system temporary directory. Project-local tooling caches may use .cache. Never execute the old site's Vite plugins or build hooks.
 - Mark conclusions as code-reviewed, actually run, or pending Phase 1. Do not call an isolated probe full application acceptance.
@@ -47,4 +49,5 @@ Use Node 24 (minimum 24.12), npm and one package-lock.json. No Pinia, SSR or par
 - Action-change icons match committed targetAnchor traces for advance, delay and immediatelyAct. Show every legal applied effect even when AG/AV/order did not change; types may coexist. Invalid/skipped/failed effects do not produce markers. Configured-operation markers have separate semantics. Keep queue mathematics and atomic commit behavior intact.
 - New ordinary drafts default to postAction; preserve explicit or implicit legacy preAction on edits. Inspector metadata comes from configuration and cached execution context, independently of custom titles. Preserve complete target access, all four toolbar buttons, localized tooltips and input error associations.
 - Action cards use camp dots and border/background selection with aria-pressed; selected target-picker entries retain checkmarks. Read docs/design-notes.md before extending the UI language.
-- Verify 1440/1024/390px in a real browser, real configuration flows and static preview, alongside engineering checks including validate:i18n. Preserve the 67 foundation tests and 11 migration cases; isolate additive immediate-action traces in the historical comparison and verify them directly. Report unimplemented features and unverified behavior explicitly; do not start subsequent phases automatically.
+- Preserve foundation tests and the 11 migration cases alongside engineering checks including validate:i18n; isolate additive immediate-action traces in the historical comparison and verify them directly. Leave real configuration flows and 1440/1024/390px visual acceptance to the user's local browser checks. Report unimplemented features and unverified behavior explicitly; do not start subsequent phases automatically.
+- Current queue presentation reads the initial post-start snapshot or NodeRecord.beforeEffects, with the active record above waiting entries. Keep queueCursor separate from Inspector selection, retain anchors across replay and mode switches, and fall back to start when the queue anchor becomes unreachable. Never rebind operations by array index or change the engine's post-settlement snapshot semantics for presentation.

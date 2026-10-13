@@ -205,6 +205,15 @@
   .node-card:hover {
     background: var(--color-surface);
   }
+  .node-current {
+    background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  }
+  .node-current:hover {
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  }
+  .current-action-label {
+    color: var(--color-accent);
+  }
   .node-selected {
     background: #c9a86b0d;
     border-color: #c9a86b66;

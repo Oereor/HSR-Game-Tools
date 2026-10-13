@@ -13,6 +13,7 @@ import type {
   SimulationPlan,
 } from '../../../engine/action-planner/types'
 import { saveOperation, moveOperation } from '../model/effect-config'
+import { buildCurrentQueueView } from '../model/current-queue'
 import {
   buildOperation,
   contextAt,
@@ -91,6 +92,7 @@ export function useActionPlanner(
         ),
   )
   const snapshot = computed(() => result.value.snapshots[queueIndex.value])
+  const currentQueueView = computed(() => buildCurrentQueueView(result.value, queueIndex.value))
   function cancel() {
     draft.value = undefined
     invalid.value = []
@@ -126,6 +128,13 @@ export function useActionPlanner(
       },
     }
     result.value = simulatePlan(next)
+    if (
+      queueCursor.value.kind !== 'start' &&
+      !result.value.records.some(
+        (record) => anchorKey(record.anchor) === anchorKey(queueCursor.value),
+      )
+    )
+      queueCursor.value = { kind: 'start' }
   }
   function applySetup(
     actors: SimulationPlan['actors'],
@@ -205,10 +214,10 @@ export function useActionPlanner(
     })
   }
   function stepQueue(delta: -1 | 1) {
-    const index = Math.min(
-      Math.max(0, queueIndex.value + delta),
-      Math.max(0, result.value.snapshots.length - 1),
-    )
+    if (!currentQueueView.value) return
+    const index = Math.min(Math.max(0, queueIndex.value + delta), result.value.records.length)
+    if (index === queueIndex.value) return
+    cancel()
     queueCursor.value =
       index === 0 ? { kind: 'start' } : { ...result.value.records[index - 1]!.anchor }
     select(queueCursor.value)
@@ -258,6 +267,7 @@ export function useActionPlanner(
     unreached,
     queueIndex,
     snapshot,
+    currentQueueView,
     nextId,
     replacePlan,
     applySetup,

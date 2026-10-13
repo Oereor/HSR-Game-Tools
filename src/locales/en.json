@@ -42,7 +42,8 @@
       "deltaAV": "AV advanced",
       "affectedImmediate": "This pending action was affected by act immediately",
       "node": "{name} · {node} · {value} AV",
-      "queueProgress": "{count} nodes completed · {value} AV"
+      "currentAction": "Acting now",
+      "queueProgress": "Node {count} / {total} · {value} AV"
     },
     "operationName": {
       "advance": "Advance {target} by {percent}%",
