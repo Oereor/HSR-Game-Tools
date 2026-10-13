@@ -2,184 +2,247 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Gauge, Timer } from '@lucide/vue'
-import GameIcon from '../../../components/ui/GameIcon.vue'
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Gauge,
+  Timer,
+  Zap,
+  UserRoundPlus,
+} from '@lucide/vue'
+import UnitPortrait from './UnitPortrait.vue'
 import OperationEditor from './OperationEditor.vue'
-import { sampleCharacters } from '../prototype/sample'
-import { characterName } from '../../../data/adapters/game-data'
+import { effectiveSpeed } from '../../../engine/action-planner/queue'
+import { phaseOperations } from '../../../engine/action-planner/effect-config'
+import type {
+  EffectOperation,
+  EventAnchor,
+  SimulationState,
+} from '../../../engine/action-planner/types'
 import { formatAV } from '../model/presentation'
-import type { NodeRecord } from '../../../engine/action-planner/types'
 import type { ToolLocale } from '../../../locales/types'
-import type { PrototypeDraft, PrototypeOperation } from '../prototype/state'
+import type { OperationDraft } from '../model/editor'
+import { namingTargets, targetLabel } from '../model/naming'
 const props = defineProps<{
-  record: NodeRecord
-  operations: PrototypeOperation[]
-  errors: string[]
+  anchor: EventAnchor
+  operations: EffectOperation[]
+  context?: SimulationState
+  preview?: SimulationState
+  targets: { id: string; kind: 'actor' | 'scheduledEvent'; name: string; camp?: 'ally' | 'enemy' }[]
+  invalid: string[]
+  label: (id: string) => string
+  image: (id: string) => string | undefined
+  anchorLabel: (a: EventAnchor) => string
+  title: (o: EffectOperation, s?: SimulationState) => string
+  operationContext: (o: EffectOperation) => SimulationState | undefined
 }>()
-const draft = defineModel<PrototypeDraft>('draft')
+const draft = defineModel<OperationDraft>('draft')
 const emit = defineEmits<{
-  edit: [operation?: PrototypeOperation]
+  edit: [operation?: EffectOperation]
   remove: [id: string]
+  move: [id: string, delta: -1 | 1]
   cancel: []
   submit: []
 }>()
 const { t, locale } = useI18n()
-const currentCharacter = computed(() => sampleCharacters.find((c) => c.id === props.record.id))
-const target = (id: string) => sampleCharacters.find((c) => c.id === id)
-const name = computed(() =>
-  currentCharacter.value
-    ? characterName(currentCharacter.value, locale.value as ToolLocale)
-    : t('spike.sampleEvent'),
+const groups = computed(() =>
+  props.anchor.kind === 'action'
+    ? ['preAction', 'postAction'].map((phase) => ({
+        phase,
+        operations: phaseOperations(props.operations, phase as 'preAction' | 'postAction'),
+      }))
+    : [{ phase: '', operations: props.operations }],
 )
-const icons = { speed: Gauge, advance: ArrowUp, delay: ArrowDown, event: Timer }
+const currentSpeed = computed(() => {
+  const anchor = props.anchor
+  const participant =
+    anchor.kind === 'start'
+      ? undefined
+      : props.context?.participants.find((p) => p.id === anchor.participantId)
+  return participant ? effectiveSpeed(participant) : undefined
+})
 const overview = ref<HTMLElement>()
 watch(
   () => !!draft.value,
-  async (editing, wasEditing) => {
-    if (!editing && wasEditing) {
+  async (editing, was) => {
+    if (!editing && was) {
       await nextTick()
       overview.value?.focus()
     }
   },
 )
+const icon = (o: EffectOperation) =>
+  o.type === 'advance'
+    ? ArrowUp
+    : o.type === 'delay'
+      ? ArrowDown
+      : o.type === 'immediatelyAct'
+        ? Zap
+        : o.type === 'addSpeedModifier'
+          ? Gauge
+          : o.participant.kind === 'actor'
+            ? UserRoundPlus
+            : Timer
+const targetsOf = (o: EffectOperation) =>
+  o.type === 'spawnParticipant' ? [] : namingTargets(o, props.operationContext(o))
 </script>
 <template>
-  <section class="inspector" :aria-label="t('spike.inspector')">
+  <section class="inspector" :aria-label="t('ui.inspector')">
     <div class="pane-heading">
-      <h2>{{ t('spike.inspector') }}</h2>
-      <span class="quiet-tag">{{ t('spike.demoBadge') }}</span>
+      <h2>{{ t('ui.inspector') }}</h2>
     </div>
     <OperationEditor
       v-if="draft"
       v-model="draft"
-      :errors="errors"
+      :anchor="anchor"
+      :participants="targets"
+      :preview="preview"
+      :invalid="invalid"
+      :label="label"
+      :image="image"
       @cancel="emit('cancel')"
       @submit="emit('submit')"
     />
     <div v-else class="inspector-overview">
       <div class="current-node">
-        <GameIcon
-          v-if="currentCharacter"
-          :asset-key="currentCharacter.assetKey"
-          :name="name"
-          :fallback="t('planner.imageMissing')"
-        /><span v-else class="event-avatar"><Timer :size="28" :stroke-width="1.75" /></span>
+        <UnitPortrait
+          v-if="anchor.kind !== 'start'"
+          :src="image(anchor.participantId)"
+          :name="label(anchor.participantId)"
+          :event="anchor.kind === 'trigger'"
+        />
         <div class="current-identity">
-          <span class="overline">{{
-            record.anchor.kind === 'action'
-              ? t('spike.turn', { turn: record.anchor.turn })
-              : t('spike.eventNode')
-          }}</span>
-          <h2 ref="overview" tabindex="-1">{{ name }}</h2>
-          <span class="camp-ally" v-if="record.kind === 'actor'">{{ t('spike.ally') }}</span>
+          <h2 ref="overview" tabindex="-1">{{ anchorLabel(anchor) }}</h2>
+          <span v-if="currentSpeed !== undefined" class="fine-print current-speed"
+            >{{ t('ui.currentSpeed') }} {{ currentSpeed }} SPD</span
+          >
         </div>
-        <div class="current-av">
-          <span>{{ t('spike.elapsed') }}</span
-          ><strong>{{ formatAV(record.elapsedAV, locale as ToolLocale) }}<small> AV</small></strong>
+        <div v-if="context" class="current-av">
+          <strong>{{ formatAV(context.elapsedAV, locale as ToolLocale) }}<small> AV</small></strong>
         </div>
       </div>
+      <p v-if="!context" class="validation-summary">{{ t('ui.contextUnavailable') }}</p>
       <div class="operations-heading">
         <h3>
-          {{ t('spike.operations') }} <span class="operation-count">{{ operations.length }}</span>
+          {{ t('ui.operations') }} <span class="operation-count">{{ operations.length }}</span>
         </h3>
-        <Button size="small" @click="emit('edit')"
-          ><Plus :size="16" :stroke-width="1.75" />{{ t('spike.add') }}</Button
+        <Button size="small" :disabled="!context" @click="emit('edit')"
+          ><Plus :size="16" :stroke-width="1.75" />{{ t('ui.add') }}</Button
         >
       </div>
       <div v-if="!operations.length" class="empty-operations">
-        <Plus :size="24" :stroke-width="1.75" />
-        <p>{{ t('spike.empty') }}</p>
+        <p>{{ t('ui.emptyOperations') }}</p>
       </div>
-      <div class="operation-list">
-        <article
-          v-for="operation in operations"
-          :key="operation.id"
-          class="operation-card"
-          :data-operation="operation.id"
-        >
-          <div class="operation-top">
-            <component
-              :is="icons[operation.kind]"
-              :size="18"
-              :stroke-width="1.75"
-              :class="
-                operation.kind === 'advance'
-                  ? 'advance-color'
-                  : operation.kind === 'delay'
-                    ? 'delay-color'
-                    : 'muted'
-              "
-            /><button class="operation-title" @click="emit('edit', operation)">
-              {{ t(`spike.${operation.kind}`) }}</button
-            ><strong
-              v-if="operation.kind !== 'event'"
-              class="effect-value"
-              :class="
-                operation.kind === 'advance'
-                  ? 'advance-color'
-                  : operation.kind === 'delay'
-                    ? 'delay-color'
-                    : ''
-              "
-              >{{ operation.amount > 0 ? '+' : '' }}{{ operation.amount
-              }}{{
-                operation.kind !== 'speed' || operation.mode === 'percent' ? '%' : ' SPD'
-              }}</strong
-            >
-            <div class="operation-actions">
+      <div v-for="group in groups" :key="group.phase" class="operation-group">
+        <h3 v-if="group.phase && group.operations.length" class="phase-heading">
+          {{ t(`ui.${group.phase}`) }}
+        </h3>
+        <div class="operation-list">
+          <article
+            v-for="(op, index) in group.operations"
+            :key="op.id"
+            class="operation-card"
+            :data-operation="op.id"
+          >
+            <div class="operation-top">
+              <component
+                :is="icon(op)"
+                :size="18"
+                :stroke-width="1.75"
+                :class="
+                  op.type === 'advance'
+                    ? 'advance-color'
+                    : op.type === 'delay'
+                      ? 'delay-color'
+                      : 'muted'
+                "
+              /><button class="operation-title" :disabled="!context" @click="emit('edit', op)">
+                {{ title(op, operationContext(op)) }}
+              </button>
+            </div>
+            <div v-if="op.type !== 'spawnParticipant'" class="operation-targets">
+              <span v-if="targetsOf(op)?.length === 1" class="compact-target"
+                ><UnitPortrait
+                  :src="image(targetsOf(op)![0]!)"
+                  :name="label(targetsOf(op)![0]!)"
+                /><span>{{ label(targetsOf(op)![0]!) }}</span></span
+              ><span v-else class="fine-print">{{
+                targetLabel(op.target, locale as ToolLocale, label, targetsOf(op))
+              }}</span>
+            </div>
+            <div v-if="op.type === 'addSpeedModifier'" class="operation-bottom">
+              <strong
+                >{{ op.amount > 0 ? '+' : '' }}{{ op.amount
+                }}{{ op.mode === 'percent' ? '%' : ' SPD' }}</strong
+              ><span class="muted">{{
+                op.duration.kind === 'turns'
+                  ? op.duration.turns === null
+                    ? t('ui.unlimited')
+                    : t('ui.turnDuration', { count: op.duration.turns })
+                  : op.duration.name + ' · ' + op.duration.speed + ' SPD'
+              }}</span>
+            </div>
+            <div v-if="op.type === 'spawnParticipant'" class="operation-bottom">
+              <template v-if="op.participant.kind === 'actor'"
+                ><span :class="op.participant.camp === 'ally' ? 'camp-ally' : 'delay-color'">{{
+                  t(`ui.${op.participant.camp}`)
+                }}</span
+                ><span>{{ t(`ui.category.${op.participant.category ?? 'custom'}`) }}</span
+                ><span>{{ op.participant.panelSpeed }} SPD</span
+                ><span class="muted">{{
+                  op.participant.actionLimit == null
+                    ? t('ui.unlimited')
+                    : t('ui.actionCount', { count: op.participant.actionLimit })
+                }}</span></template
+              ><template v-else
+                ><span>{{ op.participant.speed }} SPD</span
+                ><span class="muted">{{ t('ui.once') }}</span></template
+              >
+            </div>
+            <div class="card-controls">
               <Button
-                v-tooltip="t('spike.edit')"
+                v-tooltip="t('ui.moveUp')"
                 text
-                rounded
                 size="small"
                 severity="secondary"
-                :aria-label="`${t('spike.edit')}: ${t(`spike.${operation.kind}`)}`"
-                @click="emit('edit', operation)"
-                ><Pencil :size="15" :stroke-width="1.75" /></Button
+                :disabled="index === 0"
+                :aria-label="t('ui.moveUp')"
+                @click="emit('move', op.id, -1)"
+                ><ArrowUp :size="15" /></Button
               ><Button
-                v-tooltip="t('spike.remove')"
+                v-tooltip="t('ui.moveDown')"
                 text
-                rounded
                 size="small"
                 severity="secondary"
-                :aria-label="`${t('spike.remove')}: ${t(`spike.${operation.kind}`)}`"
-                @click="emit('remove', operation.id)"
-                ><Trash2 :size="15" :stroke-width="1.75"
+                :disabled="index === group.operations.length - 1"
+                :aria-label="t('ui.moveDown')"
+                @click="emit('move', op.id, 1)"
+                ><ArrowDown :size="15" /></Button
+              ><Button
+                v-tooltip="t('ui.edit')"
+                text
+                size="small"
+                severity="secondary"
+                :disabled="!context"
+                :aria-label="`${t('ui.edit')}: ${title(op, operationContext(op))}`"
+                @click="emit('edit', op)"
+                ><Pencil :size="15" /></Button
+              ><Button
+                v-tooltip="t('ui.remove')"
+                text
+                size="small"
+                severity="secondary"
+                :aria-label="`${t('ui.remove')}: ${title(op, operationContext(op))}`"
+                @click="emit('remove', op.id)"
+                ><Trash2 :size="15"
               /></Button>
             </div>
-          </div>
-          <div v-if="operation.kind !== 'event'" class="operation-targets">
-            <span v-for="id in operation.targets" :key="id" class="compact-target"
-              ><GameIcon
-                :asset-key="target(id)?.assetKey"
-                :name="target(id) ? characterName(target(id)!, locale as ToolLocale) : id"
-                :fallback="t('planner.imageMissing')"
-              /><span>{{
-                target(id) ? characterName(target(id)!, locale as ToolLocale) : id
-              }}</span></span
-            >
-          </div>
-          <div v-else class="event-details">
-            <strong>{{ operation.name }}</strong
-            ><span>{{ operation.speed }} SPD</span>
-          </div>
-          <div class="operation-bottom">
-            <span class="phase-tag">{{ t(`spike.${operation.phase}`) }}</span
-            ><span v-if="operation.kind === 'speed'" class="muted"
-              >{{
-                operation.duration.kind === 'turns'
-                  ? t('spike.turnDuration', { count: operation.duration.turns })
-                  : t('spike.countdownDuration', { name: operation.duration.name })
-              }}<template v-if="operation.duration.kind === 'countdown'">
-                · {{ operation.duration.speed }} SPD</template
-              ></span
-            ><span v-else-if="operation.kind === 'event'" class="muted">{{
-              t('spike.eventNode')
-            }}</span>
-          </div>
-        </article>
+          </article>
+        </div>
       </div>
-      <p class="fine-print overview-note">{{ t('spike.localOnly') }}</p>
     </div>
   </section>
 </template>

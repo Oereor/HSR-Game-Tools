@@ -1,83 +1,162 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ArrowUp, ArrowDown, Timer, Check, SlidersHorizontal } from '@lucide/vue'
-import GameIcon from '../../../components/ui/GameIcon.vue'
-import { sampleCharacters, anchorKey } from '../prototype/sample'
-import { characterName } from '../../../data/adapters/game-data'
+import Button from 'primevue/button'
+import SelectButton from 'primevue/selectbutton'
+import {
+  ArrowUp,
+  ArrowDown,
+  Check,
+  SlidersHorizontal,
+  Flag,
+  ChevronLeft,
+  ChevronRight,
+} from '@lucide/vue'
+import UnitPortrait from './UnitPortrait.vue'
+import { anchorKey } from '../../../engine/action-planner/queue'
+import type {
+  EventAnchor,
+  NodeRecord,
+  QueueSnapshot,
+  SimulationPlan,
+} from '../../../engine/action-planner/types'
+import { actionDirections } from '../model/naming'
+import { operationsAt } from '../model/editor'
 import { formatAV } from '../model/presentation'
-import type { NodeRecord } from '../../../engine/action-planner/types'
 import type { ToolLocale } from '../../../locales/types'
-import type { PrototypeOperation } from '../prototype/state'
-defineProps<{
+const props = defineProps<{
   records: NodeRecord[]
-  selected: string
-  operations: Record<string, PrototypeOperation[]>
+  selected: EventAnchor
+  plan: SimulationPlan
+  snapshot?: QueueSnapshot
+  queueIndex: number
+  snapshotCount: number
+  label: (id: string) => string
+  image: (id: string) => string | undefined
 }>()
-const emit = defineEmits<{ select: [key: string] }>()
+const view = defineModel<'future' | 'queue'>('view', { required: true })
+const emit = defineEmits<{ select: [anchor: EventAnchor]; step: [delta: -1 | 1] }>()
 const { t, locale } = useI18n()
-const character = (record: NodeRecord) => sampleCharacters.find((c) => c.id === record.id)
-const name = (record: NodeRecord) => {
-  const c = character(record)
-  return c ? characterName(c, locale.value as ToolLocale) : t('spike.sampleEvent')
-}
+const modes = computed(() =>
+  ['future', 'queue'].map((value) => ({ value, label: t(`ui.${value}`) })),
+)
+const cards = computed(() =>
+  view.value === 'future'
+    ? props.records.map((r) => ({ ...r, total: r.elapsedAV, delta: r.deltaAV }))
+    : (props.snapshot?.queue ?? []).map((q) => ({
+        ...q,
+        total: q.remainingAV,
+        delta: q.remainingAV,
+      })),
+)
 </script>
 <template>
-  <section class="navigator" :aria-label="t('spike.navigator')">
+  <section class="navigator" :aria-label="t('ui.navigator')">
     <div class="pane-heading">
-      <h2>{{ t('spike.navigator') }}</h2>
-      <span class="muted">{{ t('spike.nodes', { count: records.length }) }}</span>
+      <SelectButton
+        v-model="view"
+        size="small"
+        :options="modes"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        :aria-label="t('ui.navigationMode')"
+      />
+    </div>
+    <div v-if="view === 'queue'" class="queue-controls">
+      <Button
+        text
+        severity="secondary"
+        :disabled="queueIndex === 0"
+        :aria-label="t('ui.previous')"
+        @click="emit('step', -1)"
+        ><ChevronLeft :size="16" /></Button
+      ><span
+        >{{ t('ui.completed', { count: queueIndex }) }} ·
+        {{ formatAV(snapshot?.elapsedAV ?? 0, locale as ToolLocale) }} AV</span
+      ><Button
+        text
+        severity="secondary"
+        :disabled="queueIndex >= snapshotCount - 1"
+        :aria-label="t('ui.next')"
+        @click="emit('step', 1)"
+        ><ChevronRight :size="16"
+      /></Button>
     </div>
     <div class="node-list">
       <button
-        v-for="(record, index) in records"
-        :key="anchorKey(record.anchor)"
-        class="node-card"
-        :class="{ 'node-selected': selected === anchorKey(record.anchor) }"
-        :aria-pressed="selected === anchorKey(record.anchor)"
-        :data-node="anchorKey(record.anchor)"
-        @click="emit('select', anchorKey(record.anchor))"
+        class="node-card start-card"
+        :class="{ 'node-selected': selected.kind === 'start' }"
+        :aria-pressed="selected.kind === 'start'"
+        data-node="start"
+        @click="emit('select', { kind: 'start' })"
       >
-        <span class="node-index">{{ String(index + 1).padStart(2, '0') }}</span>
-        <GameIcon
-          v-if="character(record)"
-          :asset-key="character(record)?.assetKey"
-          :name="name(record)"
-          :fallback="t('planner.imageMissing')"
-        /><span v-else class="event-avatar"><Timer :size="22" :stroke-width="1.75" /></span>
-        <span class="node-info"
-          ><span class="node-name" :title="name(record)">{{ name(record) }}</span
+        <span class="event-avatar"><Flag :size="18" :stroke-width="1.75" /></span
+        ><span class="node-info"
+          ><span class="node-name">{{ t('ui.start') }}</span></span
+        ><SlidersHorizontal
+          v-if="operationsAt(plan, { kind: 'start' }).length"
+          :size="14"
+          :aria-label="t('ui.configured', { count: operationsAt(plan, { kind: 'start' }).length })"
+        /><span class="node-values"><strong>0.00</strong></span>
+      </button>
+      <button
+        v-for="(card, index) in cards"
+        :key="anchorKey(card.anchor)"
+        class="node-card"
+        :class="{ 'node-selected': anchorKey(selected) === anchorKey(card.anchor) }"
+        :aria-pressed="anchorKey(selected) === anchorKey(card.anchor)"
+        :data-node="anchorKey(card.anchor)"
+        :aria-label="`${label(card.id)} · ${card.anchor.kind === 'action' ? t('ui.turn', { turn: card.anchor.turn }) : t('ui.eventNode')} · ${formatAV(card.total, locale as ToolLocale)} AV`"
+        @click="emit('select', card.anchor)"
+      >
+        <span class="node-index">{{ String(index + 1).padStart(2, '0') }}</span
+        ><UnitPortrait
+          :src="image(card.id)"
+          :name="label(card.id)"
+          :event="card.kind === 'scheduledEvent'"
+        /><span class="node-info"
+          ><span class="node-name" :title="label(card.id)">{{ label(card.id) }}</span
           ><span class="node-meta"
-            ><span :class="record.kind === 'actor' ? 'camp-ally' : ''">{{
-              record.kind === 'actor' ? t('spike.ally') : t('spike.eventNode')
-            }}</span
-            ><span v-if="record.anchor.kind === 'action'">{{
-              t('spike.turn', { turn: record.anchor.turn })
+            ><span
+              :class="
+                card.camp === 'ally' ? 'camp-ally' : card.camp === 'enemy' ? 'delay-color' : ''
+              "
+              >{{ card.kind === 'scheduledEvent' ? t('ui.eventNode') : t(`ui.${card.camp}`) }}</span
+            ><span v-if="card.anchor.kind === 'action'">{{
+              t('ui.turn', { turn: card.anchor.turn })
             }}</span
             ><SlidersHorizontal
-              v-if="operations[anchorKey(record.anchor)]?.length"
+              v-if="operationsAt(plan, card.anchor).length"
               :size="13"
               :aria-label="
-                t('spike.configured', { count: operations[anchorKey(record.anchor)]?.length })
+                t('ui.configured', { count: operationsAt(plan, card.anchor).length })
               " /></span
         ></span>
         <span class="node-values"
-          ><strong>{{ formatAV(record.elapsedAV, locale as ToolLocale) }}</strong
-          ><small>+{{ formatAV(record.deltaAV, locale as ToolLocale) }}</small
+          ><strong :title="t(view === 'future' ? 'ui.elapsedAV' : 'ui.remainingAV')">{{
+            formatAV(card.total, locale as ToolLocale)
+          }}</strong
+          ><small v-if="view === 'future'">+{{ formatAV(card.delta, locale as ToolLocale) }}</small
+          ><small v-else>{{ card.effectiveSpeed }} SPD</small
           ><span class="change-signals"
             ><ArrowUp
-              v-if="record.actionChanges.some((c) => c.type === 'advance')"
+              v-if="actionDirections(card.anchor, card.actionChanges).advance"
               class="advance-color"
-              :size="14"
-              :aria-label="t('spike.advanceLabel')" /><ArrowDown
-              v-if="record.actionChanges.some((c) => c.type === 'delay')"
+              :size="18"
+              :stroke-width="2"
+              :aria-label="t('ui.affectedAdvance')" /><ArrowDown
+              v-if="actionDirections(card.anchor, card.actionChanges).delay"
               class="delay-color"
-              :size="14"
-              :aria-label="t('spike.delayLabel')" /><Check
-              v-if="selected === anchorKey(record.anchor)"
+              :size="18"
+              :stroke-width="2"
+              :aria-label="t('ui.affectedDelay')" /><Check
+              v-if="anchorKey(selected) === anchorKey(card.anchor)"
               :size="13"
-              :aria-label="t('spike.selected')" /></span
+              :aria-label="t('ui.selected')" /></span
         ></span>
       </button>
+      <p v-if="!cards.length" class="fine-print empty-sequence">{{ t('ui.emptySequence') }}</p>
     </div>
   </section>
 </template>

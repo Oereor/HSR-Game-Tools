@@ -1,6 +1,6 @@
 # HSR-Game-Tools Design Notes
 
-Phase 1B-0，本地交互原型。独立于 HSR-Database 的样式体系。
+Phase 1B-1，真实 Action Planner 编辑器。沿用已验收的 Phase 1B-0 主题，独立于 HSR-Database 的样式体系。
 
 ## 主题与职责
 
@@ -27,23 +27,27 @@ PrimeVue 负责 Tabs、表单、按钮、Dialog、Tooltip、Splitter；Tailwind 
 
 桌面先用 35%／65% Splitter；最小宽度换算包含 gutter 余量，Navigator 至少约 320px、Inspector 约 440px。低于 960px 上下布局，Navigator 最大 280px，Inspector 随页面展开。桌面两侧分别滚动，避免再给整个工作区添加第三层滚动容器。
 
-Navigator AV 固定两位，内部数值不四舍五入。箭头直接来自固定引擎 Trace，只表达提前／延后，不显示变化幅度。长名称截断且保留完整 title，Inspector 名称允许换行。
+未来行动展示累计 AV／+推进 AV；当前队列展示快照剩余 AV／有效速度。AV 固定两位，内部数值不四舍五入。箭头只读取与目标 anchorKey 匹配的真实 Trace，AG 变化或零 AV 插队才显示；蓝／红可共存。配置图标是独立语义，不能充当受影响箭头。长名称截断且保留完整 title，Inspector 名称允许换行。
 
-操作卡标题表达类型，数值单列强调，目标以小头像／名称显示，结算阶段是次级标签。事件名称只出现一次；速度生命周期单独展示，不机械拼接所有 Metadata。
+操作卡按实际结算窗口分组，标题采用集中命名模块，自定义名称优先，空白恢复自动命名。单目标显示名称，多目标显示实际执行时点的数量；不可靠时使用范围名称。目标以小头像／名称显示，速度生命周期单独展示，创建实体信息独立于操作名称，不机械拼接所有 Metadata。上下移动限制在同一窗口，阶段变更进入新窗口末尾。
 
-概览和编辑互斥。节点或阶段切换丢弃草稿；取消不改变已提交操作。数据均为页面局部状态，没有存储／导出。PrototypeOperation 不等同于 EffectOperation；原型提交不改变固定引擎结果。
+概览和编辑互斥。节点、工作阶段或导航模式切换丢弃操作草稿；取消不改变已提交操作。配置草稿由“应用配置”提交，独立于操作草稿。页面唯一业务输入为 PlannerDocument.plan，提交后真实重算；metadata 保存自定义操作名称和初始角色关联，改名不重算。没有存储／导出。
+
+目标 Grid 使用 previewOperationState 的执行时点上下文和 targeting.ts 的资格，不使用最终目录。倒计时限定单目标提前／延后。同名参与者按稳定 ID 派生区分标签。不可达事件集中显示且保持锚点，无上下文禁用添加／编辑，保留删除与配置修复入口。错误诊断展开，普通警告可折叠。
+
+EffectFields、ParticipantFields 和 TargetGrid 分别负责效果、实体与目标字段，OperationEditor 负责类型／阶段／名称和提交。事件触发与战斗开始没有阶段选择。创建操作编辑锁定实体种类；字段错误关联实际输入，窄屏进入／退出编辑定位标题。
 
 ## 图标与可访问性
 
 Lucide 按名称导入，常用尺寸 18px、线宽 1.75；紧凑标记 13–16px，事件头像 22–28px。
 
-| 语义                   | 图标                              |
-| ---------------------- | --------------------------------- |
-| 提前／延后             | ArrowUp / ArrowDown               |
-| 速度／战斗事件         | Gauge / Timer                     |
-| 编辑／删除             | Pencil / Trash2                   |
-| 返回／添加             | ArrowLeft / Plus                  |
-| 后续立即行动／创建单位 | Zap / UserRoundPlus（本轮未实现） |
+| 语义                   | 图标                |
+| ---------------------- | ------------------- |
+| 提前／延后             | ArrowUp / ArrowDown |
+| 速度／战斗事件         | Gauge / Timer       |
+| 编辑／删除             | Pencil / Trash2     |
+| 返回／添加             | ArrowLeft / Plus    |
+| 后续立即行动／创建单位 | Zap / UserRoundPlus |
 
 主要操作使用图标加文字；辅助图标按钮必须有 aria-label 和 Tooltip。阵营有文字，选中节点和目标有勾选标记及 aria-pressed，不能只靠颜色。InputNumber 的错误关联通过 `pt.pcInputText.root` 传入实际 input，避免把 aria-describedby 留在外层 span。
 
