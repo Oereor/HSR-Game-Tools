@@ -24,16 +24,86 @@ npm run preview
 
 `build` 输出 `dist/`。应用使用 Vue Router History；Vercel 的 SPA 深链接回退配置见下节。
 
-## Vercel 部署准备
+## 分支、CI 与 Vercel 部署
 
-首次部署使用 Vercel 默认的 `*.vercel.app` 地址，选择 Vite Framework Preset。
-构建环境使用 Node.js 24.x，满足 package.json 的 `>=24.12.0 <25` 要求；构建命令为 `npm run build`，Output Directory 为 `dist`。
-项目采用标准 Vite 静态构建，无需额外服务端框架，也无需在配置文件重复声明这些可识别的构建设置。
+项目已由维护者部署至 Vercel；以下说明仓库内的 CI/CD 配置，远程规则、Secrets 和线上行为需要维护者自行确认。
+Vercel 继续使用已有项目和 Git Integration，Framework Preset 为 Vite，Node.js 为满足 `>=24.12.0 <25` 的 24.x，构建命令为 `npm run build`，Output Directory 为 `dist`。
+本轮不改变域名、DNS、远程构建设置或现有部署保护。
 
-根目录 [vercel.json](../vercel.json) 将未命中的路径回退至 `/index.html`，支持 `/action-planner` 直接访问和刷新，客户端仍使用现有 Vue Router History。
-本地构建成功不能替代 Vercel 线上路由测试；首次部署后，由维护者检查首页、`/action-planner` 深链接及刷新，以及 JS、CSS、图片和第三方通知的访问。
+### 日常开发与自动 CI
 
-当前仅准备代码与配置，尚未部署或验证线上行为。自定义域名 `tools.hsrarchive.cc` 和 Dynadot DNS 在首次部署成功后单独配置。
+`develop` 用于日常开发与集成，允许正常 Push；`main` 是 Production，修改通过 develop → main PR 合入，禁止直接 Push。
+Agent 不自行切换到 develop，不擅自 Commit、Push 或执行任何部署；具体权限见 AGENTS.md。
+
+[CI Workflow](../.github/workflows/ci.yml) 在 develop Push 及目标为 develop/main 的 PR 上自动运行一个固定名称为 **Validation** 的 Job。
+使用 Node 24.x、npm Cache 和 `npm ci`，依次执行 type-check、test、lint、validate:i18n、build；安装前确认 Node 满足项目版本范围。
+Workflow 只有 contents 读取权限，普通 PR 不访问部署凭证，不运行上游数据更新、Benchmark、浏览器测试或部署。
+format:check、游戏数据和模板校验继续用于本地维护及发布前检查，不自动加入每次 Push 的 CI。
+
+### 手动 Preview
+
+先确认所选 Commit 的 CI 已通过，再打开 GitHub **Actions → Vercel Preview Deployment → Run workflow**，选择 develop，或已审阅的非 main 功能分支。
+[Preview Workflow](../.github/workflows/vercel-preview.yml) 仅接受手动触发，拒绝 main 和标签 Ref，按本次所选 Commit SHA Checkout。
+同分支新运行可以取消旧运行，不同分支互不取消。
+
+在仓库 **Settings → Secrets and variables → Actions → New repository secret** 配置：
+
+| Repository Secret | 来源与用途                                                              |
+| ----------------- | ----------------------------------------------------------------------- |
+| VERCEL_TOKEN      | 维护者创建的 Vercel Token，授权访问已有项目所属团队，仅用于手动 Preview |
+| VERCEL_ORG_ID     | 已有项目所属 Team/Org 的 ID，从 Vercel 团队设置确认                     |
+| VERCEL_PROJECT_ID | HSR-Game-Tools 已有项目的 Project ID，从项目 Settings → General 确认    |
+
+不要把值写进仓库、文档、日志或 Site Messages，也不要把 Token 发给 Agent。三个值必须指向同一个已有项目和团队。
+Workflow 安装固定 Vercel CLI 59.16.0，凭证缺失或已有项目检查失败时停止；不创建项目，不执行关联命令。
+CLI 使用环境变量读取 Token 和项目身份，显式部署 Preview，由已有 Vercel 项目执行远程构建；没有重复的本地 prebuilt 流程。
+成功后在 Log 和 Step Summary 查看可点击的 Preview URL、Ref 和完整 Commit SHA。它不切换 Production 域名。
+
+### 自动 Production 与 SPA 路由
+
+[vercel.json](../vercel.json) 的 git.deploymentEnabled 关闭所有分支自动部署，仅允许 main；develop Push、功能分支及 PR 不自动创建 Preview。
+维护者需确认 Vercel 项目的 **Production Branch 为 main**。main 合并更新后继续由 Git Integration 自动部署 Production，没有第二套 Actions Production Workflow。
+这里的 Git 过滤不禁止用户显式手动 CLI Preview。
+
+原有 catch-all Rewrite 保留，将未命中的客户端路径回退至 `/index.html`；Vue Router History、`/action-planner` 和静态构建输出不变。
+本地构建和 JSON 校验不能证明远程 Git 过滤或线上路由有效；维护者需确认分支过滤、Production 自动更新以及 `/action-planner` 直接访问、刷新和静态资源请求。
+
+### Web Analytics
+
+App.vue 只挂载一次官方 Vue Analytics 组件，依赖精确固定为 @vercel/analytics 2.0.1。
+SDK 内置 Vue Router 页面访问跟踪，使用默认环境检测，不额外手动上报 pageview、按钮点击、模拟器配置、JSON 方案或用户标识。
+语言切换继续只改变现有展示，不添加业务追踪。
+
+在 Vercel 现有项目的 **Analytics** 页面确认 Web Analytics 已启用；启用状态需要在下一次部署后验证。
+版本上线后人工访问首页，客户端进入模拟器，再直接访问和刷新 `/action-planner`，到 Dashboard 确认收到 Page Views。
+本地构建成功不代表服务器端统计已经启用或收到访问数据；不伪造本地 Production 模式或增加 Debug 配置。
+
+### main 规则与首次启用
+
+main 的保护由维护者在 GitHub **Settings → Rules → Rulesets** 配置，Agent 没有设置这些远程规则。
+创建针对 main 的 Branch Ruleset，设为 **Active**，不添加常规 Bypass：
+
+- **Require a pull request before merging**，Required Approvals 设为 0。
+- **Require status checks to pass before merging**，选择 GitHub Actions 实际产生的 **Validation** 检查。
+- 保持 **Require branches to be up to date before merging** 的严格检查。
+- 启用 **Block force pushes** 和 **Restrict deletions**。
+
+不要把同样严格的规则套到 develop。不要将参考仓库的 Development/Correctness 或 Vercel Preview 检查误设为 Required Check。
+当前仓库为 public，默认分支为 main；若控制台不能提供所需 Ruleset，可在 **Settings → Branches** 使用传统 Branch Protection 设置等效 PR、Validation、分支更新、禁止 Force Push/删除及不允许绕过规则。
+如果当前套餐或权限连传统强制保护也不支持，应由维护者处理套餐或权限限制；不能仅靠文档宣称 main 已受保护。
+
+首次启用按以下顺序操作：
+
+1. 确认已有 Vercel 项目的 Analytics、Production Branch、Node 版本，并配置上述三个 Repository Secrets。
+2. 在 develop 提交本轮修改并 Push，等待 CI 首次运行。
+3. 创建 develop → main PR，确认 Validation 名称和结果。
+4. 设置上述 main Ruleset，再合并 PR。
+5. 等待 Vercel Git Integration 自动更新 Production，并人工检查路由、核心功能及 Analytics。
+6. Preview Workflow 进入默认分支 main 后，打开 Actions 手动选择 develop 创建 Preview。
+7. 确认 develop Push／PR 不产生自动 Preview，手动 Preview 可用且不影响 Production。
+
+workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并前看不到或不能正式使用手动入口是预期情况。
+规则、Secrets 和远程验收尚未完成时，本地配置准备不能视为完整 CI/CD 已在线生效。
 
 ## 常用命令
 

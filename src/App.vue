@@ -2,6 +2,7 @@
 import { watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
+import { Analytics } from '@vercel/analytics/vue'
 const { t, locale } = useI18n()
 const route = useRoute()
 watchEffect(() => {
@@ -28,5 +29,6 @@ watchEffect(() => {
       </div>
     </header>
     <main><RouterView /></main>
+    <Analytics />
   </div>
 </template>
