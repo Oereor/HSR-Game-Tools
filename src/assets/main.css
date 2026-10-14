@@ -344,7 +344,7 @@
     align-items: center;
     color: var(--color-muted);
     font-size: 10px;
-    margin-top: 6px;
+    min-width: 0;
   }
   .camp-ally {
     color: var(--color-ally);
@@ -369,11 +369,72 @@
     font-size: 10px;
     line-height: 1.4;
   }
+  .node-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: baseline;
+    gap: 6px 8px;
+    min-width: 0;
+    flex: 1;
+  }
+  .node-delta,
+  .node-av {
+    min-width: 62px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .node-delta {
+    color: var(--color-muted);
+    font-size: 10px;
+    line-height: 1.4;
+  }
+  .node-av {
+    font-size: 14px;
+    font-weight: 650;
+  }
   .change-signals {
     display: flex;
-    height: 14px;
+    justify-content: flex-end;
+    align-self: start;
     gap: 3px;
     color: var(--color-accent);
+  }
+  .speed-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+  }
+  .speed-tag-wrapper {
+    display: inline-flex;
+    min-width: 0;
+    max-width: 100%;
+    border-radius: 4px;
+  }
+  .speed-modifier-tag {
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: 10px;
+    line-height: 1.35;
+    font-weight: 500;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    color: var(--color-muted);
+    background: color-mix(in srgb, var(--color-muted) 12%, transparent);
+  }
+  .speed-modifier-increase {
+    color: var(--color-advance);
+    background: color-mix(in srgb, var(--color-advance) 12%, transparent);
+  }
+  .speed-modifier-decrease {
+    color: var(--color-delay);
+    background: color-mix(in srgb, var(--color-delay) 12%, transparent);
+  }
+  .speed-tag-tooltip {
+    white-space: pre-line;
+  }
+  .inspector-speed-tags {
+    margin-top: 10px;
   }
   .advance-color {
     color: var(--color-advance);
@@ -984,10 +1045,6 @@
     padding: 6px 12px;
     font-size: 11px;
     color: var(--color-muted);
-  }
-  .change-signals {
-    min-height: 20px;
-    margin-top: 3px;
   }
   .node-values {
     width: 70px;

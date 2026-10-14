@@ -13,6 +13,12 @@ import {
   ChevronRight,
 } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
+import SpeedModifierTags from './SpeedModifierTags.vue'
+import {
+  navigatorSpeedModifierTags,
+  renderSpeedModifierTag,
+  type CountdownSources,
+} from '../model/speed-modifier-tags'
 import { anchorKey } from '../../../engine/action-planner/queue'
 import type { EventAnchor, NodeRecord, SimulationPlan } from '../../../engine/action-planner/types'
 import { actionDirections, nodeCamp } from '../model/naming'
@@ -21,6 +27,7 @@ import { formatAV, formatNumber } from '../model/presentation'
 import { currentQueueCards, type CurrentQueueView } from '../model/current-queue'
 import type { ToolLocale } from '../../../locales/types'
 const props = defineProps<{
+  countdownSources: CountdownSources
   records: NodeRecord[]
   selected: EventAnchor
   plan: SimulationPlan
@@ -35,11 +42,27 @@ const { t, locale } = useI18n()
 const modes = computed(() =>
   ['future', 'queue'].map((value) => ({ value, label: t(`ui.${value}`) })),
 )
-const cards = computed(() =>
-  view.value === 'future'
-    ? props.records.map((r) => ({ ...r, total: r.elapsedAV, delta: r.deltaAV, isCurrent: false }))
-    : currentQueueCards(props.currentQueueView),
-)
+const cards = computed(() => {
+  const entries =
+    view.value === 'future'
+      ? props.records.map((r) => ({ ...r, total: r.elapsedAV, delta: r.deltaAV, isCurrent: false }))
+      : currentQueueCards(props.currentQueueView)
+  const waitingState =
+    props.currentQueueView?.kind === 'acting'
+      ? props.currentQueueView.current.beforeEffects
+      : undefined
+  return entries.map((card) => {
+    const speedTags = navigatorSpeedModifierTags(card, props.countdownSources, waitingState)
+    return {
+      ...card,
+      speedTags,
+      changes: actionDirections(card.anchor, card.actionChanges),
+      speedSummary: speedTags
+        .map((tag) => renderSpeedModifierTag(tag, locale.value as ToolLocale, t).description)
+        .join('\n'),
+    }
+  })
+})
 const showStart = computed(
   () => view.value === 'future' || props.currentQueueView?.kind === 'start',
 )
@@ -51,6 +74,27 @@ const cardName = (card: { kind: string; anchor: EventAnchor; id?: string }) =>
         ordinal: formatNumber(card.anchor.ordinal, locale.value as ToolLocale),
       })
     : props.label(card.id!)
+const cardLabel = (card: {
+  kind: string
+  anchor: EventAnchor
+  id?: string
+  total: number
+  speedSummary: string
+}) => {
+  const label = t('planner.navigator.node', {
+    name: cardName(card),
+    node:
+      card.anchor.kind === 'action'
+        ? t('ui.turn', { turn: formatNumber(card.anchor.turn, locale.value as ToolLocale) })
+        : card.kind === 'cycleBoundary'
+          ? t('planner.navigator.system')
+          : t('ui.eventNode'),
+    value: formatAV(card.total, locale.value as ToolLocale),
+  })
+  return card.speedSummary
+    ? t('planner.speedTag.nodeDescription', { node: label, effects: card.speedSummary })
+    : label
+}
 </script>
 <template>
   <section class="navigator" :aria-label="t('ui.navigator')">
@@ -127,18 +171,12 @@ const cardName = (card: { kind: string; anchor: EventAnchor; id?: string }) =>
         :aria-pressed="anchorKey(selected) === anchorKey(card.anchor)"
         :aria-current="card.isCurrent ? 'step' : undefined"
         :data-node="anchorKey(card.anchor)"
-        :aria-label="
-          t('planner.navigator.node', {
-            name: cardName(card),
-            node:
-              card.anchor.kind === 'action'
-                ? t('ui.turn', { turn: formatNumber(card.anchor.turn, locale as ToolLocale) })
-                : card.kind === 'cycleBoundary'
-                  ? t('planner.navigator.system')
-                  : t('ui.eventNode'),
-            value: formatAV(card.total, locale as ToolLocale),
-          })
-        "
+        :aria-label="cardLabel(card)"
+        v-tooltip.focus="{
+          value: card.speedSummary,
+          disabled: !card.speedSummary,
+          class: 'speed-tag-tooltip',
+        }"
         @click="emit('select', card.anchor)"
       >
         <span
@@ -157,55 +195,74 @@ const cardName = (card: { kind: string; anchor: EventAnchor; id?: string }) =>
           :event="card.kind === 'scheduledEvent'"
           :aha="card.kind === 'aha'"
           :enemy="card.camp === 'enemy'"
-        /><span class="node-info"
-          ><span class="node-name" :title="cardName(card)">{{ cardName(card) }}</span
-          ><span class="node-meta"
-            ><span v-if="card.isCurrent" class="current-action-label">{{
-              t('planner.navigator.currentAction')
-            }}</span
-            ><span v-if="card.anchor.kind === 'action'">{{
-              t('ui.turn', { turn: formatNumber(card.anchor.turn, locale as ToolLocale) })
-            }}</span
-            ><SlidersHorizontal
-              v-if="operationsAt(plan, card.anchor).length"
-              :size="13"
-              :aria-label="
-                t('ui.configured', { count: operationsAt(plan, card.anchor).length })
-              " /></span
-        ></span>
-        <span class="node-values"
-          ><small v-if="view === 'future'" :title="t('planner.navigator.deltaAV')"
+        />
+        <span class="node-body">
+          <span class="node-name" :title="cardName(card)">{{ cardName(card) }}</span>
+          <small v-if="view === 'future'" class="node-delta" :title="t('planner.navigator.deltaAV')"
             >+{{ formatAV(card.delta, locale as ToolLocale) }}</small
           >
-          <strong :title="t(view === 'future' ? 'ui.elapsedAV' : 'ui.remainingAV')">{{
-            formatAV(card.total, locale as ToolLocale)
-          }}</strong
-          ><small v-if="view === 'queue' && card.kind !== 'cycleBoundary'">{{
-            t('planner.metadata.speed', {
-              speed: formatNumber(card.effectiveSpeed, locale as ToolLocale),
-            })
-          }}</small
-          ><span class="change-signals"
-            ><ArrowUp
-              v-if="actionDirections(card.anchor, card.actionChanges).advance"
-              class="advance-color"
-              v-tooltip="t('ui.affectedAdvance')"
-              :size="20"
-              :stroke-width="2"
-              :aria-label="t('ui.affectedAdvance')" /><ArrowDown
-              v-if="actionDirections(card.anchor, card.actionChanges).delay"
-              class="delay-color"
-              v-tooltip="t('ui.affectedDelay')"
-              :size="20"
-              :stroke-width="2"
-              :aria-label="t('ui.affectedDelay')" /><Zap
-              v-if="actionDirections(card.anchor, card.actionChanges).immediatelyAct"
-              class="advance-color"
-              v-tooltip="t('planner.navigator.affectedImmediate')"
-              :size="20"
-              :stroke-width="2"
-              :aria-label="t('planner.navigator.affectedImmediate')" /></span
-        ></span>
+          <span v-else class="node-delta" aria-hidden="true"></span>
+          <span class="node-meta">
+            <span v-if="card.isCurrent" class="current-action-label">{{
+              t('planner.navigator.currentAction')
+            }}</span>
+            <span v-if="card.anchor.kind === 'action'">{{
+              t('ui.turn', { turn: formatNumber(card.anchor.turn, locale as ToolLocale) })
+            }}</span>
+            <small v-if="view === 'queue' && card.kind !== 'cycleBoundary'">{{
+              t('planner.metadata.speed', {
+                speed: formatNumber(card.effectiveSpeed, locale as ToolLocale),
+              })
+            }}</small>
+            <SlidersHorizontal
+              v-if="operationsAt(plan, card.anchor).length"
+              :size="13"
+              :aria-label="t('ui.configured', { count: operationsAt(plan, card.anchor).length })"
+            />
+          </span>
+          <strong
+            class="node-av"
+            :title="t(view === 'future' ? 'ui.elapsedAV' : 'ui.remainingAV')"
+            >{{ formatAV(card.total, locale as ToolLocale) }}</strong
+          >
+          <template
+            v-if="
+              card.speedTags.length ||
+              card.changes.advance ||
+              card.changes.delay ||
+              card.changes.immediatelyAct
+            "
+          >
+            <SpeedModifierTags :tags="card.speedTags" />
+            <span v-if="!card.speedTags.length" class="node-no-tags" aria-hidden="true"></span>
+            <span class="change-signals">
+              <ArrowUp
+                v-if="card.changes.advance"
+                class="advance-color"
+                v-tooltip="t('ui.affectedAdvance')"
+                :size="20"
+                :stroke-width="2"
+                :aria-label="t('ui.affectedAdvance')"
+              />
+              <ArrowDown
+                v-if="card.changes.delay"
+                class="delay-color"
+                v-tooltip="t('ui.affectedDelay')"
+                :size="20"
+                :stroke-width="2"
+                :aria-label="t('ui.affectedDelay')"
+              />
+              <Zap
+                v-if="card.changes.immediatelyAct"
+                class="advance-color"
+                v-tooltip="t('planner.navigator.affectedImmediate')"
+                :size="20"
+                :stroke-width="2"
+                :aria-label="t('planner.navigator.affectedImmediate')"
+              />
+            </span>
+          </template>
+        </span>
       </button>
       <p v-if="!cards.length" class="fine-print empty-sequence">{{ t('ui.emptySequence') }}</p>
     </div>

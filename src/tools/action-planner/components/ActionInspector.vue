@@ -15,6 +15,8 @@ import {
   Flag,
 } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
+import SpeedModifierTags from './SpeedModifierTags.vue'
+import { actionSpeedModifierTags, type CountdownSources } from '../model/speed-modifier-tags'
 import OperationEditor from './OperationEditor.vue'
 import OperationTargets from './OperationTargets.vue'
 import { effectiveSpeed } from '../../../engine/action-planner/queue'
@@ -30,6 +32,7 @@ import type { ToolLocale } from '../../../locales/types'
 import type { OperationDraft } from '../model/editor'
 import { operationMetadata, type MetadataField } from '../model/metadata'
 const props = defineProps<{
+  countdownSources: CountdownSources
   ahaId: string
   anchor: EventAnchor
   inactive?: boolean
@@ -69,6 +72,9 @@ const currentSpeed = computed(() => {
       : props.context?.participants.find((p) => p.id === anchor.participantId)
   return participant && props.context ? effectiveSpeed(participant, props.context) : undefined
 })
+const speedTags = computed(() =>
+  actionSpeedModifierTags(props.anchor, props.context, props.countdownSources),
+)
 const currentIsAha = computed(() => {
   const anchor = props.anchor
   return (
@@ -161,6 +167,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
               })
             }}</span
           >
+          <SpeedModifierTags :tags="speedTags" focusable class="inspector-speed-tags" />
         </div>
         <div v-if="context" class="current-av">
           <strong>{{

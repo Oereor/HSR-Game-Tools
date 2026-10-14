@@ -100,6 +100,14 @@ npm run validate:game-data
 
 本轮未实现角色专用技能、真实敌人目录、多波次、伤害／能量、账号、云同步或多方案库。主题和职责约定见 [Design Notes](docs/design-notes.md)。历史截图仅属于此前阶段，本轮没有真实浏览器验收记录。
 
+## 当前生效的速度效果
+
+行动卡片与 Inspector 显示该自然行动开始时实际生效的速度 Modifier；等待队列显示当前时刻的效果，初始队列包含战斗开始操作已添加的效果。每个 Modifier 单独显示，正值蓝色、负值红色、零值中性，保留原始固定幅度或百分比，例如“速度 +60”“速度 +20%”，不合并独立效果。
+
+悬停 Tag 查看剩余回合、无限持续或关联倒计时的名称及配置速度。卡片聚焦时可查看完整效果摘要；Inspector 的 Tag 可单独聚焦。当前回合尚未执行的操作不会提前出现在 Tag 中，效果是否到期由引擎状态决定。阿哈只显示自身真实效果，不将欢愉速度贡献显示为 Buff。原有提前、延后和立即行动图标继续位于 AV 下方，速度变化本身不产生这些图标。
+
+Tag 自动换行，没有效果时不额外增加行。中文／English 及窄屏、Tooltip 与键盘交互仍由用户本地人工验收。
+
 ## 阿哈时刻
 
 初始我方编队包含欢愉命途角色时，配置区自动显示阿哈时刻。它是中立自然行动单位，不占我方或敌方槽位，无须启用开关。基础速度默认 80，可在同一个“应用配置”流程中修改；只读初始速度采用草稿面板速度，尚未计入战斗开始操作。暂时移除欢愉角色会隐藏阿哈，但保留基础速度、ID 和已有操作。
@@ -170,6 +178,7 @@ export const plannerTemplates: readonly PlannerTemplate[] = [
 - [当前队列重构](docs/investigations/action-planner-current-queue-view-reconstruction.md)
 - [Phase 2A 持久化、模板与敌方编队](docs/investigations/action-planner-persistence-templates-enemy-setup.md)
 - [Phase 2C-0 阿哈架构调查](docs/investigations/action-planner-aha-instant-architecture.md)
+- [SPD Modifier Tag 展示](docs/investigations/action-planner-speed-modifier-visualization.md)
 - [Phase 2C-1 阿哈功能实施](docs/investigations/action-planner-aha-instant-implementation.md)
 - [Phase 2B Endgame 轮次系统](docs/investigations/action-planner-endgame-cycle-system.md)
 - [第三方来源、许可证文本与发布限制](docs/third-party/README.md)

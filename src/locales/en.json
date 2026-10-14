@@ -158,6 +158,16 @@
       "previewHint": "Calculated from team panel speeds, before battle-start operations.",
       "migratedWithAha": "Version {version} plan upgraded with Aha Instant. Action order may change; review unreachable operations.",
       "migrated": "Version {version} plan upgraded to Version 3."
+    },
+    "speedTag": {
+      "flat": "SPD {amount}",
+      "percent": "SPD {amount}%",
+      "remainingTurns": "{count} turns remaining",
+      "unlimited": "Unlimited duration",
+      "countdown": "Until \"{name}\" triggers\nCountdown speed: {speed} SPD",
+      "countdownUnknown": "Until the linked countdown triggers",
+      "description": "{effect}; {duration}",
+      "nodeDescription": "{node}; Speed modifiers: {effects}"
     }
   },
   "ui": {

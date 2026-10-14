@@ -88,3 +88,13 @@ UI 视觉和真实浏览器交互由用户在本地人工验收；Codex 默认�
 阿哈独立于双方槽位，复用自然行动卡、双窗口 Inspector 与 beforeEffects 当前队列。中立身份有独立语义但使用 event.500 对应现有黄色 Token。速度目标选择器增加中立组，允许阿哈/Actor 显式混选；提前、延后及立即行动对阿哈禁用，既有选择可解除。群体阵营目标不含阿哈。Gauge 统一用于节点和目标头像，速度变化不伪造拉条 Trace。
 
 自身速度效果支持固定值、基于阿哈 baseSpeed 的百分比、有限/无限回合与标准倒计时。回合到期采用 oldModifiers；欢愉贡献只在统一状态速度公式中派生。新文件导出 Version 3，旧 Version 1/2 通过严格迁移补阿哈，显示升级及不可达操作检查提示。迁移信息是运行时通知，不保存到 plan；Version 3 的身份事实保持至显式 Apply。真实浏览器验收由用户负责。
+
+## Speed Modifier Tag 展示
+
+自然行动的速度 Tag 表示 beforeEffects 中已有的效果；当前队列等待项使用 QueueEntry.modifiers，初始位置使用开始操作结算后的队列。Inspector 读取现有 context，不读取 draft preview 或操作配置推断效果。阿哈只显示自身 modifiers，派生贡献不生成 Tag。显示原始 flat/percent 幅度、符号与剩余生命周期，独立 ID 不合并。
+
+行动卡主体为两列：名称／推进 AV、回合元信息／累计或剩余 AV、Tag／行动变化图标。当前队列的有效 SPD 保留在元信息中。第三行仅在有 Tag 或变化图标时渲染；Tag 左侧换行，箭头／闪电保留在右侧 AV 下方，不混合两类语义。复用 PrimeVue Tag，小尺寸、柔和背景，蓝色／红色／中性分别使用现有语义 Token，不添加 Tag 内图标。
+
+纯 SpeedModifierTagView 解释数据与生命周期，Message Descriptor 统一生成文案。倒计时优先查同一模拟状态，缺失时按经过 ID 匹配的来源速度操作解析；无法解析使用通用描述，不自行判断到期。来源 Map 在页面按 plan 构建一次，Navigator 与 Inspector 共用。展示状态、索引与文案均不持久化。
+
+卡片按钮内没有嵌套按钮或可聚焦 Tag。Tag 使用 Hover Tooltip；卡片 Focus Tooltip 和可访问名称包含全部效果与持续信息。Inspector 的非交互包装元素可聚焦，Focus Tooltip 解释同一效果，内部 Tag 保持 Hover Tooltip；正负号和速度文本保证不只通过颜色区分。所有新增 Tooltip 使用转义文本，保留 Escape 关闭。真实浏览器交互及视觉验收仍由用户负责。

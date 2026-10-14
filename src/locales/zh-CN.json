@@ -158,6 +158,16 @@
       "previewHint": "按编队面板速度计算，尚未计入战斗开始操作。",
       "migratedWithAha": "Version {version} 方案已升级，自动加入阿哈时刻。行动顺序可能变化，请检查不可达操作。",
       "migrated": "Version {version} 方案已升级至 Version 3。"
+    },
+    "speedTag": {
+      "flat": "速度 {amount}",
+      "percent": "速度 {amount}%",
+      "remainingTurns": "剩余 {count} 回合",
+      "unlimited": "无限持续",
+      "countdown": "持续至「{name}」触发\n倒计时速度：{speed} SPD",
+      "countdownUnknown": "持续至关联倒计时触发",
+      "description": "{effect}；{duration}",
+      "nodeDescription": "{node}；速度效果：{effects}"
     }
   },
   "ui": {

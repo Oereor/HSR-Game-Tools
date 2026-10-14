@@ -16,6 +16,7 @@ import ActionInspector from '../tools/action-planner/components/ActionInspector.
 import { usePlannerSession } from '../tools/action-planner/composables/usePlannerSession'
 import PlanManagement from '../tools/action-planner/components/PlanManagement.vue'
 import { usePlannerPresentation } from '../tools/action-planner/composables/usePlannerPresentation'
+import { countdownSources } from '../tools/action-planner/model/speed-modifier-tags'
 import type { ActorConfig, CycleMode, AhaConfig } from '../engine/action-planner/types'
 const { t, locale } = useI18n()
 const { planner, persistence, saveStatus } = usePlannerSession()
@@ -69,7 +70,9 @@ function apply(
 ) {
   if (planner.applySetup(actors, nodes, av, characters, cycleMode, aha)) stage.value = 'planning'
 }
+const modifierSources = computed(() => countdownSources(plan.value))
 const navigatorProps = computed(() => ({
+  countdownSources: modifierSources.value,
   records: result.value.records,
   selected: selected.value,
   plan: plan.value,
@@ -79,6 +82,7 @@ const navigatorProps = computed(() => ({
   image,
 }))
 const inspectorProps = computed(() => ({
+  countdownSources: modifierSources.value,
   ahaId: plan.value.aha.id,
   anchor: selected.value,
   inactive: selected.value.kind === 'cycleBoundary' && plan.value.cycleMode === 'none',
