@@ -2,10 +2,12 @@
 
 ## Repository and authorization
 
+- Work on develop by default; if the current task requires develop and another branch is checked out, stop and report without switching. main is Production and changes must reach it through a PR; never commit or push directly to main.
 - Modify only this independent repository within the user's current authorized scope. Existing tools and mechanisms do not authorize new character mechanics, cross-wave systems, cloud sync, multi-plan libraries, simulator migrations or deployment.
 - HSR-Database, TurnBasedGameData and StarRailRes are read-only investigation sources. Never edit, format, stage, commit, reset, clean, switch branches or run mutating generation commands in them.
 - Read HSR-Database/develop at a recorded Commit; use Git object reads if another branch is checked out. Never initialize Git in the shared parent or turn sibling repositories into submodules / subtrees.
 - Do not stage, commit, add remotes, push, publish, deploy or configure domains without separate user authorization. Do not automatically enter the next development phase.
+- Do not trigger Preview / Production workflows or change GitHub Rulesets without explicit authorization. Never retrieve or print real deployment Secrets; maintain only secret references in workflow files and leave console configuration to the maintainer.
 
 ## Networking
 

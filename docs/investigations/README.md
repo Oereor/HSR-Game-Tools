@@ -41,3 +41,7 @@
 
 以上原有 11 份报告保持原路径、结论、测试数据及来源 Commit，不批量搬迁、合并或格式化。
 新增功能的当前规则进入现行规范；实施经过与实验结果继续按主题记录于此，并从索引提供入口。
+
+## 上线后工程维护
+
+- [CI/CD 基础接入](post-production-cicd-foundation.md)：Vue Web Analytics、轻量 Validation CI、手动 Preview、main 自动 Production 与控制台初始化步骤。
