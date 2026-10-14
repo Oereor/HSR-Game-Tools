@@ -100,6 +100,7 @@ function worthKeeping() {
     doc.plan.maxNodes !== DEFAULT_LIMITS.maxNodes ||
     doc.plan.maxAV !== DEFAULT_LIMITS.maxAV ||
     doc.plan.cycleMode !== 'none' ||
+    doc.plan.aha.baseSpeed !== 80 ||
     props.setupDirty ||
     props.planner.draft.value
   )
@@ -126,7 +127,7 @@ async function importFile(event: Event) {
   try {
     if (file.size > FILE_LIMITS.bytes) throw new PlannerFileError('limit')
     const parsed = parsePlannerDocument(await file.text())
-    requestReplacement(preparePlannerDocument(parsed.document, parsed.issues))
+    requestReplacement(preparePlannerDocument(parsed.document, parsed.issues, parsed.migration))
   } catch (cause) {
     setError(cause)
   } finally {
@@ -136,7 +137,7 @@ async function importFile(event: Event) {
 function useTemplate(template: PlannerTemplate) {
   try {
     const parsed = loadPlannerTemplate(template)
-    const prepared = preparePlannerDocument(parsed.document, parsed.issues)
+    const prepared = preparePlannerDocument(parsed.document, parsed.issues, parsed.migration)
     templatesVisible.value = false
     error.value = undefined
     requestReplacement(prepared)
@@ -154,7 +155,7 @@ function reload() {
         : parsePlannerDocument(token.raw)
     pending.value = {
       kind: 'reload',
-      prepared: preparePlannerDocument(parsed.document, parsed.issues),
+      prepared: preparePlannerDocument(parsed.document, parsed.issues, parsed.migration),
       token,
       guarded: props.persistence.guarded,
     }
@@ -272,6 +273,16 @@ defineExpose({ newDocument })
     </div>
     <p v-if="error || documentError || recoveryError" class="field-error" role="alert">
       {{ t(`planner.files.error.${error ?? documentError ?? recoveryError}`) }}
+    </p>
+    <p v-if="planner.migrationNotice.value" class="fine-print" role="status">
+      {{
+        t(
+          planner.migrationNotice.value.ahaAdded
+            ? 'planner.aha.migratedWithAha'
+            : 'planner.aha.migrated',
+          { version: planner.migrationNotice.value.fromVersion },
+        )
+      }}
     </p>
     <details v-if="issues.length" class="resource-diagnostics">
       <summary>{{ t('planner.files.resources', { count: issues.length }) }}</summary>

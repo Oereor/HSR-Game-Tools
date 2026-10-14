@@ -1,3 +1,4 @@
+import { resolveElationContributors } from '../model/aha-config'
 import { computed, ref, shallowReadonly, shallowRef, watch } from 'vue'
 import {
   simulatePlan,
@@ -6,12 +7,14 @@ import {
 } from '../../../engine/action-planner/engine'
 import {
   anchorKey,
+  defaultAhaConfig,
   spawnedParticipantId,
   countdownParticipantId,
 } from '../../../engine/action-planner/queue'
 import { validatePlan } from '../../../engine/action-planner/validation'
 import { operationTargets } from '../../../engine/action-planner/targeting'
 import type {
+  AhaConfig,
   EffectOperation,
   EventAnchor,
   CycleMode,
@@ -30,6 +33,7 @@ import {
   referencedIds,
   type FileErrorCode,
   type ResourceIssue,
+  type MigrationNotice,
 } from '../model/document-file'
 import {
   buildOperation,
@@ -47,6 +51,7 @@ export const emptyPlan = (): SimulationPlan => ({
   actors: [],
   events: [],
   cycleMode: 'none',
+  aha: defaultAhaConfig(),
   ...DEFAULT_LIMITS,
 })
 const canonical = (value: unknown): string => {
@@ -83,6 +88,7 @@ export function useActionPlanner(
   const draft = ref<OperationDraft>()
   const invalid = ref<string[]>([])
   const documentError = ref<FileErrorCode>()
+  const migrationNotice = shallowRef<MigrationNotice>()
   const resourceIssues = shallowRef<ResourceIssue[]>([])
   const setupRevision = ref(0)
   let reservedIds = referencedIds(initialPlan)
@@ -207,8 +213,17 @@ export function useActionPlanner(
     maxAV: number,
     characterIds: Record<string, string>,
     cycleMode: CycleMode = plan.value.cycleMode,
+    aha: AhaConfig = plan.value.aha,
   ) {
-    const next = { ...plan.value, actors, maxNodes, maxAV, cycleMode }
+    const resolved = resolveElationContributors(actors, characterIds, plan.value.aha.contributorIds)
+    const next = {
+      ...plan.value,
+      actors,
+      maxNodes,
+      maxAV,
+      cycleMode,
+      aha: { ...aha, id: plan.value.aha.id, contributorIds: resolved.contributorIds },
+    }
     if (validatePlan(next).length) return false
     cancel()
     return replacePlan(next, {
@@ -314,6 +329,7 @@ export function useActionPlanner(
     result.value = prepared.result
     document.value = prepared.document
     resourceIssues.value = prepared.issues
+    migrationNotice.value = prepared.migration
     documentError.value = undefined
     reservedIds = referencedIds(prepared.document.plan)
     allocatedIds.forEach((id) => reservedIds.add(id))
@@ -362,6 +378,7 @@ export function useActionPlanner(
     document: shallowReadonly(document),
     documentError,
     resourceIssues,
+    migrationNotice,
     setupRevision,
     restoreDocument,
     restorePrepared,

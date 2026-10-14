@@ -34,6 +34,7 @@ const actor = (id = 'a', firstAV = 200, position = 0, actionLimit?: number): Act
 })
 const plan = (cycleMode: CycleMode = 'moc'): SimulationPlan => ({
   cycleMode,
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: [actor()],
   events: [],
   maxAV: 600,
@@ -241,7 +242,12 @@ describe('independent endgame cycle scheduling', () => {
       ['trigger:countdown%3Acountdown', 250],
       ['cycleBoundary:2', 250],
     ])
-    expect(effectiveSpeed(tied.records.at(-1)!.beforeEffects.participants[0]!)).toBe(110)
+    expect(
+      effectiveSpeed(
+        tied.records.at(-1)!.beforeEffects.participants[0]!,
+        tied.records.at(-1)!.beforeEffects,
+      ),
+    ).toBe(110)
   })
   it('creates ordinary actors and countdown events with the usual initial gauge formula', () => {
     const p = plan()
@@ -366,7 +372,7 @@ describe('independent endgame cycle scheduling', () => {
     expect(targetIds({ kind: 'enemies' }, targets)).toEqual([])
     expect(nextSimulationEvent(state)!.anchor).toEqual(boundary())
     const step = stepSimulation(state, [])
-    expect(effectiveSpeed(step.state.participants[0]!)).toBe(100)
+    expect(effectiveSpeed(step.state.participants[0]!, step.state)).toBe(100)
     expect(state.cycle!.nextOrdinal).toBe(1)
     expect(step.state.cycle!.nextOrdinal).toBe(2)
   })

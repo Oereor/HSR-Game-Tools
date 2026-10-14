@@ -27,6 +27,7 @@ const action = (participantId: string, turn = 1): NodeAnchor => ({
 const target = (...participantIds: string[]) => ({ kind: 'participants' as const, participantIds })
 const plan = (): SimulationPlan => ({
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: ['a', 'b', 'c'].map((id, position) => ({
     id,
     name: id,

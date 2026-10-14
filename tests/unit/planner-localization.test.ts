@@ -31,6 +31,7 @@ const target = { kind: 'participants' as const, participantIds: ['b'] }
 const advance: EffectOperation = { id: 'pull', type: 'advance', target, percent: 50 }
 const plan = (): SimulationPlan => ({
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: ['a', 'b'].map((id, position) => ({
     id,
     position,

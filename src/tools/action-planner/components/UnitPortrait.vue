@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Timer, UserRound, Swords } from '@lucide/vue'
-const props = defineProps<{ src?: string; name: string; event?: boolean; enemy?: boolean }>()
+import { Timer, UserRound, Swords, Gauge } from '@lucide/vue'
+const props = defineProps<{
+  src?: string
+  name: string
+  event?: boolean
+  enemy?: boolean
+  aha?: boolean
+}>()
 const failed = ref(false)
 watch(
   () => props.src,
@@ -20,6 +26,9 @@ watch(
     height="48"
     @error="failed = true"
   /><span v-else class="event-avatar" role="img" :aria-label="name"
-    ><component :is="event ? Timer : enemy ? Swords : UserRound" :size="22" :stroke-width="1.75"
+    ><component
+      :is="aha ? Gauge : event ? Timer : enemy ? Swords : UserRound"
+      :size="22"
+      :stroke-width="1.75"
   /></span>
 </template>

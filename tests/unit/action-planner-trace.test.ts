@@ -34,6 +34,7 @@ const gauge = (
 ): EffectOperation => ({ id, type, target: target(participantId), percent })
 const plan = (operations: EffectOperation[] = []): SimulationPlan => ({
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: [actor('a', 200), actor('b', 100, 1)],
   events: [{ anchor: { kind: 'start' }, operations }],
   maxNodes: 6,

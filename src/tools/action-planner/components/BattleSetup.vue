@@ -6,6 +6,8 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import SelectButton from 'primevue/selectbutton'
+import { elationContribution } from '../../../engine/action-planner/queue'
+import { resolveElationContributors } from '../model/aha-config'
 import { CYCLE_RULES } from '../../../engine/action-planner/cycle'
 import { Plus, Trash2 } from '@lucide/vue'
 import GameIcon from '../../../components/ui/GameIcon.vue'
@@ -13,7 +15,12 @@ import { gameData, characterName } from '../../../data/adapters/game-data'
 import { buildBattleSetup, setupDraft, type AllySlot, type EnemyDraft } from '../model/battle-setup'
 import EnemySetup from './EnemySetup.vue'
 import UnitPortrait from './UnitPortrait.vue'
-import type { ActorConfig, SimulationPlan, CycleMode } from '../../../engine/action-planner/types'
+import type {
+  ActorConfig,
+  SimulationPlan,
+  CycleMode,
+  AhaConfig,
+} from '../../../engine/action-planner/types'
 import type { ToolLocale } from '../../../locales/types'
 import type { CharacterRecord } from '../../../data/schema'
 import { createCharacterSearch } from '../model/character-search'
@@ -30,6 +37,7 @@ const emit = defineEmits<{
     maxAV: number,
     characters: Record<string, string>,
     cycleMode: CycleMode,
+    aha: AhaConfig,
   ]
 }>()
 const { t, locale } = useI18n()
@@ -39,6 +47,7 @@ const enemies = ref<EnemyDraft[]>([])
 const maxNodes = ref<number | undefined>()
 const maxAV = ref<number | undefined>()
 const cycleMode = ref<CycleMode>('none')
+const ahaBaseSpeed = ref<number | undefined>()
 const cycleModes = computed(() =>
   (['none', 'moc', 'aa'] as const).map((value) => ({ value, label: t(`planner.cycle.${value}`) })),
 )
@@ -54,6 +63,7 @@ function load() {
   maxNodes.value = props.plan.maxNodes
   maxAV.value = props.plan.maxAV
   cycleMode.value = props.plan.cycleMode
+  ahaBaseSpeed.value = props.plan.aha.baseSpeed
   errors.value = []
   dirty.value = false
 }
@@ -63,6 +73,7 @@ watch(
     () => props.plan.maxNodes,
     () => props.plan.maxAV,
     () => props.plan.cycleMode,
+    () => props.plan.aha,
   ],
   load,
   {
@@ -132,11 +143,47 @@ function clear(index: number) {
   slots.value[index] = { id: '', characterId: '', baseSpeed: undefined, panelSpeed: undefined }
   dirty.value = true
 }
+const ahaContributors = computed(() => {
+  const actors = slots.value.flatMap((slot, position) =>
+    slot.id && slot.original
+      ? [{ ...slot.original, id: slot.id, position, camp: 'ally' as const }]
+      : [],
+  )
+  const characters = Object.fromEntries(
+    slots.value.filter((s) => s.id && s.characterId).map((s) => [s.id, s.characterId]),
+  )
+  return resolveElationContributors(actors, characters, props.plan.aha.contributorIds)
+    .contributorIds
+})
+const ahaInitialSpeed = computed(() => {
+  const speeds = slots.value
+    .filter((s) => ahaContributors.value.includes(s.id))
+    .map((s) => s.panelSpeed)
+  if (
+    ahaBaseSpeed.value === undefined ||
+    !Number.isFinite(ahaBaseSpeed.value) ||
+    ahaBaseSpeed.value <= 0 ||
+    speeds.some((s) => s === undefined || !Number.isFinite(s) || s <= 0)
+  )
+    return undefined
+  const speed = ahaBaseSpeed.value + elationContribution(speeds as number[])
+  return Number.isFinite(speed) ? speed : undefined
+})
 function apply() {
   const setup = buildBattleSetup(slots.value, enemies.value, maxNodes.value, maxAV.value)
-  errors.value = setup.invalid
-  if (setup.invalid.length) return
-  emit('apply', setup.actors, maxNodes.value!, maxAV.value!, setup.characters, cycleMode.value)
+  errors.value = [...setup.invalid]
+  if (
+    ahaBaseSpeed.value === undefined ||
+    !Number.isFinite(ahaBaseSpeed.value) ||
+    ahaBaseSpeed.value <= 0
+  )
+    errors.value.push('aha-base')
+  if (errors.value.length) return
+  emit('apply', setup.actors, maxNodes.value!, maxAV.value!, setup.characters, cycleMode.value, {
+    ...props.plan.aha,
+    baseSpeed: ahaBaseSpeed.value!,
+    contributorIds: [...ahaContributors.value],
+  })
 }
 </script>
 <template>
@@ -245,6 +292,56 @@ function apply() {
         </div>
       </section>
     </div>
+    <section v-if="ahaContributors.length || errors.includes('aha-base')" class="range-section">
+      <div class="section-title">
+        <h2 class="compact-target">
+          <span
+            class="camp-dot camp-dot-neutral"
+            role="img"
+            :aria-label="t('planner.navigator.neutral')"
+            v-tooltip="t('planner.navigator.neutral')"
+          ></span>
+          {{ t('planner.aha.name') }}
+        </h2>
+        <UnitPortrait :name="t('planner.aha.name')" aha />
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="aha-base-speed">{{ t('ui.baseSpeed') }}</label>
+          <InputNumber
+            v-model="ahaBaseSpeed"
+            input-id="aha-base-speed"
+            :locale="locale"
+            :use-grouping="false"
+            :max-fraction-digits="20"
+            :invalid="errors.includes('aha-base')"
+            :pt="{
+              pcInputText: {
+                root: {
+                  'aria-describedby': errors.includes('aha-base') ? 'aha-base-error' : undefined,
+                },
+              },
+            }"
+            fluid
+            @update:model-value="dirty = true"
+          />
+          <small v-if="errors.includes('aha-base')" id="aha-base-error" class="field-error">{{
+            t('ui.positive')
+          }}</small>
+        </div>
+        <div class="field">
+          <label for="aha-initial-speed">{{ t('planner.aha.initialSpeed') }}</label>
+          <output id="aha-initial-speed">{{
+            ahaInitialSpeed === undefined
+              ? t('planner.aha.invalidPreview')
+              : t('planner.metadata.speed', {
+                  speed: formatNumber(ahaInitialSpeed, locale as ToolLocale),
+                })
+          }}</output>
+          <small class="fine-print">{{ t('planner.aha.previewHint') }}</small>
+        </div>
+      </div>
+    </section>
     <EnemySetup v-model="enemies" :next-id="nextId" :errors="errors" @dirty="dirty = true" />
     <section class="range-section">
       <h2 id="cycle-mode-label">{{ t('planner.cycle.mode') }}</h2>

@@ -34,6 +34,7 @@ const start: EventAnchor = { kind: 'start' }
 const target = (...participantIds: string[]) => ({ kind: 'participants' as const, participantIds })
 const plan = (): SimulationPlan => ({
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: ['a', 'b'].map((id, position) => ({
     id,
     name: id,
@@ -95,6 +96,7 @@ describe('real planner document and drafts', () => {
     const p = useActionPlanner()
     expect(p.plan.value).toEqual({
       cycleMode: 'none',
+      aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
       actors: [],
       events: [],
       maxNodes: 60,

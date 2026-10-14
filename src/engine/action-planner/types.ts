@@ -66,7 +66,13 @@ export interface PlanEvent {
   anchor: EventAnchor
   operations: EffectOperation[]
 }
+export interface AhaConfig {
+  id: string
+  baseSpeed: number
+  contributorIds: string[]
+}
 export interface SimulationPlan {
+  aha: AhaConfig
   cycleMode: CycleMode
   actors: ActorConfig[]
   events: PlanEvent[]
@@ -94,13 +100,27 @@ export interface ActorState extends ActorDefinition, QueueState {
   modifiers: SpeedModifierInstance[]
 }
 export interface ScheduledEventState extends ScheduledEventDefinition, QueueState {}
-export type ParticipantState = ActorState | ScheduledEventState
-export interface ParticipantInfo {
-  id: string
-  kind: ParticipantDefinition['kind']
+export interface AhaState extends QueueState {
+  kind: 'aha'
   name: string
   iconUrl?: string
-  camp?: Camp
+  camp: 'neutral'
+  baseSpeed: number
+  contributorIds: string[]
+  turns: number
+  modifiers: SpeedModifierInstance[]
+}
+export type NaturalParticipantState = ActorState | AhaState
+export type ParticipantState = NaturalParticipantState | ScheduledEventState
+export function isNaturalParticipant(p: ParticipantState): p is NaturalParticipantState {
+  return p.kind === 'actor' || p.kind === 'aha'
+}
+export interface ParticipantInfo {
+  id: string
+  kind: ParticipantState['kind']
+  name: string
+  iconUrl?: string
+  camp?: Camp | 'neutral'
 }
 export interface SimulationState {
   cycle?: { mode: Exclude<CycleMode, 'none'>; nextOrdinal: number; maxAV: number }

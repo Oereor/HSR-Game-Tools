@@ -27,7 +27,7 @@ describe('reviewed template registry', () => {
     order: 0,
     nameKey: 'test.name',
     descriptionKey: 'test.description',
-    file: { format: PLANNER_FORMAT, version: 2, document: syntheticDocument() },
+    file: { format: PLANNER_FORMAT, version: 3, document: syntheticDocument() },
   })
   const messages = { test: { name: 'Synthetic fixture', description: 'Tests only' } }
   it('allows an empty production catalog and validates ordinary files and message registration', () => {
@@ -37,7 +37,7 @@ describe('reviewed template registry', () => {
     expect(() => validatePlannerTemplates([template(), template()], [messages])).toThrow()
     expect(() => validatePlannerTemplates([template()], [{}])).toThrow()
     expect(() =>
-      loadPlannerTemplate({ ...template(), file: { ...(template().file as object), version: 3 } }),
+      loadPlannerTemplate({ ...template(), file: { ...(template().file as object), version: 4 } }),
     ).toThrow('version')
   })
   it('loads independently, replaces rather than merges, and keeps invalid templates atomic', () => {
@@ -57,7 +57,7 @@ describe('reviewed template registry', () => {
     expect(() =>
       loadPlannerTemplate({
         ...source,
-        file: { format: PLANNER_FORMAT, version: 2, document: { name: 'Bad' } },
+        file: { format: PLANNER_FORMAT, version: 3, document: { name: 'Bad' } },
       }),
     ).toThrow()
     expect(p.document.value).toBe(previous)

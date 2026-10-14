@@ -23,6 +23,7 @@ const source: Extract<EffectOperation, { type: 'addSpeedModifier' }> = {
 }
 const plan: SimulationPlan = {
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: [
     {
       id: 'actor',

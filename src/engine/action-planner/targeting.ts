@@ -18,7 +18,10 @@ export function validTargetSelection(
 ): boolean {
   return (
     participants.length > 0 &&
-    (participants.every((participant) => participant.kind === 'actor') ||
+    (participants.every(
+      (participant) =>
+        participant.kind === 'actor' || (participant.kind === 'aha' && type === 'addSpeedModifier'),
+    ) ||
       (participants.length === 1 &&
         participants[0]!.kind === 'scheduledEvent' &&
         (type === 'advance' || type === 'delay')))
@@ -43,7 +46,8 @@ export function selectableTargets(
 export function operationTargets(state: SimulationState | undefined): ParticipantInfo[] {
   return (
     state?.participants.filter(
-      (participant) => participant.kind === 'actor' || participant.id !== state.activeParticipantId,
+      (participant) =>
+        participant.kind !== 'scheduledEvent' || participant.id !== state.activeParticipantId,
     ) ?? []
   )
 }

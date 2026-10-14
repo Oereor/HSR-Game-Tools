@@ -26,11 +26,15 @@ const allowed = computed(() =>
       ),
 )
 const groups = computed(() =>
-  ['ally', 'enemy', 'event']
+  ['ally', 'enemy', 'neutral', 'event']
     .map((kind) => ({
       kind,
       participants: props.participants.filter((p) =>
-        kind === 'event' ? p.kind === 'scheduledEvent' : p.kind === 'actor' && p.camp === kind,
+        kind === 'neutral'
+          ? p.kind === 'aha'
+          : kind === 'event'
+            ? p.kind === 'scheduledEvent'
+            : p.kind === 'actor' && p.camp === kind,
       ),
     }))
     .filter((g) => g.participants.length),
@@ -58,7 +62,9 @@ function toggle(id: string) {
       class="target-modes"
     /><template v-if="draft.targetKind === 'participants'"
       ><div v-for="group in groups" :key="group.kind" class="target-group">
-        <span class="field-label">{{ t(`ui.${group.kind}`) }}</span>
+        <span class="field-label">{{
+          t(group.kind === 'neutral' ? 'planner.navigator.neutral' : `ui.${group.kind}`)
+        }}</span>
         <div class="target-grid">
           <button
             v-for="p in group.participants"
@@ -76,6 +82,7 @@ function toggle(id: string) {
                 :src="image(p.id)"
                 :name="label(p.id)"
                 :event="p.kind === 'scheduledEvent'"
+                :aha="p.kind === 'aha'"
                 :enemy="p.camp === 'enemy'" /><Check
                 v-if="draft.selectedIds.includes(p.id)"
                 class="target-check"

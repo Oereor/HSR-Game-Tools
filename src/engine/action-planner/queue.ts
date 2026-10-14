@@ -1,4 +1,8 @@
+import { isNaturalParticipant } from './types'
 import type {
+  AhaConfig,
+  ActorState,
+  NaturalParticipantState,
   ActionChangeTrace,
   Diagnostic,
   DiagnosticCode,
@@ -43,24 +47,45 @@ export function finite(value: number): number {
   if (!Number.isFinite(value)) fail('non-finite')
   return value
 }
-export function effectiveSpeed(participant: ParticipantState): number {
-  const speed = finite(
-    participant.kind === 'scheduledEvent'
-      ? participant.speed
-      : participant.panelSpeed +
-          participant.modifiers.reduce(
-            (sum, buff) =>
-              finite(
-                sum +
-                  (buff.mode === 'flat'
-                    ? buff.amount
-                    : (participant.baseSpeed * buff.amount) / 100),
-              ),
-            0,
-          ),
+export const defaultAhaConfig = (): AhaConfig => ({
+  id: 'aha-instant',
+  baseSpeed: 80,
+  contributorIds: [] as string[],
+})
+/** Shared formula only; runtime speeds must be resolved through effectiveSpeed. */
+export function elationContribution(speeds: readonly number[]): number {
+  return [...speeds]
+    .sort((a, b) => b - a)
+    .slice(0, 4)
+    .reduce((sum, speed, index) => finite(sum + speed / (5 * 2 ** index)), 0)
+}
+function modifierSpeed(participant: NaturalParticipantState): number {
+  return participant.modifiers.reduce(
+    (sum, buff) =>
+      finite(
+        sum + (buff.mode === 'flat' ? buff.amount : (participant.baseSpeed * buff.amount) / 100),
+      ),
+    0,
   )
-  if (speed <= 0) fail('invalid-speed', participant.id)
+}
+function checkedSpeed(speed: number, id: string): number {
+  finite(speed)
+  if (speed <= 0) fail('invalid-speed', id)
   return speed
+}
+function actorSpeed(actor: ActorState): number {
+  return checkedSpeed(actor.panelSpeed + modifierSpeed(actor), actor.id)
+}
+export function effectiveSpeed(participant: ParticipantState, state: SimulationState): number {
+  if (participant.kind === 'scheduledEvent') return checkedSpeed(participant.speed, participant.id)
+  if (participant.kind === 'actor') return actorSpeed(participant)
+  const speeds = state.participants
+    .filter((p): p is ActorState => p.kind === 'actor' && participant.contributorIds.includes(p.id))
+    .map(actorSpeed)
+  return checkedSpeed(
+    finite(participant.baseSpeed + elationContribution(speeds)) + modifierSpeed(participant),
+    participant.id,
+  )
 }
 export function cloneState(state: SimulationState): SimulationState {
   return {
@@ -68,9 +93,12 @@ export function cloneState(state: SimulationState): SimulationState {
     ...(state.cycle ? { cycle: { ...state.cycle } } : {}),
     issuedParticipantIds: new Set(state.issuedParticipantIds),
     participants: state.participants.map((participant) =>
-      participant.kind === 'actor'
+      isNaturalParticipant(participant)
         ? {
             ...participant,
+            ...(participant.kind === 'aha'
+              ? { contributorIds: [...participant.contributorIds] }
+              : {}),
             pendingActionChanges: cloneActionChanges(participant.pendingActionChanges),
             modifiers: participant.modifiers.map((buff) => ({
               ...buff,
@@ -95,7 +123,8 @@ export function orderedParticipants(state: SimulationState): ParticipantState[] 
   return state.participants
     .filter((participant) => participant.id !== state.activeParticipantId)
     .sort((a, b) => {
-      const difference = a.remainingAG / effectiveSpeed(a) - b.remainingAG / effectiveSpeed(b)
+      const difference =
+        a.remainingAG / effectiveSpeed(a, state) - b.remainingAG / effectiveSpeed(b, state)
       if (difference !== 0) return difference
       if (a.remainingAG === 0 && b.remainingAG === 0) {
         if (a.zeroBatch !== b.zeroBatch) return b.zeroBatch - a.zeroBatch
@@ -105,7 +134,7 @@ export function orderedParticipants(state: SimulationState): ParticipantState[] 
     })
 }
 export function nextAnchor(participant: ParticipantState): ParticipantAnchor {
-  return participant.kind === 'actor'
+  return isNaturalParticipant(participant)
     ? { kind: 'action', participantId: participant.id, turn: participant.turns + 1 }
     : { kind: 'trigger', participantId: participant.id }
 }
@@ -121,28 +150,28 @@ export function queueSnapshot(state: SimulationState): QueueSnapshot {
       kind: participant.kind,
       name: participant.name,
       iconUrl: participant.iconUrl,
-      ...(participant.kind === 'actor' ? { camp: participant.camp } : {}),
+      ...(isNaturalParticipant(participant) ? { camp: participant.camp } : {}),
       anchor: nextAnchor(participant),
       remainingAG: participant.remainingAG,
-      remainingAV: finite(participant.remainingAG / effectiveSpeed(participant)),
-      effectiveSpeed: effectiveSpeed(participant),
+      remainingAV: finite(participant.remainingAG / effectiveSpeed(participant, state)),
+      effectiveSpeed: effectiveSpeed(participant, state),
       actionChanges: cloneActionChanges(participant.pendingActionChanges),
-      modifiers:
-        participant.kind === 'actor'
-          ? participant.modifiers.map((buff) => ({ ...buff, lifetime: { ...buff.lifetime } }))
-          : [],
+      modifiers: isNaturalParticipant(participant)
+        ? participant.modifiers.map((buff) => ({ ...buff, lifetime: { ...buff.lifetime } }))
+        : [],
     })),
   }
 }
 export function assertState(state: SimulationState): void {
   for (const participant of state.participants)
-    finite(participant.remainingAG / effectiveSpeed(participant))
+    finite(participant.remainingAG / effectiveSpeed(participant, state))
 }
 /** Only normalize subtraction roundoff; never use an AV ordering epsilon. */
 export function advanceTime(state: SimulationState, deltaAV: number): void {
+  const speeds = state.participants.map((p) => effectiveSpeed(p, state))
   state.elapsedAV = finite(state.elapsedAV + deltaAV)
-  for (const participant of state.participants) {
-    const consumed = finite(deltaAV * effectiveSpeed(participant))
+  for (const [index, participant] of state.participants.entries()) {
+    const consumed = finite(deltaAV * speeds[index]!)
     const residual = participant.remainingAG - consumed
     const tolerance = Number.EPSILON * 8 * Math.max(FULL_AG, participant.remainingAG, consumed)
     participant.remainingAG = residual <= tolerance ? 0 : residual

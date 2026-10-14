@@ -19,6 +19,7 @@ const { t, locale } = useI18n()
 const popover = ref<InstanceType<typeof Popover>>()
 const isEvent = (id: string) =>
   props.participants.some((p) => p.id === id && p.kind === 'scheduledEvent')
+const isAha = (id: string) => props.participants.some((p) => p.id === id && p.kind === 'aha')
 const isEnemy = (id: string) => props.participants.some((p) => p.id === id && p.camp === 'enemy')
 </script>
 <template>
@@ -28,6 +29,7 @@ const isEnemy = (id: string) => props.participants.some((p) => p.id === id && p.
         :src="image(ids[0]!)"
         :name="label(ids[0]!)"
         :event="isEvent(ids[0]!)"
+        :aha="isAha(ids[0]!)"
         :enemy="isEnemy(ids[0]!)"
       />
       <span>{{ label(ids[0]!) }}</span>
@@ -44,6 +46,7 @@ const isEnemy = (id: string) => props.participants.some((p) => p.id === id && p.
           :src="image(id)"
           :name="label(id)"
           :event="isEvent(id)"
+          :aha="isAha(id)"
           :enemy="isEnemy(id)"
         />
       </span>
@@ -69,6 +72,7 @@ const isEnemy = (id: string) => props.participants.some((p) => p.id === id && p.
               :src="image(id)"
               :name="label(id)"
               :event="isEvent(id)"
+              :aha="isAha(id)"
               :enemy="isEnemy(id)"
             />
             <span>{{ label(id) }}</span>

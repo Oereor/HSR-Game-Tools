@@ -101,7 +101,8 @@ export function actionDirections(
 export function nodeCamp(node: {
   kind?: string
   camp?: string
-}): 'ally' | 'enemy' | 'event' | 'system' | 'unknown' {
+}): 'ally' | 'enemy' | 'event' | 'system' | 'unknown' | 'neutral' {
+  if (node.kind === 'aha') return 'neutral'
   if (node.kind === 'cycleBoundary') return 'system'
   if (node.kind === 'scheduledEvent') return 'event'
   return node.camp === 'ally' || node.camp === 'enemy' ? node.camp : 'unknown'

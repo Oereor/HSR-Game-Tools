@@ -30,6 +30,7 @@ const make = (
   events: SimulationPlan['events'] = [],
 ): SimulationPlan => ({
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors,
   events: [{ anchor: { kind: 'start' }, operations }, ...events],
   maxNodes: 4,

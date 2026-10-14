@@ -48,7 +48,9 @@
       "resources": "{count} resource notices",
       "resource": {
         "missingCharacter": "Character resources for {name} were not found. The original configuration is preserved.",
-        "unsafeImage": "The image path for {name} was not used. The unit configuration is preserved."
+        "unsafeImage": "The image path for {name} was not used. The unit configuration is preserved.",
+        "unknownElation": "Cannot verify the Elation identity of {name}; saved configuration is preserved.",
+        "elationMismatch": "The character identity of {name} differs from saved Elation configuration; applying team setup updates it."
       },
       "status": {
         "idle": "Autosave ready",
@@ -100,7 +102,8 @@
       "affectedImmediate": "This pending action was affected by act immediately",
       "node": "{name} · {node} · {value} AV",
       "currentAction": "Acting now",
-      "queueProgress": "Node {count} / {total} · {value} AV"
+      "queueProgress": "Node {count} / {total} · {value} AV",
+      "neutral": "Neutral unit"
     },
     "operationName": {
       "advance": "Advance {target} by {percent}%",
@@ -147,6 +150,14 @@
       "duration": "{first} / {subsequent} AV",
       "inactive": "Inactive configuration",
       "disabled": "Cycles are disabled"
+    },
+    "aha": {
+      "name": "Aha Instant",
+      "initialSpeed": "Initial calculated speed",
+      "invalidPreview": "Enter valid speeds",
+      "previewHint": "Calculated from team panel speeds, before battle-start operations.",
+      "migratedWithAha": "Version {version} plan upgraded with Aha Instant. Action order may change; review unreachable operations.",
+      "migrated": "Version {version} plan upgraded to Version 3."
     }
   },
   "ui": {

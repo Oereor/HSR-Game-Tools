@@ -1,3 +1,4 @@
+import { isNaturalParticipant } from './types'
 import {
   assertState,
   cloneState,
@@ -84,7 +85,7 @@ export function applyOperations(
         if (op.type === 'addSpeedModifier') {
           const countdownId = countdownParticipantId(op.id)
           for (const actor of targets) {
-            if (actor.kind !== 'actor') fail('invalid-target', actor.id)
+            if (!isNaturalParticipant(actor)) fail('invalid-target', actor.id)
             actor.modifiers.push({
               id: modifierId(op.id, actor.id),
               operationId: op.id,
@@ -114,7 +115,7 @@ export function applyOperations(
             type: op.type,
             beforeAG: participant.remainingAG,
             afterAG: participant.remainingAG,
-            effectiveSpeed: effectiveSpeed(participant),
+            effectiveSpeed: effectiveSpeed(participant, next),
             deltaAV: 0,
             zeroAVInsertion: false,
           }))

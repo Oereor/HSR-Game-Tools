@@ -2,13 +2,13 @@
 
 《崩坏：星穹铁道》独立游戏工具站，使用 Vue 3、TypeScript、Vite、Vue Router、Tailwind CSS 4 和 vue-i18n。
 
-当前已完成 **Phase 2B：Endgame 轮次系统**。`/action-planner` 使用 PrimeVue Styled Mode + Aura 深色金色主题，配置和五类操作提交后通过现有纯引擎重新推演；支持动态参与者、共享倒计时、装备预设、当前队列观察、自动存档、完整 JSON 导入／导出，以及 MoC／AA 轮次系统。
+当前已完成 **Phase 2C-1：阿哈时刻功能接入**。`/action-planner` 使用 PrimeVue Styled Mode + Aura 深色金色主题，配置和五类操作提交后通过现有纯引擎重新推演；支持动态参与者、共享倒计时、装备预设、当前队列观察、自动存档、完整 JSON 导入／导出，以及 MoC／AA 轮次、实时派生速度的阿哈时刻及其自身速度效果。
 
 ## 本地运行
 
 **UI Polish Round 1 / Site Messages** 已收敛自动命名与卡片 Metadata，新增立即行动 Trace 和阵营圆点；新建普通操作默认在动作后结算。视觉验收由用户完成，本轮工程验证和已观察到的浏览器行为见 [UI 与本地化报告](docs/investigations/action-planner-ui-polish-localization.md)。
 
-需要 Node 24（最低 24.12，本轮验证版本 24.21.0）与 npm，使用唯一 `package-lock.json`。
+需要 Node 24（最低 24.12，本轮验证版本 24.19.0）与 npm，使用唯一 `package-lock.json`。
 
 ```sh
 npm ci
@@ -100,11 +100,23 @@ npm run validate:game-data
 
 本轮未实现角色专用技能、真实敌人目录、多波次、伤害／能量、账号、云同步或多方案库。主题和职责约定见 [Design Notes](docs/design-notes.md)。历史截图仅属于此前阶段，本轮没有真实浏览器验收记录。
 
+## 阿哈时刻
+
+初始我方编队包含欢愉命途角色时，配置区自动显示阿哈时刻。它是中立自然行动单位，不占我方或敌方槽位，无须启用开关。基础速度默认 80，可在同一个“应用配置”流程中修改；只读初始速度采用草稿面板速度，尚未计入战斗开始操作。暂时移除欢愉角色会隐藏阿哈，但保留基础速度、ID 和已有操作。
+
+阿哈速度为自身基础速度，加上当前欢愉角色有效速度按降序计算的 1/5、1/10、1/20、1/40 贡献，再加自身固定值和百分比速度效果。百分比只基于阿哈基础速度；贡献者变速时重新排名，阿哈剩余 AG 不重置。行动中的角色仍贡献，达到行动次数限制离队后停止贡献；已生成的阿哈继续自然行动。
+
+阿哈可明确选作速度效果目标，支持与普通单位混选、有限／无限回合及共享倒计时。它不属于我方／敌方全体，也不能被直接提前、延后或立即行动。自身回合开始前已有的回合 Buff 才在结束时递减，新加效果不在当前回合立即到期。阿哈节点支持普通操作及行动前／后窗口，两种行动视图显示黄色中立点和 Gauge 图标；加速不产生拉条箭头。
+
+Version 3 保存贡献者 ID 作为模拟输入，导入不会随游戏快照变化静默重建。明确应用编队时更新已知角色身份；资源缺失时保留原配置并提示。用户添加的速度效果保存为普通操作，运行时速度和 Modifier 实例不保存。
+
+“持续到阿哈时刻结束”暂按一个自然回合处理；额外回合、欢愉技、笑点和技能自动触发均未实现。真实浏览器交互及视觉由用户人工验收。
+
 ## Endgame 轮次
 
 默认关闭。战斗配置的单选控件支持混沌回忆（MoC）和异相仲裁（AA），需要点击“应用配置”后生效。第 0 轮分别为 150／300 AV，之后每轮 100 AV；第 n 个边界为首轮 AV + 100 × (n−1)。
 
-轮次是独立 System Event，不属于 Participant，没有 SPD、AG 或阵营，也不能成为任何操作的目标。同累计 AV 时，普通 Actor、Scheduled Event 及它们插入的零 AV 行动全部优先；每次结算重新检查队列，最后才进入轮次边界。边界自身产生的立即行动在边界完成后执行。轮次计入节点预算，遵守 AV 上限，空队列不会继续向未来生成轮次。
+轮次是独立 System Event，不属于 Participant，没有 SPD、AG 或阵营，也不能成为任何操作的目标。同累计 AV 时，普通 Actor、阿哈时刻、Scheduled Event 及它们插入的零 AV 行动全部优先；每次结算重新检查队列，最后才进入轮次边界。边界自身产生的立即行动在边界完成后执行。轮次计入节点预算，遵守 AV 上限，空队列不会继续向未来生成轮次。
 
 轮次节点显示“第 N 轮开始”，可通过 Inspector 配置标准操作，只有一个无 phase 的结算窗口。当前队列同时显示下一轮次剩余 AV，系统节点不显示速度。操作绑定稳定的 `cycleBoundary` ordinal Anchor；MoC／AA 切换改变触发时间但保留操作。关闭模式保留操作并列为停用配置，可查看、删除，重新启用后恢复执行与编辑。轮次不重置单位 AG，也不递减速度 Buff 的回合数。
 
@@ -114,7 +126,7 @@ npm run validate:game-data
 
 战斗配置顶部提供方案管理。方案名失焦／回车提交；其他配置和操作只有明确应用／提交后才保存。当前方案使用 localStorage 的 `hsr-game-tools/action-planner/current` 键，启动先恢复再监听提交。导航、队列游标、语言和草稿不保存；退出页面不补写旧内容。
 
-导入、导出、存档和模板共用 `format: "hsr-game-tools/action-planner"`、`version: 2`、`document: { name, plan, metadata }`。Version 1 文件和旧存档在严格校验后迁移，缺少轮次配置时补入 `cycleMode: "none"`，不会改变旧方案排轴；导出统一使用 Version 2。导出文件保留数学精度、Actor／Operation ID、Anchor、阶段、顺序及名称映射；不包含运行结果。导入先校验并推演，再确认完整替换，失败或取消保留当前方案。
+导入、导出、存档和模板共用 `format: "hsr-game-tools/action-planner"`、`version: 3`、`document: { name, plan, metadata }`。Version 1 / 2 文件和旧存档在严格校验后迁移：Version 1 补入 `cycleMode: "none"`，两者补充阿哈配置。可识别的初始欢愉角色会自动生成阿哈，因此行动顺序及预算内可达节点可能变化；旧 ID、锚点和操作保留。启动迁移不立即回写存档，导出统一使用 Version 3。导出文件保留数学精度、Actor／Operation ID、Anchor、阶段、顺序及名称映射；不包含运行结果。导入先校验并推演，再确认完整替换，失败或取消保留当前方案。
 
 初始编队限制为四名我方、五名敌方；初始敌人导入时以基础速度统一 SPD。当前数据中缺失的 Character ID 保留原配置并提示，不换角色；自定义图片仅允许资源清单中的相对路径。文件上限仍为 2 MiB、1,000 个事件、2,000 个操作；详细字段边界见 Phase 2A 报告。
 
@@ -157,6 +169,8 @@ export const plannerTemplates: readonly PlannerTemplate[] = [
 - [UI Polish Round 1 与 Site Messages](docs/investigations/action-planner-ui-polish-localization.md)
 - [当前队列重构](docs/investigations/action-planner-current-queue-view-reconstruction.md)
 - [Phase 2A 持久化、模板与敌方编队](docs/investigations/action-planner-persistence-templates-enemy-setup.md)
+- [Phase 2C-0 阿哈架构调查](docs/investigations/action-planner-aha-instant-architecture.md)
+- [Phase 2C-1 阿哈功能实施](docs/investigations/action-planner-aha-instant-implementation.md)
 - [Phase 2B Endgame 轮次系统](docs/investigations/action-planner-endgame-cycle-system.md)
 - [第三方来源、许可证文本与发布限制](docs/third-party/README.md)
 

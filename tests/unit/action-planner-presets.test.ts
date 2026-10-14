@@ -22,6 +22,7 @@ describe('action planner form presets', () => {
     // The same template executes at a speed below the former 120 SPD threshold.
     const result = simulatePlan({
       cycleMode: 'none',
+      aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
       actors: [
         {
           id: 'unit',

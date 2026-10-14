@@ -48,8 +48,9 @@ function document() {
 const pull: EffectOperation = { id: 'pull', type: 'immediatelyAct', target: { kind: 'allies' } }
 function legacyFile() {
   const doc = syntheticDocument()
-  const { cycleMode: omitted, ...plan } = doc.plan
+  const { cycleMode: omitted, aha: omittedAha, ...plan } = doc.plan
   void omitted
+  void omittedAha
   return { format: PLANNER_FORMAT, version: 1, document: { ...doc, plan } }
 }
 
@@ -91,7 +92,11 @@ describe('cycle planner projection and document compatibility', () => {
     const after = currentQueueCards(buildCurrentQueueView(result, 2))
     expect(after.map((c) => anchorKey(c.anchor))).toContain('action:spawn%3Aspawn:1')
     expect(after.map((c) => anchorKey(c.anchor))).toContain('cycleBoundary:2')
-    expect(participantCatalog(doc.plan).map((p) => p.id)).toEqual(['a', 'spawn:spawn'])
+    expect(participantCatalog(doc.plan).map((p) => p.id)).toEqual([
+      'aha-instant',
+      'a',
+      'spawn:spawn',
+    ])
   })
   it('keeps pending boundary last when ordinary waiting entries have the same zero AV', () => {
     const doc = document()
@@ -206,7 +211,7 @@ describe('cycle planner projection and document compatibility', () => {
     expect(presentation.anchorLabel(boundary(2))).toBe(
       i18n.global.t('planner.anchor.cycleBoundary', { ordinal: '2' }),
     )
-    expect(presentation.catalog.value.map((p) => p.id)).toEqual(['a'])
+    expect(presentation.catalog.value.map((p) => p.id)).toEqual(['aha-instant', 'a'])
   })
   it('migrates strict Version 1 JSON while preserving original mathematical results and identities', () => {
     const file = legacyFile(),
@@ -235,15 +240,15 @@ describe('cycle planner projection and document compatibility', () => {
     ).toThrow('structure')
   })
   it.each(['moc', 'aa', 'none'] as const)(
-    'round-trips %s Version 2 with stable operations and rejects unknown fields',
+    'round-trips %s Version 3 with stable operations and rejects unknown fields',
     (mode) => {
       const doc = document()
       doc.plan.cycleMode = mode
       doc.plan.events = [{ anchor: boundary(), operations: [pull] }]
       doc.metadata.customNames.pull = 'Custom'
       expect(parsePlannerDocument(serializePlannerDocument(doc)).document).toEqual(doc)
-      const file = { format: PLANNER_FORMAT, version: 2, document: doc }
-      expect(() => validatePlannerFile({ ...file, version: 3 })).toThrow('version')
+      const file = { format: PLANNER_FORMAT, version: 3, document: doc }
+      expect(() => validatePlannerFile({ ...file, version: 4 })).toThrow('version')
       expect(() =>
         validatePlannerFile({
           ...file,
@@ -263,7 +268,7 @@ describe('cycle planner projection and document compatibility', () => {
       ).toThrow('structure')
     },
   )
-  it('restores old local storage without a write, then saves Version 2 using the same controller', () => {
+  it('restores old local storage without a write, then saves Version 3 using the same controller', () => {
     const raw = JSON.stringify(legacyFile()),
       store = {
         raw,
@@ -289,12 +294,12 @@ describe('cycle planner projection and document compatibility', () => {
     p.applySetup(p.plan.value.actors, 60, 600, initial.document.metadata.characterIds, 'aa')
     expect(persistence.save(p.document.value)).toBe(true)
     expect(JSON.parse(store.raw)).toMatchObject({
-      version: 2,
+      version: 3,
       document: { plan: { cycleMode: 'aa' } },
     })
     expect(createPlannerPersistence(() => store).initialize().document.plan.cycleMode).toBe('aa')
   })
-  it('loads templates of both versions through the shared strict parser', () => {
+  it('loads legacy and current templates through the shared strict parser', () => {
     const template = {
       id: 'test',
       order: 0,
@@ -307,7 +312,7 @@ describe('cycle planner projection and document compatibility', () => {
     expect(
       loadPlannerTemplate({
         ...template,
-        file: { format: PLANNER_FORMAT, version: 2, document: document() },
+        file: { format: PLANNER_FORMAT, version: 3, document: document() },
       }).document.plan.cycleMode,
     ).toBe('moc')
   })

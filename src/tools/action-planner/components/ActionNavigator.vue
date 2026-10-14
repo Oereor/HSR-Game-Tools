@@ -155,6 +155,7 @@ const cardName = (card: { kind: string; anchor: EventAnchor; id?: string }) =>
           :src="image(card.id)"
           :name="label(card.id)"
           :event="card.kind === 'scheduledEvent'"
+          :aha="card.kind === 'aha'"
           :enemy="card.camp === 'enemy'"
         /><span class="node-info"
           ><span class="node-name" :title="cardName(card)">{{ cardName(card) }}</span

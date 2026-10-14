@@ -122,6 +122,7 @@ export function participantCatalog(plan: SimulationPlan): ParticipantInfo[] {
     ...(definition.kind === 'actor' ? { camp: definition.camp } : {}),
   })
   return [
+    { id: plan.aha.id, kind: 'aha', name: 'Aha Instant', camp: 'neutral' },
     ...plan.actors.map((actor) => info(actor.id, actor)),
     ...plan.events.flatMap((event) =>
       event.operations.flatMap((op) =>
@@ -146,6 +147,13 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
     !object(plan) ||
     !Array.isArray(plan.actors) ||
     !Array.isArray(plan.events) ||
+    !object(plan.aha) ||
+    !identity(plan.aha.id) ||
+    !positive(plan.aha.baseSpeed) ||
+    !Array.isArray(plan.aha.contributorIds) ||
+    plan.aha.contributorIds.length > 4 ||
+    !plan.aha.contributorIds.every(identity) ||
+    new Set(plan.aha.contributorIds).size !== plan.aha.contributorIds.length ||
     !oneOf(plan.cycleMode, ['none', 'moc', 'aa']) ||
     !count(plan.maxNodes) ||
     plan.maxNodes > HARD_LIMITS.maxNodes ||
@@ -167,6 +175,10 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
     if (positions.has(position)) return invalid()
     positions.add(position)
   }
+  if (
+    plan.aha.contributorIds.some((id) => !plan.actors.some((a) => a.id === id && a.camp === 'ally'))
+  )
+    return invalid()
   const anchors = new Set<string>()
   const operationIds = new Set<string>()
   for (const event of plan.events) {
@@ -180,6 +192,7 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
       operationIds.add(op.id)
     }
   }
+  if (operationIds.has(plan.aha.id)) return invalid()
   const catalog = participantCatalog(plan)
   const participants = new Map<string, ParticipantInfo>()
   for (const participant of catalog) {
@@ -190,15 +203,16 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
   for (const event of plan.events) {
     if (event.anchor.kind === 'action' || event.anchor.kind === 'trigger') {
       const source = participants.get(event.anchor.participantId)
-      if (source && (source.kind === 'actor') !== (event.anchor.kind === 'action')) return invalid()
+      if (source && (source.kind !== 'scheduledEvent') !== (event.anchor.kind === 'action'))
+        return invalid()
     }
     for (const op of event.operations) {
       if (op.type === 'spawnParticipant') continue
       const ids = targetIds(op.target, catalog)
       const known = ids.flatMap((id) => (participants.get(id) ? [participants.get(id)!] : []))
       if (
-        known.some((participant) => participant.kind === 'scheduledEvent') &&
-        (ids.length !== 1 || !validTargetSelection(op.type, known))
+        (known.some((p) => p.kind === 'scheduledEvent') && ids.length !== 1) ||
+        (known.length > 0 && !validTargetSelection(op.type, known))
       )
         return [
           { code: 'invalid-target', severity: 'error', anchor: event.anchor, operationId: op.id },

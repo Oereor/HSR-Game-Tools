@@ -41,9 +41,9 @@ export function createPlannerPersistence(
   }
   function initialize() {
     const token = read()
-    if (!token) return { document: emptyDocument(), issues: [] }
+    if (!token) return { document: emptyDocument(), issues: [], migration: undefined }
     baseline = token.raw
-    if (token.raw === null) return { document: emptyDocument(), issues: [] }
+    if (token.raw === null) return { document: emptyDocument(), issues: [], migration: undefined }
     try {
       const parsed = parsePlannerDocument(token.raw)
       setStatus('saved')
@@ -51,7 +51,7 @@ export function createPlannerPersistence(
     } catch (error) {
       blocked = true
       setStatus('protected', error instanceof PlannerFileError ? error.code : 'json')
-      return { document: emptyDocument(), issues: [] }
+      return { document: emptyDocument(), issues: [], migration: undefined }
     }
   }
   function write(document: PlannerDocument, token: StorageToken) {
@@ -111,7 +111,7 @@ export function createPlannerPersistence(
     try {
       const parsed =
         current.raw === null
-          ? { document: emptyDocument(), issues: [] }
+          ? { document: emptyDocument(), issues: [], migration: undefined }
           : parsePlannerDocument(current.raw)
       if (!withoutSaving(() => restore(parsed.document))) return false
       baseline = current.raw

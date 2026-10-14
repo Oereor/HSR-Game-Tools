@@ -32,6 +32,7 @@ const actor: SpawnOperation = {
 }
 const plan = (operations: EffectOperation[]): SimulationPlan => ({
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: [],
   events: [{ anchor: start, operations }],
   maxNodes: 10,

@@ -299,6 +299,9 @@
     border-radius: 50%;
     background: var(--color-event);
   }
+  .camp-dot-neutral {
+    background: var(--color-event);
+  }
   .camp-dot-ally {
     background: var(--color-ally);
   }

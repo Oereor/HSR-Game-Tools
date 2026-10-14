@@ -6,6 +6,7 @@ export function syntheticDocument(): PlannerDocument {
     name: 'Synthetic fixture',
     plan: {
       cycleMode: 'none',
+      aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
       actors: [
         {
           id: 'editor-1',

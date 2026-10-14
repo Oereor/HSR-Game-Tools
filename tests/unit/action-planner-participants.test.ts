@@ -47,6 +47,7 @@ const action = (participantId: string, turn = 1): EventAnchor => ({
 const trigger = (participantId: string): EventAnchor => ({ kind: 'trigger', participantId })
 const plan = (operations: EffectOperation[] = []): SimulationPlan => ({
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: [actor('a'), actor('b', 1)],
   events: [{ anchor: { kind: 'start' }, operations }],
   maxNodes: 12,
@@ -318,7 +319,7 @@ describe('dynamic queue participant contracts', () => {
     expect(
       result.records[0].beforeEffects.participants
         .filter((participant) => participant.kind === 'actor')
-        .map(effectiveSpeed),
+        .map((p) => effectiveSpeed(p, result.records[0].beforeEffects)),
     ).toEqual([100, 100])
     expect(result.snapshots[1]).toMatchObject({ completedNodes: 1, completedActions: 0 })
     const a = result.snapshots[1].queue.find((participant) => participant.id === 'a')!
@@ -490,7 +491,7 @@ describe('dynamic queue participant contracts', () => {
     const states = event.beforeEffects.participants.filter(
       (participant) => participant.kind === 'actor',
     )
-    expect(states.map(effectiveSpeed)).toEqual([100, 105])
+    expect(states.map((p) => effectiveSpeed(p, event.beforeEffects))).toEqual([100, 105])
     expect(states[1].modifiers.map((buff) => buff.operationId)).toEqual(['ordinary'])
     const beforeTrigger = result.snapshots[result.records.indexOf(event)].queue.find(
       (entry) => entry.id === 'a',

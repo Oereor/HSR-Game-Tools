@@ -1,3 +1,4 @@
+import { isNaturalParticipant } from './types'
 import { phaseOperations } from './effect-config'
 import { pendingCycleBoundary } from './cycle'
 import { applyOperations, spawnParticipant } from './operations'
@@ -18,7 +19,7 @@ import {
 } from './queue'
 import { participantCatalog, validateOperations, validatePlan } from './validation'
 import type {
-  ActorState,
+  NaturalParticipantState,
   Diagnostic,
   EffectOperation,
   EventAnchor,
@@ -37,6 +38,7 @@ export {
   cloneState,
   countdownParticipantId,
   DEFAULT_LIMITS,
+  defaultAhaConfig,
   effectiveSpeed,
   FULL_AG,
   HARD_LIMITS,
@@ -70,27 +72,60 @@ export function createInitialState(plan: SimulationPlan): SimulationState {
       a.id.localeCompare(b.id),
   )
   for (const actor of actors) spawnParticipant(state, actor.id, actor)
+  state.issuedParticipantIds.add(plan.aha.id)
+  if (plan.aha.contributorIds.length)
+    state.participants.push({
+      ...plan.aha,
+      contributorIds: [...plan.aha.contributorIds],
+      kind: 'aha',
+      name: 'Aha Instant',
+      camp: 'neutral',
+      turns: 0,
+      modifiers: [],
+      remainingAG: FULL_AG,
+      order: state.nextOrder++,
+      zeroBatch: 0,
+      zeroOrder: 0,
+      pendingActionChanges: [],
+    })
   return state
 }
-function settleActor(state: SimulationState, id: string, oldModifiers: ReadonlySet<string>): void {
-  const actor = state.participants.find(
-    (participant): participant is ActorState =>
-      participant.id === id && participant.kind === 'actor',
+/** Shared by execution and post-action previews; expiry follows the complete post-action phase. */
+function finishNaturalTurn(state: SimulationState, participant: NaturalParticipantState): void {
+  participant.turns++
+  participant.remainingAG = FULL_AG
+  participant.zeroBatch = 0
+  participant.zeroOrder = 0
+  delete state.activeParticipantId
+}
+function settleNaturalParticipant(
+  state: SimulationState,
+  id: string,
+  oldModifiers: ReadonlySet<string>,
+): void {
+  const natural = state.participants.find(
+    (participant): participant is NaturalParticipantState =>
+      participant.id === id && isNaturalParticipant(participant),
   )!
-  actor.modifiers = actor.modifiers.filter((buff) => {
+  natural.modifiers = natural.modifiers.filter((buff) => {
     if (buff.lifetime.kind === 'countdown' || buff.lifetime.remainingTurns === null) return true
     if (oldModifiers.has(buff.id)) buff.lifetime.remainingTurns--
     return buff.lifetime.remainingTurns > 0
   })
   // Do not reset AG or insertion priority during expiry.
   assertState(state)
-  if (actor.actionLimit != null && actor.turns >= actor.actionLimit)
+  if (
+    natural.kind === 'actor' &&
+    natural.actionLimit != null &&
+    natural.turns >= natural.actionLimit
+  )
     state.participants = state.participants.filter((participant) => participant.id !== id)
+  assertState(state)
   state.completedActions++
 }
 function expireCountdown(state: SimulationState, id: string): void {
   for (const participant of state.participants)
-    if (participant.kind === 'actor')
+    if (isNaturalParticipant(participant))
       participant.modifiers = participant.modifiers.filter(
         (buff) => buff.lifetime.kind !== 'countdown' || buff.lifetime.participantId !== id,
       )
@@ -109,7 +144,7 @@ export function nextSimulationEvent(state: SimulationState):
   const participant = orderedParticipants(state)[0]
   const boundary = pendingCycleBoundary(state)
   const deltaAV = participant
-    ? finite(participant.remainingAG / effectiveSpeed(participant))
+    ? finite(participant.remainingAG / effectiveSpeed(participant, state))
     : undefined
   // Compare remaining time at full precision. Re-evaluate after every ordinary event.
   if (participant && deltaAV !== undefined && (!boundary || deltaAV <= boundary.remainingAV))
@@ -152,10 +187,10 @@ export function stepSimulation(
     }
   }
   const active = event.participant
-  const speed = effectiveSpeed(active)
+  const speed = effectiveSpeed(active, state)
   const deltaAV = finite(active.remainingAG / speed)
   const oldModifiers = new Set(
-    active.kind === 'actor' ? active.modifiers.map((buff) => buff.id) : [],
+    isNaturalParticipant(active) ? active.modifiers.map((buff) => buff.id) : [],
   )
   const actionChanges = cloneActionChanges(active.pendingActionChanges)
   active.pendingActionChanges = []
@@ -169,7 +204,7 @@ export function stepSimulation(
       kind: active.kind,
       name: active.name,
       iconUrl: active.iconUrl,
-      ...(active.kind === 'actor' ? { camp: active.camp } : {}),
+      ...(isNaturalParticipant(active) ? { camp: active.camp } : {}),
       anchor: event.anchor,
       elapsedAV: state.elapsedAV,
       deltaAV,
@@ -178,21 +213,17 @@ export function stepSimulation(
       beforeEffects: cloneState(state),
     }
     let diagnostics: Diagnostic[]
-    if (active.kind === 'actor') {
+    if (isNaturalParticipant(active)) {
       const before = applyOperations(state, phaseOperations(operations, 'preAction'), anchor)
       state = before.state
       const actor = state.participants.find(
-        (participant): participant is ActorState =>
-          participant.id === active.id && participant.kind === 'actor',
+        (participant): participant is NaturalParticipantState =>
+          participant.id === active.id && isNaturalParticipant(participant),
       )!
-      actor.turns++
-      actor.remainingAG = FULL_AG
-      actor.zeroBatch = 0
-      actor.zeroOrder = 0
-      delete state.activeParticipantId
+      finishNaturalTurn(state, actor)
       const after = applyOperations(state, phaseOperations(operations, 'postAction'), anchor)
       state = after.state
-      settleActor(state, active.id, oldModifiers)
+      settleNaturalParticipant(state, active.id, oldModifiers)
       diagnostics = [...before.diagnostics, ...after.diagnostics]
     } else {
       const triggered = applyOperations(state, operations, anchor)
@@ -283,15 +314,11 @@ export function previewOperationState(
     if (anchor.kind === 'action' && phase === 'postAction') {
       state = applyOperations(state, phaseOperations(operations, 'preAction'), anchor).state
       const actor = state.participants.find(
-        (participant): participant is ActorState =>
-          participant.id === anchor.participantId && participant.kind === 'actor',
+        (participant): participant is NaturalParticipantState =>
+          participant.id === anchor.participantId && isNaturalParticipant(participant),
       )
       if (!actor) return undefined
-      actor.turns++
-      actor.remainingAG = FULL_AG
-      actor.zeroBatch = 0
-      actor.zeroOrder = 0
-      delete state.activeParticipantId
+      finishNaturalTurn(state, actor)
     }
     const group = anchor.kind === 'action' ? phaseOperations(operations, phase) : [...operations]
     const index =

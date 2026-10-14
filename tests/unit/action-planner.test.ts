@@ -55,6 +55,7 @@ const speed = (
 })
 const plan = (operations: EffectOperation[] = []): SimulationPlan => ({
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: [actor('a', 160), actor('b', 134, 1)],
   events: [{ anchor: { kind: 'start' }, operations }],
   maxNodes: 12,
@@ -388,7 +389,14 @@ describe('action planner mechanism contracts', () => {
     for (const raw of [
       null,
       {},
-      { cycleMode: 'none', actors: [], events: [null], maxNodes: 1, maxAV: 1 },
+      {
+        cycleMode: 'none',
+        aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
+        actors: [],
+        events: [null],
+        maxNodes: 1,
+        maxAV: 1,
+      },
     ])
       expect(simulatePlan(raw as unknown as SimulationPlan).stopReason).toBe('error')
     const invalidCamp = plan()

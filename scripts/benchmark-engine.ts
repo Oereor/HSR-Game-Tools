@@ -5,6 +5,7 @@ import type { SimulationPlan } from '../src/engine/action-planner/types'
 
 const normal: SimulationPlan = {
   cycleMode: 'none',
+  aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
   actors: [160, 134, 120, 100].map((speed, i) => ({
     id: 'actor:' + i,
     name: 'Actor ' + i,

@@ -1,6 +1,8 @@
+import { resolveElationContributors } from './aha-config'
 import catalog from '../../../data/game/catalog.json'
 import {
   DEFAULT_LIMITS,
+  defaultAhaConfig,
   spawnedParticipantId,
   countdownParticipantId,
 } from '../../../engine/action-planner/queue'
@@ -10,7 +12,7 @@ import type { PlannerDocument } from './editor'
 import { simulatePlan } from '../../../engine/action-planner/engine'
 
 export const PLANNER_FORMAT = 'hsr-game-tools/action-planner'
-export const PLANNER_VERSION = 2
+export const PLANNER_VERSION = 3
 export const FILE_LIMITS = {
   bytes: 2 * 1024 * 1024,
   events: 1000,
@@ -30,7 +32,14 @@ export class PlannerFileError extends Error {
     super(code)
   }
 }
-export type ResourceIssue = { kind: 'missingCharacter' | 'unsafeImage'; id: string }
+export type ResourceIssue = {
+  kind: 'missingCharacter' | 'unsafeImage' | 'unknownElation' | 'elationMismatch'
+  id: string
+}
+export interface MigrationNotice {
+  fromVersion: 1 | 2
+  ahaAdded: boolean
+}
 export interface PlannerFile {
   format: typeof PLANNER_FORMAT
   version: typeof PLANNER_VERSION
@@ -38,7 +47,7 @@ export interface PlannerFile {
 }
 export const emptyDocument = (): PlannerDocument => ({
   name: '',
-  plan: { actors: [], events: [], cycleMode: 'none', ...DEFAULT_LIMITS },
+  plan: { actors: [], events: [], cycleMode: 'none', aha: defaultAhaConfig(), ...DEFAULT_LIMITS },
   metadata: { customNames: {}, characterIds: {} },
 })
 const fail = (code: FileErrorCode): never => {
@@ -119,15 +128,16 @@ export function safeImagePath(value?: string): string | undefined {
   return value && imagePaths.has(value) ? value : undefined
 }
 
-/** Strict versioned boundary. Migration returns an independently owned Version 2 document. */
+/** Strict versioned boundary. Migration returns an independently owned Version 3 document. */
 export function validatePlannerFile(value: unknown): {
   document: PlannerDocument
   issues: ResourceIssue[]
+  migration?: MigrationNotice
 } {
   inspectTree(value)
   const file = fields(value, ['format', 'version', 'document'])
   if (file.format !== PLANNER_FORMAT) fail('format')
-  if (file.version !== 1 && file.version !== PLANNER_VERSION) fail('version')
+  if (file.version !== 1 && file.version !== 2 && file.version !== PLANNER_VERSION) fail('version')
   const doc = fields(file.document, ['name', 'plan', 'metadata'])
   text(doc.name, FILE_LIMITS.name)
   const p = fields(doc.plan, [
@@ -135,7 +145,8 @@ export function validatePlannerFile(value: unknown): {
     'events',
     'maxNodes',
     'maxAV',
-    ...(file.version === 2 ? ['cycleMode'] : []),
+    ...(file.version !== 1 ? ['cycleMode'] : []),
+    ...(file.version === 3 ? ['aha'] : []),
   ])
   const actors = list(p.actors)
   const events = list(p.events)
@@ -166,7 +177,7 @@ export function validatePlannerFile(value: unknown): {
         ? ['kind']
         : a.kind === 'action'
           ? ['kind', 'participantId', 'turn']
-          : a.kind === 'cycleBoundary' && file.version === 2
+          : a.kind === 'cycleBoundary' && file.version !== 1
             ? ['kind', 'ordinal']
             : ['kind', 'participantId'],
     )
@@ -211,9 +222,6 @@ export function validatePlannerFile(value: unknown): {
     ...p,
     ...(file.version === 1 ? { cycleMode: 'none' } : {}),
   } as unknown as SimulationPlan
-  if (validatePlan(plan).length) fail('structure')
-  const participants = participantCatalog(plan)
-  if (participants.some((p) => opIds.has(p.id))) fail('identity')
   const m = fields(doc.metadata, ['customNames', 'characterIds'])
   const customNames = object(m.customNames)
   const characterIds = object(m.characterIds)
@@ -225,10 +233,62 @@ export function validatePlannerFile(value: unknown): {
     if (!plan.actors.some((actor) => actor.id === id && actor.camp === 'ally')) fail('metadata')
     if (!text(characterId).trim()) fail('metadata')
   }
+  const issues: ResourceIssue[] = []
+  let migration: MigrationNotice | undefined
+  if (file.version === 3) {
+    const aha = fields(p.aha, ['id', 'baseSpeed', 'contributorIds'])
+    const id = text(aha.id)
+    if (forbidden.has(id) || declaredIds.has(id) || opIds.has(id)) fail('identity')
+    for (const contributor of list(aha.contributorIds)) text(contributor)
+  } else {
+    // Strict fields were checked above; reserve old identities before shared semantic validation.
+    const legacy = { ...plan, aha: defaultAhaConfig() }
+    let suffix = 1
+    const occupied = new Set(declaredIds)
+    opIds.forEach((id) => occupied.add(id))
+    // Reserve derived IDs and orphan references before validating with the temporary config.
+    for (const event of legacy.events) {
+      if (event.anchor.kind === 'action' || event.anchor.kind === 'trigger')
+        occupied.add(event.anchor.participantId)
+      for (const op of event.operations) {
+        occupied.add(spawnedParticipantId(op.id))
+        occupied.add(countdownParticipantId(op.id))
+        if (op.type !== 'spawnParticipant' && op.target.kind === 'participants')
+          list(op.target.participantIds).forEach((id) => occupied.add(text(id)))
+      }
+    }
+    while (occupied.has(legacy.aha.id)) legacy.aha.id = `aha-instant:${++suffix}`
+    if (validatePlan(legacy).length) fail('structure')
+    const aha = { ...defaultAhaConfig(), id: legacy.aha.id }
+    const resolved = resolveElationContributors(plan.actors, characterIds as Record<string, string>)
+    aha.contributorIds = resolved.contributorIds
+    plan.aha = aha
+    resolved.unresolvedIds.forEach((id) => issues.push({ kind: 'unknownElation', id }))
+    migration = { fromVersion: file.version as 1 | 2, ahaAdded: aha.contributorIds.length > 0 }
+  }
+  if (validatePlan(plan).length) fail('structure')
+  const participants = participantCatalog(plan)
+  if (participants.some((p) => opIds.has(p.id))) fail('identity')
   // A fresh JSON tree also removes optional undefined properties from internal drafts.
   const document = JSON.parse(JSON.stringify(doc)) as PlannerDocument
-  if (file.version === 1) document.plan.cycleMode = 'none'
-  const issues: ResourceIssue[] = []
+  document.plan = JSON.parse(JSON.stringify(plan)) as SimulationPlan
+  if (file.version === 3) {
+    const resolved = resolveElationContributors(
+      document.plan.actors,
+      document.metadata.characterIds,
+      document.plan.aha.contributorIds,
+    )
+    for (const actor of document.plan.actors.filter((a) => a.camp === 'ally')) {
+      if (resolved.unresolvedIds.includes(actor.id)) {
+        if (document.plan.aha.contributorIds.includes(actor.id))
+          issues.push({ kind: 'unknownElation', id: actor.id })
+      } else if (
+        resolved.contributorIds.includes(actor.id) !==
+        document.plan.aha.contributorIds.includes(actor.id)
+      )
+        issues.push({ kind: 'elationMismatch', id: actor.id })
+    }
+  }
   for (const [id, characterId] of Object.entries(document.metadata.characterIds))
     if (!catalog.characters.some((c) => c.id === characterId))
       issues.push({ kind: 'missingCharacter', id })
@@ -253,7 +313,7 @@ export function validatePlannerFile(value: unknown): {
         image(operation.participant, spawnedParticipantId(operation.id))
   const serialized = JSON.stringify({ format: PLANNER_FORMAT, version: PLANNER_VERSION, document })
   if (new TextEncoder().encode(serialized).length > FILE_LIMITS.bytes) fail('limit')
-  return { document, issues }
+  return { document, issues, ...(migration ? { migration } : {}) }
 }
 
 export function parsePlannerDocument(source: string) {
@@ -284,6 +344,7 @@ export function serializePlannerDocument(document: PlannerDocument): string {
 export function preparePlannerDocument(
   input: PlannerDocument,
   inheritedIssues: ResourceIssue[] = [],
+  migration?: MigrationNotice,
 ) {
   const parsed = validatePlannerFile({
     format: PLANNER_FORMAT,
@@ -294,6 +355,7 @@ export function preparePlannerDocument(
   try {
     return {
       ...parsed,
+      ...(migration ? { migration } : {}),
       issues: [
         ...new Map(
           [...inheritedIssues, ...parsed.issues].map((issue) => [

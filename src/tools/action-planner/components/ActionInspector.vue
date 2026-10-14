@@ -20,6 +20,7 @@ import OperationTargets from './OperationTargets.vue'
 import { effectiveSpeed } from '../../../engine/action-planner/queue'
 import { phaseOperations } from '../../../engine/action-planner/effect-config'
 import type {
+  ParticipantInfo,
   EffectOperation,
   EventAnchor,
   SimulationState,
@@ -29,12 +30,13 @@ import type { ToolLocale } from '../../../locales/types'
 import type { OperationDraft } from '../model/editor'
 import { operationMetadata, type MetadataField } from '../model/metadata'
 const props = defineProps<{
+  ahaId: string
   anchor: EventAnchor
   inactive?: boolean
   operations: EffectOperation[]
   context?: SimulationState
   preview?: SimulationState
-  targets: { id: string; kind: 'actor' | 'scheduledEvent'; name: string; camp?: 'ally' | 'enemy' }[]
+  targets: ParticipantInfo[]
   invalid: string[]
   label: (id: string) => string
   image: (id: string) => string | undefined
@@ -65,7 +67,13 @@ const currentSpeed = computed(() => {
     anchor.kind === 'start' || anchor.kind === 'cycleBoundary'
       ? undefined
       : props.context?.participants.find((p) => p.id === anchor.participantId)
-  return participant ? effectiveSpeed(participant) : undefined
+  return participant && props.context ? effectiveSpeed(participant, props.context) : undefined
+})
+const currentIsAha = computed(() => {
+  const anchor = props.anchor
+  return (
+    (anchor.kind === 'action' || anchor.kind === 'trigger') && anchor.participantId === props.ahaId
+  )
 })
 const overview = ref<HTMLElement>()
 watch(
@@ -141,6 +149,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
           :src="image(anchor.participantId)"
           :name="label(anchor.participantId)"
           :event="anchor.kind === 'trigger'"
+          :aha="currentIsAha"
         />
         <div class="current-identity">
           <h2 ref="overview" tabindex="-1">{{ anchorLabel(anchor) }}</h2>

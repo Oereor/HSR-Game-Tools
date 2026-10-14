@@ -23,6 +23,7 @@ export function usePlannerPresentation(
       (c) => c.id === metadataValue(document.value.metadata.characterIds, id),
     )
   const rawName = (id: string) => {
+    if (id === document.value.plan.aha.id) return t('planner.aha.name')
     const c = character(id)
     return c
       ? characterName(c, locale.value as ToolLocale)

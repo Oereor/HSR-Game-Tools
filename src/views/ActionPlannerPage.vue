@@ -16,7 +16,7 @@ import ActionInspector from '../tools/action-planner/components/ActionInspector.
 import { usePlannerSession } from '../tools/action-planner/composables/usePlannerSession'
 import PlanManagement from '../tools/action-planner/components/PlanManagement.vue'
 import { usePlannerPresentation } from '../tools/action-planner/composables/usePlannerPresentation'
-import type { ActorConfig, CycleMode } from '../engine/action-planner/types'
+import type { ActorConfig, CycleMode, AhaConfig } from '../engine/action-planner/types'
 const { t, locale } = useI18n()
 const { planner, persistence, saveStatus } = usePlannerSession()
 const planManagement = ref<InstanceType<typeof PlanManagement>>()
@@ -65,8 +65,9 @@ function apply(
   av: number,
   characters: Record<string, string>,
   cycleMode: CycleMode,
+  aha: AhaConfig,
 ) {
-  if (planner.applySetup(actors, nodes, av, characters, cycleMode)) stage.value = 'planning'
+  if (planner.applySetup(actors, nodes, av, characters, cycleMode, aha)) stage.value = 'planning'
 }
 const navigatorProps = computed(() => ({
   records: result.value.records,
@@ -78,6 +79,7 @@ const navigatorProps = computed(() => ({
   image,
 }))
 const inspectorProps = computed(() => ({
+  ahaId: plan.value.aha.id,
   anchor: selected.value,
   inactive: selected.value.kind === 'cycleBoundary' && plan.value.cycleMode === 'none',
   operations: operations.value,

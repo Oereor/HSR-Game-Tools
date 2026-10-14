@@ -19,6 +19,7 @@ export function usePlannerSession(storage: () => PlannerStorage = () => window.l
     initial.document.name,
   )
   planner.resourceIssues.value = initial.issues
+  planner.migrationNotice.value = initial.migration
   const stop = watch(planner.document, (document) => persistence.save(document), { flush: 'sync' })
   const handleStorage = (event: StorageEvent) => {
     try {
