@@ -1,7 +1,6 @@
 # 正式配队方案
 
-这里只放用户人工审阅后的 Version 3 JSON（兼容已有 Version 1）。当前没有正式模板；测试虚构方案不得加入此目录。
+这里只放用户人工审阅后的普通导出方案。新模板使用 Version 3 JSON，解析器兼容既有 Version 1/2；当前正式目录为空，测试方案不得加入。
 
-在工具中配置并导出方案，将 JSON 放入此处，在 `../catalog.ts` 显式导入并登记 ID、顺序、名称／简介 Message Key 和 `file`。在中英文 Site Messages 添加对应介绍，执行 `npm run validate:planner-templates`。
-
-模板使用普通文档解析器；加载获得独立的可编辑文档，不与源文件持续同步。
+完整审阅、导出、Catalog 登记、Site Messages 和校验流程见[方案与模板维护](../../../../../docs/architecture/action-order-simulator.md#方案与模板维护)。
+目录登记见 [catalog.ts](../catalog.ts)，不根据截图或角色技能描述自动生成配队。

@@ -1,100 +1,107 @@
-# HSR-Game-Tools Design Notes
+# UI 设计规范
 
-Phase 1B-1 真实编辑器及 UI Polish Round 1。沿用已验收的 Phase 1B-0 主题，独立于 HSR-Database 的样式体系。视觉效果最终由用户验收。
+本指南描述首页与行动序列模拟器当前使用的 UI 语言。执行机制与状态职责见[现行架构](architecture/action-order-simulator.md)，翻译维护见[Site Messages](site-messages.md)。
+历史 UI 取舍和验证记录保存在 [investigations](investigations/README.md)，不作为当前阶段状态说明。
 
-## 主题与职责
+## 主题与组件职责
 
-主题入口为 `src/theme/preset.ts`，使用 `definePreset(Aura, …)`。优先 Primitive、Semantic Tokens，仅为 Tabs、ToggleButton、Button、Splitter 添加必要的 Component Tokens。Aura 部分 Token 位于 `colorScheme.dark`，自定义时保持同样层级，否则浅层覆盖可能不生效。
+主题入口为 [preset.ts](../src/theme/preset.ts)，使用 PrimeVue Styled Mode 的 `definePreset(Aura, …)`。
+依赖版本以 [package.json](../package.json) 为准，保留现有 PrimeVue / @primeuix/themes 组合，不重新引入 @primevue/themes。
+优先 Primitive / Semantic Token，只为必要组件定制 Token；Aura 深色覆盖位于 `colorScheme.dark`，保留对应层级。
 
-| 语义             | Token／起始值                     | 使用                              |
-| ---------------- | --------------------------------- | --------------------------------- |
-| 页面             | graphite.950 / `#17191D`          | 工作区基底                        |
-| 次级 Surface     | graphite.900 / `#22252B`          | 输入、业务卡片                    |
-| 浮层 Surface     | graphite.800 / `#2B2E34`          | Tooltip 等小浮层；Dialog 使用 900 |
-| 主文字           | graphite.50 / `#F1EEE7`           | 正文、标题                        |
-| 辅助文字         | graphite.400 / `#969AA3`          | 次级状态                          |
-| 强调             | gold.400 / `#C9A86B`              | 主按钮、选择、Focus               |
-| 边框             | graphite.700 / `#3B4049`          | 中性分隔，业务卡片可降低透明度    |
-| 提前／延后／友方 | `#5FA9E7` / `#E16B71` / `#67BD96` | 仅用于对应语义                    |
+| 语义               | Token / 当前值                    | 用途                              |
+| ------------------ | --------------------------------- | --------------------------------- |
+| 页面               | graphite.950 / `#17191D`          | 页背景与工作区基底                |
+| 次级 Surface       | graphite.900 / `#22252B`          | 控件与业务卡片                    |
+| 浮层               | graphite.800 / `#2B2E34`          | Tooltip 等轻浮层；Dialog 使用 900 |
+| 主文字             | graphite.50 / `#F1EEE7`           | 正文与标题                        |
+| 辅助文字           | graphite.400 / `#969AA3`          | 简介、状态和次级信息              |
+| 强调               | gold.400 / `#C9A86B`              | 主要操作、选择与 Focus            |
+| 边框               | graphite.700 / `#3B4049`          | 分隔和卡片边界                    |
+| 提前 / 延后 / 友方 | `#5FA9E7` / `#E16B71` / `#67BD96` | 对应机制和阵营，不作首页装饰      |
+| 中立 / 事件 / 系统 | event.500 / `#DFBC66`             | 阵营圆点及系统身份                |
 
-深色 Primary 的 Hover／Active 为 gold.300／200，文字使用 graphite.950。Highlight 使用金色 10%／17% 透明背景。Focus Ring 为 2px、offset 3px；输入和按钮圆角 6px，业务卡片 6–8px。金色不用于普通输入的常驻边框。
+深色 Primary Hover / Active 使用 gold.300 / 200，文字使用 graphite.950。Highlight 为金色低透明背景。
+Focus Ring 为 2px、offset 3px；普通控件圆角 6px，业务卡片 6–8px。普通输入不常驻金色边框。
 
-固定 `.app-dark` 在 html，PrimeVue `darkModeSelector` 与 Tailwind dark variant 一致，body Portal 可继承 Token。CSS 层顺序：`theme → base → primevue → components → utilities`。Tailwind Preflight 位于 base；业务样式位于 components，布局 Utilities 可按需覆盖。`tailwindcss-primeui` 通过 Tailwind 4 CSS 入口导入。
+[main.ts](../src/main.ts)固定 `.app-dark` 在 html；PrimeVue 与 Tailwind 使用同一 selector。CSS 层顺序为 theme → base → primevue → components → utilities，body Portal 继承主题 Token。
+[main.css](../src/assets/main.css)提供主题颜色和公共业务样式；首页独立 Scoped CSS，不用宽泛全局选择器影响模拟器。
 
-PrimeVue 负责 Tabs、表单、按钮、Dialog、Tooltip、Splitter；Tailwind 与工具 CSS 负责空间、行动卡、操作卡、头像和语义标识。不使用 PrimeVue Card 决定信息架构，不覆盖成片的内部组件类。
+PrimeVue 负责基本控件、Tabs、Dialog、Tooltip 和 Splitter；工具自身负责布局、行动卡、操作卡、头像与语义标识。
+不让 PrimeVue Card 决定信息架构，不批量覆盖内部 `.p-*` 类、不全量注册图标，也不加入新 UI 框架。
 
-## 工作区约定
+## 首页工具集合
 
-桌面先用 35%／65% Splitter；最小宽度换算包含 gutter 余量，Navigator 至少约 320px、Inspector 约 440px。低于 960px 上下布局，Navigator 最大 280px，Inspector 随页面展开。桌面两侧分别滚动，避免再给整个工作区添加第三层滚动容器。
+[HomePage.vue](../src/views/HomePage.vue)复用 Header、站名和语言切换。Hero 只有标题与次级 GitHub 链接；工具区使用统一 Icon / 名称 / 简介，Footer 为低调的非官方声明。
 
-未来行动在上方弱化显示 +推进 AV、下方突出累计 AV，右对齐并启用 tabular numbers；当前队列在战斗开始位置读取已结算开始操作的初始 Snapshot，其他位置读取 NodeRecord.beforeEffects。当前行动卡置顶，AV 为 0.00，使用金色轻背景和紧凑标识；下方等待卡仅显示剩余 AV／有效速度，累计 AV 由控制栏显示。AV 固定两位，内部数值不四舍五入。9px 实心圆点表示阵营：我方绿、敌方红、事件／系统／未知节点黄，黄色来自主题 `event.500` Token；配套本地化 Tooltip 与可访问名称，行动卡 Metadata 不重复输出阵营文字。
+站点内容最大宽度沿用 1440px，卡片内边距 24px、圆角 8px、最小高度 240px，由内容自然撑开；图标为 24px，置于 48px 的低对比容器。
+大于 1100px 三列，601–1100px 两列，600px 及以下单列；移动端 GitHub 链接位于标题下方，网格与文本允许收缩、换行。
 
-队列推进位置与 Inspector 选择分别拥有状态。每次前进进入一个实际事件节点并选中它；点击等待卡只切换 Inspector。模式切换保留推进 Anchor，重算后 Anchor 不可达则队列回到战斗开始，Inspector 仍保留原 Anchor 的修复入口。当前行动卡使用 NodeRecord.actionChanges，等待卡使用 QueueEntry.actionChanges。倒计时 beforeEffects 沿用引擎先移除到期速度修正的窗口，不改变生命周期或结算后 Snapshot 语义。
+开放卡片使用整卡 RouterLink、轻金色边框及右下角箭头，Hover / Focus 轻微提高背景和边框对比；150ms 过渡，不缩放或发光。
+未开放卡片使用静态 article，保留正常可读性，无点击、箭头、Tab 焦点或伪路由。状态由工具目录的路由决定，不由翻译文案决定。
+尊重 `prefers-reduced-motion`，关闭过渡与箭头位移。
 
-标记只读取与目标 anchorKey 匹配的已提交 Trace：蓝色 ArrowUp、红色 ArrowDown、蓝色 Zap 可共存。按本轮用户确认，合法效果即使没有 AG／AV 或排序变化也显示。零百分比效果亦保留；不以净变化互相抵消。Trace 的原始数值和 zeroAVInsertion 仍描述真实数学／插队，立即行动保持独立类型。配置图标是独立中性语义，不能充当受影响标记。长名称截断且保留完整 title，Inspector 名称允许换行。
+## 模拟器工作区与编辑
 
-操作卡按实际结算窗口分组，标题采用集中语义命名模块与 Site Messages，自定义名称优先，空白恢复自动命名。右上角保留上移、下移、编辑、删除四个 PrimeVue 图标按钮，不占底部整行。Padding 12px，Metadata 正文约 13px，参数组可换行；避免嵌套 Card、占位短横线及机械点分隔。
+桌面以约 35% / 65% Splitter 分栏，根据最小宽度调整；Navigator 至少约 320px，Inspector 约 440px，计算包含 gutter。
+低于 960px 改为上下布局，Navigator 最大 280px，Inspector 随页面展开；桌面两侧分别滚动，不添加第三个工作区滚动容器。
 
-单目标始终显示头像与名称；多目标使用实际执行时点的头像组，每个头像有名称 Tooltip，预览四个并通过 +N Popover 查看完整名单。缺少可靠上下文时显示范围及不可解析状态，不使用初始队伍数量或最终目录虚构实际目标。Metadata 始终由配置生成：提前／延后的百分比、速度修正模式和有符号数值、回合或倒计时名称与速度、创建实体名称及其适用属性，独立于标题。上下移动限制在同一窗口，阶段变更进入新窗口末尾。
+战斗配置依次呈现方案管理、我方编队、阿哈配置（适用时）、敌方单位与推演范围。敌方小卡桌面双列、窄屏单列，名称允许重复，SPD 由用户输入。
+阿哈标题用紧凑 UnitPortrait Smile 和黄色中立点；基础速度输入与只读面板速度双列，600px 及以下单列。基础速度可修改，预览来源与隐藏状态保留规则见架构文档。
 
-概览和编辑互斥。节点、工作阶段或导航模式切换丢弃操作草稿；取消不改变已提交操作。配置草稿由“应用配置”统一提交双方编队与预算，独立于操作草稿。页面唯一已提交文档为 PlannerDocument，包含方案名称、plan 和 metadata；改变 plan 后真实重算，仅修改方案名或自定义操作名不重算。
+概览和编辑互斥，操作编辑占用 Inspector；退出或切换时按架构中的草稿规则处理，窄屏定位编辑标题。
+不可达事件保留配置修复入口；无可靠执行上下文时禁用新增 / 编辑目标操作，保留查看 / 删除。错误诊断展开，普通警告可折叠。
 
-战斗配置依次显示方案管理、我方四槽、敌方单位和推演范围。方案名失焦／回车提交；初始敌方最多五名，名称可重复，单个 SPD 留空直到用户填写，桌面小卡片双列、窄屏单列。双方位置各自编号。修改速度保留 ID，替换角色／删除后重建产生新 ID；保留合法导入字段和失效操作诊断。导入初始敌人以基础速度统一两项 SPD，页面不显示差异提示。
+## 行动卡、队列与操作卡
 
-方案管理使用紧凑名称、状态与按钮行，普通导入和常见配队共用完整文档恢复流程。非空方案或未提交输入被替换前确认；新建也覆盖自动存档。正式模板未提供时显示空状态，不填充虚构方案。自动保存只监听浅引用的提交边界；启动先恢复，坏存档与外部修改暂停写入，提供备份、载入及明确覆盖。运行时结果、Trace、导航与草稿不持久化。
+未来行动上方弱化显示推进 AV，下方突出累计 AV；当前队列顶部突出当前行动者（0.00 AV），等待项显示剩余 AV 和有效 SPD，控制栏显示累计 AV。
+数字右对齐并使用 tabular numbers。展示时点来自架构规定的初始 Snapshot / beforeEffects，不读取未来结果来补充当前状态。
 
-目标 Grid 使用 previewOperationState 的执行时点上下文和 targeting.ts 的资格，不使用最终目录。倒计时限定单目标提前／延后。同名参与者按稳定 ID 派生区分标签。不可达事件集中显示且保持锚点，无上下文禁用添加／编辑，保留删除与配置修复入口。错误诊断展开，普通警告可折叠。
+行动卡以 9px 阵营圆点、名称与回合信息组成主体；绿色我方、红色敌方、黄色中立 / 事件 / 系统 / 未知，圆点带本地化 Tooltip 和可访问名称，不重复常驻阵营文字。
+长名称截断并保留完整 title；Inspector 名称可换行。
 
-EffectFields、ParticipantFields 和 TargetGrid 分别负责效果、实体与目标字段，OperationEditor 负责类型／阶段／名称和提交。统一 operationDraft 将新建普通草稿默认设为 postAction；编辑保留原阶段，隐式旧阶段仍按 preAction 处理。事件触发与战斗开始没有阶段选择。创建操作编辑锁定实体种类；字段错误关联实际输入，窄屏进入／退出编辑定位标题。
+选中行动卡通过边框 / 背景和 aria-pressed 表示；当前行动另用 aria-current="step"，避免叠加边框，不加选中对勾。
+系统轮次使用黄色圆点和 Flag，显示累计 / 推进 AV，不显示 SPD 或普通回合编号。当前边界置顶，等待区不重复显示它；停用轮次配置单独列出。
 
-## 国际化职责
+操作卡按实际窗口分组，Padding 12px，Metadata 正文约 13px；右上角保留上移、下移、编辑、删除四个 PrimeVue 图标按钮。
+名称优先自定义，否则翻译语义描述；参数始终来自配置与缓存执行上下文，不根据标题推断或省略。
+单目标显示头像和名称，多目标预览四个头像并用 +N Popover 提供完整名单；无可靠上下文时显示范围 / 不可解析状态，不虚构目标。
 
-`src/locales/zh-CN.json` 与 `en.json` 维护完整自然语言模板。`SiteMessages` Schema 从中文消息结构推导，两个目录通过类型约束及 `validate:i18n` 的 Key／参数／格式校验保持一致。模型返回 MessageDescriptor 与原始参数；Presentation 注入轻量 t 接口，在 Vue Setup 中连接 useI18n，递归翻译嵌套描述并格式化数字。保留合理 ui.* Key，新消息按稳定业务语义分组。
+## 行动变化标记与速度 Tag
 
-官方名称来自规范化双语游戏数据；用户名称不翻译；自动名称不写入计划。语言只改变展示和数字格式；operationContext 以计划和选中锚点为依赖缓存，语言变化不重新预览执行状态。测试主要断言语义和业务身份，不锁定用户可维护的翻译措辞。详细维护步骤见 README。
+ArrowUp（蓝）、ArrowDown（红）、Zap（蓝）分别表示 advance、delay、immediatelyAct，三种类型可共存。
+仅使用匹配目标 Anchor 的已提交 Trace；合法效果即使 AG / AV / 排序不变也显示，零百分比保留，不按净变化相互抵消；无效 / 跳过 / 失败效果不产生标记。
+中性的配置图标只表示该节点配置了操作，不能代替受影响标记；速度变化不生成拉条标记。
+
+速度 Tag 展示实际生效的 Modifier，每个实例独立，不合并；正值蓝、负值红、零值中性，文字保留原始 flat / percent 幅度与符号。
+阿哈只展示自身 Modifier，派生贡献不伪装为 Buff。Tooltip 解释剩余回合、无限持续或关联倒计时名称和速度；不能从草稿或未来配置推断当前效果。
+
+行动卡第三行仅在有 Tag 或变化图标时出现；Tag 左侧换行，变化图标保留在右侧 AV 下方。
+复用小尺寸、柔和背景的 PrimeVue Tag，不加入内部图标。Inspector 和 Navigator 共用来源索引与纯展示模型，无法解析倒计时时使用通用文案，不猜到期。
 
 ## 图标与可访问性
 
 Lucide 按名称导入，常用尺寸 18px、线宽 1.75；紧凑标记 13–16px，事件头像 22–28px。
+首页 GitHub 本地 SVG 的来源与通知见[第三方说明](third-party/README.md)。
 
-| 语义               | 图标                |
-| ------------------ | ------------------- |
-| 提前／延后         | ArrowUp / ArrowDown |
-| 速度／战斗事件     | Gauge / Timer       |
-| 编辑／删除         | Pencil / Trash2     |
-| 返回／添加         | ArrowLeft / Plus    |
-| 立即行动／创建单位 | Zap / UserRoundPlus |
+| 语义                | 图标                       |
+| ------------------- | -------------------------- |
+| 提前 / 延后         | ArrowUp / ArrowDown        |
+| 速度 / 战斗事件     | Gauge / Timer              |
+| 编辑 / 删除         | Pencil / Trash2            |
+| 返回 / 添加         | ArrowLeft / Plus           |
+| 立即行动 / 创建单位 | Zap / UserRoundPlus        |
+| 阿哈 / 轮次         | Smile / Flag               |
+| 工具目录            | ListOrdered / Ticket / Gem |
 
-主要操作使用图标加文字；辅助图标按钮必须有 aria-label 和 Tooltip。阵营圆点保留 Tooltip 与可访问名称，不在行动卡上显示重复文字。行动卡选中态使用边框／背景和 aria-pressed，当前行动另以 aria-current="step" 表达，两者不叠加边框；不显示选中对勾，目标选择器继续保留 Check 与 aria-pressed。InputNumber 的错误关联通过 `pt.pcInputText.root` 传入实际 input，避免把 aria-describedby 留在外层 span。
+主要操作使用图标加文字；辅助图标按钮具有本地化 aria-label 和 Tooltip，纯装饰图标隐藏于辅助技术。
+目标选择保留 Check 和 aria-pressed，合法名单完整可达。表单错误关联真实输入；InputNumber 通过 `pt.pcInputText.root` 传递 aria-describedby。
 
-UI 视觉和真实浏览器交互由用户在本地人工验收；Codex 默认仅执行类型检查、定向单元测试、静态检查和构建，不启动浏览器或截图。只有用户明确要求某次浏览器自动化验收时才例外执行。
+行动卡按钮内不嵌套按钮或可聚焦 Tag。Tag 支持 Hover Tooltip；卡片 Focus Tooltip 与可访问名称包含全部效果，Inspector 的非交互包装元素可聚焦解释同一效果。
+Tooltip 使用转义文本并保留 Escape 关闭，效果含文字和符号，不仅依靠颜色。
 
-避免紫色 Primary、Neon、玻璃拟态、多层卡片、装饰图标、满屏金色边框和常驻长说明。后续新增控件先检查 Token、键盘、浮层、双语与窄屏，再判断是否需要专属 CSS。
+## 维护与验收
 
-## Phase 2B 轮次系统
-
-战斗配置在推演范围附近使用紧凑 PrimeVue SelectButton，关闭／MoC／AA 三选一且不允许空值。模式属于配置草稿，连同双方编队和预算显式应用；仅展示 150 / 100 AV 或 300 / 100 AV 的简短说明。窄屏允许控件换行，沿用深色金色主题。
-
-第 0 轮长度为 MoC 150 AV、AA 300 AV，此后每轮 100 AV。边界是独立系统事件，不加入 Participant 或目标目录。同 AV 的普通行动和 Scheduled Event（含新产生的零 AV 行动）全部先执行；轮次自身操作产生的行动在其后执行。边界有稳定 ordinal Anchor，单窗口标准操作，不具备 SPD／AG，不进行普通回合结算。
-
-系统行动卡沿用原骨架、黄色系统圆点和 Flag 图标，名称通过 Site Messages 生成，显示累计和推进 AV，不显示速度与普通回合编号。当前队列从同一 SimulationResult 的初始 Snapshot／beforeEffects 投影一个下一边界倒计时，同 AV 位于普通等待项之后；当前边界置顶且不重复出现在等待项，不提前展示其操作效果。
-
-关闭轮次保留原操作，单列停用配置且不报告普通不可达警告；无上下文只能查看／删除。重新启用或切换 MoC／AA 继续按 ordinal 关联。统一 JSON 导出 Version 2，Version 1 经严格解析迁移为 cycleMode: none；存档／模板共用迁移入口，未知字段检查不放宽。暂不支持跨波次。
-
-## Phase 2C-1 阿哈时刻
-
-阿哈配置紧邻我方编队，草稿有欢愉贡献者时显示。第一行使用共享 UnitPortrait 的紧凑 Smile、标题和黄色中立点；第二行双列使用 small、fluid 的 InputNumber 基础速度输入和只读 InputText 面板速度，600px 及以下改为单列。基础速度默认 80；面板速度仍使用草稿编队速度和阿哈基础速度计算，不包含开始操作，不常驻显示说明文字。隐藏只改变可见性，不清空草稿；非法隐藏基础速度在 Apply 时重新显示输入以供修复。编队、轮次、预算和阿哈配置同一 Apply 提交。
-
-阿哈独立于双方槽位，复用自然行动卡、双窗口 Inspector 与 beforeEffects 当前队列。中立身份有独立语义但使用 event.500 对应现有黄色 Token。速度目标选择器增加中立组，允许阿哈/Actor 显式混选；提前、延后及立即行动对阿哈禁用，既有选择可解除。群体阵营目标不含阿哈。Smile 统一用于阿哈节点和目标头像；普通速度效果继续使用 Gauge，速度变化不伪造拉条 Trace。
-
-自身速度效果支持固定值、基于阿哈 baseSpeed 的百分比、有限/无限回合与标准倒计时。回合到期采用 oldModifiers；欢愉贡献只在统一状态速度公式中派生。新文件导出 Version 3，旧 Version 1/2 通过严格迁移补阿哈，显示升级及不可达操作检查提示。迁移信息是运行时通知，不保存到 plan；Version 3 的身份事实保持至显式 Apply。真实浏览器验收由用户负责。
-
-## Speed Modifier Tag 展示
-
-自然行动的速度 Tag 表示 beforeEffects 中已有的效果；当前队列等待项使用 QueueEntry.modifiers，初始位置使用开始操作结算后的队列。Inspector 读取现有 context，不读取 draft preview 或操作配置推断效果。阿哈只显示自身 modifiers，派生贡献不生成 Tag。显示原始 flat/percent 幅度、符号与剩余生命周期，独立 ID 不合并。
-
-行动卡主体为两列：名称／推进 AV、回合元信息／累计或剩余 AV、Tag／行动变化图标。当前队列的有效 SPD 保留在元信息中。第三行仅在有 Tag 或变化图标时渲染；Tag 左侧换行，箭头／闪电保留在右侧 AV 下方，不混合两类语义。复用 PrimeVue Tag，小尺寸、柔和背景，蓝色／红色／中性分别使用现有语义 Token，不添加 Tag 内图标。
-
-纯 SpeedModifierTagView 解释数据与生命周期，Message Descriptor 统一生成文案。倒计时优先查同一模拟状态，缺失时按经过 ID 匹配的来源速度操作解析；无法解析使用通用描述，不自行判断到期。来源 Map 在页面按 plan 构建一次，Navigator 与 Inspector 共用。展示状态、索引与文案均不持久化。
-
-卡片按钮内没有嵌套按钮或可聚焦 Tag。Tag 使用 Hover Tooltip；卡片 Focus Tooltip 和可访问名称包含全部效果与持续信息。Inspector 的非交互包装元素可聚焦，Focus Tooltip 解释同一效果，内部 Tag 保持 Hover Tooltip；正负号和速度文本保证不只通过颜色区分。所有新增 Tooltip 使用转义文本，保留 Escape 关闭。真实浏览器交互及视觉验收仍由用户负责。
+保持克制的黑金风格，避免紫色渐变、Neon、玻璃拟态、多层卡片、满屏金色边框和长篇常驻说明。
+新增控件先检查 Token、键盘、浮层、双语与窄屏；数学、资格、持久化及版本规则以现行架构为准。
+用户在本地人工验收视觉与交互；Agent 的验证政策及建议宽度见[开发指南](development.md#验证策略)。
