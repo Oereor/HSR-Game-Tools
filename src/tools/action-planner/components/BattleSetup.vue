@@ -292,18 +292,18 @@ function apply() {
         </div>
       </section>
     </div>
-    <section v-if="ahaContributors.length || errors.includes('aha-base')" class="range-section">
+    <section v-if="ahaContributors.length || errors.includes('aha-base')" class="aha-setup">
       <div class="section-title">
-        <h2 class="compact-target">
+        <h2 class="aha-setup-heading">
+          <UnitPortrait :name="t('planner.aha.name')" aha compact aria-hidden="true" />
+          {{ t('planner.aha.name') }}
           <span
             class="camp-dot camp-dot-neutral"
             role="img"
             :aria-label="t('planner.navigator.neutral')"
             v-tooltip="t('planner.navigator.neutral')"
           ></span>
-          {{ t('planner.aha.name') }}
         </h2>
-        <UnitPortrait :name="t('planner.aha.name')" aha />
       </div>
       <div class="form-grid">
         <div class="field">
@@ -315,6 +315,7 @@ function apply() {
             :use-grouping="false"
             :max-fraction-digits="20"
             :invalid="errors.includes('aha-base')"
+            size="small"
             :pt="{
               pcInputText: {
                 root: {
@@ -330,15 +331,20 @@ function apply() {
           }}</small>
         </div>
         <div class="field">
-          <label for="aha-initial-speed">{{ t('planner.aha.initialSpeed') }}</label>
-          <output id="aha-initial-speed">{{
-            ahaInitialSpeed === undefined
-              ? t('planner.aha.invalidPreview')
-              : t('planner.metadata.speed', {
-                  speed: formatNumber(ahaInitialSpeed, locale as ToolLocale),
-                })
-          }}</output>
-          <small class="fine-print">{{ t('planner.aha.previewHint') }}</small>
+          <label for="aha-panel-speed">{{ t('ui.panelSpeed') }}</label>
+          <InputText
+            id="aha-panel-speed"
+            :model-value="
+              ahaInitialSpeed === undefined
+                ? t('planner.aha.invalidPreview')
+                : t('planner.metadata.speed', {
+                    speed: formatNumber(ahaInitialSpeed, locale as ToolLocale),
+                  })
+            "
+            size="small"
+            fluid
+            readonly
+          />
         </div>
       </div>
     </section>

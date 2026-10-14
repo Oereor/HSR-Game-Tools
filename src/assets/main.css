@@ -805,6 +805,26 @@
   .range-section .fine-print {
     margin-top: 16px;
   }
+  .aha-setup {
+    max-width: 700px;
+    margin: 16px 0;
+  }
+  .aha-setup .section-title {
+    margin: 0 0 10px;
+  }
+  .aha-setup-heading {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 0;
+  }
+  .aha-setup .form-grid {
+    gap: 12px;
+  }
+  .aha-setup .field {
+    gap: 6px;
+  }
   .cycle-mode-control {
     display: flex;
     flex-wrap: wrap;
@@ -1076,6 +1096,18 @@
   .compact-target .event-avatar svg {
     width: 15px;
     height: 15px;
+  }
+  .game-icon.unit-portrait-compact,
+  .event-avatar.unit-portrait-compact {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  .event-avatar.unit-portrait-compact svg {
+    width: 18px;
+    height: 18px;
   }
   .text-button {
     color: var(--color-accent);

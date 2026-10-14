@@ -153,9 +153,7 @@
     },
     "aha": {
       "name": "Aha Instant",
-      "initialSpeed": "Initial calculated speed",
       "invalidPreview": "Enter valid speeds",
-      "previewHint": "Calculated from team panel speeds, before battle-start operations.",
       "migratedWithAha": "Version {version} plan upgraded with Aha Instant. Action order may change; review unreachable operations.",
       "migrated": "Version {version} plan upgraded to Version 3."
     },
