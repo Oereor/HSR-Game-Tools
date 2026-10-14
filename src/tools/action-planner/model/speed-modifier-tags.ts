@@ -1,5 +1,5 @@
 import { countdownParticipantId } from '../../../engine/action-planner/queue'
-import { isNaturalParticipant } from '../../../engine/action-planner/types'
+import { effectiveSpeed } from '../../../engine/action-planner/queue'
 import type {
   EventAnchor,
   NodeRecord,
@@ -62,7 +62,12 @@ export function speedModifierTags(
       const countdown = timer ?? (source?.participantId === id ? source : undefined)
       lifetime = {
         ...modifier.lifetime,
-        ...(countdown ? { name: countdown.name, speed: countdown.speed } : {}),
+        ...(countdown
+          ? {
+              name: countdown.name,
+              speed: timer && state ? effectiveSpeed(timer, state) : countdown.speed,
+            }
+          : {}),
       }
     }
     return {
@@ -82,11 +87,9 @@ export function actionSpeedModifierTags(
   state: SimulationState | undefined,
   sources: CountdownSources,
 ): SpeedModifierTagView[] {
-  if (anchor.kind !== 'action' || !state) return []
+  if ((anchor.kind !== 'action' && anchor.kind !== 'trigger') || !state) return []
   const participant = state.participants.find((p) => p.id === anchor.participantId)
-  return participant && isNaturalParticipant(participant)
-    ? speedModifierTags(participant.modifiers, sources, state)
-    : []
+  return participant ? speedModifierTags(participant.modifiers, sources, state) : []
 }
 
 export function navigatorSpeedModifierTags(
@@ -96,9 +99,7 @@ export function navigatorSpeedModifierTags(
 ): SpeedModifierTagView[] {
   if ('beforeEffects' in node)
     return actionSpeedModifierTags(node.anchor, node.beforeEffects, sources)
-  return (node.kind === 'actor' || node.kind === 'aha') && 'modifiers' in node
-    ? speedModifierTags(node.modifiers, sources, state)
-    : []
+  return 'modifiers' in node ? speedModifierTags(node.modifiers, sources, state) : []
 }
 
 export function speedModifierMessages(tag: SpeedModifierTagView) {

@@ -51,6 +51,8 @@ PrimeVue 负责基本控件、Tabs、Dialog、Tooltip 和 Splitter；工具自�
 
 概览和编辑互斥，操作编辑占用 Inspector；退出或切换时按架构中的草稿规则处理，窄屏定位编辑标题。
 不可达事件保留配置修复入口；无可靠执行上下文时禁用新增 / 编辑目标操作，保留查看 / 删除。错误诊断展开，普通警告可折叠。
+离场 / 重新入场复用 SelectButton 和目标头像 Grid，按执行时点筛选在场 / 离场单位；离场单位虽从队列隐藏，仍能在回场选择器中访问，不增加单位总览面板。
+事件速度表单支持可选百分比基数；速度目标包含事件时仅提供无限持续，既有不支持配置明确报错。卡厄斯兰那从现有预设 Popover 进入紧凑参数表单，基础速度、继承比例和初始速度预览同处 Inspector；缩略图复用白厄快照资源与既有 Fallback。取消不写入方案，确认一次提交全部节点。
 
 ## 行动卡、队列与操作卡
 
@@ -75,6 +77,7 @@ ArrowUp（蓝）、ArrowDown（红）、Zap（蓝）分别表示 advance、delay
 
 速度 Tag 展示实际生效的 Modifier，每个实例独立，不合并；正值蓝、负值红、零值中性，文字保留原始 flat / percent 幅度与符号。
 阿哈只展示自身 Modifier，派生贡献不伪装为 Buff。Tooltip 解释剩余回合、无限持续或关联倒计时名称和速度；不能从草稿或未来配置推断当前效果。
+Scheduled Event 的自身 Modifier 使用相同 Tag，Inspector、当前队列与未来节点均读取实际时点。关联倒计时已有 Modifier 时，其速度提示使用当前有效速度。
 
 行动卡第三行仅在有 Tag 或变化图标时出现；Tag 左侧换行，变化图标保留在右侧 AV 下方。
 复用小尺寸、柔和背景的 PrimeVue Tag，不加入内部图标。Inspector 和 Navigator 共用来源索引与纯展示模型，无法解析倒计时时使用通用文案，不猜到期。
@@ -91,6 +94,7 @@ Lucide 按名称导入，常用尺寸 18px、线宽 1.75；紧凑标记 13–16p
 | 编辑 / 删除         | Pencil / Trash2            |
 | 返回 / 添加         | ArrowLeft / Plus           |
 | 立即行动 / 创建单位 | Zap / UserRoundPlus        |
+| 离场 / 重新入场     | LogOut / LogIn             |
 | 阿哈 / 轮次         | Smile / Flag               |
 | 工具目录            | ListOrdered / Ticket / Gem |
 

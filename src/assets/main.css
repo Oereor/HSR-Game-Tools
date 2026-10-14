@@ -1036,6 +1036,18 @@
     margin-left: auto;
     color: var(--color-muted);
   }
+  .preset-batch {
+    max-width: min(330px, calc(100vw - 48px));
+    text-align: left;
+  }
+  .preset-copy {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+  .preset-copy small {
+    margin-left: 0;
+  }
   .start-card {
     min-height: 58px;
     padding-left: 30px;

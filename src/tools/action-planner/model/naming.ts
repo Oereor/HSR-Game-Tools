@@ -33,10 +33,15 @@ export function namingTargets(
   state?: SimulationState,
 ): string[] | undefined {
   if (!state) return undefined
-  const participants = operationTargets(state)
+  const participants = operationTargets(state, operation.type)
   const ids = targetIds(operation.target, participants)
   if (ids.some((id) => !participants.some((p) => p.id === id))) return undefined
-  if (operation.type === 'addSpeedModifier') return ids
+  if (
+    operation.type === 'addSpeedModifier' ||
+    operation.type === 'depart' ||
+    operation.type === 'returnToField'
+  )
+    return ids
   const queued = new Set(orderedParticipants(state).map((p) => p.id))
   return ids.filter((id) => queued.has(id))
 }
@@ -76,8 +81,12 @@ export function operationNameDescriptor(
       key: `planner.operationName.${operation.type}`,
       params: { target, percent: operation.percent },
     }
-  if (operation.type === 'immediatelyAct')
-    return { key: 'planner.operationName.immediatelyAct', params: { target } }
+  if (
+    operation.type === 'immediatelyAct' ||
+    operation.type === 'depart' ||
+    operation.type === 'returnToField'
+  )
+    return { key: `planner.operationName.${operation.type}`, params: { target } }
   const direction = operation.amount >= 0 ? 'increase' : 'decrease'
   const mode = operation.mode === 'percent' ? 'Percent' : 'Flat'
   return {

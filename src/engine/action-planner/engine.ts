@@ -81,6 +81,7 @@ export function createInitialState(plan: SimulationPlan): SimulationState {
       name: 'Aha Instant',
       camp: 'neutral',
       turns: 0,
+      departed: false,
       modifiers: [],
       remainingAG: FULL_AG,
       order: state.nextOrder++,

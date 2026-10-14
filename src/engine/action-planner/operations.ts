@@ -1,4 +1,3 @@
-import { isNaturalParticipant } from './types'
 import {
   assertState,
   cloneState,
@@ -13,7 +12,12 @@ import {
   SimulationError,
   spawnedParticipantId,
 } from './queue'
-import { targetIds, validTargetSelection } from './targeting'
+import {
+  operationTargets,
+  targetIds,
+  validTargetSelection,
+  validSpeedDurationForTargets,
+} from './targeting'
 import { validateOperations } from './validation'
 import type {
   Diagnostic,
@@ -34,6 +38,7 @@ export function spawnParticipant(
   state.issuedParticipantIds.add(id)
   const queue = {
     id,
+    departed: false,
     remainingAG: definition.initialAG ?? FULL_AG,
     order: state.nextOrder++,
     zeroBatch: 0,
@@ -43,7 +48,7 @@ export function spawnParticipant(
   state.participants.push(
     definition.kind === 'actor'
       ? { ...definition, ...queue, turns: 0, modifiers: [] }
-      : { ...definition, ...queue },
+      : { ...definition, ...queue, modifiers: [] },
   )
 }
 /** Operations commit separately; a speed addition and its countdown commit together. */
@@ -62,7 +67,11 @@ export function applyOperations(
       if (op.type === 'spawnParticipant')
         spawnParticipant(next, spawnedParticipantId(op.id), op.participant)
       else {
-        const ids = targetIds(op.target, next.participants)
+        const eligible = operationTargets(next, op.type)
+        const ids = targetIds(
+          op.target,
+          op.target.kind === 'participants' ? next.participants : eligible,
+        )
         const targets = next.participants.filter((participant) => ids.includes(participant.id))
         if (!ids.length || ids.length !== targets.length) {
           diagnostics.push({
@@ -73,7 +82,11 @@ export function applyOperations(
           })
           continue
         }
-        if (!validTargetSelection(op.type, targets)) {
+        if (
+          !validTargetSelection(op.type, targets) ||
+          targets.some((target) => !eligible.some((p) => p.id === target.id)) ||
+          (op.type === 'addSpeedModifier' && !validSpeedDurationForTargets(op.duration, targets))
+        ) {
           diagnostics.push({
             code: 'invalid-target',
             severity: 'warning',
@@ -82,10 +95,11 @@ export function applyOperations(
           })
           continue
         }
-        if (op.type === 'addSpeedModifier') {
+        if (op.type === 'depart' || op.type === 'returnToField') {
+          for (const participant of targets) participant.departed = op.type === 'depart'
+        } else if (op.type === 'addSpeedModifier') {
           const countdownId = countdownParticipantId(op.id)
           for (const actor of targets) {
-            if (!isNaturalParticipant(actor)) fail('invalid-target', actor.id)
             actor.modifiers.push({
               id: modifierId(op.id, actor.id),
               operationId: op.id,

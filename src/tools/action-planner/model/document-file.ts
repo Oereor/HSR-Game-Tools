@@ -112,7 +112,7 @@ function checkDefinition(value: unknown, initial = false) {
   fields(
     p,
     p.kind === 'scheduledEvent'
-      ? ['kind', 'name', 'iconUrl', 'initialAG', 'speed']
+      ? ['kind', 'name', 'iconUrl', 'initialAG', 'speed', 'baseSpeed']
       : [...definitionFields, ...(initial ? ['id', 'position'] : [])],
     ['kind', 'name'],
   )
@@ -186,7 +186,7 @@ export function validatePlannerFile(value: unknown): {
           ? ['participant']
           : op.type === 'addSpeedModifier'
             ? ['target', 'mode', 'amount', 'duration']
-            : op.type === 'immediatelyAct'
+            : op.type === 'immediatelyAct' || op.type === 'depart' || op.type === 'returnToField'
               ? ['target']
               : ['target', 'percent']
       fields(op, [...common, ...specific], ['id', 'type', ...specific])

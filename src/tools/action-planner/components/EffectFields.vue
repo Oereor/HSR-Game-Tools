@@ -1,19 +1,59 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SelectButton from 'primevue/selectbutton'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import type { OperationDraft } from '../model/editor'
+import type { SpeedDurationDraft } from '../model/speed-duration-config'
 const draft = defineModel<OperationDraft>({ required: true })
-const props = defineProps<{ invalid: string[] }>()
+const props = defineProps<{ invalid: string[]; eventTarget?: boolean }>()
 const { t, locale } = useI18n()
 const options = (values: string[]) => values.map((value) => ({ value, label: t(`ui.${value}`) }))
 const modes = computed(() => options(['flat', 'percent']))
-const durations = computed(() => options(['turns', 'countdown']))
+const durations = computed(() =>
+  options(props.eventTarget ? ['unlimited'] : ['turns', 'countdown']),
+)
+const durationKind = computed({
+  get: () =>
+    props.eventTarget
+      ? draft.value.duration.kind === 'turns' && draft.value.duration.turns.trim() === ''
+        ? 'unlimited'
+        : undefined
+      : draft.value.duration.kind,
+  set: (kind) => {
+    if (kind === 'unlimited')
+      draft.value.duration = { ...draft.value.duration, kind: 'turns', turns: '' }
+    else if (kind === 'turns' || kind === 'countdown') draft.value.duration.kind = kind
+  },
+})
+let previousDuration: SpeedDurationDraft | undefined
+watch(
+  () => props.eventTarget,
+  (eventTarget) => {
+    if (draft.value.original) return
+    if (eventTarget) {
+      previousDuration = { ...draft.value.duration }
+      durationKind.value = 'unlimited'
+    } else if (previousDuration) {
+      draft.value.duration = previousDuration
+      previousDuration = undefined
+    }
+  },
+  { immediate: true },
+)
 const bad = (key: string) => props.invalid.includes(key)
 const pt = (key: string) => ({
-  pcInputText: { root: { 'aria-describedby': bad(key) ? `error-${key}` : undefined } },
+  pcInputText: {
+    root: {
+      'aria-describedby':
+        key === 'amount' && bad('effectiveSpeed')
+          ? 'error-effectiveSpeed'
+          : bad(key)
+            ? `error-${key}`
+            : undefined,
+    },
+  },
 })
 </script>
 <template>
@@ -55,26 +95,41 @@ const pt = (key: string) => ({
         :max-fraction-digits="20"
         :use-grouping="false"
         :suffix="t(draft.mode === 'percent' ? 'common.percentSuffix' : 'common.speedSuffix')"
-        :invalid="bad('amount')"
+        :invalid="bad('amount') || bad('effectiveSpeed')"
         :pt="pt('amount')"
         fluid
       /><small v-if="bad('amount')" id="error-amount" class="field-error">{{
         t('ui.finite')
       }}</small>
+      <small v-if="bad('effectiveSpeed')" id="error-effectiveSpeed" class="field-error">{{
+        t('ui.diagnostic.invalid-speed')
+      }}</small>
     </div>
     <div class="field">
       <span id="duration-label" class="field-label">{{ t('ui.duration') }}</span
       ><SelectButton
-        v-model="draft.duration.kind"
+        v-model="durationKind"
         size="small"
         :options="durations"
         option-label="label"
         option-value="value"
         :allow-empty="false"
         aria-labelledby="duration-label"
+        :aria-describedby="
+          eventTarget && (bad('duration') || durationKind !== 'unlimited')
+            ? 'error-duration'
+            : undefined
+        "
       />
     </div>
-    <div v-if="draft.duration.kind === 'turns'" class="field">
+    <small
+      v-if="eventTarget && (bad('duration') || durationKind !== 'unlimited')"
+      id="error-duration"
+      class="field-error"
+      role="alert"
+      >{{ t('planner.eventUnlimitedOnly') }}</small
+    >
+    <div v-if="!eventTarget && draft.duration.kind === 'turns'" class="field">
       <label for="duration-turns">{{ t('ui.turnCount') }}</label
       ><InputText
         id="duration-turns"
@@ -88,7 +143,7 @@ const pt = (key: string) => ({
         t('ui.integer')
       }}</small>
     </div>
-    <div v-else class="form-grid">
+    <div v-else-if="!eventTarget" class="form-grid">
       <div class="field">
         <label for="countdown-name">{{ t('ui.countdownName') }}</label
         ><InputText

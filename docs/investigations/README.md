@@ -45,3 +45,7 @@
 ## 上线后工程维护
 
 - [CI/CD 基础接入](post-production-cicd-foundation.md)：Vue Web Analytics、轻量 Validation CI、手动 Preview、main 自动 Production 与控制台初始化步骤。
+
+## 通用离场与批量预设
+
+- [离场、事件变速与卡厄斯兰那预设](action-planner-off-field-khaslana-preset.md)：AG 冻结、事件独立速度基数、跨节点原子提交、Version 3 兼容与人工验收清单。

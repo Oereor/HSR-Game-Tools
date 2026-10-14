@@ -17,6 +17,7 @@ import type {
 } from '../../../engine/action-planner/types'
 import { saveOperation, moveOperation } from '../model/effect-config'
 import { buildCurrentQueueView } from '../model/current-queue'
+import { buildKhaslanaPreset, type KhaslanaPresetInput } from '../model/presets'
 import {
   emptyDocument,
   serializePlannerDocument,
@@ -102,7 +103,12 @@ export function useActionPlanner(
       ? previewDraft(context.value, operations.value, selected.value, draft.value)
       : undefined,
   )
-  const targets = computed(() => operationTargets(preview.value))
+  const targets = computed(() =>
+    operationTargets(
+      preview.value,
+      draft.value?.type === 'spawnParticipant' ? 'advance' : draft.value?.type,
+    ),
+  )
   const unreached = computed(() =>
     plan.value.events.filter(
       (e) =>
@@ -275,6 +281,55 @@ export function useActionPlanner(
     cancel()
     return true
   }
+  function submitKhaslana(input: KhaslanaPresetInput) {
+    if (!draft.value || draft.value.id) return false
+    const built = buildKhaslanaPreset(
+      document.value,
+      selected.value,
+      draft.value.phase,
+      preview.value,
+      input,
+      nextId,
+    )
+    invalid.value = built.invalid
+    if (!built.document) return false
+    try {
+      const prepared = preparePlannerDocument(built.document)
+      const generated = new Set(built.operationIds)
+      if (
+        prepared.result.diagnostics.some(
+          (diagnostic) =>
+            diagnostic.severity === 'error' ||
+            (diagnostic.operationId &&
+              generated.has(diagnostic.operationId) &&
+              (diagnostic.code === 'missing-target' ||
+                diagnostic.code === 'invalid-target' ||
+                diagnostic.code === 'active-target')),
+        )
+      ) {
+        invalid.value = ['form']
+        return false
+      }
+      // All validation and simulation complete before the single document publication.
+      result.value = prepared.result
+      resourceIssues.value = prepared.issues
+      document.value = prepared.document
+      referencedIds(prepared.document.plan).forEach((id) => reservedIds.add(id))
+      documentError.value = undefined
+      if (
+        queueCursor.value.kind !== 'start' &&
+        !prepared.result.records.some(
+          (record) => anchorKey(record.anchor) === anchorKey(queueCursor.value),
+        )
+      )
+        queueCursor.value = { kind: 'start' }
+      cancel()
+      return true
+    } catch (error) {
+      documentError.value = error instanceof PlannerFileError ? error.code : 'simulation'
+      return false
+    }
+  }
   function remove(id: string) {
     cancel()
     updateOperations(operations.value.filter((o) => o.id !== id))
@@ -392,6 +447,7 @@ export function useActionPlanner(
     edit,
     cancel,
     submit,
+    submitKhaslana,
     remove,
     move,
     deleteEvent,

@@ -36,6 +36,8 @@ export function operationMetadata(
         p.actionLimit == null ? undefined : { count: p.actionLimit },
       )
     } else {
+      if (p.baseSpeed !== undefined)
+        add('speed', 'planner.metadata.baseSpeed', { speed: p.baseSpeed })
       add('speed', 'planner.metadata.speed', { speed: p.speed })
       add('duration', 'planner.metadata.once')
     }
@@ -46,6 +48,8 @@ export function operationMetadata(
   if (operation.type === 'advance' || operation.type === 'delay')
     add('effect', `planner.metadata.${operation.type}`, { percent: operation.percent })
   else if (operation.type === 'immediatelyAct') add('effect', 'planner.metadata.immediatelyAct')
+  else if (operation.type === 'depart' || operation.type === 'returnToField')
+    add('effect', `planner.metadata.${operation.type}`)
   else {
     add('effect', `planner.metadata.${operation.mode}`, {
       amount: { value: operation.amount, signed: true },

@@ -43,6 +43,7 @@ const {
   edit,
   cancel,
   submit,
+  submitKhaslana,
   remove,
   move,
   deleteEvent,
@@ -210,7 +211,8 @@ onBeforeUnmount(() => {
                   @remove="remove"
                   @move="move"
                   @cancel="cancel"
-                  @submit="submit" /></SplitterPanel></Splitter
+                  @submit="submit"
+                  @khaslana="submitKhaslana" /></SplitterPanel></Splitter
             ><template v-else
               ><ActionNavigator
                 v-model:view="view"
@@ -224,6 +226,7 @@ onBeforeUnmount(() => {
                 @move="move"
                 @cancel="cancel"
                 @submit="submit"
+                @khaslana="submitKhaslana"
             /></template>
           </div>
           <section v-if="inactive.length" class="unreached-events">

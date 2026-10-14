@@ -339,7 +339,7 @@ describe('Aha natural participant and state-derived speed', () => {
     absent.events = [{ anchor: start, operations: [speed('orphan', 25)] }]
     expect(simulatePlan(absent).diagnostics.map((d) => d.code)).toContain('missing-target')
     const timer = { id: 't', kind: 'scheduledEvent' as const, name: 'T' }
-    expect(validTargetSelection('addSpeedModifier', [a, timer])).toBe(false)
+    expect(validTargetSelection('addSpeedModifier', [a, timer])).toBe(true)
   })
   it('validates contributor structure, protected identity and AV/node budgets', () => {
     for (const contributorIds of [['aha'], ['unknown'], ['a0', 'a0'], ['spawn:child']]) {

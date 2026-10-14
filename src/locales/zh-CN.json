@@ -120,6 +120,8 @@
       "neutral": "中立单位"
     },
     "operationName": {
+      "depart": "使 {target} 离场",
+      "returnToField": "使 {target} 重新入场",
       "advance": "使 {target} 行动提前 {percent}%",
       "delay": "使 {target} 行动延后 {percent}%",
       "immediatelyAct": "使 {target} 立即行动",
@@ -134,6 +136,8 @@
       "decreasePercent": "使 {target} 速度降低 {amount}%"
     },
     "metadata": {
+      "depart": "离场，保留剩余行动距离",
+      "returnToField": "重新入场，恢复剩余行动距离",
       "advance": "行动提前 {percent}%",
       "delay": "行动延后 {percent}%",
       "immediatelyAct": "立即行动",
@@ -170,6 +174,19 @@
       "invalidPreview": "请填写有效速度",
       "migratedWithAha": "Version {version} 方案已升级，自动加入阿哈时刻。行动顺序可能变化，请检查不可达操作。",
       "migrated": "Version {version} 方案已升级至 Version 3。"
+    },
+    "eventBaseSpeed": "百分比速度基数（留空使用初始速度）",
+    "eventUnlimitedOnly": "战斗事件的速度效果只支持无限持续。",
+    "khaslana": {
+      "name": "卡厄斯兰那的额外回合",
+      "description": "八个倒计时与我方离场、回场",
+      "baseSpeed": "白厄基础速度",
+      "inheritance": "倒计时速度继承比例",
+      "hint": "0 魂填 60%，1 魂以上填 66%",
+      "initialSpeed": "倒计时初始速度：{speed} SPD",
+      "eventName": "卡厄斯兰那-{index}",
+      "finalName": "卡厄斯兰那-最后一击",
+      "noAllies": "当前没有可离场的我方行动单位。"
     },
     "speedTag": {
       "flat": "速度 {amount}",
@@ -242,6 +259,8 @@
     "advance": "行动提前",
     "delay": "行动延后",
     "immediatelyAct": "立即行动",
+    "depart": "离场",
+    "returnToField": "重新入场",
     "addSpeedModifier": "改变速度",
     "spawnParticipant": "在行动序列上添加",
     "phase": "结算时机",
@@ -291,7 +310,7 @@
     "diagnostics": "{count} 条诊断",
     "diagnostic": {
       "invalid-input": "配置结构或数值无效",
-      "invalid-target": "目标类型不支持此操作",
+      "invalid-target": "目标类型、在场状态或持续方式不支持此操作",
       "duplicate-participant": "参与者身份重复",
       "invalid-speed": "速度必须大于零",
       "non-finite": "计算产生了非有限数值",
