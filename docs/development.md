@@ -22,7 +22,18 @@ npm run build
 npm run preview
 ```
 
-`build` 输出 `dist/`。应用使用 Vue Router History；将来选择宿主时需要支持 SPA 深链接回退。此要求不代表已配置部署、域名或线上地址。
+`build` 输出 `dist/`。应用使用 Vue Router History；Vercel 的 SPA 深链接回退配置见下节。
+
+## Vercel 部署准备
+
+首次部署使用 Vercel 默认的 `*.vercel.app` 地址，选择 Vite Framework Preset。
+构建环境使用 Node.js 24.x，满足 package.json 的 `>=24.12.0 <25` 要求；构建命令为 `npm run build`，Output Directory 为 `dist`。
+项目采用标准 Vite 静态构建，无需额外服务端框架，也无需在配置文件重复声明这些可识别的构建设置。
+
+根目录 [vercel.json](../vercel.json) 将未命中的路径回退至 `/index.html`，支持 `/action-planner` 直接访问和刷新，客户端仍使用现有 Vue Router History。
+本地构建成功不能替代 Vercel 线上路由测试；首次部署后，由维护者检查首页、`/action-planner` 深链接及刷新，以及 JS、CSS、图片和第三方通知的访问。
+
+当前仅准备代码与配置，尚未部署或验证线上行为。自定义域名 `tools.hsrarchive.cc` 和 Dynadot DNS 在首次部署成功后单独配置。
 
 ## 常用命令
 

@@ -1,13 +1,8 @@
 import { resolveElationContributors } from '../model/aha-config'
 import { computed, ref, shallowReadonly, shallowRef, watch } from 'vue'
-import {
-  simulatePlan,
-  previewOperationState,
-  DEFAULT_LIMITS,
-} from '../../../engine/action-planner/engine'
+import { simulatePlan, previewOperationState } from '../../../engine/action-planner/engine'
 import {
   anchorKey,
-  defaultAhaConfig,
   spawnedParticipantId,
   countdownParticipantId,
 } from '../../../engine/action-planner/queue'
@@ -47,13 +42,6 @@ import {
   type PlannerMetadata,
 } from '../model/editor'
 
-export const emptyPlan = (): SimulationPlan => ({
-  actors: [],
-  events: [],
-  cycleMode: 'none',
-  aha: defaultAhaConfig(),
-  ...DEFAULT_LIMITS,
-})
 const canonical = (value: unknown): string => {
   if (Array.isArray(value)) return '[' + value.map(canonical).join(',') + ']'
   if (value !== null && typeof value === 'object')
@@ -70,7 +58,7 @@ const canonical = (value: unknown): string => {
 }
 /** One committed document. Engine results remain shallow, page-owned and unproxied. */
 export function useActionPlanner(
-  initialPlan: SimulationPlan = emptyPlan(),
+  initialPlan: SimulationPlan = emptyDocument().plan,
   initialMetadata: PlannerMetadata = { customNames: {}, characterIds: {} },
   initialName = '',
 ) {
@@ -140,7 +128,6 @@ export function useActionPlanner(
           ) + 1,
         ),
   )
-  const snapshot = computed(() => result.value.snapshots[queueIndex.value])
   const currentQueueView = computed(() => buildCurrentQueueView(result.value, queueIndex.value))
   function cancel() {
     draft.value = undefined
@@ -397,7 +384,6 @@ export function useActionPlanner(
     unreached,
     inactive,
     queueIndex,
-    snapshot,
     currentQueueView,
     nextId,
     replacePlan,

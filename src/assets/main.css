@@ -333,10 +333,6 @@
     font-size: 10px;
     min-width: 0;
   }
-  .camp-ally {
-    color: var(--color-ally);
-    font-size: 10px;
-  }
   .node-values {
     display: flex;
     flex-direction: column;

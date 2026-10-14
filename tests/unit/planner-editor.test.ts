@@ -103,6 +103,12 @@ describe('real planner document and drafts', () => {
       maxAV: 600,
     })
     expect(p.stage.value).toBe('setup')
+    const other = useActionPlanner()
+    expect(other.plan.value).not.toBe(p.plan.value)
+    expect(other.plan.value.actors).not.toBe(p.plan.value.actors)
+    expect(other.plan.value.events).not.toBe(p.plan.value.events)
+    expect(other.plan.value.aha).not.toBe(p.plan.value.aha)
+    expect(other.plan.value.aha.contributorIds).not.toBe(p.plan.value.aha.contributorIds)
   })
   it.each(['advance', 'delay', 'immediatelyAct', 'addSpeedModifier', 'spawnParticipant'] as const)(
     'submits %s to the real plan',

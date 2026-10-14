@@ -1,10 +1,7 @@
 import { ordinaryNode } from '../fixtures/ordinary-node'
 import { describe, expect, it } from 'vitest'
-import {
-  moveOperation,
-  saveOperation,
-  targetIds,
-} from '../../src/tools/action-planner/model/effect-config'
+import { moveOperation, saveOperation } from '../../src/tools/action-planner/model/effect-config'
+import { targetIds } from '../../src/engine/action-planner/targeting'
 import { simulatePlan } from '../../src/engine/action-planner/engine'
 import type {
   EffectOperation,
@@ -97,7 +94,7 @@ describe('effect configuration replay', () => {
     expect(simulatePlan({ ...withSpeed, events: [] }).records[0].elapsedAV).toBe(62.5)
     expect(operations[0]).toMatchObject({ percent: 100 })
   })
-  it('expands old camp targets into stable explicit instance IDs without splitting operations', () => {
+  it('resolves camp and explicit targets and preserves group ordering in one operation', () => {
     expect(targetIds({ kind: 'allies' }, plan.actors)).toEqual(['a', 'b', 'c'])
     expect(targetIds({ kind: 'participants', participantIds: ['c', 'b'] }, plan.actors)).toEqual([
       'c',

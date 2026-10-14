@@ -37,7 +37,7 @@ HSR-Database 原 MIT 通知与固定来源 LICENSE 全文相同，StarRailRes �
 - 唯一已输出的通知可由 `<站点 base>/third-party/lucide-github-LICENSE.txt` 直接访问，但当前 UI 没有通知导航入口；尚无部署，未验证线上可访问性。
 
 因此仓库保留声明与静态产物携带声明是两项不同的检查。MIT 要求复制或实质部分包含版权和许可通知；ISC 同样要求副本保留相应通知。现用 Lucide 与衍生代码的产物通知缺口仍需在发布前处理。
-本轮不修改 UI、public 或构建脚本；具体证据与下一轮建议见[许可与发布通知报告](../investigations/pre-production-license-notices-closeout.md)。
+本页记录的调查未修改 UI、public 或构建脚本；具体产物证据见本节，后续建议见[发布前待确认事项](#发布前待确认事项)。
 
 ## 发布前待确认事项
 
@@ -48,5 +48,5 @@ HSR-Database 原 MIT 通知与固定来源 LICENSE 全文相同，StarRailRes �
 3. **发布通知与源码材料**：补足实际 Bundle 中适用的 MIT / ISC / Feather 通知；如确认 AGPL 适用，按对应分发形态明确许可、修改记录、Corresponding Source 与可能适用的网络交互要求。仅提供上游链接或许可全文不自动证明已履行全部义务。
 4. **公开入口**：在下一轮授权后确定声明文件与入口，并按 base 路径检查静态产物；目前没有公开站点或发布地址。
 
-以上区分已确认技术事实和待维护者判断的权利范围，问题分级见本轮报告。项目 MIT 已确定不代表第三方发布条件均已满足。
+以上区分已确认技术事实和待维护者判断的权利范围，发布前待办见本节。项目 MIT 已确定不代表第三方发布条件均已满足。
 许可条款依据为 [MIT 原文](https://opensource.org/license/mit)、[GNU AGPL-3.0 原文](https://www.gnu.org/licenses/agpl-3.0.html)及各来源保留的通知；本轮不作第三方重新许可、不公开分发或部署。

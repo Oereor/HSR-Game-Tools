@@ -40,11 +40,6 @@ export interface MigrationNotice {
   fromVersion: 1 | 2
   ahaAdded: boolean
 }
-export interface PlannerFile {
-  format: typeof PLANNER_FORMAT
-  version: typeof PLANNER_VERSION
-  document: PlannerDocument
-}
 export const emptyDocument = (): PlannerDocument => ({
   name: '',
   plan: { actors: [], events: [], cycleMode: 'none', aha: defaultAhaConfig(), ...DEFAULT_LIMITS },
