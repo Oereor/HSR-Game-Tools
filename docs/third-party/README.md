@@ -8,6 +8,7 @@
 | 角色名称与已分类别名配置 | 同一旧站版本的有限角色投影 | provenance 记录于 overlays.json；没有全局搜索／旧生成器依赖 |
 | 规范化游戏快照及必要图标 | StarRailRes，Commit `dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487`；版本 4.6.0 | 保留 [上游 AGPL v3 文本](starrailres-AGPL-3.0.txt)；源路径与转换校验记录于 Manifest |
 | Phase 0 的权威字段交叉检查 | TurnBasedGameData，Commit `312b4597691e0a29cf9828a15b592757dba86949` | 本阶段更新器不读取此仓库；上游 README 请求来源致谢，未发现根 LICENSE |
+| 首页 GitHub 图标 | [Lucide 0.468.0 的 github.svg](https://github.com/lucide-icons/lucide/blob/0.468.0/icons/github.svg) | 本地 Vue SVG 组件仅调整显示尺寸和线宽；保留 [ISC / Feather MIT 通知](../../public/third-party/lucide-github-LICENSE.txt)，构建时随 public 目录复制 |
 
 来源链接：[HSR-Database](https://github.com/Oereor/HSR-Database)、[StarRailRes](https://github.com/Mar-7th/StarRailRes)、[TurnBasedGameData](https://github.com/DimbreathBot/TurnBasedGameData)。
 

@@ -10,7 +10,7 @@ watchEffect(() => {
     page: t(String(route.meta.title ?? 'site.name')),
     site: t('site.name'),
   })
-  document.querySelector('meta[name="description"]')?.setAttribute('content', t('home.description'))
+  document.querySelector('meta[name="description"]')?.setAttribute('content', t('site.description'))
 })
 </script>
 

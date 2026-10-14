@@ -182,19 +182,6 @@
   .muted {
     color: var(--color-muted);
   }
-  .eyebrow {
-    color: var(--color-accent);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-  }
-  .primary-link {
-    display: inline-block;
-    margin-top: 24px;
-    padding: 12px 18px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-line);
-    border-radius: 8px;
-  }
   .game-icon,
   .icon-fallback {
     width: 96px;

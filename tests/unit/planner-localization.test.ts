@@ -96,6 +96,21 @@ describe('site messages and semantic presentation', () => {
     }
   })
 
+  it('keeps product entry names consistent and includes the page and site in document titles', () => {
+    const { global: composer } = makeI18n()
+    for (const locale of ['zh-CN', 'en'] as ToolLocale[]) {
+      composer.locale.value = locale
+      expect(composer.t('home.tools.actionOrder.title')).toBe(composer.t('planner.title'))
+      for (const key of ['home.title', 'planner.title']) {
+        const page = composer.t(key)
+        const site = composer.t('site.name')
+        const title = composer.t('site.pageTitle', { page, site })
+        expect(title).toContain(page)
+        expect(title).toContain(site)
+      }
+    }
+  })
+
   it('updates localized names, metadata and errors without changing the plan, draft or simulation', async () => {
     const { global: composer } = makeI18n()
     const character = gameData.characters.find((c) => c.names['zh-CN'] !== c.names.en)!

@@ -1,20 +1,35 @@
 {
   "site": {
     "name": "HSR-Game-Tools",
+    "description": "《崩坏：星穹铁道》非官方工具集合，提供行动序列模拟器及后续工具预览。",
     "home": "工具入口",
     "language": "语言",
-    "phase": "星穹铁道游戏工具",
     "languageChinese": "简体中文",
     "languageEnglish": "English",
-    "pageTitle": "{page} | {site}"
+    "pageTitle": "{page} · {site}"
   },
   "home": {
     "title": "星穹铁道游戏工具",
-    "description": "配置队伍、规划行动，观察速度与行动条的变化。",
-    "open": "打开行动规划"
+    "toolsHeading": "工具",
+    "github": "GitHub",
+    "tools": {
+      "actionOrder": {
+        "title": "行动序列模拟器",
+        "description": "配置速度和行动效果，模拟战斗中的行动顺序。"
+      },
+      "warp": {
+        "title": "抽卡模拟器",
+        "description": "模拟跃迁过程，查看抽取结果与统计。"
+      },
+      "relic": {
+        "title": "遗器模拟器",
+        "description": "模拟遗器生成与强化，探索词条组合。"
+      }
+    },
+    "disclaimer": "{site} · 非官方项目，与《崩坏：星穹铁道》及其相关方无关。"
   },
   "planner": {
-    "title": "行动规划",
+    "title": "行动序列模拟器",
     "enemy": {
       "title": "敌方单位",
       "defaultName": "敌方单位 {number}",
@@ -62,7 +77,7 @@
       },
       "error": {
         "json": "无法读取 JSON，请检查文件内容。",
-        "format": "此文件不是行动规划方案。",
+        "format": "此文件不是行动序列模拟器的方案文件。",
         "version": "暂不支持此方案版本。",
         "structure": "方案字段或数值无效，当前配置未被替换。",
         "limit": "方案超出文件、编队或字段的允许范围。",

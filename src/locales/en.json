@@ -1,20 +1,35 @@
 {
   "site": {
     "name": "HSR-Game-Tools",
+    "description": "Unofficial Honkai: Star Rail tools, including the Action Order Simulator and previews of upcoming tools.",
     "home": "Tools",
     "language": "Language",
-    "phase": "Honkai: Star Rail tools",
     "languageChinese": "简体中文",
     "languageEnglish": "English",
     "pageTitle": "{page} · {site}"
   },
   "home": {
-    "title": "Honkai: Star Rail tools",
-    "description": "Configure your team and explore changes in speed and action order.",
-    "open": "Open Action Planner"
+    "title": "Honkai: Star Rail Tools",
+    "toolsHeading": "Tools",
+    "github": "GitHub",
+    "tools": {
+      "actionOrder": {
+        "title": "Action Order Simulator",
+        "description": "Configure speed and action effects to simulate combat action order."
+      },
+      "warp": {
+        "title": "Warp Simulator",
+        "description": "Simulate Warps and explore pull results and statistics."
+      },
+      "relic": {
+        "title": "Relic Simulator",
+        "description": "Simulate Relic generation and enhancement."
+      }
+    },
+    "disclaimer": "{site} · An unofficial project with no affiliation to Honkai: Star Rail or its rights holders."
   },
   "planner": {
-    "title": "Action Planner",
+    "title": "Action Order Simulator",
     "enemy": {
       "title": "Enemy units",
       "defaultName": "Enemy unit {number}",
@@ -62,7 +77,7 @@
       },
       "error": {
         "json": "Could not parse JSON. Check the file contents.",
-        "format": "This is not an Action Planner file.",
+        "format": "This is not an Action Order Simulator plan file.",
         "version": "This plan version is not supported.",
         "structure": "Invalid plan fields or values. The current configuration was not replaced.",
         "limit": "The plan exceeds file, roster or field limits.",
@@ -173,7 +188,7 @@
     "remainingAV": "Remaining AV",
     "currentSpeed": "Effective speed",
     "setup": "Battle Setup",
-    "planning": "Action Planner",
+    "planning": "Simulation",
     "stage": "Workspace stage",
     "team": "Your team",
     "unapplied": "Not applied",

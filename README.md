@@ -1,6 +1,10 @@
 # HSR-Game-Tools
 
-《崩坏：星穹铁道》独立游戏工具站，使用 Vue 3、TypeScript、Vite、Vue Router、Tailwind CSS 4 和 vue-i18n。
+《崩坏：星穹铁道》非官方游戏工具集合，使用 Vue 3、TypeScript、Vite、Vue Router、PrimeVue 4、Tailwind CSS 4、Lucide Icons 和 vue-i18n。
+
+首页提供 **行动序列模拟器 / Action Order Simulator** 入口，抽卡模拟器 / Warp Simulator 和遗器模拟器 / Relic Simulator 暂为静态预览。行动序列模拟器的路由仍为 `/action-planner`，现有方案文件与内部标识保持兼容。
+
+行动序列模拟器的早期设计受到 [HSR-Action-Planner](https://github.com/THyanNK/HSR-Action-Planner) 启发；本工具不是该项目的官方版本。实际代码与数据来源见[第三方来源说明](docs/third-party/README.md)。
 
 当前已完成 **Phase 2C-1：阿哈时刻功能接入**。`/action-planner` 使用 PrimeVue Styled Mode + Aura 深色金色主题，配置和五类操作提交后通过现有纯引擎重新推演；支持动态参与者、共享倒计时、装备预设、当前队列观察、自动存档、完整 JSON 导入／导出，以及 MoC／AA 轮次、实时派生速度的阿哈时刻及其自身速度效果。
 
@@ -47,6 +51,10 @@ npm run preview
 
 中文文案修改 `src/locales/zh-CN.json`，英文文案修改 `src/locales/en.json`。两份文件只包含嵌套命名空间与字符串消息；`src/locales/types.ts` 的 `SiteMessages` 从中文结构推导，`index.ts` 使用现有 vue-i18n Composition API 加载，无全局语言回退。
 
+首页卡片标题与简介位于 `home.tools.actionOrder`、`home.tools.warp`、`home.tools.relic`，分别维护 `title` 和 `description`。`home.title`、`home.toolsHeading`、`home.github`、`home.disclaimer` 管理首页其他文案；`site.description` 管理页面 Meta Description。行动序列模拟器的正式名称还用于 `planner.title`，修改产品名称时需与首页卡片同步。
+
+`src/tools/catalog.ts` 只保存工具 ID、Lucide 图标和可选路由。无路由时展示静态卡片，不参与键盘链接导航；未来工具实际完成并注册路由后，为对应目录项添加 `route` 即可开放入口。目录不保存翻译文本，也不根据翻译判断状态。
+
 新增 Key 时在两份文件的相同语义路径添加消息，例如 `planner.metadata.duration`。保留合理的 `ui.*`；新增功能使用稳定的 `planner.operationName`、`planner.metadata`、`planner.navigator` 等命名空间，不以某个组件或翻译内容作为身份。
 
 动态文案用 Vue I18n 命名插值，例如中文 `"持续 {count} 回合"`、英文 `"Lasts {count} turns"`，调用 `t('planner.metadata.duration', { count })`。纯命名／Metadata 模型返回 `{ key, params }`；`renderMessage` 递归翻译嵌套目标描述并用当前 Locale 格式化原始数字。完整自然语言句式放在 JSON，避免在 TypeScript 拼接词序、冠词或增减句子。AV 固定两位，SPD／百分比最多六位小数；展示字符串不回写计划。
@@ -80,13 +88,13 @@ npm run validate:game-data
 - `public/game-assets/`：有限本地图片，不请求上游 CDN。
 - `scripts/`：显式更新、校验和性能探针，没有隐藏的数据更新钩子。
 
-## 排轴编辑器使用
+## 行动序列模拟器使用
 
 首次打开进入战斗配置：四个空槽、无操作，预算为 60 节点／600 AV。角色选择器搜索全部 98 条快照记录，支持名称、别名和本地化形态标签；不同形态按独立 ID 选择，同一角色 ID 不重复占槽。选择角色填入基础速度，面板速度可独立修改。
 
-点击“应用配置”统一提交我方、最多五名初始敌人、速度、轮次模式和预算。敌人可自由命名，单个 SPD 留空直到填写；基础与面板速度都使用该 SPD，默认无限自然行动。未应用的输入在切换 Tabs 后仍保留，行动规划展示已提交计划。预算最高 500 节点／100000 AV。更换角色或删除后重建单位生成新 Actor ID，修改名称或速度保留 ID；已有操作保持原引用，失效引用通过诊断处理。
+点击“应用配置”统一提交我方、最多五名初始敌人、速度、轮次模式和预算。敌人可自由命名，单个 SPD 留空直到填写；基础与面板速度都使用该 SPD，默认无限自然行动。未应用的输入在切换 Tabs 后仍保留，行动模拟展示已提交计划。预算最高 500 节点／100000 AV。更换角色或删除后重建单位生成新 Actor ID，修改名称或速度保留 ID；已有操作保持原引用，失效引用通过诊断处理。
 
-行动规划可选战斗开始、角色行动、事件触发或轮次边界节点。支持提前、延后、立即行动、速度效果与创建 Actor／单次事件；操作可编辑、删除、在同一结算窗口内排序，修改阶段进入新窗口末尾。速度效果支持固定值、基础速度百分比、有限／无限回合或共享倒计时。空回合数和行动次数表示无限。倒计时只接受显式单目标提前／延后。
+行动模拟可选战斗开始、角色行动、事件触发或轮次边界节点。支持提前、延后、立即行动、速度效果与创建 Actor／单次事件；操作可编辑、删除、在同一结算窗口内排序，修改阶段进入新窗口末尾。速度效果支持固定值、基础速度百分比、有限／无限回合或共享倒计时。空回合数和行动次数表示无限。倒计时只接受显式单目标提前／延后。
 
 装备入口生成舞舞舞 24%、翁瓦克 40%（仅战斗开始）、翔鹰 25% 的普通草稿，目标和参数仍可编辑。预设不自动检查装备条件或执行角色技能。每类操作支持自定义名称，留空采用随语言与实际目标时点变化的自动名称；操作名称独立于实体名称。
 
