@@ -1,7 +1,6 @@
 # HSR-Game-Tools
 
 《崩坏：星穹铁道》的非官方游戏工具集合，支持简体中文与英文。
-项目为静态 Web 应用，正式部署地址尚未确定。
 
 ## 工具
 
@@ -14,15 +13,13 @@
 - 混沌回忆（MoC）与异相仲裁（AA）轮次。
 - 方案 JSON 导入、导出与本地自动保存。
 
-模拟器依照用户配置推演行动顺序，不自动执行完整游戏技能。
-
 ### 抽卡模拟器 / Warp Simulator
 
-规划中，尚未迁移；首页仅提供静态预览。
+正在施工中。
 
 ### 遗器模拟器 / Relic Simulator
 
-规划中，尚未迁移；首页仅提供静态预览。
+正在施工中。
 
 ## 技术栈
 
@@ -49,17 +46,13 @@ npm run dev
 
 ## 数据来源与致谢
 
-- [HSR-Database](https://github.com/Oereor/HSR-Database)：衍生引擎与部分编辑辅助代码，以及有限的名称、别名投影。
 - [StarRailRes](https://github.com/Mar-7th/StarRailRes)：规范化游戏数据及角色、装备视觉资源。
-- [TurnBasedGameData](https://github.com/DimbreathBot/TurnBasedGameData)：机制与字段调查参考，不是日常构建输入。
-- [HSR-Action-Planner](https://github.com/THyanNK/HSR-Action-Planner)：行动序列模拟器早期产品设计的灵感来源，本工具不是其官方版本。
-
-代码、数据、图片和图标的具体来源与固定版本见[第三方来源说明](docs/third-party/README.md)。
+- [HSR-Action-Planner](https://github.com/THyanNK/HSR-Action-Planner)：行动序列模拟器早期产品设计的灵感来源，并参考了其实现方式。
 
 ## 许可与免责声明
 
-本项目整体许可证尚未确定；已有第三方许可通知继续有效。
-第三方游戏数据、图片与游戏知识产权归各自权利人所有，来源仓库的软件许可不能替代游戏素材再分发授权。
+本项目自行编写且拥有许可权的代码及配套文档采用 [MIT License](LICENSE)。
+第三方代码、游戏数据、图片和其他资源遵循各自适用的许可与权利归属，详见[第三方来源与许可](docs/third-party/README.md)。
+游戏知识产权归各自权利人所有，来源仓库的软件许可不能替代游戏素材再分发授权。
 
 本项目与《崩坏：星穹铁道》及其相关方无官方关联。模拟结果仅供参考，不保证与游戏内表现完全一致。
-公开发布前待确认事项见[第三方来源与许可](docs/third-party/README.md#发布前待确认事项)。

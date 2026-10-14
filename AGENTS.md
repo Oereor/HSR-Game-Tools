@@ -26,6 +26,7 @@
 - Use normalized tool-owned snapshots in UI. Raw source parsing belongs only to an explicitly authorized updater; normal install / dev / test / build cannot require sibling repositories or silently download / regenerate data.
 - Keep necessary snapshots, assets and provenance Manifest trackable; ignore only caches, staging and backup output. Names, IDs and images require checked sources. Presets do not infer mechanics from skill descriptions.
 - Retain source notices. Do not equate software / index licenses with game-artwork redistribution rights or decide a project license without authorization.
+- The maintainer has selected MIT for project-owned or otherwise MIT-authorizable code and documentation; see [LICENSE](LICENSE). Preserve independent third-party terms. Do not change the project license or relicense third-party content without authorization; license closeout does not authorize publication or deployment changes.
 
 ## Stable state and interaction constraints
 

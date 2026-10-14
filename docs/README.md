@@ -19,6 +19,7 @@
 - [Site Messages](site-messages.md)：首页简介、操作名称、插值及翻译验证。
 - [游戏数据维护](game-data.md)：快照审阅、来源前提、更新与回滚。
 - [方案与模板维护](architecture/action-order-simulator.md#方案与模板维护)：完整方案格式、模板审阅与目录登记。
+- [项目 MIT License](../LICENSE)：自行编写且拥有许可权的代码与文档的项目级许可。
 - [第三方来源与许可](third-party/README.md)：代码、数据、素材、图标和发布前待确认事项。
 
 ## 历史资料
