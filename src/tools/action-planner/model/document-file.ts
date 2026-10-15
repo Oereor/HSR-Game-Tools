@@ -1,15 +1,15 @@
 import { resolveElationContributors } from './aha-config'
-import catalog from '../../../data/game/catalog.json'
+import catalog from '../data/game/catalog.json'
 import {
   DEFAULT_LIMITS,
   defaultAhaConfig,
   spawnedParticipantId,
   countdownParticipantId,
-} from '../../../engine/action-planner/queue'
-import { participantCatalog, validatePlan } from '../../../engine/action-planner/validation'
-import type { ParticipantDefinition, SimulationPlan } from '../../../engine/action-planner/types'
+} from '../engine/queue'
+import { participantCatalog, validatePlan } from '../engine/validation'
+import type { ParticipantDefinition, SimulationPlan } from '../engine/types'
 import type { PlannerDocument } from './editor'
-import { simulatePlan } from '../../../engine/action-planner/engine'
+import { simulatePlan } from '../engine/engine'
 
 export const PLANNER_FORMAT = 'hsr-game-tools/action-planner'
 export const PLANNER_VERSION = 3

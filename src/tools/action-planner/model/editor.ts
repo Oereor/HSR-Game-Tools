@@ -4,15 +4,15 @@ import {
   stepSimulation,
   nextSimulationEvent,
   previewOperationState,
-} from '../../../engine/action-planner/engine'
-import { anchorKey, SimulationError } from '../../../engine/action-planner/queue'
+} from '../engine/engine'
+import { anchorKey, SimulationError } from '../engine/queue'
 import {
   operationTargets,
   targetIds,
   validTargetSelection,
   validSpeedDurationForTargets,
-} from '../../../engine/action-planner/targeting'
-import { validateOperations } from '../../../engine/action-planner/validation'
+} from '../engine/targeting'
+import { validateOperations } from '../engine/validation'
 import type {
   EffectOperation,
   EffectPhase,
@@ -21,7 +21,7 @@ import type {
   SimulationResult,
   SimulationState,
   Target,
-} from '../../../engine/action-planner/types'
+} from '../engine/types'
 import {
   buildParticipantOperation,
   participantDraft,

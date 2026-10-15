@@ -6,8 +6,18 @@ export const router = createRouter({
     { path: '/', component: HomePage, meta: { title: 'home.title' } },
     {
       path: '/action-planner',
-      component: () => import('../views/ActionPlannerPage.vue'),
+      component: () => import('../tools/action-planner/ActionPlannerPage.vue'),
       meta: { title: 'planner.title' },
+    },
+    {
+      path: '/warp-simulator',
+      component: () => import('../tools/warp-simulator/WarpSimulatorPage.vue'),
+      meta: { title: 'warp.title' },
+    },
+    {
+      path: '/currency-wars',
+      component: () => import('../tools/currency-wars/CurrencyWarsPage.vue'),
+      meta: { title: 'currencyWars.title' },
     },
     {
       path: '/:pathMatch(.*)*',

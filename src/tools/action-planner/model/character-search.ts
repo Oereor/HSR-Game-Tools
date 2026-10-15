@@ -1,4 +1,4 @@
-import type { CharacterRecord } from '../../../data/schema'
+import type { CharacterRecord } from '../data/schema'
 import type { ToolLocale } from '../../../locales/types'
 
 export const normalizeSearch = (value: string): string =>

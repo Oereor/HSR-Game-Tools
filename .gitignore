@@ -26,6 +26,8 @@ test-results/
 .game-data-cache/
 .game-data-staging/
 .game-data-backup/
+.warp-data-staging/
+.warp-data-backup/
 
 # Local deployment state
 .vercel/
@@ -41,4 +43,4 @@ Thumbs.db
 Desktop.ini
 
 # Deliberately tracked when introduced in Phase 1:
-# package lockfiles, src/data/game/, public/game-assets/, manifests and reports
+# package lockfiles, src/tools/action-planner/data/game/, public/game-assets/, manifests and reports

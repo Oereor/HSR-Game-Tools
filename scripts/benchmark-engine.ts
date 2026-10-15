@@ -1,7 +1,7 @@
 import { cpus } from 'node:os'
 import { performance } from 'node:perf_hooks'
-import { simulatePlan } from '../src/engine/action-planner/engine'
-import type { SimulationPlan } from '../src/engine/action-planner/types'
+import { simulatePlan } from '../src/tools/action-planner/engine/engine'
+import type { SimulationPlan } from '../src/tools/action-planner/engine/types'
 
 const normal: SimulationPlan = {
   cycleMode: 'none',

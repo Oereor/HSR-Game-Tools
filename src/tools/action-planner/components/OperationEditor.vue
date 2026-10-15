@@ -7,17 +7,17 @@ import InputNumber from 'primevue/inputnumber'
 import SelectButton from 'primevue/selectbutton'
 import Popover from 'primevue/popover'
 import { ArrowLeft, Layers } from '@lucide/vue'
-import GameIcon from '../../../components/ui/GameIcon.vue'
+import GameIcon from './GameIcon.vue'
 import TargetGrid from './TargetGrid.vue'
 import EffectFields from './EffectFields.vue'
 import ParticipantFields from './ParticipantFields.vue'
-import { gameData } from '../../../data/adapters/game-data'
+import { gameData } from '../data/adapters/game-data'
 import type {
   EffectOperation,
   EventAnchor,
   ParticipantInfo,
   SimulationState,
-} from '../../../engine/action-planner/types'
+} from '../engine/types'
 import type { OperationDraft } from '../model/editor'
 import { provisionalOperation, operationDraft } from '../model/editor'
 import { operationName } from '../model/presentation'

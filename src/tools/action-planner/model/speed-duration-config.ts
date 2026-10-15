@@ -1,4 +1,4 @@
-import type { SpeedDuration } from '../../../engine/action-planner/types'
+import type { SpeedDuration } from '../engine/types'
 
 export interface SpeedDurationDraft {
   kind: SpeedDuration['kind']

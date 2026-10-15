@@ -1,5 +1,5 @@
-import { countdownParticipantId } from '../../../engine/action-planner/queue'
-import { effectiveSpeed } from '../../../engine/action-planner/queue'
+import { countdownParticipantId } from '../engine/queue'
+import { effectiveSpeed } from '../engine/queue'
 import type {
   EventAnchor,
   NodeRecord,
@@ -8,7 +8,7 @@ import type {
   SimulationPlan,
   SimulationState,
   SpeedModifierInstance,
-} from '../../../engine/action-planner/types'
+} from '../engine/types'
 import type { MessageDescriptor, MessageTranslator, ToolLocale } from '../../../locales/types'
 import { renderMessage } from './presentation'
 

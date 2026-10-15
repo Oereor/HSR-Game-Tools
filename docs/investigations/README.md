@@ -49,3 +49,16 @@
 ## 通用离场与批量预设
 
 - [离场、事件变速与卡厄斯兰那预设](action-planner-off-field-khaslana-preset.md)：AG 冻结、事件独立速度基数、跨节点原子提交、Version 3 兼容与人工验收清单。
+
+## Warp Simulator
+
+- [Phase 1E 可交互 UI](warp-simulator/phase-1e-ui-implementation.md)：页面内会话、星缘选择、结果／历史、资源复用及人工验收清单。
+- [Phase 1D 纯引擎开发](warp-simulator/phase-1d-engine-implementation.md)：v0.3 模型、严格卡池解析、原子状态转移与独立概率验证。
+- [Phase 1C 多工具项目结构重构](warp-simulator/phase-1c-project-restructuring.md)：工具目录归属、已有本地卡池配置保护、数据完整性与迁移验收。
+- [Phase 0 架构与概率模型调查](warp-simulator/phase-0-investigation.md)：旧实现取证、来源与规则证据边界。
+- [Phase 1 数据基础设施](warp-simulator/phase-1-data-foundation.md)：独立轻量目录、人工 JSONC、IntelliSense、验证和静态快照。
+
+## Currency Wars Optimizer
+
+- [控制台原型 V1 实现报告](currency-wars-v1-implementation.md)：锁定数据、MILP、特殊羁绊边界、性能与检查记录。
+- [网页 UI MVP 实现报告](currency-wars-ui-mvp-implementation.md)：Worker/WASM 接入、纯展示元数据、资源映射与人工验收边界。

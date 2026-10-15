@@ -19,8 +19,8 @@ import {
   renderSpeedModifierTag,
   type CountdownSources,
 } from '../model/speed-modifier-tags'
-import { anchorKey } from '../../../engine/action-planner/queue'
-import type { EventAnchor, NodeRecord, SimulationPlan } from '../../../engine/action-planner/types'
+import { anchorKey } from '../engine/queue'
+import type { EventAnchor, NodeRecord, SimulationPlan } from '../engine/types'
 import { actionDirections, nodeCamp } from '../model/naming'
 import { operationsAt } from '../model/editor'
 import { formatAV, formatNumber } from '../model/presentation'

@@ -7,6 +7,12 @@
     "node": ">=24.12.0 <25"
   },
   "scripts": {
+    "currency-wars": "node --import tsx scripts/currency-wars/cli.ts",
+    "extract:currency-wars": "node --import tsx scripts/currency-wars/data.ts",
+    "validate:currency-wars": "node --import tsx scripts/currency-wars/data.ts --check",
+    "extract:currency-wars-visuals": "node --import tsx scripts/currency-wars/visual-data.ts",
+    "validate:currency-wars-visuals": "node --import tsx scripts/currency-wars/visual-data.ts --check",
+    "verify:currency-wars-browser": "node --import tsx scripts/currency-wars/verify-browser-worker.ts",
     "dev": "vite --host 127.0.0.1",
     "preview": "vite preview --host 127.0.0.1",
     "type-check": "vue-tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
@@ -19,12 +25,18 @@
     "validate:game-data": "node --import tsx scripts/validate-game-data.ts",
     "bench:engine": "node --import tsx scripts/benchmark-engine.ts",
     "validate:i18n": "node --import tsx scripts/validate-i18n.ts",
-    "validate:planner-templates": "node --import tsx scripts/validate-planner-templates.ts"
+    "validate:planner-templates": "node --import tsx scripts/validate-planner-templates.ts",
+    "update:warp-catalog": "node --import tsx scripts/warp-data/cli.ts update-catalog",
+    "generate:warp-schema": "node --import tsx scripts/warp-data/cli.ts generate-schema",
+    "find:warp-item": "node --import tsx scripts/warp-data/cli.ts find",
+    "validate:warp-data": "node --import tsx scripts/warp-data/cli.ts validate",
+    "build:warp-data": "node --import tsx scripts/warp-data/cli.ts build"
   },
   "dependencies": {
     "@lucide/vue": "1.55.0",
     "@primeuix/themes": "2.0.3",
     "@vercel/analytics": "2.0.1",
+    "highs": "1.15.3",
     "primevue": "4.5.5",
     "tailwindcss-primeui": "0.6.1",
     "vue": "3.5.43",
@@ -32,15 +44,18 @@
     "vue-router": "4.6.4"
   },
   "devDependencies": {
+    "@intlify/message-compiler": "11.4.14",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "24.19.0",
     "@vitejs/plugin-vue": "6.0.10",
     "@vue/eslint-config-prettier": "10.2.0",
     "@vue/eslint-config-typescript": "14.9.0",
     "@vue/tsconfig": "0.9.1",
+    "ajv": "8.20.0",
     "eslint": "10.12.0",
     "eslint-plugin-vue": "10.11.1",
     "jiti": "2.7.0",
+    "jsonc-parser": "3.3.1",
     "prettier": "3.9.10",
     "sharp": "0.35.3",
     "tailwindcss": "4.3.3",
@@ -49,7 +64,6 @@
     "typescript-eslint": "8.71.2",
     "vite": "8.3.4",
     "vitest": "4.1.11",
-    "vue-tsc": "3.3.13",
-    "@intlify/message-compiler": "11.4.14"
+    "vue-tsc": "3.3.13"
   }
 }

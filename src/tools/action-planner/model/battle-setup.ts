@@ -1,5 +1,5 @@
-import { HARD_LIMITS } from '../../../engine/action-planner/queue'
-import type { ActorConfig, SimulationPlan } from '../../../engine/action-planner/types'
+import { HARD_LIMITS } from '../engine/queue'
+import type { ActorConfig, SimulationPlan } from '../engine/types'
 import type { PlannerMetadata } from './editor'
 import { metadataValue } from './editor'
 import { FILE_LIMITS } from './document-file'

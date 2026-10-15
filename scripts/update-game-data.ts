@@ -13,7 +13,7 @@ import {
   type SourceLock,
 } from './game-data/projection'
 import { publishSnapshot } from './game-data/publish'
-import type { GameManifest } from '../src/data/schema'
+import type { GameManifest } from '../src/tools/action-planner/data/schema'
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url))
 export async function updateLocalGameData(sourceRoot: string, root = projectRoot) {
@@ -109,15 +109,15 @@ export async function updateLocalGameData(sourceRoot: string, root = projectRoot
       }
     }
     finalizeProjection(snapshot, new Set(manifest.missingAssets.map((v) => v.key)))
-    await mkdir(inside(staging, 'src/data/game'), { recursive: true })
+    await mkdir(inside(staging, 'src/tools/action-planner/data/game'), { recursive: true })
     const catalog = JSON.stringify(snapshot, null, 2) + '\n'
-    await writeFile(inside(staging, 'src/data/game/catalog.json'), catalog)
-    manifest.files['src/data/game/catalog.json'] = {
+    await writeFile(inside(staging, 'src/tools/action-planner/data/game/catalog.json'), catalog)
+    manifest.files['src/tools/action-planner/data/game/catalog.json'] = {
       sha256: digest(catalog),
       bytes: Buffer.byteLength(catalog),
     }
     await writeFile(
-      inside(staging, 'src/data/game/manifest.json'),
+      inside(staging, 'src/tools/action-planner/data/game/manifest.json'),
       JSON.stringify(manifest, null, 2) + '\n',
     )
     const summary = await validateGameFiles(staging, lock, manifest.overlaySha256)

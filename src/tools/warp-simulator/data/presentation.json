@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "HSR-Game-Tools",
+    "commit": "2e63a96edd3e51b32d276fb97255795b06bcc4b8",
+    "file": "src/tools/action-planner/data/game/catalog.json",
+    "sha256": "921853d55ce60a03b928edaa85cd7f61ba9840cfbc83f226211550e1a226e828",
+    "upstreamRepository": "StarRailRes",
+    "upstreamCommit": "dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487",
+    "note": "One-time presentation-only projection of reviewed local character metadata and asset mappings; no runtime Action Planner dependency."
+  },
+  "items": {
+    "avatar:1001": {
+      "path": "Knight",
+      "portraitPath": "game-assets/character/1001.webp"
+    },
+    "avatar:1002": {
+      "path": "Rogue",
+      "portraitPath": "game-assets/character/1002.webp"
+    },
+    "avatar:1003": {
+      "path": "Mage",
+      "portraitPath": "game-assets/character/1003.webp"
+    },
+    "avatar:1004": {
+      "path": "Warlock",
+      "portraitPath": "game-assets/character/1004.webp"
+    },
+    "avatar:1008": {
+      "path": "Warrior",
+      "portraitPath": "game-assets/character/1008.webp"
+    },
+    "avatar:1009": {
+      "path": "Shaman",
+      "portraitPath": "game-assets/character/1009.webp"
+    },
+    "avatar:1013": {
+      "path": "Mage",
+      "portraitPath": "game-assets/character/1013.webp"
+    },
+    "avatar:1101": {
+      "path": "Shaman",
+      "portraitPath": "game-assets/character/1101.webp"
+    },
+    "avatar:1103": {
+      "path": "Mage",
+      "portraitPath": "game-assets/character/1103.webp"
+    },
+    "avatar:1104": {
+      "path": "Knight",
+      "portraitPath": "game-assets/character/1104.webp"
+    },
+    "avatar:1105": {
+      "path": "Priest",
+      "portraitPath": "game-assets/character/1105.webp"
+    },
+    "avatar:1106": {
+      "path": "Warlock",
+      "portraitPath": "game-assets/character/1106.webp"
+    },
+    "avatar:1107": {
+      "path": "Warrior",
+      "portraitPath": "game-assets/character/1107.webp"
+    },
+    "avatar:1108": {
+      "path": "Warlock",
+      "portraitPath": "game-assets/character/1108.webp"
+    },
+    "avatar:1109": {
+      "path": "Warrior",
+      "portraitPath": "game-assets/character/1109.webp"
+    },
+    "avatar:1110": {
+      "path": "Priest",
+      "portraitPath": "game-assets/character/1110.webp"
+    },
+    "avatar:1111": {
+      "path": "Warlock",
+      "portraitPath": "game-assets/character/1111.webp"
+    },
+    "avatar:1201": {
+      "path": "Mage",
+      "portraitPath": "game-assets/character/1201.webp"
+    },
+    "avatar:1202": {
+      "path": "Shaman",
+      "portraitPath": "game-assets/character/1202.webp"
+    },
+    "avatar:1206": {
+      "path": "Rogue",
+      "portraitPath": "game-assets/character/1206.webp"
+    },
+    "avatar:1207": {
+      "path": "Shaman",
+      "portraitPath": "game-assets/character/1207.webp"
+    },
+    "avatar:1209": {
+      "path": "Rogue",
+      "portraitPath": "game-assets/character/1209.webp"
+    },
+    "avatar:1210": {
+      "path": "Warlock",
+      "portraitPath": "game-assets/character/1210.webp"
+    },
+    "avatar:1211": {
+      "path": "Priest",
+      "portraitPath": "game-assets/character/1211.webp"
+    },
+    "avatar:1214": {
+      "path": "Warrior",
+      "portraitPath": "game-assets/character/1214.webp"
+    },
+    "avatar:1215": {
+      "path": "Shaman",
+      "portraitPath": "game-assets/character/1215.webp"
+    },
+    "avatar:1223": {
+      "path": "Rogue",
+      "portraitPath": "game-assets/character/1223.webp"
+    },
+    "avatar:1301": {
+      "path": "Priest",
+      "portraitPath": "game-assets/character/1301.webp"
+    },
+    "avatar:1312": {
+      "path": "Warrior",
+      "portraitPath": "game-assets/character/1312.webp"
+    },
+    "avatar:1503": {
+      "path": "Elation",
+      "portraitPath": "game-assets/character/1503.webp"
+    }
+  }
+}

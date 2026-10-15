@@ -15,11 +15,15 @@
 
 ### 抽卡模拟器 / Warp Simulator
 
-正在施工中。
+入口为 `/warp-simulator`：卡池与星缘角色选择、单抽／十连、保底状态和页面内跃迁记录。刷新或离开页面会清空会话；暂不提供存档与高级统计。
 
 ### 遗器模拟器 / Relic Simulator
 
 正在施工中。
+
+### 货币战争羁绊优化器 / Currency Wars Optimizer
+
+网页入口为 `/currency-wars`，也可使用控制台 `npm run currency-wars`。使用真实游戏快照和 HiGHS 整数规划，优先最大化羁绊任务完成数，其次减少星徽消耗。网页通过 Worker 求解，展示角色头像、费用和星徽分配；正式任务列表已录入 25 项。规则与限制见[使用指南](docs/currency-wars.md)。
 
 ## 技术栈
 

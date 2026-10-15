@@ -1,7 +1,7 @@
 {
   "site": {
     "name": "HSR-Game-Tools",
-    "description": "Unofficial Honkai: Star Rail tools, including the Action Order Simulator and previews of upcoming tools.",
+    "description": "Unofficial Honkai: Star Rail tools for action order planning, warp simulation and Currency Wars trait optimization.",
     "language": "Language",
     "languageChinese": "简体中文",
     "languageEnglish": "English",
@@ -18,11 +18,15 @@
       },
       "warp": {
         "title": "Warp Simulator",
-        "description": "Simulate Warps and explore pull results and statistics."
+        "description": "Choose a banner and characters, simulate warps, and review your pull history."
       },
       "relic": {
         "title": "Relic Simulator",
         "description": "Simulate Relic generation and enhancement."
+      },
+      "currencyWars": {
+        "title": "Currency Wars Trait Optimizer",
+        "description": "Choose trait tasks and calculate a character lineup and emblem allocation to complete as many tasks as possible."
       }
     },
     "disclaimer": "{site} · An unofficial project with no affiliation to Honkai: Star Rail or its rights holders."
@@ -339,5 +343,213 @@
     "av": "{value} AV",
     "speedSuffix": " SPD",
     "percentSuffix": " %"
+  },
+  "warp": {
+    "title": "Warp Simulator",
+    "bannerTitle": "Warp setup",
+    "bannerSelect": "Choose a banner",
+    "bannerSelected": "Banner selected.",
+    "bannerNoneSelected": "No banner selected.",
+    "noBanners": "No usable banners are available.",
+    "bannerSource": "{name} · {type}",
+    "fiveUp": "Featured 5-star UP",
+    "fourUp": "4-star UP: {names}",
+    "up": "UP",
+    "cancel": "Cancel",
+    "pullOne": "Warp ×1",
+    "pullTen": "Warp ×10",
+    "memoryOnly": "Kept in this page’s memory only. Refreshing or leaving clears the session and character selections.",
+    "completed": "Completed {count} warps.",
+    "kind": {
+      "event-avatar": "Character Event Warp",
+      "event-light-cone": "Light Cone Event Warp",
+      "fate-avatar": "Fate Character Warp",
+      "fate-light-cone": "Fate Light Cone Warp",
+      "ordinary": "Ordinary Warp"
+    },
+    "pity": {
+      "title": "Current pity state",
+      "fiveCount": "{count} pulls without a 5-star",
+      "fiveGuarantee": "5-star guarantee",
+      "fourCount": "{count} pulls without a 4-star",
+      "fourPending": "9+ pulls without a 4-star",
+      "fourGuarantee": "4-star guarantee",
+      "normal": "Not guaranteed",
+      "guaranteed": "UP guaranteed",
+      "unavailable": "Not applicable",
+      "pendingHint": "4-star pity is pending. A 5-star may defer it; this is not an exact cumulative pull count."
+    },
+    "selection": {
+      "title": "Celestial Invitation",
+      "search": "Search characters",
+      "searchPlaceholder": "Chinese name, English name or ID",
+      "hint": "Choose seven distinct 5-star characters. Changes affect future warps only.",
+      "count": "Selected {count} / 7",
+      "candidates": "Eligible characters",
+      "chosen": "Selected characters",
+      "noMatches": "No matching characters.",
+      "required": "Explicitly choose seven characters before warping.",
+      "ready": "Seven characters are ready.",
+      "confirm": "Confirm selection",
+      "edit": "Edit characters",
+      "choose": "Choose seven characters"
+    },
+    "results": {
+      "title": "Latest warp results",
+      "count": "{count} warps",
+      "empty": "Choose a banner and any required characters to begin your first warp."
+    },
+    "history": {
+      "title": "Warp history",
+      "count": "{count} entries",
+      "limit": "Keeps the latest {count} entries on this page, newest first.",
+      "empty": "No warps yet.",
+      "fiveCount": "5-star pity count for this pull: {count}",
+      "pagination": "History pages",
+      "previous": "Previous page",
+      "next": "Next page",
+      "page": "Page {current} / {total}"
+    },
+    "reset": {
+      "group": "Reset current pity group",
+      "all": "Reset entire session",
+      "title": "Confirm reset",
+      "confirm": "Reset",
+      "groupConfirm": "Clear pity counters and UP guarantees for this banner’s inheritance group, including other banners in the same group. All history, latest results and character selections are kept.",
+      "allConfirm": "Clear pity for all five groups, latest results and warp history. Keep the current banner and each banner’s character selections.",
+      "groupDone": "Current group pity reset. History and character selections were kept.",
+      "allDone": "All pity, results and history cleared. Character selections were kept."
+    },
+    "visual": {
+      "missingImage": "{name}: image unavailable",
+      "rarity": "{count} stars",
+      "path": "Path",
+      "element": "Type",
+      "unknown": "—"
+    },
+    "path": {
+      "Elation": "Elation",
+      "Knight": "Preservation",
+      "Mage": "Erudition",
+      "Memory": "Remembrance",
+      "Priest": "Abundance",
+      "Rogue": "The Hunt",
+      "Shaman": "Harmony",
+      "Warlock": "Nihility",
+      "Warrior": "Destruction"
+    },
+    "element": {
+      "Physical": "Physical",
+      "Fire": "Fire",
+      "Ice": "Ice",
+      "Thunder": "Lightning",
+      "Wind": "Wind",
+      "Quantum": "Quantum",
+      "Imaginary": "Imaginary"
+    },
+    "error": {
+      "invalid-snapshot": "Banner data is invalid. No warp was performed.",
+      "unknown-banner": "This banner is unavailable. No warp was performed.",
+      "unknown-pool": "The candidate pool is missing. No warp was performed.",
+      "unknown-item": "A candidate item could not be identified. No warp was performed.",
+      "invalid-pool": "This banner configuration is incomplete or incompatible. No warp was performed.",
+      "invalid-selection": "Choose seven distinct eligible characters again.",
+      "invalid-state": "The pity state is invalid. No results were committed.",
+      "invalid-rng": "Invalid random value. Results were not committed; pity and history were kept.",
+      "rng-threw": "Random generation failed. Results were not committed; pity and history were kept."
+    }
+  },
+  "currencyWars": {
+    "title": "Currency Wars Trait Optimizer",
+    "description": "Choose trait tasks and calculate a character lineup and emblem allocation to complete as many tasks as possible.",
+    "none": "None",
+    "start": "Start solving",
+    "cancel": "Cancel",
+    "running": "Initializing and solving. You can still use the page…",
+    "cancelled": "This solve was cancelled.",
+    "rulesTitle": "Model rules and limitations",
+    "rules": "Optimizes trait headcounts only. Bronya contributes to neither side on a tie and cannot be a navigator target. Optimality applies only to this model.",
+    "type": {
+      "camp": "Camp traits",
+      "class": "Class traits",
+      "unique": "Unique traits"
+    },
+    "form": {
+      "title": "Solve configuration",
+      "slots": "Lineup slots",
+      "budget": "Emblem budget",
+      "budgetHint": "At least 12; each character can wear up to 3. The budget does not have to be exhausted.",
+      "experts": "Allow expert characters",
+      "expertsHint": "Makes experts eligible; does not require selecting them.",
+      "expertsAllowed": "Experts allowed",
+      "expertsExcluded": "Experts excluded",
+      "time": "Solver time limit (seconds)",
+      "tasks": "Target tasks",
+      "selection": "Selected {selected} / {total}",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "task": "{name} ≥ {count} members"
+    },
+    "validation": {
+      "slots": "Select 11, 12 or 13 slots.",
+      "emblemBudget": "Enter a safe integer budget of at least 12.",
+      "timeLimitSeconds": "Enter a positive integer number of seconds.",
+      "taskIds": "Select at least one task."
+    },
+    "status": {
+      "optimal": "Proven optimal for this model",
+      "feasible": "Feasible; optimality not proven",
+      "no-result": "No feasible result found within the limit",
+      "infeasible": "Solver reports infeasibility",
+      "error": "Solve or verification error",
+      "empty": "No tasks selected"
+    },
+    "error": {
+      "input": "Fix the configuration errors and try again.",
+      "data": "Unable to load or validate this tool’s data. Refresh the page and try again.",
+      "unavailable": "Unable to start the solver Worker. Check browser support and asset loading, then try again.",
+      "runtime": "The solver Worker encountered an error. Try solving again.",
+      "message": "Unable to read a valid result from the solver Worker. Try again.",
+      "details": "Technical details"
+    },
+    "result": {
+      "title": "Solve result",
+      "stale": "Configuration changed: the lineup below uses the previous solve conditions. Start a new solve to update it.",
+      "historical": "The previous valid lineup is retained below. It is not the result of the current attempt.",
+      "summary": "Completed {completed} / {tasks} tasks · Lineup {roles} / {slots} · Emblems {emblems} / {budget}",
+      "conditions": "Lineup conditions: {slots} slots · Emblem budget {budget} · {experts} · Limit {time}s · {tasks} tasks",
+      "selectedTasks": "View tasks selected for this lineup",
+      "elapsed": "Solve time: {seconds}s",
+      "bronyaWarning": "Bronya’s two trait counts are tied and the game’s tie rule is unconfirmed. She contributes to neither side; the completed count is a conservative lower bound.",
+      "genericWarning": "This lineup has a model warning. Review the current rules.",
+      "lineup": "Recommended lineup",
+      "activeTraits": "Active traits",
+      "trait": "{name} · {count} members · Active tier: {threshold}",
+      "contributors": "Contributors: {names}",
+      "tasks": "Task completion",
+      "taskCounts": "Required {required} · Actual {actual}",
+      "completed": "Completed",
+      "incomplete": "Incomplete",
+      "initial": "Configure conditions and select tasks, then start solving to view a character and emblem lineup.",
+      "noRoles": "This lineup does not require any characters.",
+      "noTraits": "This lineup has no active traits."
+    },
+    "visual": {
+      "missing": "{name}: image unavailable",
+      "cost": "Cost {cost}",
+      "emblems": "Three emblem slots for {name}",
+      "emptySlot": "Unused emblem slot",
+      "expert": "Expert",
+      "front": "Frontline",
+      "back": "Backline",
+      "target": "Navigator target: {name}",
+      "noTarget": "No navigator target selected",
+      "bronyaSide": "Joins {name}",
+      "bronyaTie": "Tie: contributes to neither side",
+      "details": "Trait details",
+      "innate": "Innate: {names}",
+      "extra": "Special additions: {names}",
+      "formId": "Form ID: {id}"
+    }
   }
 }

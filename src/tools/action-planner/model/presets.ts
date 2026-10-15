@@ -1,11 +1,6 @@
-import type {
-  EffectOperation,
-  EventAnchor,
-  EffectPhase,
-  SimulationState,
-} from '../../../engine/action-planner/types'
-import { FULL_AG, anchorKey, spawnedParticipantId } from '../../../engine/action-planner/queue'
-import { operationTargets } from '../../../engine/action-planner/targeting'
+import type { EffectOperation, EventAnchor, EffectPhase, SimulationState } from '../engine/types'
+import { FULL_AG, anchorKey, spawnedParticipantId } from '../engine/queue'
+import { operationTargets } from '../engine/targeting'
 import type { PlannerDocument } from './editor'
 
 export interface KhaslanaPresetInput {

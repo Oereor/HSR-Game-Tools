@@ -1,4 +1,4 @@
-import type { EffectOperation, EventAnchor } from '../../../engine/action-planner/types'
+import type { EffectOperation, EventAnchor } from '../engine/types'
 export function saveOperation(
   operations: readonly EffectOperation[],
   operation: EffectOperation,

@@ -18,20 +18,23 @@ UI、Tooltip、ARIA 和校验提示都由 Site Messages 管理；不要在 Vue �
 
 首页卡片的名称和简介由用户在消息文件中维护：
 
-| 工具 ID       | 消息路径                                       | 正式名称                                |
-| ------------- | ---------------------------------------------- | --------------------------------------- |
-| `actionOrder` | `home.tools.actionOrder.title` / `description` | 行动序列模拟器 / Action Order Simulator |
-| `warp`        | `home.tools.warp.title` / `description`        | 抽卡模拟器 / Warp Simulator             |
-| `relic`       | `home.tools.relic.title` / `description`       | 遗器模拟器 / Relic Simulator            |
+| 工具 ID        | 消息路径                                        | 正式名称                                           |
+| -------------- | ----------------------------------------------- | -------------------------------------------------- |
+| `actionOrder`  | `home.tools.actionOrder.title` / `description`  | 行动序列模拟器 / Action Order Simulator            |
+| `warp`         | `home.tools.warp.title` / `description`         | 抽卡模拟器 / Warp Simulator                        |
+| `relic`        | `home.tools.relic.title` / `description`        | 遗器模拟器 / Relic Simulator                       |
+| `currencyWars` | `home.tools.currencyWars.title` / `description` | 货币战争羁绊优化器 / Currency Wars Trait Optimizer |
 
 两份消息文件同步修改同名 Key。`home.title`、`home.toolsHeading`、`home.github` 和 `home.disclaimer` 管理首页其他文案；`site.description` 用于页面 Meta Description。
-行动序列模拟器名称还用于 `planner.title`，改名时与首页同步；“战斗配置 / Battle Setup”和“行动模拟 / Simulation”是工作阶段，不是产品名。
+行动序列模拟器名称还用于 `planner.title`，跃迁模拟器名称用于 `warp.title`，改名时与首页同步；“战斗配置 / Battle Setup”和“行动模拟 / Simulation”是工作阶段，不是产品名。跃迁页面、Dialog、Tooltip、ARIA、语义错误及展示元数据标签使用 `warp.*`；物品名称始终来自 Warp Snapshot，不把历史 UP 或引擎状态写进翻译文案。
 
 [工具目录](../src/tools/catalog.ts)只保存 ID、图标和可选路由。无路由时展示静态卡片；工具实际实现并注册路由后再开放，不通过修改文案开启入口。
 [App.vue](../src/App.vue)根据路由消息和语言更新 Document Title、Meta Description 与文档语言。
 消息中的 `|` 会被编译器识别为复数分隔符；普通页面标题分隔符使用现有 `·`，不要直接写入未转义的 `|`。
 
 ## 插值与语义描述
+
+货币战争网页使用 `currencyWars.*` 管理表单、结果状态、验证、图片替代说明和模型警告。官方角色、星徽与羁绊名沿用现有中文快照，不在消息目录维护第二份名称映射；语言切换不改变请求、任务选择或结果是否过期。Worker 返回结构化结果，错误摘要由消息目录本地化，原始错误仅在技术详情中展示。
 
 动态句子在 JSON 中定义完整自然语言模板，使用命名参数。例如：
 

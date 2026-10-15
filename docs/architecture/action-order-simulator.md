@@ -5,7 +5,9 @@ UI 展示见[设计规范](../design-notes.md)，文案见[Site Messages](../sit
 
 ## 职责与数据流
 
-[纯 TypeScript 引擎](../../src/engine/action-planner/)进行有限预算的离散事件推演，不依赖 Vue、Router、DOM、Node 文件系统、翻译或原始游戏 JSON。
+工具业务集中在 `src/tools/action-planner/`：engine、model、composables、components、data、templates 与页面入口各自保持原职责。仅排轴使用的 GameIcon 随工具组件维护；全站 Router、i18n、主题、通用 UI 和 `public/game-assets/` 保持共享。工具之间不直接引用对方业务内部实现，数据维护脚本仍在 `scripts/`，不进入运行时引擎。
+
+[纯 TypeScript 引擎](../../src/tools/action-planner/engine/)进行有限预算的离散事件推演，不依赖 Vue、Router、DOM、Node 文件系统、翻译或原始游戏 JSON。
 它执行用户显式配置的操作，不解析技能描述或自动执行完整角色技能。
 
 数据流为：配置或操作草稿 → 显式提交 PlannerDocument → simulatePlan 重放 → SimulationResult → Navigator / Inspector / Presentation。
@@ -14,7 +16,7 @@ UI 展示见[设计规范](../design-notes.md)，文案见[Site Messages](../sit
 
 ## 时间、速度与队列
 
-数学与排序来源为 [queue.ts](../../src/engine/action-planner/queue.ts)、[engine.ts](../../src/engine/action-planner/engine.ts) 和 [operations.ts](../../src/engine/action-planner/operations.ts)。
+数学与排序来源为 [queue.ts](../../src/tools/action-planner/engine/queue.ts)、[engine.ts](../../src/tools/action-planner/engine/engine.ts) 和 [operations.ts](../../src/tools/action-planner/engine/operations.ts)。
 
 - 完整行动距离 `FULL_AG = 10000`，剩余行动值 `remainingAV = remainingAG / effectiveSpeed`；速度必须为有限正数。
 - Actor 的有效速度为面板速度，加自身固定速度修正和基于 baseSpeed 的百分比修正。速度变化保留当前 AG，不按新速度重置距离。
@@ -30,7 +32,7 @@ UI 展示见[设计规范](../design-notes.md)，文案见[Site Messages](../sit
 
 ## 行动单位与系统事件
 
-类型定义见 [types.ts](../../src/engine/action-planner/types.ts)。
+类型定义见 [types.ts](../../src/tools/action-planner/engine/types.ts)。
 
 | 类型                        | 当前行为                                                                                           |
 | --------------------------- | -------------------------------------------------------------------------------------------------- |
@@ -54,7 +56,7 @@ UI 展示见[设计规范](../design-notes.md)，文案见[Site Messages](../sit
 | addSpeedModifier | 添加固定值或基础速度百分比修正，使用有限 / 无限回合或共享倒计时生命周期        |
 | spawnParticipant | 以操作 ID 派生稳定 ID，创建 Actor 或单次 Scheduled Event                       |
 
-资格统一由 [targeting.ts](../../src/engine/action-planner/targeting.ts)判定。Actor 可接受上述目标操作；Aha 接受速度与离场 / 回场。普通效果及 depart 选择在场单位，returnToField 选择离场单位；operationTargets 读取真实 SimulationState 并按操作类型筛选，不能使用最终定义目录判断在场状态。
+资格统一由 [targeting.ts](../../src/tools/action-planner/engine/targeting.ts)判定。Actor 可接受上述目标操作；Aha 接受速度与离场 / 回场。普通效果及 depart 选择在场单位，returnToField 选择离场单位；operationTargets 读取真实 SimulationState 并按操作类型筛选，不能使用最终定义目录判断在场状态。
 我方 / 敌方群体仅选对应阵营且状态匹配的 Actor，不包含 Aha 或事件。显式 Presence 多选可混合三类参与者；其中任一目标缺失或状态不匹配时整条操作跳过并诊断，不部分提交。
 Scheduled Event 可作为单个显式目标接受 advance / delay，不能接受立即行动；速度效果支持显式单选、多选及与 Actor / Aha 混选，但包含事件的操作只接受 `{ kind: 'turns', turns: null }` 无限持续。有限回合或倒计时持续在校验及运行时均拒绝，不静默转换。
 正在触发的 Scheduled Event 保留在状态中用于结算和诊断，但不再可选；离场事件没有触发，因此仍可被 returnToField 选中。
@@ -75,7 +77,7 @@ Scheduled Event 可作为单个显式目标接受 advance / delay，不能接受
 Scheduled Event 触发时，先移除与它关联的到期 Modifier，再记录 beforeEffects 并执行事件操作，最后移除事件自身。
 到期后出现非法速度会停止该节点，不允许后续操作掩盖失败。回合或倒计时到期均不自行重置 AG 与零 AV 插入优先级。
 
-[轮次规则](../../src/engine/action-planner/cycle.ts)支持 none / moc / aa：第 0 轮长度分别为 150 / 300 AV，此后每轮 100 AV；第 n 个边界（n ≥ 1）为首轮 AV + 100 × (n−1)。
+[轮次规则](../../src/tools/action-planner/engine/cycle.ts)支持 none / moc / aa：第 0 轮长度分别为 150 / 300 AV，此后每轮 100 AV；第 n 个边界（n ≥ 1）为首轮 AV + 100 × (n−1)。
 同一 AV 下先处理 Actor、Aha、Scheduled Event 及它们新产生的零 AV 行动，每次结算后重新检查队列，最后处理轮次边界。
 边界自身产生的零 AV 行动在该边界结算之后执行。轮次不重置 AG、不递减自然回合 Buff；没有参与者时不继续推进到未来边界，但已经到时的边界仍可结算。
 所有我方 Actor 离场不阻止其他单位或倒计时继续调度。全体参与者离场时，已启用且预算内的轮次系统节点仍可推进；无可调度参与者且无有效系统节点时按空调度停止，不虚构回场节点。

@@ -8,6 +8,7 @@
 | 主题                                   | 权威文档                                                     |
 | -------------------------------------- | ------------------------------------------------------------ |
 | 行动序列引擎、编辑状态、方案格式与模板 | [行动序列模拟器架构](architecture/action-order-simulator.md) |
+| 跃迁模型、页面会话、选择、结果与历史   | [跃迁模拟器](architecture/warp-simulator.md)                 |
 | 主题 Token、布局、卡片、图标与可访问性 | [UI 设计规范](design-notes.md)                               |
 | 中英文消息、语义描述与文案维护         | [Site Messages](site-messages.md)                            |
 | 数据快照、来源锁定、资源与显式更新     | [游戏数据维护](game-data.md)                                 |
@@ -15,6 +16,7 @@
 ## 开发与维护
 
 - [开发指南](development.md)：Node / npm、运行与验证命令、代理及测试政策。
+- [货币战争羁绊优化器](currency-wars.md)：网页与 CLI、Worker/WASM、任务格式、特殊规则与快照维护。
 - [UI 设计规范](design-notes.md)：首页与模拟器的现行展示约定。
 - [Site Messages](site-messages.md)：首页简介、操作名称、插值及翻译验证。
 - [游戏数据维护](game-data.md)：快照审阅、来源前提、更新与回滚。

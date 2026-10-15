@@ -2,7 +2,11 @@ import { createHash } from 'node:crypto'
 import { readFile, readdir, lstat, mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
-import { safeRelativePath, validateSnapshot, validateManifest } from '../../src/data/schema'
+import {
+  safeRelativePath,
+  validateSnapshot,
+  validateManifest,
+} from '../../src/tools/action-planner/data/schema'
 import type { SourceLock } from './projection'
 
 export const digest = (data: string | Buffer) => createHash('sha256').update(data).digest('hex')
@@ -32,9 +36,9 @@ async function listFiles(root: string): Promise<string[]> {
   return output
 }
 export async function validateGameFiles(root: string, lock?: SourceLock, overlaySha256?: string) {
-  const snapshot = await readJson(inside(root, 'src/data/game/catalog.json'))
+  const snapshot = await readJson(inside(root, 'src/tools/action-planner/data/game/catalog.json'))
   validateSnapshot(snapshot)
-  const manifest = await readJson(inside(root, 'src/data/game/manifest.json'))
+  const manifest = await readJson(inside(root, 'src/tools/action-planner/data/game/manifest.json'))
   validateManifest(manifest)
   if (manifest.gameVersion !== snapshot.gameVersion)
     throw new Error('Manifest game version mismatch')
@@ -54,7 +58,7 @@ export async function validateGameFiles(root: string, lock?: SourceLock, overlay
   if (manifest.missingAssets.some((m) => Object.hasOwn(snapshot.assets, m.key)))
     throw new Error('Missing asset is still referenced')
   const expected = new Set([
-    'src/data/game/catalog.json',
+    'src/tools/action-planner/data/game/catalog.json',
     ...Object.values(snapshot.assets).map((a) => 'public/' + a.path),
   ])
   if (JSON.stringify([...expected].sort()) !== JSON.stringify(Object.keys(manifest.files).sort()))
@@ -67,9 +71,10 @@ export async function validateGameFiles(root: string, lock?: SourceLock, overlay
     if (meta.bytes !== bytes.length || meta.sha256 !== digest(bytes))
       throw new Error('Checksum mismatch ' + relative)
   }
-  const actualAssets = (await listFiles(inside(root, 'public/game-assets'))).map((f) =>
-    path.relative(root, f).split(path.sep).join('/'),
-  )
+  const actualAssets = (await listFiles(inside(root, 'public/game-assets')))
+    .map((f) => path.relative(root, f).split(path.sep).join('/'))
+    // Currency Wars owns this namespace; planner character/preset inventory stays strict.
+    .filter((f) => !f.startsWith('public/game-assets/emblem/'))
   if (
     JSON.stringify(actualAssets.sort()) !==
     JSON.stringify([...expected].filter((p) => p.startsWith('public/')).sort())

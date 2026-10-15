@@ -21,14 +21,14 @@ import SpeedModifierTags from './SpeedModifierTags.vue'
 import { actionSpeedModifierTags, type CountdownSources } from '../model/speed-modifier-tags'
 import OperationEditor from './OperationEditor.vue'
 import OperationTargets from './OperationTargets.vue'
-import { effectiveSpeed } from '../../../engine/action-planner/queue'
-import { phaseOperations } from '../../../engine/action-planner/effect-config'
+import { effectiveSpeed } from '../engine/queue'
+import { phaseOperations } from '../engine/effect-config'
 import type {
   ParticipantInfo,
   EffectOperation,
   EventAnchor,
   SimulationState,
-} from '../../../engine/action-planner/types'
+} from '../engine/types'
 import { formatAV, formatNumber, renderMessage } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
 import type { OperationDraft } from '../model/editor'

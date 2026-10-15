@@ -3,6 +3,7 @@ import Aura from '@primeuix/themes/aura'
 export const ToolsPreset = definePreset(Aura, {
   primitive: {
     event: { 500: '#dfbc66' },
+    currencyCost: { 1: '#f1eee7', 2: '#67bd96', 3: '#5fa9e7', 4: '#ae85d7', 5: '#c9a86b' },
     gold: {
       50: '#faf7ef',
       100: '#f3e9d5',
