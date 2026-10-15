@@ -1,4 +1,4 @@
-import type { EffectOperation, SimulationState } from '../../../engine/action-planner/types'
+import type { EffectOperation, SimulationState } from '../engine/types'
 import type { MessageDescriptor } from '../../../locales/types'
 import { namingTargets, targetDescription } from './naming'
 

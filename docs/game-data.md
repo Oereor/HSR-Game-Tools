@@ -4,7 +4,7 @@
 
 ## 数据边界与来源
 
-应用从 [src/data/](../src/data/) 读取工具 Schema、仓库内快照和 Adapter；原始上游解析只属于显式更新器，运行时与纯模拟引擎不读取原始游戏 JSON。
+各工具从自己的数据目录读取 Schema、仓库内快照和 Adapter：[Action Planner 数据](../src/tools/action-planner/data/)与 [Warp 数据](../src/tools/warp-simulator/data/)独立维护。原始上游解析只属于显式更新器，运行时与纯模拟引擎不读取原始游戏 JSON。
 
 当前来源分工：
 
@@ -15,13 +15,13 @@
 
 ## 快照与来源锁定
 
-| 文件或目录                                                | 职责                                                      |
-| --------------------------------------------------------- | --------------------------------------------------------- |
-| [catalog.json](../src/data/game/catalog.json)             | 规范化双语条目、角色身份、基础速度、预设与资源映射        |
-| [manifest.json](../src/data/game/manifest.json)           | 游戏版本、来源 Commit、生成参数、文件哈希、缺失资源和诊断 |
-| [public/game-assets/](../public/game-assets/)             | 有限的本地 WebP 图片，不请求上游 CDN                      |
-| [source-lock.json](../scripts/game-data/source-lock.json) | 来源仓库、固定 Commit、人工审阅的 Character ID 和转换参数 |
-| [overlays.json](../scripts/game-data/overlays.json)       | 有限名称、别名与工具预设的维护输入及来源记录              |
+| 文件或目录                                                           | 职责                                                      |
+| -------------------------------------------------------------------- | --------------------------------------------------------- |
+| [catalog.json](../src/tools/action-planner/data/game/catalog.json)   | 规范化双语条目、角色身份、基础速度、预设与资源映射        |
+| [manifest.json](../src/tools/action-planner/data/game/manifest.json) | 游戏版本、来源 Commit、生成参数、文件哈希、缺失资源和诊断 |
+| [public/game-assets/](../public/game-assets/)                        | 有限的本地 WebP 图片，不请求上游 CDN                      |
+| [source-lock.json](../scripts/game-data/source-lock.json)            | 来源仓库、固定 Commit、人工审阅的 Character ID 和转换参数 |
+| [overlays.json](../scripts/game-data/overlays.json)                  | 有限名称、别名与工具预设的维护输入及来源记录              |
 
 当前锁定快照为游戏版本 4.6.0，包含 98 个角色、3 个预设和 101 张 WebP。数量是该快照的核对结果，不是永久 Schema 约束。
 来源 Commit 为 `dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487`；快照文件及必要资源保持可跟踪，缓存、staging 和备份由 .gitignore 排除。
@@ -50,7 +50,7 @@ npm run validate:game-data
 生成内容先写入 `.game-data-staging/<runId>/`；`.game-data-staging/update.lock` 用独占创建阻止并发更新。
 发布前的[文件校验](../scripts/game-data/files.ts)核对 Schema、游戏版本、来源锁定、审阅 ID 集合、转换参数、overlay 哈希、文件 inventory、bytes / SHA-256 和图片格式尺寸。
 
-[发布函数](../scripts/game-data/publish.ts)将旧 `public/game-assets/` 与 `src/data/game/` 保存到 `.game-data-backup/<runId>/`，再安装新目录。
+[发布函数](../scripts/game-data/publish.ts)将旧 `public/game-assets/` 与 `src/tools/action-planner/data/game/` 保存到 `.game-data-backup/<runId>/`，再安装新目录。
 新数据目录包含已验证的 Manifest。移动失败时恢复旧目录；成功后清除备份，更新器在 finally 中清理本次 staging 和锁。
 这不是对正在访问的浏览器提供全局原子的多目录替换，因此建议停止 dev / preview 后更新。
 
@@ -69,14 +69,16 @@ npm run validate:game-data
 
 Warp 与上述排轴快照完全独立。本阶段只有目录、人工配置、Schema、校验和静态数据生成，没有概率模型实现、抽取引擎、会话、图片更新或页面入口。
 
-| 路径                                                                        | 职责                                                |
-| --------------------------------------------------------------------------- | --------------------------------------------------- |
-| [scripts/warp-data/source-lock.json](../scripts/warp-data/source-lock.json) | 固定 TurnBasedGameData Commit 和转换版本            |
-| [scripts/warp-data/generated/](../scripts/warp-data/generated/)             | 双语 Item Catalog、GachaID／类型索引及来源 Manifest |
-| [scripts/warp-data/banners.jsonc](../scripts/warp-data/banners.jsonc)       | 人工共享候选池、Banner 和明确待办                   |
-| [本地 JSON Schema](../scripts/warp-data/schema/banner-config.schema.json)   | 从目录和共享池声明生成的 VS Code 补全与结构约束     |
-| [src/data/warp/](../src/data/warp/)                                         | 裁剪后的运行时 snapshot 与 Manifest                 |
-| [独立 TypeScript 契约](../src/data/warp-schema.ts)                          | 物品、候选池和 Banner 类型；不扩展排轴 Schema       |
+运行时产物单独放在 `data/runtime/`，发布器只整体替换该目录，不替换包含 TypeScript 契约的 `data/`。当前已配置的成员及来源说明以人工 JSONC 为准；结构迁移不重新生成名单。
+
+| 路径                                                                                | 职责                                                |
+| ----------------------------------------------------------------------------------- | --------------------------------------------------- |
+| [scripts/warp-data/source-lock.json](../scripts/warp-data/source-lock.json)         | 固定 TurnBasedGameData Commit 和转换版本            |
+| [scripts/warp-data/generated/](../scripts/warp-data/generated/)                     | 双语 Item Catalog、GachaID／类型索引及来源 Manifest |
+| [scripts/warp-data/banners.jsonc](../scripts/warp-data/banners.jsonc)               | 人工共享候选池、Banner 和明确待办                   |
+| [本地 JSON Schema](../scripts/warp-data/schema/banner-config.schema.json)           | 从目录和共享池声明生成的 VS Code 补全与结构约束     |
+| [src/tools/warp-simulator/data/runtime/](../src/tools/warp-simulator/data/runtime/) | 裁剪后的运行时 snapshot 与 Manifest                 |
+| [独立 TypeScript 契约](../src/tools/warp-simulator/data/schema.ts)                  | 物品、候选池和 Banner 类型；不扩展排轴 Schema       |
 
 ### 来源与身份
 

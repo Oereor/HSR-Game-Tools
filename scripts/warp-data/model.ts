@@ -14,7 +14,7 @@ import type {
   WarpItemKind,
   WarpPool,
   WarpSnapshot,
-} from '../../src/data/warp-schema'
+} from '../../src/tools/warp-simulator/data/schema'
 
 export const VERSION = 1
 export const kinds: WarpBannerKind[] = [

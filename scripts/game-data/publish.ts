@@ -27,8 +27,8 @@ export async function publishSnapshot(
       saved: path.join(backup, 'assets'),
     },
     {
-      target: inside(root, 'src/data/game'),
-      source: inside(staging, 'src/data/game'),
+      target: inside(root, 'src/tools/action-planner/data/game'),
+      source: inside(staging, 'src/tools/action-planner/data/game'),
       saved: path.join(backup, 'data'),
     },
   ]

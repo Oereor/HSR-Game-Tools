@@ -1,20 +1,16 @@
 import { resolveElationContributors } from '../model/aha-config'
 import { computed, ref, shallowReadonly, shallowRef, watch } from 'vue'
-import { simulatePlan, previewOperationState } from '../../../engine/action-planner/engine'
-import {
-  anchorKey,
-  spawnedParticipantId,
-  countdownParticipantId,
-} from '../../../engine/action-planner/queue'
-import { validatePlan } from '../../../engine/action-planner/validation'
-import { operationTargets } from '../../../engine/action-planner/targeting'
+import { simulatePlan, previewOperationState } from '../engine/engine'
+import { anchorKey, spawnedParticipantId, countdownParticipantId } from '../engine/queue'
+import { validatePlan } from '../engine/validation'
+import { operationTargets } from '../engine/targeting'
 import type {
   AhaConfig,
   EffectOperation,
   EventAnchor,
   CycleMode,
   SimulationPlan,
-} from '../../../engine/action-planner/types'
+} from '../engine/types'
 import { saveOperation, moveOperation } from '../model/effect-config'
 import { buildCurrentQueueView } from '../model/current-queue'
 import { buildKhaslanaPreset, type KhaslanaPresetInput } from '../model/presets'

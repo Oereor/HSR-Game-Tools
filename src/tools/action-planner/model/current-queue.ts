@@ -1,11 +1,11 @@
-import { queueSnapshot } from '../../../engine/action-planner/queue'
+import { queueSnapshot } from '../engine/queue'
 import type {
   NodeRecord,
   QueueEntry,
   QueueSnapshot,
   PendingCycleBoundary,
   SimulationResult,
-} from '../../../engine/action-planner/types'
+} from '../engine/types'
 
 export type WaitingEntry = QueueEntry | (PendingCycleBoundary & { actionChanges: [] })
 function waitingEntries(snapshot: QueueSnapshot, current?: NodeRecord): WaitingEntry[] {

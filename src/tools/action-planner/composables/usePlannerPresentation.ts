@@ -1,11 +1,7 @@
 import { computed, type Ref } from 'vue'
-import { gameData, characterName, assetUrl } from '../../../data/adapters/game-data'
-import { participantCatalog } from '../../../engine/action-planner/validation'
-import type {
-  EffectOperation,
-  EventAnchor,
-  SimulationState,
-} from '../../../engine/action-planner/types'
+import { gameData, characterName, assetUrl } from '../data/adapters/game-data'
+import { participantCatalog } from '../engine/validation'
+import type { EffectOperation, EventAnchor, SimulationState } from '../engine/types'
 import type { MessageTranslator, ToolLocale } from '../../../locales/types'
 import type { PlannerDocument } from '../model/editor'
 import { metadataValue } from '../model/editor'

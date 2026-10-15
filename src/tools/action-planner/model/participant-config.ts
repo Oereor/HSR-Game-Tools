@@ -1,11 +1,11 @@
-import { validateOperations } from '../../../engine/action-planner/validation'
+import { validateOperations } from '../engine/validation'
 import type {
   ActorDefinition,
   Camp,
   EffectOperation,
   EffectPhase,
   EventAnchor,
-} from '../../../engine/action-planner/types'
+} from '../engine/types'
 
 export type SpawnOperation = Extract<EffectOperation, { type: 'spawnParticipant' }>
 export type ParticipantField =

@@ -6,23 +6,18 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import SelectButton from 'primevue/selectbutton'
-import { elationContribution } from '../../../engine/action-planner/queue'
+import { elationContribution } from '../engine/queue'
 import { resolveElationContributors } from '../model/aha-config'
-import { CYCLE_RULES } from '../../../engine/action-planner/cycle'
+import { CYCLE_RULES } from '../engine/cycle'
 import { Plus, Trash2 } from '@lucide/vue'
-import GameIcon from '../../../components/ui/GameIcon.vue'
-import { gameData, characterName } from '../../../data/adapters/game-data'
+import GameIcon from './GameIcon.vue'
+import { gameData, characterName } from '../data/adapters/game-data'
 import { buildBattleSetup, setupDraft, type AllySlot, type EnemyDraft } from '../model/battle-setup'
 import EnemySetup from './EnemySetup.vue'
 import UnitPortrait from './UnitPortrait.vue'
-import type {
-  ActorConfig,
-  SimulationPlan,
-  CycleMode,
-  AhaConfig,
-} from '../../../engine/action-planner/types'
+import type { ActorConfig, SimulationPlan, CycleMode, AhaConfig } from '../engine/types'
 import type { ToolLocale } from '../../../locales/types'
-import type { CharacterRecord } from '../../../data/schema'
+import type { CharacterRecord } from '../data/schema'
 import { createCharacterSearch } from '../model/character-search'
 import { formatNumber } from '../model/presentation'
 const props = defineProps<{

@@ -151,7 +151,7 @@ npm ci --proxy=http://127.0.0.1:7890 --https-proxy=http://127.0.0.1:7890
 定向测试使用已有 npm 入口，例如：
 
 ```bash
-npm test -- tests/unit/planner-document-file.test.ts tests/unit/planner-persistence.test.ts
+npm test -- tests/unit/action-planner/planner-document-file.test.ts tests/unit/action-planner/planner-persistence.test.ts
 ```
 
 消息修改运行 i18n 校验；模板修改运行模板校验及方案文件相关测试；数据维护按游戏数据指南验证。

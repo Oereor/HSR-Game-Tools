@@ -1,5 +1,5 @@
-import { anchorKey, orderedParticipants } from '../../../engine/action-planner/queue'
-import { operationTargets, targetIds } from '../../../engine/action-planner/targeting'
+import { anchorKey, orderedParticipants } from '../engine/queue'
+import { operationTargets, targetIds } from '../engine/targeting'
 import type {
   ActionChangeTrace,
   EffectOperation,
@@ -7,7 +7,7 @@ import type {
   ParticipantInfo,
   SimulationState,
   Target,
-} from '../../../engine/action-planner/types'
+} from '../engine/types'
 import type { MessageDescriptor } from '../../../locales/types'
 
 export function participantLabels(

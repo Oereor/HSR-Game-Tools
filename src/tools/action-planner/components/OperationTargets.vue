@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import UnitPortrait from './UnitPortrait.vue'
-import type { ParticipantInfo } from '../../../engine/action-planner/types'
+import type { ParticipantInfo } from '../engine/types'
 import type { ToolLocale } from '../../../locales/types'
 import { formatNumber } from '../model/presentation'
 

@@ -1,5 +1,5 @@
 import type { MessageDescriptor, MessageTranslator, ToolLocale } from '../../../locales/types'
-import type { EffectOperation, SimulationState } from '../../../engine/action-planner/types'
+import type { EffectOperation, SimulationState } from '../engine/types'
 import { operationNameDescriptor } from './naming'
 
 export function formatNumber(value: number, locale: ToolLocale, signed = false): string {

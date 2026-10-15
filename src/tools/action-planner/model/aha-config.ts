@@ -1,5 +1,5 @@
-import catalog from '../../../data/game/catalog.json'
-import type { ActorConfig } from '../../../engine/action-planner/types'
+import catalog from '../data/game/catalog.json'
+import type { ActorConfig } from '../engine/types'
 
 /** Resolve only initial allies. Unknown unchanged identities retain saved engine facts. */
 export function resolveElationContributors(

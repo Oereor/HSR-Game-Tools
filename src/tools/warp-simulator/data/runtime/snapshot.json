@@ -1,0 +1,891 @@
+{
+  "banners": [
+    {
+      "gachaId": "2139",
+      "id": "gacha:2139",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up4": [
+        "avatar:1201",
+        "avatar:1214",
+        "avatar:1312"
+      ],
+      "up5": "avatar:1503"
+    }
+  ],
+  "items": [
+    {
+      "id": "avatar:1001",
+      "kind": "avatar",
+      "names": {
+        "en": "March 7th",
+        "zh-CN": "三月七"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1002",
+      "kind": "avatar",
+      "names": {
+        "en": "Dan Heng",
+        "zh-CN": "丹恒"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1003",
+      "kind": "avatar",
+      "names": {
+        "en": "Himeko",
+        "zh-CN": "姬子"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1004",
+      "kind": "avatar",
+      "names": {
+        "en": "Welt",
+        "zh-CN": "瓦尔特"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1008",
+      "kind": "avatar",
+      "names": {
+        "en": "Arlan",
+        "zh-CN": "阿兰"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1009",
+      "kind": "avatar",
+      "names": {
+        "en": "Asta",
+        "zh-CN": "艾丝妲"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1013",
+      "kind": "avatar",
+      "names": {
+        "en": "Herta",
+        "zh-CN": "黑塔"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1101",
+      "kind": "avatar",
+      "names": {
+        "en": "Bronya",
+        "zh-CN": "布洛妮娅"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1103",
+      "kind": "avatar",
+      "names": {
+        "en": "Serval",
+        "zh-CN": "希露瓦"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1104",
+      "kind": "avatar",
+      "names": {
+        "en": "Gepard",
+        "zh-CN": "杰帕德"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1105",
+      "kind": "avatar",
+      "names": {
+        "en": "Natasha",
+        "zh-CN": "娜塔莎"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1106",
+      "kind": "avatar",
+      "names": {
+        "en": "Pela",
+        "zh-CN": "佩拉"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1107",
+      "kind": "avatar",
+      "names": {
+        "en": "Clara",
+        "zh-CN": "克拉拉"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1108",
+      "kind": "avatar",
+      "names": {
+        "en": "Sampo",
+        "zh-CN": "桑博"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1109",
+      "kind": "avatar",
+      "names": {
+        "en": "Hook",
+        "zh-CN": "虎克"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1110",
+      "kind": "avatar",
+      "names": {
+        "en": "Lynx",
+        "zh-CN": "玲可"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1111",
+      "kind": "avatar",
+      "names": {
+        "en": "Luka",
+        "zh-CN": "卢卡"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1201",
+      "kind": "avatar",
+      "names": {
+        "en": "Qingque",
+        "zh-CN": "青雀"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1202",
+      "kind": "avatar",
+      "names": {
+        "en": "Tingyun",
+        "zh-CN": "停云"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1206",
+      "kind": "avatar",
+      "names": {
+        "en": "Sushang",
+        "zh-CN": "素裳"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1207",
+      "kind": "avatar",
+      "names": {
+        "en": "Yukong",
+        "zh-CN": "驭空"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1209",
+      "kind": "avatar",
+      "names": {
+        "en": "Yanqing",
+        "zh-CN": "彦卿"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1210",
+      "kind": "avatar",
+      "names": {
+        "en": "Guinaifen",
+        "zh-CN": "桂乃芬"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1211",
+      "kind": "avatar",
+      "names": {
+        "en": "Bailu",
+        "zh-CN": "白露"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1214",
+      "kind": "avatar",
+      "names": {
+        "en": "Xueyi",
+        "zh-CN": "雪衣"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1215",
+      "kind": "avatar",
+      "names": {
+        "en": "Hanya",
+        "zh-CN": "寒鸦"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1223",
+      "kind": "avatar",
+      "names": {
+        "en": "Moze",
+        "zh-CN": "貊泽"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1301",
+      "kind": "avatar",
+      "names": {
+        "en": "Gallagher",
+        "zh-CN": "加拉赫"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1312",
+      "kind": "avatar",
+      "names": {
+        "en": "Misha",
+        "zh-CN": "米沙"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "avatar:1503",
+      "kind": "avatar",
+      "names": {
+        "en": "Pearl",
+        "zh-CN": "真珠"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:20000",
+      "kind": "light-cone",
+      "names": {
+        "en": "Arrows",
+        "zh-CN": "锋镝"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20001",
+      "kind": "light-cone",
+      "names": {
+        "en": "Cornucopia",
+        "zh-CN": "物穰"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20002",
+      "kind": "light-cone",
+      "names": {
+        "en": "Collapsing Sky",
+        "zh-CN": "天倾"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20003",
+      "kind": "light-cone",
+      "names": {
+        "en": "Amber",
+        "zh-CN": "琥珀"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20004",
+      "kind": "light-cone",
+      "names": {
+        "en": "Void",
+        "zh-CN": "幽邃"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20005",
+      "kind": "light-cone",
+      "names": {
+        "en": "Chorus",
+        "zh-CN": "齐颂"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20006",
+      "kind": "light-cone",
+      "names": {
+        "en": "Data Bank",
+        "zh-CN": "智库"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20007",
+      "kind": "light-cone",
+      "names": {
+        "en": "Darting Arrow",
+        "zh-CN": "离弦"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20008",
+      "kind": "light-cone",
+      "names": {
+        "en": "Fine Fruit",
+        "zh-CN": "嘉果"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20009",
+      "kind": "light-cone",
+      "names": {
+        "en": "Shattered Home",
+        "zh-CN": "乐圮"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20010",
+      "kind": "light-cone",
+      "names": {
+        "en": "Defense",
+        "zh-CN": "戍御"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20011",
+      "kind": "light-cone",
+      "names": {
+        "en": "Loop",
+        "zh-CN": "渊环"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20012",
+      "kind": "light-cone",
+      "names": {
+        "en": "Meshing Cogs",
+        "zh-CN": "轮契"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20013",
+      "kind": "light-cone",
+      "names": {
+        "en": "Passkey",
+        "zh-CN": "灵钥"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20014",
+      "kind": "light-cone",
+      "names": {
+        "en": "Adversarial",
+        "zh-CN": "相抗"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20015",
+      "kind": "light-cone",
+      "names": {
+        "en": "Multiplication",
+        "zh-CN": "蕃息"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20016",
+      "kind": "light-cone",
+      "names": {
+        "en": "Mutual Demise",
+        "zh-CN": "俱殁"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20017",
+      "kind": "light-cone",
+      "names": {
+        "en": "Pioneering",
+        "zh-CN": "开疆"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20018",
+      "kind": "light-cone",
+      "names": {
+        "en": "Hidden Shadow",
+        "zh-CN": "匿影"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20019",
+      "kind": "light-cone",
+      "names": {
+        "en": "Mediation",
+        "zh-CN": "调和"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20020",
+      "kind": "light-cone",
+      "names": {
+        "en": "Sagacity",
+        "zh-CN": "睿见"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20021",
+      "kind": "light-cone",
+      "names": {
+        "en": "Shadowburn",
+        "zh-CN": "焚影"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20022",
+      "kind": "light-cone",
+      "names": {
+        "en": "Reminiscence",
+        "zh-CN": "溯忆"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20023",
+      "kind": "light-cone",
+      "names": {
+        "en": "Sneering",
+        "zh-CN": "嗤笑"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:20024",
+      "kind": "light-cone",
+      "names": {
+        "en": "Lingering Tear",
+        "zh-CN": "残泪"
+      },
+      "rarity": 3
+    },
+    {
+      "id": "light-cone:21000",
+      "kind": "light-cone",
+      "names": {
+        "en": "Post-Op Conversation",
+        "zh-CN": "一场术后对话"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21001",
+      "kind": "light-cone",
+      "names": {
+        "en": "Good Night and Sleep Well",
+        "zh-CN": "晚安与睡颜"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21002",
+      "kind": "light-cone",
+      "names": {
+        "en": "Day One of My New Life",
+        "zh-CN": "余生的第一天"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21003",
+      "kind": "light-cone",
+      "names": {
+        "en": "Only Silence Remains",
+        "zh-CN": "唯有沉默"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21004",
+      "kind": "light-cone",
+      "names": {
+        "en": "Memories of the Past",
+        "zh-CN": "记忆中的模样"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21005",
+      "kind": "light-cone",
+      "names": {
+        "en": "The Moles Welcome You",
+        "zh-CN": "鼹鼠党欢迎你"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21006",
+      "kind": "light-cone",
+      "names": {
+        "en": "The Birth of the Self",
+        "zh-CN": "「我」的诞生"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21007",
+      "kind": "light-cone",
+      "names": {
+        "en": "Shared Feeling",
+        "zh-CN": "同一种心情"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21008",
+      "kind": "light-cone",
+      "names": {
+        "en": "Eyes of the Prey",
+        "zh-CN": "猎物的视线"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21009",
+      "kind": "light-cone",
+      "names": {
+        "en": "Landau's Choice",
+        "zh-CN": "朗道的选择"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21010",
+      "kind": "light-cone",
+      "names": {
+        "en": "Swordplay",
+        "zh-CN": "论剑"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21011",
+      "kind": "light-cone",
+      "names": {
+        "en": "Planetary Rendezvous",
+        "zh-CN": "与行星相会"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21012",
+      "kind": "light-cone",
+      "names": {
+        "en": "A Secret Vow",
+        "zh-CN": "秘密誓心"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21013",
+      "kind": "light-cone",
+      "names": {
+        "en": "Make the World Clamor",
+        "zh-CN": "别让世界静下来"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21014",
+      "kind": "light-cone",
+      "names": {
+        "en": "Perfect Timing",
+        "zh-CN": "此时恰好"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21015",
+      "kind": "light-cone",
+      "names": {
+        "en": "Resolution Shines As Pearls of Sweat",
+        "zh-CN": "决心如汗珠般闪耀"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21016",
+      "kind": "light-cone",
+      "names": {
+        "en": "Trend of the Universal Market",
+        "zh-CN": "宇宙市场趋势"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21017",
+      "kind": "light-cone",
+      "names": {
+        "en": "Subscribe for More!",
+        "zh-CN": "点个关注吧！"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21018",
+      "kind": "light-cone",
+      "names": {
+        "en": "Dance! Dance! Dance!",
+        "zh-CN": "舞！舞！舞！"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21019",
+      "kind": "light-cone",
+      "names": {
+        "en": "Under the Blue Sky",
+        "zh-CN": "在蓝天下"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21020",
+      "kind": "light-cone",
+      "names": {
+        "en": "Geniuses' Repose",
+        "zh-CN": "天才们的休憩"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21042",
+      "kind": "light-cone",
+      "names": {
+        "en": "Indelible Promise",
+        "zh-CN": "铭记于心的约定"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21043",
+      "kind": "light-cone",
+      "names": {
+        "en": "Concert for Two",
+        "zh-CN": "两个人的演唱会"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21044",
+      "kind": "light-cone",
+      "names": {
+        "en": "Boundless Choreo",
+        "zh-CN": "无边曼舞"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21045",
+      "kind": "light-cone",
+      "names": {
+        "en": "After the Charmony Fall",
+        "zh-CN": "谐乐静默之后"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21046",
+      "kind": "light-cone",
+      "names": {
+        "en": "Poised to Bloom",
+        "zh-CN": "芳华待灼"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21047",
+      "kind": "light-cone",
+      "names": {
+        "en": "Shadowed by Night",
+        "zh-CN": "黑夜如影随行"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21048",
+      "kind": "light-cone",
+      "names": {
+        "en": "Dream's Montage",
+        "zh-CN": "梦的蒙太奇"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21051",
+      "kind": "light-cone",
+      "names": {
+        "en": "Geniuses' Greetings",
+        "zh-CN": "天才们的问候"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21054",
+      "kind": "light-cone",
+      "names": {
+        "en": "The Story's Next Page",
+        "zh-CN": "故事的下一页"
+      },
+      "rarity": 4
+    },
+    {
+      "id": "light-cone:21066",
+      "kind": "light-cone",
+      "names": {
+        "en": "A Little Getaway",
+        "zh-CN": "放个短假"
+      },
+      "rarity": 4
+    }
+  ],
+  "schemaVersion": 1,
+  "sharedPools": [
+    {
+      "fiveStar": [
+        "avatar:1003",
+        "avatar:1004",
+        "avatar:1101",
+        "avatar:1104",
+        "avatar:1107",
+        "avatar:1209",
+        "avatar:1211"
+      ],
+      "fiveStarType": "avatar",
+      "fourStar": [
+        "avatar:1001",
+        "avatar:1002",
+        "avatar:1008",
+        "avatar:1009",
+        "avatar:1013",
+        "avatar:1103",
+        "avatar:1105",
+        "avatar:1106",
+        "avatar:1108",
+        "avatar:1109",
+        "avatar:1110",
+        "avatar:1111",
+        "avatar:1201",
+        "avatar:1202",
+        "avatar:1206",
+        "avatar:1207",
+        "avatar:1210",
+        "avatar:1214",
+        "avatar:1215",
+        "avatar:1223",
+        "avatar:1301",
+        "avatar:1312",
+        "light-cone:21000",
+        "light-cone:21001",
+        "light-cone:21002",
+        "light-cone:21003",
+        "light-cone:21004",
+        "light-cone:21005",
+        "light-cone:21006",
+        "light-cone:21007",
+        "light-cone:21008",
+        "light-cone:21009",
+        "light-cone:21010",
+        "light-cone:21011",
+        "light-cone:21012",
+        "light-cone:21013",
+        "light-cone:21014",
+        "light-cone:21015",
+        "light-cone:21016",
+        "light-cone:21017",
+        "light-cone:21018",
+        "light-cone:21019",
+        "light-cone:21020",
+        "light-cone:21042",
+        "light-cone:21043",
+        "light-cone:21044",
+        "light-cone:21045",
+        "light-cone:21046",
+        "light-cone:21047",
+        "light-cone:21048",
+        "light-cone:21051",
+        "light-cone:21054",
+        "light-cone:21066"
+      ],
+      "id": "event-avatar-default",
+      "threeStar": [
+        "light-cone:20000",
+        "light-cone:20001",
+        "light-cone:20002",
+        "light-cone:20003",
+        "light-cone:20004",
+        "light-cone:20005",
+        "light-cone:20006",
+        "light-cone:20007",
+        "light-cone:20008",
+        "light-cone:20009",
+        "light-cone:20010",
+        "light-cone:20011",
+        "light-cone:20012",
+        "light-cone:20013",
+        "light-cone:20014",
+        "light-cone:20015",
+        "light-cone:20016",
+        "light-cone:20017",
+        "light-cone:20018",
+        "light-cone:20019",
+        "light-cone:20020",
+        "light-cone:20021",
+        "light-cone:20022",
+        "light-cone:20023",
+        "light-cone:20024"
+      ]
+    }
+  ]
+}

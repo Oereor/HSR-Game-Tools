@@ -36,7 +36,7 @@ import {
 const generated = 'scripts/warp-data/generated'
 const configFile = 'scripts/warp-data/banners.jsonc'
 const schemaFile = 'scripts/warp-data/schema/banner-config.schema.json'
-const runtime = 'src/data/warp'
+const runtime = 'src/tools/warp-simulator/data/runtime'
 export async function loadLock(root: string): Promise<SourceLock> {
   const lock = await readJson(root, 'scripts/warp-data/source-lock.json')
   assertLock(lock)

@@ -7,11 +7,11 @@ dist-subpath/
 .warp-data-staging/
 .warp-data-backup/
 public/game-assets/
-src/data/game/
-src/data/warp/
+src/tools/action-planner/data/game/
+src/tools/warp-simulator/data/runtime/
 scripts/warp-data/generated/
 scripts/warp-data/schema/
-tests/fixtures/action-planner-expected.json
+tests/fixtures/action-planner/action-planner-expected.json
 docs/third-party/
 docs/investigations/phase-0-migration-architecture.md
 package-lock.json

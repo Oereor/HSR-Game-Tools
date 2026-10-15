@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n'
 import SelectButton from 'primevue/selectbutton'
 import { Check } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
-import { selectableTargets } from '../../../engine/action-planner/targeting'
-import type { ParticipantInfo } from '../../../engine/action-planner/types'
+import { selectableTargets } from '../engine/targeting'
+import type { ParticipantInfo } from '../engine/types'
 import type { OperationDraft } from '../model/editor'
 const draft = defineModel<OperationDraft>({ required: true })
 const props = defineProps<{

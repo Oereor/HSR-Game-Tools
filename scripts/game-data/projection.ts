@@ -1,5 +1,9 @@
-import type { CharacterRecord, GameSnapshot, PresetRecord } from '../../src/data/schema'
-import { safeRelativePath, validateSnapshot } from '../../src/data/schema'
+import type {
+  CharacterRecord,
+  GameSnapshot,
+  PresetRecord,
+} from '../../src/tools/action-planner/data/schema'
+import { safeRelativePath, validateSnapshot } from '../../src/tools/action-planner/data/schema'
 import { locales, type Localized } from '../../src/locales/types'
 
 type Index = Record<string, Record<string, unknown>>

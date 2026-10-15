@@ -6,9 +6,9 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import { Download, Upload, FilePlus2, UsersRound } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
-import { gameData, assetUrl, characterName } from '../../../data/adapters/game-data'
-import { DEFAULT_LIMITS } from '../../../engine/action-planner/queue'
-import { participantCatalog } from '../../../engine/action-planner/validation'
+import { gameData, assetUrl, characterName } from '../data/adapters/game-data'
+import { DEFAULT_LIMITS } from '../engine/queue'
+import { participantCatalog } from '../engine/validation'
 import {
   emptyDocument,
   parsePlannerDocument,

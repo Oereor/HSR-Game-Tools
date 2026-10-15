@@ -6,7 +6,7 @@ export const router = createRouter({
     { path: '/', component: HomePage, meta: { title: 'home.title' } },
     {
       path: '/action-planner',
-      component: () => import('../views/ActionPlannerPage.vue'),
+      component: () => import('../tools/action-planner/ActionPlannerPage.vue'),
       meta: { title: 'planner.title' },
     },
     {
