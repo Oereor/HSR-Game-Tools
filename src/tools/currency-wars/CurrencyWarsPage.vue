@@ -6,16 +6,13 @@ import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import InputNumber from 'primevue/inputnumber'
 import SelectButton from 'primevue/selectbutton'
-import Tabs from 'primevue/tabs'
-import TabList from 'primevue/tablist'
-import Tab from 'primevue/tab'
-import TabPanels from 'primevue/tabpanels'
-import TabPanel from 'primevue/tabpanel'
+import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import CurrencyResults from './components/CurrencyResults.vue'
 import { loadPageData } from './ui/data'
 import { createCurrencyWarsSession, type FormField } from './ui/session'
+import { createTaskSelection } from './ui/task-selection'
 import { createBrowserWorker } from './browser/worker-factory'
 
 const { t } = useI18n()
@@ -30,7 +27,19 @@ const state = data
   ? reactive(createCurrencyWarsSession(data.snapshot, data.tasks, createBrowserWorker))
   : undefined
 onUnmounted(() => state?.dispose())
-const activeGroup = ref('camp')
+const advancedOpen = ref(false)
+const selection = reactive(
+  createTaskSelection(
+    data?.tasks ?? [],
+    () => state?.form.taskIds ?? [],
+    (ids) => {
+      if (state) state.form.taskIds = ids
+    },
+  ),
+)
+const selectedTasks = computed(
+  () => data?.tasks.filter((task) => state?.form.taskIds.includes(task.id)) ?? [],
+)
 const slotOptions = [11, 12, 13].map((value) => ({ label: String(value), value }))
 const groups = computed(() =>
   (['camp', 'class', 'unique'] as const)
@@ -45,6 +54,10 @@ const groups = computed(() =>
 )
 const traitName = (id: number) => data!.snapshot.traits.find((trait) => trait.id === id)!.name
 const invalid = (field: FormField) => !!state?.attempted && state.errors.includes(field)
+function start() {
+  state?.start()
+  if (invalid('timeLimitSeconds')) advancedOpen.value = true
+}
 const attemptWithoutSolution = computed(
   () => state?.lastAttempt && !['optimal', 'feasible'].includes(state.lastAttempt.result.status),
 )
@@ -76,7 +89,7 @@ const announcement = computed(() =>
     <div v-else class="currency-workspace">
       <section class="currency-controls" aria-labelledby="currency-config-heading">
         <h2 id="currency-config-heading">{{ t('currencyWars.form.title') }}</h2>
-        <form @submit.prevent="state.start()">
+        <form @submit.prevent="start">
           <div class="currency-field">
             <span id="currency-slots-label">{{ t('currencyWars.form.slots') }}</span>
             <SelectButton
@@ -131,29 +144,6 @@ const announcement = computed(() =>
               {{ t('currencyWars.form.expertsHint') }}
             </p>
           </div>
-          <div class="currency-field">
-            <label for="currency-time">{{ t('currencyWars.form.time') }}</label>
-            <InputNumber
-              v-model="state.form.timeLimitSeconds"
-              input-id="currency-time"
-              :min="1"
-              :max-fraction-digits="0"
-              :use-grouping="false"
-              :invalid="invalid('timeLimitSeconds')"
-              :pt="{
-                pcInputText: {
-                  root: {
-                    'aria-describedby': invalid('timeLimitSeconds')
-                      ? 'currency-time-error'
-                      : undefined,
-                  },
-                },
-              }"
-            />
-            <p v-if="invalid('timeLimitSeconds')" id="currency-time-error" class="currency-error">
-              {{ t('currencyWars.validation.timeLimitSeconds') }}
-            </p>
-          </div>
           <div class="currency-task-heading">
             <h3>{{ t('currencyWars.form.tasks') }}</h3>
             <span>{{
@@ -163,76 +153,72 @@ const announcement = computed(() =>
               })
             }}</span>
           </div>
-          <div class="currency-selection-actions">
-            <Button
-              type="button"
-              size="small"
-              severity="secondary"
-              text
-              :label="t('currencyWars.form.selectAll')"
-              @click="state.selectAll"
-            /><Button
-              type="button"
-              size="small"
-              severity="secondary"
-              text
-              :label="t('currencyWars.form.clear')"
-              @click="state.clearSelection"
-            />
-          </div>
-          <Tabs v-if="groups.length" v-model:value="activeGroup">
-            <TabList
-              ><Tab v-for="group in groups" :key="group.type" :value="group.type">{{
-                t(`currencyWars.type.${group.type}`)
-              }}</Tab></TabList
-            >
-            <TabPanels
-              ><TabPanel v-for="group in groups" :key="group.type" :value="group.type">
-                <div
-                  class="currency-task-options"
-                  :aria-label="t(`currencyWars.type.${group.type}`)"
-                  :aria-describedby="invalid('taskIds') ? 'currency-task-error' : undefined"
-                >
-                  <div
-                    v-for="task in group.tasks"
-                    :key="task.id"
-                    class="currency-check currency-task-option"
-                  >
-                    <Checkbox
-                      v-model="state.form.taskIds"
-                      :value="task.id"
-                      :input-id="`currency-task-${task.id}`"
-                      :pt="{
-                        input: {
-                          'aria-describedby': invalid('taskIds')
-                            ? 'currency-task-error'
-                            : undefined,
-                        },
-                      }"
-                    />
-                    <label :for="`currency-task-${task.id}`">{{
-                      t('currencyWars.form.task', {
-                        name: traitName(task.traitId),
-                        count: task.requiredCount,
-                      })
-                    }}</label>
-                  </div>
-                </div>
-              </TabPanel></TabPanels
-            >
-          </Tabs>
+          <ul v-if="selectedTasks.length" class="currency-task-summary">
+            <li v-for="task in selectedTasks.slice(0, 3)" :key="task.id">
+              {{
+                t('currencyWars.form.task', {
+                  name: traitName(task.traitId),
+                  count: task.requiredCount,
+                })
+              }}
+            </li>
+            <li v-if="selectedTasks.length > 3" class="currency-help">
+              {{ t('currencyWars.form.moreTasks', { count: selectedTasks.length - 3 }) }}
+            </li>
+          </ul>
           <p v-if="!state.form.taskIds.length" id="currency-task-error" class="currency-error">
             {{ t('currencyWars.validation.taskIds') }}
           </p>
+          <Button
+            type="button"
+            size="small"
+            severity="secondary"
+            outlined
+            :label="t('currencyWars.form.editTasks')"
+            :aria-describedby="!state.form.taskIds.length ? 'currency-task-error' : undefined"
+            @click="selection.open"
+          />
+          <details
+            class="currency-advanced"
+            :open="advancedOpen"
+            @toggle="advancedOpen = ($event.target as HTMLDetailsElement).open"
+          >
+            <summary>{{ t('currencyWars.form.advanced') }}</summary>
+            <div class="currency-field">
+              <label for="currency-time">{{ t('currencyWars.form.time') }}</label>
+              <InputNumber
+                v-model="state.form.timeLimitSeconds"
+                input-id="currency-time"
+                :min="1"
+                :max-fraction-digits="0"
+                :use-grouping="false"
+                :invalid="invalid('timeLimitSeconds')"
+                :pt="{
+                  pcInputText: {
+                    root: {
+                      'aria-describedby': invalid('timeLimitSeconds')
+                        ? 'currency-time-error'
+                        : undefined,
+                    },
+                  },
+                }"
+              />
+              <p v-if="invalid('timeLimitSeconds')" id="currency-time-error" class="currency-error">
+                {{ t('currencyWars.validation.timeLimitSeconds') }}
+              </p>
+            </div>
+            <p class="currency-help">{{ t('currencyWars.rules') }}</p>
+          </details>
           <div class="currency-run-actions">
             <Button
               type="submit"
               :label="t('currencyWars.start')"
-              :disabled="state.busy"
+              :loading="state.busy"
+              :disabled="state.busy || !state.form.taskIds.length"
               :aria-describedby="
                 state.attempted && state.errors.length ? 'currency-input-error' : undefined
               "
-              ><template #icon><Play :size="16" aria-hidden="true" /></template
+              ><template #icon><Play v-if="!state.busy" :size="16" aria-hidden="true" /></template
             ></Button>
             <Button
               v-if="state.busy"
@@ -252,11 +238,104 @@ const announcement = computed(() =>
             {{ t('currencyWars.error.input') }}
           </p>
         </form>
-        <details class="currency-rules">
-          <summary>{{ t('currencyWars.rulesTitle') }}</summary>
-          <p>{{ t('currencyWars.rules') }}</p>
-        </details>
       </section>
+      <Dialog
+        v-model:visible="selection.visible"
+        modal
+        :draggable="false"
+        :header="t('currencyWars.form.tasks')"
+        :close-button-props="{ 'aria-label': t('currencyWars.form.cancelSelection') }"
+        :style="{
+          width: '560px',
+          maxWidth: 'calc(100vw - 24px)',
+          maxHeight: 'calc(100dvh - 32px)',
+        }"
+        :pt="{
+          content: {
+            style: { display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: '0' },
+          },
+        }"
+        @hide="selection.cancel"
+      >
+        <div class="currency-selection-toolbar">
+          <span id="currency-draft-count" aria-live="polite">
+            {{
+              t('currencyWars.form.selection', {
+                selected: selection.taskIds.length,
+                total: data.tasks.length,
+              })
+            }}
+          </span>
+          <div class="currency-selection-actions">
+            <Button
+              type="button"
+              size="small"
+              severity="secondary"
+              text
+              :label="t('currencyWars.form.selectAll')"
+              @click="selection.selectAll"
+            />
+            <Button
+              type="button"
+              size="small"
+              severity="secondary"
+              text
+              :label="t('currencyWars.form.clear')"
+              @click="selection.clear"
+            />
+          </div>
+        </div>
+        <div class="currency-task-options">
+          <fieldset v-for="group in groups" :key="group.type">
+            <legend>{{ t(`currencyWars.type.${group.type}`) }}</legend>
+            <div
+              v-for="task in group.tasks"
+              :key="task.id"
+              class="currency-check currency-task-option"
+            >
+              <Checkbox
+                v-model="selection.taskIds"
+                :value="task.id"
+                :input-id="`currency-task-${task.id}`"
+                :pt="{
+                  input: {
+                    'aria-describedby': selection.taskIds.length
+                      ? 'currency-draft-count'
+                      : 'currency-draft-count currency-draft-empty',
+                  },
+                }"
+              />
+              <label :for="`currency-task-${task.id}`">{{
+                t('currencyWars.form.task', {
+                  name: traitName(task.traitId),
+                  count: task.requiredCount,
+                })
+              }}</label>
+            </div>
+          </fieldset>
+        </div>
+        <template #footer>
+          <div class="currency-selection-footer">
+            <p v-if="!selection.taskIds.length" id="currency-draft-empty" class="currency-error">
+              {{ t('currencyWars.validation.taskIds') }}
+            </p>
+            <div class="currency-selection-actions">
+              <Button
+                type="button"
+                severity="secondary"
+                text
+                :label="t('currencyWars.form.cancelSelection')"
+                @click="selection.cancel"
+              />
+              <Button
+                type="button"
+                :label="t('currencyWars.form.confirmSelection')"
+                @click="selection.confirm"
+              />
+            </div>
+          </div>
+        </template>
+      </Dialog>
       <section class="currency-output" aria-labelledby="currency-output-heading">
         <h2 id="currency-output-heading" class="sr-only">{{ t('currencyWars.result.title') }}</h2>
         <p class="sr-only" aria-live="polite" aria-atomic="true">{{ announcement }}</p>
@@ -323,7 +402,7 @@ h1 {
 }
 .currency-workspace {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-columns: 300px minmax(0, 1fr);
   align-items: start;
   gap: 28px;
 }
@@ -355,8 +434,7 @@ h2 {
   cursor: pointer;
   line-height: 1.5;
 }
-.currency-help,
-.currency-rules {
+.currency-help {
   font-size: 12px;
   line-height: 1.6;
   color: var(--color-muted);
@@ -386,16 +464,56 @@ h3 {
   gap: 4px;
   margin: 4px 0;
 }
+.currency-task-summary {
+  padding: 0;
+  margin: 12px 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.currency-selection-toolbar,
+.currency-selection-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  font-size: 13px;
+}
+.currency-selection-footer .currency-selection-actions {
+  margin-left: auto;
+}
+.currency-selection-toolbar {
+  flex-shrink: 0;
+}
 .currency-task-options {
-  max-height: 320px;
+  max-height: 55dvh;
+  min-height: 0;
   overflow-y: auto;
   display: grid;
-  gap: 12px;
+  gap: 20px;
   padding: 12px 4px;
   scrollbar-gutter: stable;
 }
+.currency-task-options fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.currency-task-options legend {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
 .currency-task-option {
   font-size: 13px;
+  margin-bottom: 12px;
+}
+.currency-task-option label {
+  overflow-wrap: anywhere;
 }
 .currency-run-actions {
   display: flex;
@@ -403,11 +521,19 @@ h3 {
   gap: 8px;
   margin: 20px 0 10px;
 }
-.currency-rules {
-  margin-top: 16px;
+.currency-run-actions > :first-child {
+  flex: 1;
 }
-.currency-rules summary {
+.currency-advanced {
+  margin-top: 20px;
+  font-size: 13px;
+}
+.currency-advanced summary {
   cursor: pointer;
+  color: var(--color-muted);
+}
+.currency-advanced .currency-field {
+  margin: 16px 0 12px;
 }
 .currency-output {
   min-width: 0;

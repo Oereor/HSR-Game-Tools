@@ -179,12 +179,6 @@ export function createCurrencyWarsSession(
     disposed = true
     release()
   }
-  function selectAll() {
-    form.taskIds = tasks.map((t) => t.id)
-  }
-  function clearSelection() {
-    form.taskIds = []
-  }
   return {
     form,
     busy,
@@ -200,7 +194,5 @@ export function createCurrencyWarsSession(
     start,
     cancel,
     dispose,
-    selectAll,
-    clearSelection,
   }
 }

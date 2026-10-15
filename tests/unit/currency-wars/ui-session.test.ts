@@ -1,6 +1,8 @@
 import { isProxy } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { createCurrencyWarsSession } from '../../../src/tools/currency-wars/ui/session'
+import { createTaskSelection } from '../../../src/tools/currency-wars/ui/task-selection'
+import { loadPageData } from '../../../src/tools/currency-wars/ui/data'
 import type {
   WorkerPort,
   SolveMessage,
@@ -58,13 +60,13 @@ describe('currency-wars page session', () => {
     const { session, workers } = setup()
     session.start()
     session.cancel()
-    session.clearSelection()
+    session.form.taskIds = []
     expect(session.start()).toBe(false)
     expect(session.cancelled.value).toBe(false)
     expect(session.failure.value).toBe('input')
     expect(workers).toHaveLength(1)
   })
-  it('defaults to all tasks and supports stable-ID selection, clear and select all', () => {
+  it('preserves the default parameters and stable task IDs', () => {
     const { session } = setup()
     expect(session.form).toMatchObject({
       slots: 13,
@@ -73,12 +75,114 @@ describe('currency-wars page session', () => {
       includeExperts: false,
       taskIds: tasks.map((t) => t.id),
     })
-    session.clearSelection()
+    session.form.taskIds = []
     expect(session.start()).toBe(false)
     expect(session.errors.value).toContain('taskIds')
-    session.selectAll()
     session.form.taskIds = [tasks[1]!.id]
     expect(session.form.taskIds).toEqual([tasks[1]!.id])
+    session.dispose()
+  })
+
+  it('edits all 25 formal tasks in a detached draft and discards cancelled or closed changes', () => {
+    const data = loadPageData()
+    const session = createCurrencyWarsSession(data.snapshot, data.tasks, () => new FakeWorker())
+    const selection = createTaskSelection(
+      data.tasks,
+      () => session.form.taskIds,
+      (ids) => {
+        session.form.taskIds = ids
+      },
+    )
+    const original = [...session.form.taskIds]
+    selection.open()
+    expect(selection.taskIds.value).toEqual(original)
+    expect(selection.taskIds.value).not.toBe(session.form.taskIds)
+    selection.taskIds.value.splice(0, 1)
+    expect(session.form.taskIds).toEqual(original)
+    selection.clear()
+    expect(selection.taskIds.value).toEqual([])
+    selection.selectAll()
+    expect(selection.taskIds.value).toEqual(data.tasks.map((task) => task.id))
+    expect(selection.taskIds.value).toHaveLength(25)
+    selection.clear()
+    selection.cancel()
+    expect(selection.visible.value).toBe(false)
+    expect(session.form.taskIds).toEqual(original)
+    selection.open()
+    expect(selection.taskIds.value).toEqual(original)
+    selection.cancel()
+    session.dispose()
+  })
+
+  it('keeps the current result fresh until a changed task draft is confirmed, then submits the confirmed tasks', () => {
+    const { session, workers, good } = setup()
+    const selection = createTaskSelection(
+      tasks,
+      () => session.form.taskIds,
+      (ids) => {
+        session.form.taskIds = ids
+      },
+    )
+    session.start()
+    workers[0]!.emit(good())
+    const previous = session.lastValid.value
+    selection.open()
+    selection.clear()
+    expect(session.stale.value).toBe(false)
+    expect(session.errors.value).toEqual([])
+    selection.cancel()
+    expect(session.lastValid.value).toBe(previous)
+    expect(session.stale.value).toBe(false)
+    selection.open()
+    selection.taskIds.value.reverse()
+    selection.confirm()
+    expect(session.stale.value).toBe(false)
+    selection.open()
+    selection.taskIds.value = [tasks[1]!.id]
+    const draft = selection.taskIds.value
+    selection.confirm()
+    expect(selection.visible.value).toBe(false)
+    expect(session.form.taskIds).toEqual([tasks[1]!.id])
+    selection.confirm()
+    expect(session.form.taskIds).toEqual([tasks[1]!.id])
+    expect(session.form.taskIds).not.toBe(draft)
+    expect(session.stale.value).toBe(true)
+    expect(session.lastValid.value).toBe(previous)
+    expect(previous!.request.tasks).toEqual(tasks)
+    expect(session.start()).toBe(true)
+    expect(workers[1]!.messages[0]!.request.tasks).toEqual([tasks[1]])
+    workers[1]!.emit(good())
+    expect(session.stale.value).toBe(false)
+    session.dispose()
+  })
+
+  it('rejects an empty confirmed selection without losing the valid result and can select all again', () => {
+    const { session, workers, good } = setup()
+    const selection = createTaskSelection(
+      tasks,
+      () => session.form.taskIds,
+      (ids) => {
+        session.form.taskIds = ids
+      },
+    )
+    session.start()
+    workers[0]!.emit(good())
+    const previous = session.lastValid.value
+    selection.open()
+    selection.clear()
+    selection.confirm()
+    expect(session.form.taskIds).toEqual([])
+    expect(session.stale.value).toBe(true)
+    expect(session.errors.value).toContain('taskIds')
+    expect(session.start()).toBe(false)
+    expect(workers).toHaveLength(1)
+    expect(session.lastValid.value).toBe(previous)
+    selection.open()
+    selection.selectAll()
+    selection.confirm()
+    expect(session.stale.value).toBe(false)
+    expect(session.start()).toBe(true)
+    expect(workers[1]!.messages[0]!.request.tasks).toEqual(tasks)
     session.dispose()
   })
 

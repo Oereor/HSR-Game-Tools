@@ -8,6 +8,8 @@ export interface VisualCatalog {
   emblems: Record<string, string>
 }
 
+export type VisualMember = ReturnType<ReturnType<typeof createVisuals>['member']>
+
 export function assetUrl(path: string | undefined, base: string): string | undefined {
   if (!path || !/^game-assets\/(character|emblem)\/[0-9]+\.webp$/.test(path)) return undefined
   return base.replace(/\/?$/, '/') + path
