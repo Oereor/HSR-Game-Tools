@@ -10,6 +10,6 @@ export interface ToolEntry {
 
 export const toolCatalog: readonly ToolEntry[] = [
   { id: 'actionOrder', icon: ListOrdered, route: '/action-planner' },
-  { id: 'warp', icon: Ticket },
+  { id: 'warp', icon: Ticket, route: '/warp-simulator' },
   { id: 'relic', icon: Gem },
 ]

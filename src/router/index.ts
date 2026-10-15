@@ -10,6 +10,11 @@ export const router = createRouter({
       meta: { title: 'planner.title' },
     },
     {
+      path: '/warp-simulator',
+      component: () => import('../tools/warp-simulator/WarpSimulatorPage.vue'),
+      meta: { title: 'warp.title' },
+    },
+    {
       path: '/:pathMatch(.*)*',
       component: () => import('../views/NotFoundPage.vue'),
       meta: { title: 'missing.title' },

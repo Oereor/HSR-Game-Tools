@@ -1,7 +1,7 @@
 {
   "site": {
     "name": "HSR-Game-Tools",
-    "description": "《崩坏：星穹铁道》非官方工具集合，提供行动序列模拟器及后续工具预览。",
+    "description": "《崩坏：星穹铁道》非官方工具集合，提供行动序列与跃迁模拟器。",
     "language": "语言",
     "languageChinese": "简体中文",
     "languageEnglish": "English",
@@ -18,7 +18,7 @@
       },
       "warp": {
         "title": "抽卡模拟器",
-        "description": "模拟跃迁过程，查看抽取结果与统计。"
+        "description": "选择卡池和星缘角色，体验跃迁并查看抽取记录。"
       },
       "relic": {
         "title": "遗器模拟器",
@@ -339,5 +339,120 @@
     "av": "{value} AV",
     "speedSuffix": " SPD",
     "percentSuffix": " %"
+  },
+  "warp": {
+    "title": "抽卡模拟器",
+    "bannerTitle": "跃迁配置",
+    "bannerSelect": "选择卡池",
+    "bannerSelected": "已选择卡池。",
+    "bannerNoneSelected": "尚未选择卡池。",
+    "noBanners": "暂无可用卡池。",
+    "bannerSource": "{name} · {type}",
+    "fiveUp": "当期五星 UP",
+    "fourUp": "四星 UP：{names}",
+    "up": "UP",
+    "cancel": "取消",
+    "pullOne": "跃迁 1 次",
+    "pullTen": "跃迁 10 次",
+    "memoryOnly": "仅在本页内存中保存。刷新或离开页面后，会话和星缘选择将清空。",
+    "completed": "已完成 {count} 次跃迁。",
+    "kind": {
+      "event-avatar": "角色活动跃迁",
+      "event-light-cone": "光锥活动跃迁",
+      "fate-avatar": "Fate 角色跃迁",
+      "fate-light-cone": "Fate 光锥跃迁",
+      "ordinary": "常驻跃迁"
+    },
+    "pity": {
+      "title": "当前保底状态",
+      "fiveCount": "{count} 抽未出五星",
+      "fiveGuarantee": "五星保底",
+      "fourCount": "{count} 抽未出四星",
+      "fourPending": "9+ 抽未出四星",
+      "fourGuarantee": "四星保底",
+      "normal": "小保底",
+      "guaranteed": "大保底",
+      "unavailable": "不适用",
+      "pendingHint": "四星保底待兑现；五星可能顺延四星保证，此处不代表精确累计抽数。"
+    },
+    "selection": {
+      "title": "星缘相邀",
+      "search": "搜索角色",
+      "searchPlaceholder": "中文名、英文名或 ID",
+      "hint": "选择七名不同的五星角色。确认后仅影响之后的跃迁。",
+      "count": "已选 {count} / 7",
+      "candidates": "可选星缘角色",
+      "chosen": "已选星缘角色",
+      "noMatches": "未找到匹配角色。",
+      "required": "请先明确选择七名星缘角色，再开始跃迁。",
+      "ready": "七名星缘角色已就绪。",
+      "confirm": "确认选择",
+      "edit": "修改星缘角色",
+      "choose": "选择七名角色"
+    },
+    "results": {
+      "title": "最新跃迁结果",
+      "count": "{count} 次跃迁",
+      "empty": "选择卡池并完成星缘选择后，开始第一次跃迁。"
+    },
+    "history": {
+      "title": "跃迁记录",
+      "count": "{count} 条",
+      "limit": "仅保留本页最近 {count} 条记录，按最新优先排列。",
+      "empty": "暂无跃迁记录。",
+      "fiveCount": "当次五星保底抽数：{count}",
+      "pagination": "历史分页",
+      "previous": "上一页",
+      "next": "下一页",
+      "page": "第 {current} / {total} 页"
+    },
+    "reset": {
+      "group": "重置当前保底组",
+      "all": "重置全部会话",
+      "title": "确认重置",
+      "confirm": "确认重置",
+      "groupConfirm": "清零当前卡池所属继承组的计数与大小保底，同组其他卡池也会受到影响。保留全部历史、最新结果和星缘选择。",
+      "allConfirm": "清零全部五组保底，并清空最新结果和跃迁历史。保留当前卡池及各卡池的星缘选择。",
+      "groupDone": "当前继承组的保底已重置，历史和星缘选择已保留。",
+      "allDone": "全部保底、结果和历史已清空，星缘选择已保留。"
+    },
+    "visual": {
+      "missingImage": "{name}：暂无图片",
+      "rarity": "{count} 星",
+      "path": "命途",
+      "element": "属性",
+      "unknown": "—"
+    },
+    "path": {
+      "Elation": "欢愉",
+      "Knight": "存护",
+      "Mage": "智识",
+      "Memory": "记忆",
+      "Priest": "丰饶",
+      "Rogue": "巡猎",
+      "Shaman": "同谐",
+      "Warlock": "虚无",
+      "Warrior": "毁灭"
+    },
+    "element": {
+      "Physical": "物理",
+      "Fire": "火",
+      "Ice": "冰",
+      "Thunder": "雷",
+      "Wind": "风",
+      "Quantum": "量子",
+      "Imaginary": "虚数"
+    },
+    "error": {
+      "invalid-snapshot": "卡池数据无效，未进行跃迁。",
+      "unknown-banner": "当前卡池不可用，未进行跃迁。",
+      "unknown-pool": "未找到该卡池的候选名单，未进行跃迁。",
+      "unknown-item": "候选中存在无法识别的物品，未进行跃迁。",
+      "invalid-pool": "卡池配置不完整或不适用，未进行跃迁。",
+      "invalid-selection": "星缘选择无效，请重新选择七名合法角色。",
+      "invalid-state": "当前保底状态无效，未提交任何结果。",
+      "invalid-rng": "随机数无效，本次结果未提交，保底及历史已保留。",
+      "rng-threw": "随机数生成失败，本次结果未提交，保底及历史已保留。"
+    }
   }
 }

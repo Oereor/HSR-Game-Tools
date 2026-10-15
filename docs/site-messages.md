@@ -25,7 +25,7 @@ UI、Tooltip、ARIA 和校验提示都由 Site Messages 管理；不要在 Vue �
 | `relic`       | `home.tools.relic.title` / `description`       | 遗器模拟器 / Relic Simulator            |
 
 两份消息文件同步修改同名 Key。`home.title`、`home.toolsHeading`、`home.github` 和 `home.disclaimer` 管理首页其他文案；`site.description` 用于页面 Meta Description。
-行动序列模拟器名称还用于 `planner.title`，改名时与首页同步；“战斗配置 / Battle Setup”和“行动模拟 / Simulation”是工作阶段，不是产品名。
+行动序列模拟器名称还用于 `planner.title`，跃迁模拟器名称用于 `warp.title`，改名时与首页同步；“战斗配置 / Battle Setup”和“行动模拟 / Simulation”是工作阶段，不是产品名。跃迁页面、Dialog、Tooltip、ARIA、语义错误及展示元数据标签使用 `warp.*`；物品名称始终来自 Warp Snapshot，不把历史 UP 或引擎状态写进翻译文案。
 
 [工具目录](../src/tools/catalog.ts)只保存 ID、图标和可选路由。无路由时展示静态卡片；工具实际实现并注册路由后再开放，不通过修改文案开启入口。
 [App.vue](../src/App.vue)根据路由消息和语言更新 Document Title、Meta Description 与文档语言。

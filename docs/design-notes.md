@@ -1,6 +1,6 @@
 # UI 设计规范
 
-本指南描述首页与行动序列模拟器当前使用的 UI 语言。执行机制与状态职责见[现行架构](architecture/action-order-simulator.md)，翻译维护见[Site Messages](site-messages.md)。
+本指南描述首页、行动序列模拟器与跃迁模拟器当前使用的 UI 语言。机制与状态职责见[排轴架构](architecture/action-order-simulator.md)和[跃迁架构](architecture/warp-simulator.md)，翻译维护见[Site Messages](site-messages.md)。
 历史 UI 取舍和验证记录保存在 [investigations](investigations/README.md)，不作为当前阶段状态说明。
 
 ## 主题与组件职责
@@ -103,6 +103,20 @@ Lucide 按名称导入，常用尺寸 18px、线宽 1.75；紧凑标记 13–16p
 
 行动卡按钮内不嵌套按钮或可聚焦 Tag。Tag 支持 Hover Tooltip；卡片 Focus Tooltip 与可访问名称包含全部效果，Inspector 的非交互包装元素可聚焦解释同一效果。
 Tooltip 使用转义文本并保留 Escape 关闭，效果含文字和符号，不仅依靠颜色。
+
+## 跃迁模拟器
+
+`/warp-simulator` 使用现有 Header、语言切换及黑金主题。≥1040px 为约 40%／60% 两栏，左侧至少 320px；更窄时上下排列。左栏只有一层配置 Surface，右栏结果与历史用留白、标题和分隔线分组，不堆叠装饰卡片。
+
+左栏依次为 Banner Select、当前 UP、固定四行保底、适用时的星缘入口、单抽／十连按钮及次级重置入口。小保底为 secondary Tag 加灰色 CircleCheck，大保底为 success Tag 加绿色 CircleCheck，无 UP 显示“不适用”。四星饱和值显示 9+ 及待兑现说明，不能展示为精确累计次数。
+
+星缘 Dialog 使用可搜索的双列头像 Checkbox 网格，≤480px 单列；支持中英文名和 ID，显示已选数量，七名确认、取消丢弃草稿。搜索与 Checkbox 的说明关联真实输入；选项名称截断但 title 与标签保留全名。重置 Dialog 解释当前组／全部的实际范围，默认焦点落在取消。
+
+单抽结果为最大约 320px 的卡片，十连通过八列 Grid 的双列跨度形成 3–4–3，≤640px 两列。保持抽取顺序，显示名称、星级文字、命途和角色专属属性；五星使用现有金色 Token，四星用较亮中性色，三星弱化。头像使用 contain，缺图用统一的 UserRound／BookOpen 中性占位，不扩大低分辨率资源冒充完整立绘。
+
+新批次结果卡淡入并上移 7px，180ms 完成，每张间隔 50ms；整体只做短暂入场，不缩放、闪烁或发光。稳定的批次／条目 key 使语言、切池和分页不会重播；prefers-reduced-motion 关闭动画。业务提交不依赖动画完成。
+
+历史为紧凑列表，最新优先，每页 25 条，显示名称、星级、命途／可选属性、事件 UP 及来源。页面说明仅保留最近 1000 条且离开后清空。使用简短 aria-live 完成通知，不将完整历史放入播报区。分页图标按钮具备 Tooltip 和 aria-label。
 
 ## 维护与验收
 

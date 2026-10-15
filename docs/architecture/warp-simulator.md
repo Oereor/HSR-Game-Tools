@@ -1,8 +1,8 @@
-# 跃迁模拟器引擎
+# 跃迁模拟器
 
-本指南是 Phase 1D 实际实现的现行契约。模型由维护者确定，标识为 `hsr-warp`，版本为 `v0.3`；它是**本项目的标准模型，不代表已经取得或验证游戏服务器源码**。历史调查不能覆盖本指南中的既定规则。
+本指南描述 Phase 1D 纯引擎与 Phase 1E 页面当前实现。模型由维护者确定，标识为 `hsr-warp`，版本为 `v0.3`；它是**本项目的标准模型，不代表已经取得或验证游戏服务器源码**。历史调查不能覆盖本指南中的既定规则。
 
-数据维护见[游戏数据指南](../game-data.md#warp-数据基础设施)，实施证据见[Phase 1D 报告](../investigations/warp-simulator/phase-1d-engine-implementation.md)。本阶段只有纯引擎，没有跃迁页面、用户存档、动画或统计面板。
+数据维护见[游戏数据指南](../game-data.md#warp-数据基础设施)，实施证据见 [Phase 1D 报告](../investigations/warp-simulator/phase-1d-engine-implementation.md)和 [Phase 1E 报告](../investigations/warp-simulator/phase-1e-ui-implementation.md)。`/warp-simulator` 提供单抽、十连、星缘选择及页面内历史，没有用户存档、导入导出或统计面板。
 
 ## 模块与输入边界
 
@@ -106,7 +106,7 @@ if (resolved.ok) {
 }
 ```
 
-当前已维护的真珠 Banner `gacha:2139` 使用 `event-avatar-default`，显式选择现有七名候选后可解析为 25 个三星、53 个四星、8 个五星回退槽位，五星 UP 为 `avatar:1503`。缺少选择时返回 `invalid-selection`。本阶段不替玩家保存选择或修改维护名单，5 个 pending 仍保留。
+当前已维护的真珠 Banner `gacha:2139` 使用 `event-avatar-default`，显式选择现有七名候选后可解析为 25 个三星、53 个四星、8 个五星回退槽位，五星 UP 为 `avatar:1503`。缺少选择时返回 `invalid-selection`。引擎不保存玩家选择或修改维护名单，页面仅在内存中保存明确确认的选择，5 个 pending 仍保留。
 
 确定性单元测试使用独立合成数据覆盖全部五类卡池，并只读核对真实 Banner。独立 Oracle 用五星生存函数与联合保底状态稳态交叉计算长期率，分支枚举验证实际抽样和 UP 权重。固定 Seed 实验使用真实单抽转移的十连接口，只保留当前十项，不生成大量展示历史。
 
@@ -117,4 +117,34 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 长期参考率：角色／Ordinary 五星约 1.605205%、四星约 12.955843%；光锥五星约 1.872272%、四星约 14.499985%。这些是项目模型计算值，不是官方概率认证。统计实验不是普通单元测试的一部分，也不是唯一验收标准。
 
-后续 UI 阶段负责页面级状态发布、七名选择交互、语义诊断翻译、结果展示、历史容量和存档版本；本阶段不注册路由、不定义持久化格式、不实现常驻 300 抽自选或新手池。
+## 页面会话与交互
+
+[WarpSimulatorPage.vue](../../src/tools/warp-simulator/WarpSimulatorPage.vue)为懒加载路由入口，首页工具目录正式开放 Warp 卡片。Warp 专属 components、composables、model 与 data 均位于工具目录内，不运行时依赖排轴内部模块。UI 设计见[设计规范](../design-notes.md#跃迁模拟器)。
+
+`useWarpSimulator({ snapshot?, rng? })` 创建页面实例拥有的会话，默认使用仓库内规范化 Snapshot 与真实 `Math.random` Adapter；测试可注入合成 Snapshot 和 RNG。Manifest 的 pending／incomplete 不作为全局禁用条件。Banner 列表用现有 Resolver 验证完整配置；角色预检临时使用七项合法候选作为可解析性验证样本，该样本不保存为玩家选择、不用于抽取。真正抽取只使用玩家已明确确认的选择。
+
+当前默认选中真珠 Banner，但七名选择始终从空开始。角色资格来自当前共享池的 `fiveStar`，不是已解析的八个回退槽位。搜索头像网格 Dialog 的草稿与已提交选择分离，恰好七名不同且合法的角色才可确认；取消不修改已提交选择。选择按 Banner ID 保存，修改只影响未来结果。同组切换 Banner 保留引擎状态；切换到尚未确认选择的角色 Banner 时仍须完成选择。光锥和 Ordinary 不显示星缘入口。
+
+单个已提交 `shallowRef<WarpPageSession>` 保存引擎状态、历史与最新批次身份。`draw(1 | 10)` 调用现有引擎，成功后一次替换整个会话；失败只设置语义诊断，保留原对象及全部历史。抽取期间设置防重入锁，在当前 Vue 更新完成后解除；切池、选择和重置操作也受锁及 Dialog 状态约束，不把动画当作业务等待条件。
+
+保底四行直接展示当前组状态，未适用的 UP 保证为“不适用”。四星饱和值 9 显示“9+ 抽未出四星”并附待兑现说明，不声称它是精确累计抽数。UI 不计算 Soft Pity、UP 命中或保证转移。
+
+历史保存原始只读 PullEvent，并增加页面内递增条目 ID 和批次 ID。最多保留最近 1000 条，每页 25 条，最新优先；新抽取回到第一页。最新批次从同一历史派生并恢复原始抽取顺序，不为了稀有度排序。UP 标记仅使用事件的 `isUp`，来源按事件的 Banner ID 显示，模型及抽前状态仍保留于事件。五星条目的“当次五星保底抽数”为 `pityBefore.pullsSinceLast5 + 1`，不会因后续切池、重置或语言改变而重算。
+
+重置须经 Dialog 确认，取消不提交：
+
+- 当前组重置只替换该继承组的引擎计数与保证，保留其他组、历史、最新批次和所有星缘选择。
+- 全部重置清空五组引擎状态、历史及最新批次，保留当前 Banner 和各 Banner 的星缘选择。
+- 页面内条目／批次身份不因重置复用。刷新或离开页面会销毁本页会话，包括选择；没有全局业务单例或浏览器存储。
+
+## 展示资源与降级
+
+[presentation.json](../../src/tools/warp-simulator/data/presentation.json)是独立薄映射，仅保存当前 30 名角色的已核实命途和已有本地头像路径。来源为本仓库已提交的规范化角色／资源映射，记录来源 Commit、文件 SHA-256 及上游身份。不是新抽取资格名单，不修改 Warp 数据生成产物；普通运行与构建不生成它、不读取上游仓库，也不导入排轴模块。
+
+`createPresentation(snapshot, visuals?, base?)` 按 canonical ID 取得 Warp 中英文名称及可选 `path`、`element`、`portraitUrl`；图片 URL 只由已登记的安全相对路径与 BASE_URL 组合，不猜路径。`useWarpPortrait` 对加载失败的 URL 使用与无映射相同的中性占位，切换到其他已登记 URL 时可重新加载。
+
+当前 30 名角色有命途及头像，但无已核实属性；光锥暂无命途／图片映射。缺失元数据用“—”或图像占位表达，光锥不显示属性。后续可扩展独立的展示来源，但不得把这些字段写回引擎或据名称推断内容。
+
+双语文案集中于 `warp.*`，历史和结果的名称随语言改变但身份、UP 和 RNG 不变。十连的 3–4–3 布局与 CSS 入场动画只消费已提交事件，使用稳定批次／条目 key；reduced-motion 关闭动画。视觉及键盘／焦点／响应式仍需维护者本地人工验收。
+
+持久化、导入导出、统计图表、复杂演出及更多展示资源属于后续阶段；当前不定义存档格式，不实现常驻 300 抽自选或新手池。

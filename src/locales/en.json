@@ -1,7 +1,7 @@
 {
   "site": {
     "name": "HSR-Game-Tools",
-    "description": "Unofficial Honkai: Star Rail tools, including the Action Order Simulator and previews of upcoming tools.",
+    "description": "Unofficial Honkai: Star Rail tools for action order planning and warp simulation.",
     "language": "Language",
     "languageChinese": "简体中文",
     "languageEnglish": "English",
@@ -18,7 +18,7 @@
       },
       "warp": {
         "title": "Warp Simulator",
-        "description": "Simulate Warps and explore pull results and statistics."
+        "description": "Choose a banner and characters, simulate warps, and review your pull history."
       },
       "relic": {
         "title": "Relic Simulator",
@@ -339,5 +339,120 @@
     "av": "{value} AV",
     "speedSuffix": " SPD",
     "percentSuffix": " %"
+  },
+  "warp": {
+    "title": "Warp Simulator",
+    "bannerTitle": "Warp setup",
+    "bannerSelect": "Choose a banner",
+    "bannerSelected": "Banner selected.",
+    "bannerNoneSelected": "No banner selected.",
+    "noBanners": "No usable banners are available.",
+    "bannerSource": "{name} · {type}",
+    "fiveUp": "Featured 5-star UP",
+    "fourUp": "4-star UP: {names}",
+    "up": "UP",
+    "cancel": "Cancel",
+    "pullOne": "Warp ×1",
+    "pullTen": "Warp ×10",
+    "memoryOnly": "Kept in this page’s memory only. Refreshing or leaving clears the session and character selections.",
+    "completed": "Completed {count} warps.",
+    "kind": {
+      "event-avatar": "Character Event Warp",
+      "event-light-cone": "Light Cone Event Warp",
+      "fate-avatar": "Fate Character Warp",
+      "fate-light-cone": "Fate Light Cone Warp",
+      "ordinary": "Ordinary Warp"
+    },
+    "pity": {
+      "title": "Current pity state",
+      "fiveCount": "{count} pulls without a 5-star",
+      "fiveGuarantee": "5-star guarantee",
+      "fourCount": "{count} pulls without a 4-star",
+      "fourPending": "9+ pulls without a 4-star",
+      "fourGuarantee": "4-star guarantee",
+      "normal": "Not guaranteed",
+      "guaranteed": "UP guaranteed",
+      "unavailable": "Not applicable",
+      "pendingHint": "4-star pity is pending. A 5-star may defer it; this is not an exact cumulative pull count."
+    },
+    "selection": {
+      "title": "Celestial Invitation",
+      "search": "Search characters",
+      "searchPlaceholder": "Chinese name, English name or ID",
+      "hint": "Choose seven distinct 5-star characters. Changes affect future warps only.",
+      "count": "Selected {count} / 7",
+      "candidates": "Eligible characters",
+      "chosen": "Selected characters",
+      "noMatches": "No matching characters.",
+      "required": "Explicitly choose seven characters before warping.",
+      "ready": "Seven characters are ready.",
+      "confirm": "Confirm selection",
+      "edit": "Edit characters",
+      "choose": "Choose seven characters"
+    },
+    "results": {
+      "title": "Latest warp results",
+      "count": "{count} warps",
+      "empty": "Choose a banner and any required characters to begin your first warp."
+    },
+    "history": {
+      "title": "Warp history",
+      "count": "{count} entries",
+      "limit": "Keeps the latest {count} entries on this page, newest first.",
+      "empty": "No warps yet.",
+      "fiveCount": "5-star pity count for this pull: {count}",
+      "pagination": "History pages",
+      "previous": "Previous page",
+      "next": "Next page",
+      "page": "Page {current} / {total}"
+    },
+    "reset": {
+      "group": "Reset current pity group",
+      "all": "Reset entire session",
+      "title": "Confirm reset",
+      "confirm": "Reset",
+      "groupConfirm": "Clear pity counters and UP guarantees for this banner’s inheritance group, including other banners in the same group. All history, latest results and character selections are kept.",
+      "allConfirm": "Clear pity for all five groups, latest results and warp history. Keep the current banner and each banner’s character selections.",
+      "groupDone": "Current group pity reset. History and character selections were kept.",
+      "allDone": "All pity, results and history cleared. Character selections were kept."
+    },
+    "visual": {
+      "missingImage": "{name}: image unavailable",
+      "rarity": "{count} stars",
+      "path": "Path",
+      "element": "Type",
+      "unknown": "—"
+    },
+    "path": {
+      "Elation": "Elation",
+      "Knight": "Preservation",
+      "Mage": "Erudition",
+      "Memory": "Remembrance",
+      "Priest": "Abundance",
+      "Rogue": "The Hunt",
+      "Shaman": "Harmony",
+      "Warlock": "Nihility",
+      "Warrior": "Destruction"
+    },
+    "element": {
+      "Physical": "Physical",
+      "Fire": "Fire",
+      "Ice": "Ice",
+      "Thunder": "Lightning",
+      "Wind": "Wind",
+      "Quantum": "Quantum",
+      "Imaginary": "Imaginary"
+    },
+    "error": {
+      "invalid-snapshot": "Banner data is invalid. No warp was performed.",
+      "unknown-banner": "This banner is unavailable. No warp was performed.",
+      "unknown-pool": "The candidate pool is missing. No warp was performed.",
+      "unknown-item": "A candidate item could not be identified. No warp was performed.",
+      "invalid-pool": "This banner configuration is incomplete or incompatible. No warp was performed.",
+      "invalid-selection": "Choose seven distinct eligible characters again.",
+      "invalid-state": "The pity state is invalid. No results were committed.",
+      "invalid-rng": "Invalid random value. Results were not committed; pity and history were kept.",
+      "rng-threw": "Random generation failed. Results were not committed; pity and history were kept."
+    }
   }
 }
