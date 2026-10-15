@@ -13,6 +13,8 @@ import {
   Zap,
   UserRoundPlus,
   Flag,
+  LogOut,
+  LogIn,
 } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
 import SpeedModifierTags from './SpeedModifierTags.vue'
@@ -30,6 +32,7 @@ import type {
 import { formatAV, formatNumber, renderMessage } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
 import type { OperationDraft } from '../model/editor'
+import type { KhaslanaPresetInput } from '../model/presets'
 import { operationMetadata, type MetadataField } from '../model/metadata'
 const props = defineProps<{
   countdownSources: CountdownSources
@@ -54,6 +57,7 @@ const emit = defineEmits<{
   move: [id: string, delta: -1 | 1]
   cancel: []
   submit: []
+  khaslana: [input: KhaslanaPresetInput]
 }>()
 const { t, locale } = useI18n()
 const groups = computed(() =>
@@ -100,9 +104,13 @@ const icon = (o: EffectOperation) =>
         ? Zap
         : o.type === 'addSpeedModifier'
           ? Gauge
-          : o.participant.kind === 'actor'
-            ? UserRoundPlus
-            : Timer
+          : o.type === 'depart'
+            ? LogOut
+            : o.type === 'returnToField'
+              ? LogIn
+              : o.participant.kind === 'actor'
+                ? UserRoundPlus
+                : Timer
 const metadata = computed(
   () =>
     new Map(
@@ -144,6 +152,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       :image="image"
       @cancel="emit('cancel')"
       @submit="emit('submit')"
+      @khaslana="emit('khaslana', $event)"
     />
     <div v-else class="inspector-overview">
       <div class="current-node">

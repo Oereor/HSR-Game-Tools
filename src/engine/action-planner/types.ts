@@ -15,6 +15,7 @@ export interface ActorDefinition extends ParticipantDefinitionBase {
 }
 export interface ScheduledEventDefinition extends ParticipantDefinitionBase {
   kind: 'scheduledEvent'
+  baseSpeed?: number
   speed: number
 }
 export type ParticipantDefinition = ActorDefinition | ScheduledEventDefinition
@@ -52,6 +53,8 @@ export type EffectOperation = { id: string; phase?: EffectPhase } & (
   | { type: 'advance'; target: Target; percent: number }
   | { type: 'delay'; target: Target; percent: number }
   | { type: 'immediatelyAct'; target: Target }
+  | { type: 'depart'; target: Target }
+  | { type: 'returnToField'; target: Target }
   | {
       type: 'addSpeedModifier'
       target: Target
@@ -89,6 +92,7 @@ export interface SpeedModifierInstance {
 }
 interface QueueState {
   id: string
+  departed: boolean
   remainingAG: number
   order: number
   zeroBatch: number
@@ -99,7 +103,9 @@ export interface ActorState extends ActorDefinition, QueueState {
   turns: number
   modifiers: SpeedModifierInstance[]
 }
-export interface ScheduledEventState extends ScheduledEventDefinition, QueueState {}
+export interface ScheduledEventState extends ScheduledEventDefinition, QueueState {
+  modifiers: SpeedModifierInstance[]
+}
 export interface AhaState extends QueueState {
   kind: 'aha'
   name: string

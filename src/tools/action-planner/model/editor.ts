@@ -10,6 +10,7 @@ import {
   operationTargets,
   targetIds,
   validTargetSelection,
+  validSpeedDurationForTargets,
 } from '../../../engine/action-planner/targeting'
 import { validateOperations } from '../../../engine/action-planner/validation'
 import type {
@@ -139,6 +140,8 @@ export function provisionalOperation(
         draft.original?.type === 'spawnParticipant' ? draft.original : undefined,
       ).operation
     case 'immediatelyAct':
+    case 'depart':
+    case 'returnToField':
       return { ...common, type: draft.type, target }
     case 'advance':
     case 'delay':
@@ -173,7 +176,7 @@ export function buildOperation(
   const invalid: string[] = []
   const operation = provisionalOperation({ ...draft, id }, anchor)!
   if (operation.type === 'spawnParticipant') return { invalid: ['form'] }
-  const participants = operationTargets(preview)
+  const participants = operationTargets(preview, operation.type)
   const ids = targetIds(operation.target, participants)
   const selected = participants.filter((p) => ids.includes(p.id))
   if (ids.length !== selected.length || !validTargetSelection(operation.type, selected))
@@ -186,6 +189,23 @@ export function buildOperation(
   if (draft.type === 'addSpeedModifier') {
     if (draft.amount === undefined || !Number.isFinite(draft.amount)) invalid.push('amount')
     invalid.push(...parseSpeedDuration(draft.duration).invalid)
+    if (
+      operation.type === 'addSpeedModifier' &&
+      !validSpeedDurationForTargets(operation.duration, selected)
+    )
+      invalid.push('duration')
+  }
+  if (
+    !invalid.length &&
+    operation.type === 'addSpeedModifier' &&
+    selected.some((p) => p.kind === 'scheduledEvent')
+  ) {
+    try {
+      applyOperations(preview, [operation], anchor)
+    } catch (error) {
+      if (!(error instanceof SimulationError)) throw error
+      invalid.push('effectiveSpeed')
+    }
   }
   if (!invalid.length && validateOperations([operation], anchor).length) invalid.push('form')
   return invalid.length ? { invalid } : { operation, invalid: [] }

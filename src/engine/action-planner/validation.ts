@@ -1,5 +1,5 @@
 import { anchorKey, countdownParticipantId, HARD_LIMITS, spawnedParticipantId } from './queue'
-import { targetIds, validTargetSelection } from './targeting'
+import { targetIds, validTargetSelection, validSpeedDurationForTargets } from './targeting'
 import type {
   Diagnostic,
   EffectOperation,
@@ -30,7 +30,8 @@ function validDefinition(value: unknown): value is ParticipantDefinition {
         value.initialAG < 0))
   )
     return false
-  if (value.kind === 'scheduledEvent') return positive(value.speed)
+  if (value.kind === 'scheduledEvent')
+    return positive(value.speed) && (value.baseSpeed === undefined || positive(value.baseSpeed))
   return (
     value.kind === 'actor' &&
     oneOf(value.camp, ['ally', 'enemy']) &&
@@ -74,7 +75,14 @@ export function validateOperations(
       continue
     }
     if (
-      !oneOf(op.type, ['advance', 'delay', 'immediatelyAct', 'addSpeedModifier']) ||
+      !oneOf(op.type, [
+        'advance',
+        'delay',
+        'immediatelyAct',
+        'addSpeedModifier',
+        'depart',
+        'returnToField',
+      ]) ||
       !object(op.target) ||
       !oneOf(op.target.kind, ['participants', 'allies', 'enemies'])
     )
@@ -211,7 +219,10 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
       const ids = targetIds(op.target, catalog)
       const known = ids.flatMap((id) => (participants.get(id) ? [participants.get(id)!] : []))
       if (
-        (known.some((p) => p.kind === 'scheduledEvent') && ids.length !== 1) ||
+        (known.some((p) => p.kind === 'scheduledEvent') &&
+          (((op.type === 'advance' || op.type === 'delay') && ids.length !== 1) ||
+            (op.type === 'addSpeedModifier' &&
+              !validSpeedDurationForTargets(op.duration, known)))) ||
         (known.length > 0 && !validTargetSelection(op.type, known))
       )
         return [

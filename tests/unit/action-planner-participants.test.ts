@@ -254,7 +254,7 @@ describe('dynamic queue participant contracts', () => {
     ).not.toContain(eventId)
     expect(
       selectableTargets('addSpeedModifier', candidates, []).map((participant) => participant.id),
-    ).not.toContain(eventId)
+    ).toContain(eventId)
     expect(
       selectableTargets('delay', candidates, []).map((participant) => participant.id),
     ).toContain(eventId)

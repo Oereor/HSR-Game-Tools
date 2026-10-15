@@ -122,17 +122,37 @@ const pt = (key: string) => ({
       }}</small>
     </div></template
   >
-  <div v-else class="field">
-    <label for="event-speed">{{ t('ui.eventSpeed') }}</label
-    ><InputNumber
-      v-model="draft.participant.speed"
-      input-id="event-speed"
-      :locale="locale"
-      :use-grouping="false"
-      :max-fraction-digits="20"
-      :invalid="bad('speed')"
-      :pt="pt('speed')"
-      fluid
-    /><small v-if="bad('speed')" id="error-speed" class="field-error">{{ t('ui.positive') }}</small>
-  </div>
+  <template v-else>
+    <div class="field">
+      <label for="event-base-speed">{{ t('planner.eventBaseSpeed') }}</label>
+      <InputNumber
+        v-model="draft.participant.eventBaseSpeed"
+        input-id="event-base-speed"
+        :locale="locale"
+        :use-grouping="false"
+        :max-fraction-digits="20"
+        :invalid="bad('baseSpeed')"
+        :pt="pt('baseSpeed')"
+        fluid
+      />
+      <small v-if="bad('baseSpeed')" id="error-baseSpeed" class="field-error">{{
+        t('ui.positive')
+      }}</small>
+    </div>
+    <div class="field">
+      <label for="event-speed">{{ t('ui.eventSpeed') }}</label
+      ><InputNumber
+        v-model="draft.participant.speed"
+        input-id="event-speed"
+        :locale="locale"
+        :use-grouping="false"
+        :max-fraction-digits="20"
+        :invalid="bad('speed')"
+        :pt="pt('speed')"
+        fluid
+      /><small v-if="bad('speed')" id="error-speed" class="field-error">{{
+        t('ui.positive')
+      }}</small>
+    </div>
+  </template>
 </template>

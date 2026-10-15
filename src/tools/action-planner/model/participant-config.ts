@@ -17,6 +17,7 @@ export interface ParticipantDraft {
   camp: Camp
   category: ActorDefinition['category'] | ''
   baseSpeed: number | undefined
+  eventBaseSpeed?: number
   panelSpeed: number | undefined
   speed: number | undefined
   actionLimit: string
@@ -30,6 +31,7 @@ export function participantDraft(operation?: SpawnOperation): ParticipantDraft {
     camp: definition?.kind === 'actor' ? definition.camp : 'ally',
     category: definition?.kind === 'actor' ? (definition.category ?? '') : 'custom',
     baseSpeed: definition?.kind === 'actor' ? definition.baseSpeed : 100,
+    eventBaseSpeed: definition?.kind === 'scheduledEvent' ? definition.baseSpeed : undefined,
     panelSpeed: definition?.kind === 'actor' ? definition.panelSpeed : 100,
     speed: definition?.kind === 'scheduledEvent' ? definition.speed : 100,
     actionLimit:
@@ -60,7 +62,10 @@ export function buildParticipantOperation(
         actionLimit < 1)
     )
       invalid.push('actionLimit')
-  } else if (!positive(draft.speed)) invalid.push('speed')
+  } else {
+    if (!positive(draft.speed)) invalid.push('speed')
+    if (draft.eventBaseSpeed != null && !positive(draft.eventBaseSpeed)) invalid.push('baseSpeed')
+  }
   if (original && original.participant.kind !== draft.kind) invalid.push('form')
   if (invalid.length) return { invalid }
   const retained = original
@@ -82,7 +87,13 @@ export function buildParticipantOperation(
             panelSpeed: draft.panelSpeed!,
             actionLimit,
           }
-        : { ...retained, kind: 'scheduledEvent', name: draft.name.trim(), speed: draft.speed! },
+        : {
+            ...retained,
+            kind: 'scheduledEvent',
+            name: draft.name.trim(),
+            speed: draft.speed!,
+            ...(draft.eventBaseSpeed == null ? {} : { baseSpeed: draft.eventBaseSpeed }),
+          },
   }
   return validateOperations([operation], anchor).length
     ? { invalid: ['form'] }
