@@ -121,7 +121,7 @@
     },
     "operationName": {
       "depart": "使 {target} 离场",
-      "returnToField": "使 {target} 重新入场",
+      "returnToField": "解除 {target} 的离场状态",
       "advance": "使 {target} 行动提前 {percent}%",
       "delay": "使 {target} 行动延后 {percent}%",
       "immediatelyAct": "使 {target} 立即行动",
@@ -136,8 +136,8 @@
       "decreasePercent": "使 {target} 速度降低 {amount}%"
     },
     "metadata": {
-      "depart": "离场，保留剩余行动距离",
-      "returnToField": "重新入场，恢复剩余行动距离",
+      "depart": "离场，不会出现在行动序列上",
+      "returnToField": "解除离场状态",
       "advance": "行动提前 {percent}%",
       "delay": "行动延后 {percent}%",
       "immediatelyAct": "立即行动",
