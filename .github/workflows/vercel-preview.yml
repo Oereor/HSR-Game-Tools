@@ -61,14 +61,25 @@ jobs:
             exit 1
           fi
 
-          deployment_url="$(vercel deploy --yes --target=preview --non-interactive)"
-          DEPLOYMENT_URL="$deployment_url" node --input-type=module -e '
-            const value = process.env.DEPLOYMENT_URL;
+          deployment_output="$(vercel deploy --yes --target=preview --non-interactive)"
+          deployment_url="$(DEPLOYMENT_OUTPUT="$deployment_output" node --input-type=module -e '
+            let value = process.env.DEPLOYMENT_OUTPUT?.trim() ?? "";
+            if (value.startsWith("{")) {
+              const result = JSON.parse(value);
+              if (result.status !== "ok" || result.deployment?.readyState !== "READY") {
+                throw new Error("Vercel CLI did not return a successful READY deployment");
+              }
+              value = result.deployment.url;
+            }
+            if (typeof value !== "string" || !value) {
+              throw new Error("Vercel CLI did not return a Preview URL");
+            }
             const url = new URL(value);
             if (url.protocol !== "https:" || url.origin !== value || !url.hostname.endsWith(".vercel.app")) {
               throw new Error("Vercel CLI did not return a valid HTTPS Preview URL");
             }
-          '
+            process.stdout.write(value);
+          ')"
           echo "Preview URL: $deployment_url"
           echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
 
