@@ -105,10 +105,10 @@ npm run generate:warp-schema
 
 - `sharedPools`：每项含唯一 `id`、`fiveStarType`（`avatar`／`light-cone`／`mixed`）、非空且不重复的 `threeStar`／`fourStar`／`fiveStar` ID 数组和非空 `evidence` 来源定位。三星只能是三星光锥，四星可混合角色与光锥，五星受声明类型约束；mixed 五星集合必须同时包含两类物品。
 - `banners`：每项含唯一 `gachaId`、`kind`、`pityGroup`、`sharedPool` 引用和 `evidence`。普通角色／光锥 Event 须填写一个同类型五星 `up5` 和恰好三个同类型且不同的四星 `up4`；Fate 只填写五星 UP；Ordinary 不允许 UP 字段。
-- `kind` 的五种值为 `event-avatar`、`event-light-cone`、`fate-avatar`、`fate-light-cone`、`ordinary`；`pityGroup` 分别固定为 `pity:<kind>`，是独立的继承组身份元数据，不实现或认证任何保底状态转移。Banner 的 `gacha:<GachaID>` 由生成器派生，不使用 UI GroupID 作继承组。
-- `pending`：未核实类别与缺失原因。初始五类全部待填充，零个有效 Banner；待办不放宽任何有效 Banner 校验。清除待办是维护者对名单完备性的审阅，不是官方规则认证。
+- `kind` 的五种值为 `event-avatar`、`event-light-cone`、`fate-avatar`、`fate-light-cone`、`ordinary`；`pityGroup` 分别固定为 `pity:<kind>`，作为[纯引擎](architecture/warp-simulator.md)的独立继承组键。数据管线只维护身份元数据，计数、保证与转移由引擎负责。Banner 的 `gacha:<GachaID>` 由生成器派生，不使用 UI GroupID 作继承组。
+- `pending`：未核实类别与缺失原因。当前有一个维护者已配置的真珠 Banner（GachaID `2139`）和五个保留待办；待办不放宽任何有效 Banner 校验。清除待办是维护者对名单完备性的审阅，不是官方规则认证。
 
-每个 Banner 只需引用已审阅共享池、填写 GachaID／UP 等少量字段及来源；不得复制物品名称或元数据建立身份。候选集合和 UP 是分开的输入，允许二者显式重叠，不会自动加入、剔除或赋权。名单的历史资格、完整性和来源真实性仍需维护者审阅；星缘七人自选属于未来会话状态，本阶段不提供字段。
+每个 Banner 只需引用已审阅共享池、填写 GachaID／UP 等少量字段及来源；不得复制物品名称或元数据建立身份。候选集合和 UP 是分开的维护输入，数据管线不自动加入、剔除或赋权。名单的历史资格、完整性和来源真实性仍需维护者审阅。`sharedPool.fiveStar` 是资格集合，不代表玩家已选七名角色；Phase 1D 角色 Resolver 要求调用方显式提供七名合法选择，并按 v0.3 组成八个回退槽位。光锥与 Ordinary 的具体解析约束见[引擎契约](architecture/warp-simulator.md#候选与-up)，不改变维护 Schema 或人工名单。
 
 编辑候选池 ID／类型后重新生成 Schema，再填写 Banner 引用，最后生成并验证快照：
 
@@ -140,4 +140,4 @@ npm run find:warp-item -- light-cone:21000
 
 三个生成命令共用 `.warp-data-staging/update.lock` 独占锁。目录先在 staging 中完整验证，再备份原目录并安装；任一安装失败恢复旧目录。单文件 Schema 采用同文件系统临时文件 rename。回滚自身失败时保留锁、staging 和 `.warp-data-backup/`，避免销毁恢复材料；进程强杀也可能留下这些目录。确认无维护进程、核对 runId 与 Manifest 后人工恢复，禁止盲删未知锁或备份。目录替换不提供进程强杀下的无间隙可用性，更新前建议停止 dev／preview。
 
-生成产物可跟踪，只有 staging／backup／cache 被忽略；生成 JSON 使用固定序列化，不交给 Prettier 改写。普通 install、dev、test、build 无上游路径、网络数据请求或自动生成钩子；需要完全离线安装 npm 包时使用已有缓存及 `npm ci --offline`。Warp 目前没有运行时消费入口，不因本轮数据基础设施新增路由或发布配置。
+生成产物可跟踪，只有 staging／backup／cache 被忽略；生成 JSON 使用固定序列化，不交给 Prettier 改写。普通 install、dev、test、build 无上游路径、网络数据请求或自动生成钩子；需要完全离线安装 npm 包时使用已有缓存及 `npm ci --offline`。Warp 纯引擎通过参数接收规范化 Snapshot，由 Resolver 产生抽取上下文；当前没有页面消费入口，不新增路由或发布配置。
