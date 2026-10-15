@@ -16,6 +16,7 @@
 | 产品设计启发         | [HSR-Action-Planner](https://github.com/THyanNK/HSR-Action-Planner)                                                       | 行动序列模拟器的早期产品设计受到启发；本工具不是其官方版本，此条不主张复制其源码                                                                                                                                                                                        |
 
 来源代码 Commit 与今天只读参考文档的 Commit 是不同身份，不因参考仓库更新而改写历史 provenance。
+货币战争控制台原型也从上述固定 TurnBasedGameData Commit 提取人数计算所需的角色、羁绊、星徽和中文名称，感谢 Dimbreath 的数据整理；来源文件哈希与转换规则见其 [Manifest](../../data/currency-wars/manifest.json)。新增求解器依赖 [highs-js](https://github.com/lovasoa/highs-js) 精确锁定为 `highs@1.15.3`，安装包保留 MIT LICENSE（Copyright 2023 highs-js / 2026 HiGHS）；本轮只用于本地 CLI，未接入站点 Bundle。
 HSR-Database 原 MIT 通知与固定来源 LICENSE 全文相同，StarRailRes 已保留文本也与锁定 Commit 的 LICENSE 完全一致。项目 MIT 决定不删除或替换这些通知；本页不替代许可原文。
 
 ## 游戏内容与构建产物

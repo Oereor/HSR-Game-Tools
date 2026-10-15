@@ -6,6 +6,8 @@
 
 各工具从自己的数据目录读取 Schema、仓库内快照和 Adapter：[Action Planner 数据](../src/tools/action-planner/data/)与 [Warp 数据](../src/tools/warp-simulator/data/)独立维护。原始上游解析只属于显式更新器，运行时与纯模拟引擎不读取原始游戏 JSON。
 
+[货币战争控制台原型](currency-wars.md#数据快照与显式提取)另用根目录 `data/currency-wars/` 的本地快照；仅显式提取器读取锁定的 TurnBasedGameData。该工具不复用或改写排轴、Warp 的更新流程。
+
 当前来源分工：
 
 - StarRailRes：双语角色属性、装备条目及必要图片，来源版本由 Source Lock 固定。

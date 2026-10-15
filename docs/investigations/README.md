@@ -57,3 +57,7 @@
 - [Phase 1C 多工具项目结构重构](warp-simulator/phase-1c-project-restructuring.md)：工具目录归属、已有本地卡池配置保护、数据完整性与迁移验收。
 - [Phase 0 架构与概率模型调查](warp-simulator/phase-0-investigation.md)：旧实现取证、来源与规则证据边界。
 - [Phase 1 数据基础设施](warp-simulator/phase-1-data-foundation.md)：独立轻量目录、人工 JSONC、IntelliSense、验证和静态快照。
+
+## Currency Wars Optimizer
+
+- [控制台原型 V1 实现报告](currency-wars-v1-implementation.md)：锁定数据、MILP、特殊羁绊边界、性能与检查记录。

@@ -21,6 +21,10 @@
 
 正在施工中。
 
+### 货币战争羁绊优化器 / Currency Wars Optimizer
+
+独立控制台原型：`npm run currency-wars`。使用真实游戏快照和 HiGHS 整数规划，优先最大化羁绊任务完成数，其次减少星徽消耗。正式任务列表已按用户提供的清单录入 25 项；规则、演示命令与限制见[使用指南](docs/currency-wars.md)。
+
 ## 技术栈
 
 Vue 3、TypeScript、Vite、Vue Router、PrimeVue、Tailwind CSS 4、vue-i18n、Lucide Icons，以及 Node.js 24 / npm。

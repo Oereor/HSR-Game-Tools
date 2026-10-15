@@ -11,6 +11,8 @@ src/tools/action-planner/data/game/
 src/tools/warp-simulator/data/runtime/
 scripts/warp-data/generated/
 scripts/warp-data/schema/
+data/currency-wars/snapshot.json
+data/currency-wars/manifest.json
 tests/fixtures/action-planner/action-planner-expected.json
 docs/third-party/
 docs/investigations/phase-0-migration-architecture.md
