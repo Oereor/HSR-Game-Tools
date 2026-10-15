@@ -13,6 +13,8 @@ scripts/warp-data/generated/
 scripts/warp-data/schema/
 data/currency-wars/snapshot.json
 data/currency-wars/manifest.json
+data/currency-wars/visuals.json
+data/currency-wars/visuals-manifest.json
 tests/fixtures/action-planner/action-planner-expected.json
 docs/third-party/
 docs/investigations/phase-0-migration-architecture.md

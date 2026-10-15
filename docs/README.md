@@ -16,7 +16,7 @@
 ## 开发与维护
 
 - [开发指南](development.md)：Node / npm、运行与验证命令、代理及测试政策。
-- [货币战争羁绊优化器](currency-wars.md)：独立 CLI、任务格式、羁绊类型、特殊规则与快照维护。
+- [货币战争羁绊优化器](currency-wars.md)：网页与 CLI、Worker/WASM、任务格式、特殊规则与快照维护。
 - [UI 设计规范](design-notes.md)：首页与模拟器的现行展示约定。
 - [Site Messages](site-messages.md)：首页简介、操作名称、插值及翻译验证。
 - [游戏数据维护](game-data.md)：快照审阅、来源前提、更新与回滚。

@@ -15,60 +15,68 @@ export interface SolverOutcome {
 
 export type Solver = (model: BuiltModel, timeLimitSeconds: number) => Promise<SolverOutcome>
 
-/** The only module loading Wasm. It owns no files, UI or game-data parsing. */
-export const highsSolver: Solver = async (built, timeLimitSeconds) => {
-  const { default: loadHighs } = await import('highs')
-  const highs = await loadHighs()
-  const model = highs.createModel({ format: 'lp', data: built.lp })
-  try {
-    model.options.set({
-      output_flag: false,
-      time_limit: timeLimitSeconds,
-      mip_rel_gap: 0,
-      mip_abs_gap: 0,
-      random_seed: 0,
-    })
-    model.run()
-    const status = model.getModelStatus()
-    const states = highs.constants.modelStatus
-    const feasible =
-      model.info.get('primal_solution_status') === highs.constants.solutionStatus.feasible
-    const solution = feasible ? model.getSolution().colValue : undefined
-    const limitedStates: number[] = [
-      states.timeLimit,
-      states.iterationLimit,
-      states.solutionLimit,
-      states.interrupted,
-      states.objectiveBound,
-      states.objectiveTarget,
-    ]
-    const modelClass =
-      status === states.optimal
-        ? 'optimal'
-        : status === states.infeasible
-          ? 'infeasible'
-          : limitedStates.includes(status)
-            ? 'limited'
-            : 'error'
-    return {
-      status: modelClass,
-      solverStatus:
-        Object.entries(states).find(([, code]) => code === status)?.[0] ?? String(status),
-      feasible,
-      // LP parsing orders columns by first occurrence, not by our declaration order.
-      values: solution
-        ? Object.fromEntries(
-            built.columnNames.map((name) => [name, solution[model.getColByName(name)]!]),
-          )
-        : {},
-      objective: feasible ? model.getObjectiveValue() : NaN,
-      objectiveBound: feasible ? Number(model.info.get('mip_dual_bound')) : undefined,
-      gap: feasible ? Number(model.info.get('mip_gap')) : undefined,
+/** Inject only runtime loading; solver options, statuses and result decoding are shared. */
+export function createHighsSolver(
+  load: () => ReturnType<typeof import('highs').default> = async () => {
+    const { default: loadHighs } = await import('highs')
+    return loadHighs()
+  },
+): Solver {
+  return async (built, timeLimitSeconds) => {
+    const highs = await load()
+    const model = highs.createModel({ format: 'lp', data: built.lp })
+    try {
+      model.options.set({
+        output_flag: false,
+        time_limit: timeLimitSeconds,
+        mip_rel_gap: 0,
+        mip_abs_gap: 0,
+        random_seed: 0,
+      })
+      model.run()
+      const status = model.getModelStatus()
+      const states = highs.constants.modelStatus
+      const feasible =
+        model.info.get('primal_solution_status') === highs.constants.solutionStatus.feasible
+      const solution = feasible ? model.getSolution().colValue : undefined
+      const limitedStates: number[] = [
+        states.timeLimit,
+        states.iterationLimit,
+        states.solutionLimit,
+        states.interrupted,
+        states.objectiveBound,
+        states.objectiveTarget,
+      ]
+      const modelClass =
+        status === states.optimal
+          ? 'optimal'
+          : status === states.infeasible
+            ? 'infeasible'
+            : limitedStates.includes(status)
+              ? 'limited'
+              : 'error'
+      return {
+        status: modelClass,
+        solverStatus:
+          Object.entries(states).find(([, code]) => code === status)?.[0] ?? String(status),
+        feasible,
+        // LP parsing orders columns by first occurrence, not by our declaration order.
+        values: solution
+          ? Object.fromEntries(
+              built.columnNames.map((name) => [name, solution[model.getColByName(name)]!]),
+            )
+          : {},
+        objective: feasible ? model.getObjectiveValue() : NaN,
+        objectiveBound: feasible ? Number(model.info.get('mip_dual_bound')) : undefined,
+        gap: feasible ? Number(model.info.get('mip_gap')) : undefined,
+      }
+    } finally {
+      model.dispose()
     }
-  } finally {
-    model.dispose()
   }
 }
+
+export const highsSolver: Solver = createHighsSolver()
 
 export async function solveCurrencyWars(
   snapshot: Snapshot,

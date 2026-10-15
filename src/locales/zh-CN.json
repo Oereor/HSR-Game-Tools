@@ -1,7 +1,7 @@
 {
   "site": {
     "name": "HSR-Game-Tools",
-    "description": "《崩坏：星穹铁道》非官方工具集合，提供行动序列与跃迁模拟器。",
+    "description": "《崩坏：星穹铁道》非官方工具集合，提供行动序列、跃迁模拟与货币战争羁绊优化。",
     "language": "语言",
     "languageChinese": "简体中文",
     "languageEnglish": "English",
@@ -23,6 +23,10 @@
       "relic": {
         "title": "遗器模拟器",
         "description": "模拟遗器生成与强化，探索词条组合。"
+      },
+      "currencyWars": {
+        "title": "货币战争羁绊优化器",
+        "description": "选择目标羁绊任务，自动计算角色阵容与星徽分配，尽可能一次完成更多任务。"
       }
     },
     "disclaimer": "{site} · 非官方项目，与《崩坏：星穹铁道》及其相关方无关。"
@@ -453,6 +457,99 @@
       "invalid-state": "当前保底状态无效，未提交任何结果。",
       "invalid-rng": "随机数无效，本次结果未提交，保底及历史已保留。",
       "rng-threw": "随机数生成失败，本次结果未提交，保底及历史已保留。"
+    }
+  },
+  "currencyWars": {
+    "title": "货币战争羁绊优化器",
+    "description": "选择目标羁绊任务，自动计算角色阵容与星徽分配，尽可能一次完成更多任务。",
+    "none": "无",
+    "start": "开始求解",
+    "cancel": "取消求解",
+    "running": "正在初始化并求解，页面仍可操作…",
+    "cancelled": "本次求解已取消。",
+    "rulesTitle": "本版规则与限制",
+    "rules": "只优化羁绊人数。布洛妮娅平局时两侧均不计她的人数，并禁止其成为领航员目标；最优性仅针对当前模型。",
+    "type": {
+      "camp": "阵营羁绊",
+      "class": "流派羁绊",
+      "unique": "独立羁绊"
+    },
+    "form": {
+      "title": "求解配置",
+      "slots": "上场槽位",
+      "budget": "星徽预算",
+      "budgetHint": "至少 12 个；每名角色最多佩戴 3 个，不必用满预算。",
+      "experts": "允许专家角色",
+      "expertsHint": "允许专家角色参与候选，不代表强制选择。",
+      "expertsAllowed": "允许专家",
+      "expertsExcluded": "排除专家",
+      "time": "求解时间上限（秒）",
+      "tasks": "目标任务",
+      "selection": "已选 {selected} / {total}",
+      "selectAll": "全选",
+      "clear": "清空",
+      "task": "{name} ≥ {count} 人"
+    },
+    "validation": {
+      "slots": "请选择 11、12 或 13 个槽位。",
+      "emblemBudget": "请输入至少 12 的安全整数预算。",
+      "timeLimitSeconds": "请输入正整数秒数。",
+      "taskIds": "请至少选择一项任务。"
+    },
+    "status": {
+      "optimal": "已证明最优（本版模型）",
+      "feasible": "可行，尚未证明最优",
+      "no-result": "时限内未找到可行结果",
+      "infeasible": "求解器报告不可行",
+      "error": "求解或验证错误",
+      "empty": "未选择任务"
+    },
+    "error": {
+      "input": "请检查配置中的错误后重新求解。",
+      "data": "无法加载或验证本工具数据，请刷新页面后重试。",
+      "unavailable": "无法启动求解 Worker，请检查浏览器支持或资源加载后重试。",
+      "runtime": "求解 Worker 运行异常，请重新求解。",
+      "message": "无法读取求解 Worker 的有效结果，请重新求解。",
+      "details": "技术详情"
+    },
+    "result": {
+      "title": "求解结果",
+      "stale": "配置已更改：下方方案对应上次求解条件，点击“开始求解”后才会更新。",
+      "historical": "下方保留上次有效方案，不代表本次求解结果。",
+      "summary": "完成 {completed} / {tasks} 项任务 · 上场 {roles} / {slots} · 星徽 {emblems} / {budget}",
+      "conditions": "方案条件：{slots} 槽 · 星徽预算 {budget} · {experts} · 时限 {time} 秒 · {tasks} 项任务",
+      "selectedTasks": "查看该方案所选任务",
+      "elapsed": "求解耗时：{seconds} 秒",
+      "bronyaWarning": "布洛妮娅两侧人数平局，游戏归属规则尚未确认；两侧均不计她的人数，本方案完成数为保守下界。",
+      "genericWarning": "本方案存在模型规则警告，请结合当前规则检查。",
+      "lineup": "推荐阵容",
+      "activeTraits": "已激活羁绊",
+      "trait": "{name} · {count} 人 · 已激活 {threshold} 人档",
+      "contributors": "提供者：{names}",
+      "tasks": "任务完成情况",
+      "taskCounts": "要求 {required} 人 · 实际 {actual} 人",
+      "completed": "完成",
+      "incomplete": "未完成",
+      "initial": "配置条件并选择任务后，点击“开始求解”查看角色与星徽方案。",
+      "noRoles": "该方案无需上场角色。",
+      "noTraits": "该方案没有已激活羁绊。"
+    },
+    "visual": {
+      "missing": "{name}：图片暂不可用",
+      "cost": "{cost} 费",
+      "emblems": "{name}的三个星徽槽",
+      "emptySlot": "未使用的星徽槽",
+      "expert": "专家",
+      "front": "前台",
+      "back": "后台",
+      "target": "领航员目标：{name}",
+      "noTarget": "未选择领航员目标",
+      "bronyaSide": "加入{name}",
+      "bronyaTie": "平局：两侧均不计人数",
+      "details": "羁绊详情",
+      "innate": "固有：{names}",
+      "extra": "特殊新增：{names}",
+      "formId": "形态 ID：{id}"
     }
   }
 }

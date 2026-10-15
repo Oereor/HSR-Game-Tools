@@ -23,7 +23,7 @@
 
 ### 货币战争羁绊优化器 / Currency Wars Optimizer
 
-独立控制台原型：`npm run currency-wars`。使用真实游戏快照和 HiGHS 整数规划，优先最大化羁绊任务完成数，其次减少星徽消耗。正式任务列表已按用户提供的清单录入 25 项；规则、演示命令与限制见[使用指南](docs/currency-wars.md)。
+网页入口为 `/currency-wars`，也可使用控制台 `npm run currency-wars`。使用真实游戏快照和 HiGHS 整数规划，优先最大化羁绊任务完成数，其次减少星徽消耗。网页通过 Worker 求解，展示角色头像、费用和星徽分配；正式任务列表已录入 25 项。规则与限制见[使用指南](docs/currency-wars.md)。
 
 ## 技术栈
 

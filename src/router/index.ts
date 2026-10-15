@@ -15,6 +15,11 @@ export const router = createRouter({
       meta: { title: 'warp.title' },
     },
     {
+      path: '/currency-wars',
+      component: () => import('../tools/currency-wars/CurrencyWarsPage.vue'),
+      meta: { title: 'currencyWars.title' },
+    },
+    {
       path: '/:pathMatch(.*)*',
       component: () => import('../views/NotFoundPage.vue'),
       meta: { title: 'missing.title' },

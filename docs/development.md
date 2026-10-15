@@ -132,7 +132,7 @@ workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并
 
 ## 上游仓库与网络
 
-货币战争控制台原型使用 `npm run currency-wars`。离线快照检查用 `npm run validate:currency-wars`，显式提取用 `npm run extract:currency-wars -- --root <本地来源目录>`；任务录入、参数与规则见[货币战争指南](currency-wars.md)。这些命令不接入 dev、test 或 build 的数据生成钩子。
+货币战争网页入口为 `/currency-wars`，CLI 使用 `npm run currency-wars`。离线算法快照检查用 `npm run validate:currency-wars`，展示数据检查用 `npm run validate:currency-wars-visuals`；显式提取和 Worker/WASM 构建探针见[货币战争指南](currency-wars.md)。这些命令不接入 dev、test 或 build 的数据生成钩子，普通测试不启动浏览器。
 
 正常安装、开发、测试和构建不读取相邻的 HSR-Database、TurnBasedGameData 或 StarRailRes，也不触发下载、生成或旧站构建钩子。
 排轴数据显式更新需要与 Source Lock 匹配的 StarRailRes；Warp Catalog 显式更新需要其独立 Source Lock 匹配的 TurnBasedGameData。其他 Warp 命令仅消费仓库内文件，维护步骤见[Warp 数据基础设施](game-data.md#warp-数据基础设施)。HSR-Database 继续只用于只读调查与来源追溯。

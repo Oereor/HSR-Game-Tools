@@ -1,7 +1,7 @@
 {
   "site": {
     "name": "HSR-Game-Tools",
-    "description": "Unofficial Honkai: Star Rail tools for action order planning and warp simulation.",
+    "description": "Unofficial Honkai: Star Rail tools for action order planning, warp simulation and Currency Wars trait optimization.",
     "language": "Language",
     "languageChinese": "简体中文",
     "languageEnglish": "English",
@@ -23,6 +23,10 @@
       "relic": {
         "title": "Relic Simulator",
         "description": "Simulate Relic generation and enhancement."
+      },
+      "currencyWars": {
+        "title": "Currency Wars Trait Optimizer",
+        "description": "Choose trait tasks and calculate a character lineup and emblem allocation to complete as many tasks as possible."
       }
     },
     "disclaimer": "{site} · An unofficial project with no affiliation to Honkai: Star Rail or its rights holders."
@@ -453,6 +457,99 @@
       "invalid-state": "The pity state is invalid. No results were committed.",
       "invalid-rng": "Invalid random value. Results were not committed; pity and history were kept.",
       "rng-threw": "Random generation failed. Results were not committed; pity and history were kept."
+    }
+  },
+  "currencyWars": {
+    "title": "Currency Wars Trait Optimizer",
+    "description": "Choose trait tasks and calculate a character lineup and emblem allocation to complete as many tasks as possible.",
+    "none": "None",
+    "start": "Start solving",
+    "cancel": "Cancel",
+    "running": "Initializing and solving. You can still use the page…",
+    "cancelled": "This solve was cancelled.",
+    "rulesTitle": "Model rules and limitations",
+    "rules": "Optimizes trait headcounts only. Bronya contributes to neither side on a tie and cannot be a navigator target. Optimality applies only to this model.",
+    "type": {
+      "camp": "Camp traits",
+      "class": "Class traits",
+      "unique": "Unique traits"
+    },
+    "form": {
+      "title": "Solve configuration",
+      "slots": "Lineup slots",
+      "budget": "Emblem budget",
+      "budgetHint": "At least 12; each character can wear up to 3. The budget does not have to be exhausted.",
+      "experts": "Allow expert characters",
+      "expertsHint": "Makes experts eligible; does not require selecting them.",
+      "expertsAllowed": "Experts allowed",
+      "expertsExcluded": "Experts excluded",
+      "time": "Solver time limit (seconds)",
+      "tasks": "Target tasks",
+      "selection": "Selected {selected} / {total}",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "task": "{name} ≥ {count} members"
+    },
+    "validation": {
+      "slots": "Select 11, 12 or 13 slots.",
+      "emblemBudget": "Enter a safe integer budget of at least 12.",
+      "timeLimitSeconds": "Enter a positive integer number of seconds.",
+      "taskIds": "Select at least one task."
+    },
+    "status": {
+      "optimal": "Proven optimal for this model",
+      "feasible": "Feasible; optimality not proven",
+      "no-result": "No feasible result found within the limit",
+      "infeasible": "Solver reports infeasibility",
+      "error": "Solve or verification error",
+      "empty": "No tasks selected"
+    },
+    "error": {
+      "input": "Fix the configuration errors and try again.",
+      "data": "Unable to load or validate this tool’s data. Refresh the page and try again.",
+      "unavailable": "Unable to start the solver Worker. Check browser support and asset loading, then try again.",
+      "runtime": "The solver Worker encountered an error. Try solving again.",
+      "message": "Unable to read a valid result from the solver Worker. Try again.",
+      "details": "Technical details"
+    },
+    "result": {
+      "title": "Solve result",
+      "stale": "Configuration changed: the lineup below uses the previous solve conditions. Start a new solve to update it.",
+      "historical": "The previous valid lineup is retained below. It is not the result of the current attempt.",
+      "summary": "Completed {completed} / {tasks} tasks · Lineup {roles} / {slots} · Emblems {emblems} / {budget}",
+      "conditions": "Lineup conditions: {slots} slots · Emblem budget {budget} · {experts} · Limit {time}s · {tasks} tasks",
+      "selectedTasks": "View tasks selected for this lineup",
+      "elapsed": "Solve time: {seconds}s",
+      "bronyaWarning": "Bronya’s two trait counts are tied and the game’s tie rule is unconfirmed. She contributes to neither side; the completed count is a conservative lower bound.",
+      "genericWarning": "This lineup has a model warning. Review the current rules.",
+      "lineup": "Recommended lineup",
+      "activeTraits": "Active traits",
+      "trait": "{name} · {count} members · Active tier: {threshold}",
+      "contributors": "Contributors: {names}",
+      "tasks": "Task completion",
+      "taskCounts": "Required {required} · Actual {actual}",
+      "completed": "Completed",
+      "incomplete": "Incomplete",
+      "initial": "Configure conditions and select tasks, then start solving to view a character and emblem lineup.",
+      "noRoles": "This lineup does not require any characters.",
+      "noTraits": "This lineup has no active traits."
+    },
+    "visual": {
+      "missing": "{name}: image unavailable",
+      "cost": "Cost {cost}",
+      "emblems": "Three emblem slots for {name}",
+      "emptySlot": "Unused emblem slot",
+      "expert": "Expert",
+      "front": "Frontline",
+      "back": "Backline",
+      "target": "Navigator target: {name}",
+      "noTarget": "No navigator target selected",
+      "bronyaSide": "Joins {name}",
+      "bronyaTie": "Tie: contributes to neither side",
+      "details": "Trait details",
+      "innate": "Innate: {names}",
+      "extra": "Special additions: {names}",
+      "formId": "Form ID: {id}"
     }
   }
 }

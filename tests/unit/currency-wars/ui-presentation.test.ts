@@ -1,0 +1,87 @@
+import { readFileSync } from 'node:fs'
+import { ref } from 'vue'
+import { describe, expect, it } from 'vitest'
+import { loadPageData } from '../../../src/tools/currency-wars/ui/data'
+import { assetUrl, createVisuals } from '../../../src/tools/currency-wars/ui/visuals'
+import { checkVisualData } from '../../../scripts/currency-wars/visual-data'
+import { evaluateLineup } from '../../../src/tools/currency-wars/evaluate'
+import { request } from './helpers'
+import { useCurrencyImage } from '../../../src/tools/currency-wars/ui/useImage'
+
+describe('currency-wars UI data and visuals', () => {
+  it('keeps a failed image on a fallback and permits a different URL to load', () => {
+    const url = ref<string | undefined>('/game-assets/emblem/1001.webp')
+    const image = useCurrencyImage(() => url.value)
+    expect(image.source.value).toBe(url.value)
+    image.fail()
+    expect(image.source.value).toBeUndefined()
+    url.value = '/game-assets/emblem/2007.webp'
+    expect(image.source.value).toBe(url.value)
+    url.value = undefined
+    expect(image.source.value).toBeUndefined()
+  })
+  it('loads all 25 formal tasks and independently verified display metadata', async () => {
+    const data = loadPageData()
+    expect(data.tasks).toHaveLength(25)
+    expect(await checkVisualData()).toEqual(data.visuals)
+    expect(new Set(Object.values(data.visuals.costs))).toEqual(new Set([1, 2, 3, 4, 5]))
+    expect(data.visuals.costs['15061']).toBe(3)
+    expect(data.visuals.costs['15062']).toBe(4)
+    expect(data.visuals.costs['15063']).toBe(5)
+    expect(data.visuals.costs['1204']).toBe(5)
+    expect(data.visuals.costs['12041']).toBe(1)
+    expect(data.visuals.costs['12042']).toBe(3)
+    expect(data.visuals.costs['11011:tie']).toBe(data.visuals.costs['11011'])
+  })
+
+  it('uses avatarId for portraits, traitId for emblems, and always returns three slots', () => {
+    const { snapshot, visuals } = loadPageData()
+    const view = createVisuals(snapshot, visuals, '/hsr/')
+    const lineup = { members: [{ formId: '15062', emblemIds: [35051007] }] }
+    const evaluated = evaluateLineup(snapshot, request(), lineup)
+    const member = view.member(lineup.members[0]!, evaluated.members[0]!)
+    expect(member.portraitUrl).toBe('/hsr/game-assets/character/1506.webp')
+    expect(member.cost).toBe(4)
+    expect(member.slots).toHaveLength(3)
+    expect(member.slots[0]!.url).toBe('/hsr/game-assets/emblem/1007.webp')
+    expect(member.slots.slice(1)).toEqual([undefined, undefined])
+    expect(assetUrl('https://example.test/image.webp', '/')).toBeUndefined()
+    expect(assetUrl('game-assets/character/../1.webp', '/')).toBeUndefined()
+  })
+
+  it('uses actual navigator and Bronya metadata and calculator-supplied extra traits', () => {
+    const { snapshot, visuals } = loadPageData()
+    const lineup = {
+      members: [
+        { formId: '1510', emblemIds: [], navigatorTarget: '1218' },
+        { formId: '1218', emblemIds: [35051001] },
+      ],
+    }
+    const evaluated = evaluateLineup(snapshot, request(), lineup)
+    const member = createVisuals(snapshot, visuals).member(
+      lineup.members[0]!,
+      evaluated.members[0]!,
+    )
+    expect(member.target!.name).toBe('椒丘')
+    expect(member.extra.map((t) => t.id)).toEqual([2007, 2008])
+  })
+
+  it('registers a lazy page, keeps image-error fallback, and never calls the solver from the page thread', () => {
+    const source = (file: string) =>
+      readFileSync(new URL('../../../' + file, import.meta.url), 'utf8')
+    expect(source('src/router/index.ts')).toContain("path: '/currency-wars'")
+    expect(source('src/tools/catalog.ts')).toContain("route: '/currency-wars'")
+    expect(source('src/tools/currency-wars/CurrencyWarsPage.vue')).not.toMatch(
+      /solveCurrencyWars|highsSolver/,
+    )
+    expect(source('src/tools/currency-wars/browser/solver.worker.ts')).toContain(
+      'solveCurrencyWars(snapshot, request, browserSolver)',
+    )
+    const image = source('src/tools/currency-wars/components/CurrencyImage.vue')
+    expect(image).toContain('@error=')
+    expect(image).toContain('v-else')
+    expect(source('src/tools/currency-wars/components/CurrencyResults.vue')).toContain(
+      'activeThreshold !== null',
+    )
+  })
+})

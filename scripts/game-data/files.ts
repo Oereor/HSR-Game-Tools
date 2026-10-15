@@ -71,9 +71,10 @@ export async function validateGameFiles(root: string, lock?: SourceLock, overlay
     if (meta.bytes !== bytes.length || meta.sha256 !== digest(bytes))
       throw new Error('Checksum mismatch ' + relative)
   }
-  const actualAssets = (await listFiles(inside(root, 'public/game-assets'))).map((f) =>
-    path.relative(root, f).split(path.sep).join('/'),
-  )
+  const actualAssets = (await listFiles(inside(root, 'public/game-assets')))
+    .map((f) => path.relative(root, f).split(path.sep).join('/'))
+    // Currency Wars owns this namespace; planner character/preset inventory stays strict.
+    .filter((f) => !f.startsWith('public/game-assets/emblem/'))
   if (
     JSON.stringify(actualAssets.sort()) !==
     JSON.stringify([...expected].filter((p) => p.startsWith('public/')).sort())

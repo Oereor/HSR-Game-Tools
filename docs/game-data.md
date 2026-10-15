@@ -8,6 +8,10 @@
 
 [货币战争控制台原型](currency-wars.md#数据快照与显式提取)另用根目录 `data/currency-wars/` 的本地快照；仅显式提取器读取锁定的 TurnBasedGameData。该工具不复用或改写排轴、Warp 的更新流程。
 
+其网页的费用与图片清单由独立 `visuals.json`／`visuals-manifest.json` 管理，不扩展算法快照。费用取锁定来源角色配置的 Rarity 并以商店一星购买价格核对，图片使用已存在的角色头像与用户准备的星徽文件；维护命令及哈希边界见[展示数据](currency-wars.md#独立展示数据)。普通运行不解析原始表、不下载或生成图片。
+
+排轴资源 validator 不将货币战争的 `game-assets/emblem/` 当作自己的额外资源，其他清单／哈希／尺寸检查保持严格。排轴显式更新器仍按原有整目录发布流程工作；执行该维护前须保留用户星徽目录，恢复后重新校验货币战争展示 Manifest。本轮没有运行或重构该发布器。
+
 当前来源分工：
 
 - StarRailRes：双语角色属性、装备条目及必要图片，来源版本由 Source Lock 固定。

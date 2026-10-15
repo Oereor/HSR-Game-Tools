@@ -1,8 +1,22 @@
 # 货币战争羁绊优化器
 
-这是独立控制台原型，只计算角色和星徽带来的羁绊人数。它先最大化所选任务完成数，再在完成数相同的方案中最小化星徽消耗，不优化战斗力、费用、角色数量或养成成本。没有 Web 页面、后端或存档迁移。
+提供网页和独立 CLI，只计算角色和星徽带来的羁绊人数。它先最大化所选任务完成数，再在完成数相同的方案中最小化星徽消耗，不优化战斗力、费用、角色数量或养成成本。没有后端、方案持久化、分享或导入导出功能。
 
-## 使用
+## 网页使用
+
+从首页打开「货币战争羁绊优化器」，或直接访问 `/currency-wars`。初始配置为 13 槽、12 星徽、排除专家、30 秒，默认选中正式列表全部 25 项任务。
+
+任务按阵营、流派分 Tab，可单独勾选、全选或清空；选择身份使用稳定任务 ID。输入合法条件后点击「开始求解」，结果不会因修改配置而自动重算。允许专家只是扩大候选名单，不要求方案选中专家。预算无额外上限，时限输入为正整数秒。
+
+求解在独立 Web Worker 执行，显示不定进度提示而不伪造百分比。等待期间可编辑条件，重复启动被禁用；「取消求解」直接终止 Worker，重新开始会创建新 Worker。离开页面同样释放运行实例。
+
+结果总览显示真实求解状态、任务完成数、上场人数、星徽用量及耗时。角色下方固定三个星徽槽；头像费用背景为白／绿／蓝／紫／金，并有费用文字。详情可查看固有与特殊新增羁绊，已激活羁绊可展开查看贡献者；任务列表保留未完成项目。
+
+参数或任务改变后，最近一次有效方案保留并标记为过期，方案条件及所选任务可查看。新求解无结果、错误或取消时，旧方案明确标为上次有效结果。页面错误不将错误方案当作可用结果，语言切换不会触发重新求解。
+
+界面提示有简体中文和英文，角色、星徽及羁绊名称沿用当前中文快照。空任务、非法配置、Worker 异常与超时无结果均有反馈。本版模型和特殊规则限制仍然适用。
+
+## 控制台使用
 
 使用项目要求的 Node.js 24.x（最低 24.12）与 npm，按锁文件安装依赖后，从仓库根目录执行：
 
@@ -97,6 +111,36 @@ npm run extract:currency-wars -- --root ../TurnBasedGameData
 
 提取要求来源是干净的 Git 根目录且 HEAD 等于锁定 Commit，不 fetch 或切分支，只写本工具的快照和 Manifest；**不会写入或清空任务文件**。Manifest 记录输入文件 SHA-256、来源、转换版本、规则说明、统计和输出哈希。提取后审阅变更并执行快照检查、相关测试。生成 JSON 用固定序列化，不能交给 Prettier 改写。
 
+### 独立展示数据
+
+网页另用 `data/currency-wars/visuals.json` 和 `visuals-manifest.json`，没有修改算法快照或 `RoleForm`。费用来自同一来源 Commit 的 `GridFightRoleBasicInfo.Rarity`，通过 `GridFightShopPrice.BuyGoldStar1` 确认 1–5 费对应关系；按形态 ID 保存，银狼 LV.999、景元的多种配置可以共用头像但费用不同。布洛妮娅的平局工具状态使用其基础配置费用。
+
+头像使用 `RoleForm.avatarId`，星徽使用从装备 ID 查得的 `Emblem.traitId`；所有映射检查现有本地文件，运行 URL 兼容 `BASE_URL`。图片失败会显示中性占位并保留名称。费用仅用于展示，从不进入请求或优化目标。
+
+展示 Manifest 保存来源文件、算法快照、输出和映射图片的 SHA-256。只有显式生成命令读取上游，不更改已有图片、算法数据或任务。普通检查、测试和构建使用仓库内展示数据：
+
+```bash
+npm run extract:currency-wars-visuals -- --root ../TurnBasedGameData
+npm run validate:currency-wars-visuals
+```
+
+### Worker 与 WASM
+
+浏览器 Worker 调用同一 `solveCurrencyWars`，通过 `createHighsSolver(loader)` 仅替换 HiGHS 加载方法。求解选项、状态解释、解码与独立验证没有另写一套。每次运行通过结构化消息传递请求与结果，带运行 ID，旧实例响应不会覆盖新状态。
+
+Vite 以 ES module 打包 Worker，通过 `highs/runtime?url` 输出带哈希的本地 WASM；浏览器适配器向 HiGHS 提供 `locateFile`。WASM 只在用户发起求解时由 Worker 初始化，不从 CDN 下载。根路径与子路径构建均可使用。
+
+构建时可能看到 highs 包中受环境分支保护的 `node:module` 外置化提示，以及同包静态／动态导入提示；浏览器分支不会执行 Node 加载逻辑，也没有添加 Node polyfill。用以下探针实际执行构建产物和 WASM，不能仅凭 build 成功判断初始化可用：
+
+```bash
+npm run build
+npm run verify:currency-wars-browser
+npm run build -- --base /hsr/ --outDir .cache/currency-wars-subpath
+npm run verify:currency-wars-browser -- --dist .cache/currency-wars-subpath --base /hsr/
+```
+
+探针在独立 Node 线程的无 Node 全局 VM 中执行真实浏览器 Worker 代码，fetch 只读取本地构建的 WASM，验证结果及主线程心跳；它不启动浏览器，不等同于浏览器人工验收。HiGHS 许可证逐字保留于 `public/third-party/highs-LICENSE.txt` 并进入静态产物。
+
 ## 核心接口与验证
 
 `src/tools/currency-wars/` 提供 `Snapshot`、`Task`、`OptimizationRequest`、`Lineup`、`Evaluation` 和 `OptimizationResult` 类型，以及纯函数 `buildModel`、`evaluateLineup` 和异步 `solveCurrencyWars`。请求携带任务、槽位、预算、专家开关与时限；确定阵容携带形态 ID、星徽 ID 和可选领航员目标形态 ID。
@@ -114,3 +158,16 @@ npm run lint
 ```
 
 实现经过与本轮性能观测见[中文实施报告](investigations/currency-wars-v1-implementation.md)。
+
+## 网页人工验收
+
+通过 `npm run dev` 和根路径／子路径构建的 Preview 分别检查：
+
+1. 首页入口与 `/currency-wars` 直接访问、刷新正常；默认值与全部 25 项任务一致。
+2. 实际开始求解，确认 Worker/WASM 无 404，求解时仍能滚动、修改条件和切换语言。
+3. 取消后再次求解、离开页面后返回，确认旧响应不会覆盖新结果。
+4. 修改条件后旧方案有过期提示；无结果或错误时保留方案明确标为上次有效结果。
+5. 核对头像、费用颜色、三个星徽槽及特殊角色说明；临时阻止图片请求时无破损图标且名称仍可读。
+6. 在简中／英文、1440px／1024px／390px 下检查两栏／纵向布局、任务滚动、长名称和键盘焦点。
+
+网页实现与验证边界见[UI MVP 实施报告](investigations/currency-wars-ui-mvp-implementation.md)。
