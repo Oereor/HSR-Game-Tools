@@ -109,26 +109,31 @@ workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并
 
 以下定义以 [package.json 的 scripts](../package.json) 为准，按变更选择检查，不作为每次任务的完整执行清单。
 
-| 命令                                 | 用途                                                                |
-| ------------------------------------ | ------------------------------------------------------------------- |
-| `npm ci`                             | 按锁文件安装依赖                                                    |
-| `npm run dev` / `npm run preview`    | 本地开发 / 预览已有构建                                             |
-| `npm run type-check`                 | Vue、应用与工具配置的 TypeScript 检查                               |
-| `npm test`                           | Vitest 确定性单元测试                                               |
-| `npm run lint`                       | ESLint，只检查、不自动修复                                          |
-| `npm run format:check`               | 按现有忽略项检查 Prettier 格式                                      |
-| `npm run format`                     | 全仓格式写入，仅在明确需要时执行                                    |
-| `npm run validate:i18n`              | 校验双语消息结构、参数与语法                                        |
-| `npm run validate:game-data`         | 校验快照、Manifest、来源锁定、文件哈希及图片                        |
-| `npm run validate:planner-templates` | 校验人工审阅的方案模板和双语介绍                                    |
-| `npm run build`                      | 将现有应用和快照构建至 dist，不生成游戏数据                         |
-| `npm run update:game-data`           | 显式数据更新；参数和前提见[游戏数据维护](game-data.md#显式更新流程) |
-| `npm run bench:engine`               | 可选的引擎性能探针，不设机器相关硬阈值                              |
+| 命令                                   | 用途                                                                |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| `npm ci`                               | 按锁文件安装依赖                                                    |
+| `npm run dev` / `npm run preview`      | 本地开发 / 预览已有构建                                             |
+| `npm run type-check`                   | Vue、应用与工具配置的 TypeScript 检查                               |
+| `npm test`                             | Vitest 确定性单元测试                                               |
+| `npm run lint`                         | ESLint，只检查、不自动修复                                          |
+| `npm run format:check`                 | 按现有忽略项检查 Prettier 格式                                      |
+| `npm run format`                       | 全仓格式写入，仅在明确需要时执行                                    |
+| `npm run validate:i18n`                | 校验双语消息结构、参数与语法                                        |
+| `npm run validate:game-data`           | 校验快照、Manifest、来源锁定、文件哈希及图片                        |
+| `npm run validate:planner-templates`   | 校验人工审阅的方案模板和双语介绍                                    |
+| `npm run build`                        | 将现有应用和快照构建至 dist，不生成游戏数据                         |
+| `npm run update:game-data`             | 显式数据更新；参数和前提见[游戏数据维护](game-data.md#显式更新流程) |
+| `npm run update:warp-catalog`          | 显式读取锁定的本地 TurnBasedGameData，生成独立 Warp 目录            |
+| `npm run generate:warp-schema`         | 从本仓库目录和人工 JSONC 生成本地补全 Schema                        |
+| `npm run find:warp-item -- <名称或ID>` | 离线查询双语名称／内部 ID，可加 `--kind`、`--rarity`                |
+| `npm run build:warp-data`              | 验证人工配置后显式发布裁剪的 Warp 快照                              |
+| `npm run validate:warp-data`           | 只读核对 Warp 目录、配置、Schema、Manifest 和快照                   |
+| `npm run bench:engine`                 | 可选的引擎性能探针，不设机器相关硬阈值                              |
 
 ## 上游仓库与网络
 
 正常安装、开发、测试和构建不读取相邻的 HSR-Database、TurnBasedGameData 或 StarRailRes，也不触发下载、生成或旧站构建钩子。
-只有显式更新游戏快照时需要与 Source Lock 匹配的 StarRailRes 本地来源；其他仓库用于只读调查与来源追溯。
+排轴数据显式更新需要与 Source Lock 匹配的 StarRailRes；Warp Catalog 显式更新需要其独立 Source Lock 匹配的 TurnBasedGameData。其他 Warp 命令仅消费仓库内文件，维护步骤见[Warp 数据基础设施](game-data.md#warp-数据基础设施)。HSR-Database 继续只用于只读调查与来源追溯。
 
 维护者当前本地网络使用 `http://127.0.0.1:7890` 系统代理；这不是所有使用者必须具备的环境。
 需要该代理时，可仅对本次安装指定参数：

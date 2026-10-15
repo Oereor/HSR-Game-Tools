@@ -1,0 +1,37 @@
+{
+  "configurationStatus": "incomplete",
+  "counts": {
+    "items": 0,
+    "pending": 5,
+    "readyBanners": 0,
+    "sharedPools": 0
+  },
+  "files": {
+    "snapshot.json": {
+      "bytes": 78,
+      "sha256": "391ff828342329ae95db77bfcb678f6d06a1fa7e091fe90da2fc0e476a11c654"
+    }
+  },
+  "generatorVersion": 1,
+  "inputs": {
+    "catalogManifest": {
+      "bytes": 44401,
+      "sha256": "c9bb782a9d085cf80125b7ef7625c5189bb3532a753c2c2ece2c1f9d2dcec5ab"
+    },
+    "config": {
+      "bytes": 1103,
+      "sha256": "9d30132e4298611e7ed0651e4ce7adf16090bd4d9bcede392e40ea61113dceb4"
+    },
+    "schema": {
+      "bytes": 93090,
+      "sha256": "09ab91a6fa8d0767e9e23c4372c3be2beedf77c9115e7ee80ae781cdfa721155"
+    }
+  },
+  "schemaVersion": 1,
+  "source": {
+    "commit": "312b4597691e0a29cf9828a15b592757dba86949",
+    "repository": "https://github.com/DimbreathBot/TurnBasedGameData",
+    "schemaVersion": 1,
+    "transformVersion": 1
+  }
+}

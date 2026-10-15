@@ -49,3 +49,8 @@
 ## 通用离场与批量预设
 
 - [离场、事件变速与卡厄斯兰那预设](action-planner-off-field-khaslana-preset.md)：AG 冻结、事件独立速度基数、跨节点原子提交、Version 3 兼容与人工验收清单。
+
+## Warp Simulator
+
+- [Phase 0 架构与概率模型调查](warp-simulator/phase-0-investigation.md)：旧实现取证、来源与规则证据边界。
+- [Phase 1 数据基础设施](warp-simulator/phase-1-data-foundation.md)：独立轻量目录、人工 JSONC、IntelliSense、验证和静态快照。

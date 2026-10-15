@@ -1,0 +1,28 @@
+{
+  "$schema": "./schema/banner-config.schema.json",
+  "schemaVersion": 1,
+  "sourceCommit": "312b4597691e0a29cf9828a15b592757dba86949",
+  // Catalog entries are NOT an eligibility list. Add only reviewed, evidenced lists.
+  // Create a shared pool first, regenerate the schema, then reference its ID in a banner.
+  "sharedPools": [],
+  "banners": [],
+  "pending": [
+    {
+      "kind": "event-avatar",
+      "reason": "待维护者核实 GachaID、五星 UP、三个四星 UP 和完整候选名单及来源。",
+    },
+    {
+      "kind": "event-light-cone",
+      "reason": "待维护者核实 GachaID、五星 UP、三个四星 UP 和完整候选名单及来源。",
+    },
+    {
+      "kind": "fate-avatar",
+      "reason": "待维护者核实 GachaID、五星 UP 和完整候选名单及来源；不填写四星 UP。",
+    },
+    {
+      "kind": "fate-light-cone",
+      "reason": "待维护者核实 GachaID、五星 UP 和完整候选名单及来源；不填写四星 UP。",
+    },
+    { "kind": "ordinary", "reason": "待维护者核实完整候选名单及来源；不填写 UP。" },
+  ],
+}

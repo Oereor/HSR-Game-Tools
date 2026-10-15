@@ -5,7 +5,14 @@ import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
 
 export default defineConfigWithVueTs(
   { files: ['**/*.{ts,vue}'] },
-  globalIgnores(['.cache/**', '.game-data-*/**', 'dist/**', 'dist-subpath/**', 'node_modules/**']),
+  globalIgnores([
+    '.cache/**',
+    '.game-data-*/**',
+    '.warp-data-*/**',
+    'dist/**',
+    'dist-subpath/**',
+    'node_modules/**',
+  ]),
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
   { files: ['tests/**/*.ts'], rules: { '@typescript-eslint/no-explicit-any': 'off' } },
