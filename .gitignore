@@ -28,6 +28,8 @@ test-results/
 .game-data-backup/
 .warp-data-staging/
 .warp-data-backup/
+.warp-visuals-staging/
+.warp-visuals-backup/
 
 # Local deployment state
 .vercel/

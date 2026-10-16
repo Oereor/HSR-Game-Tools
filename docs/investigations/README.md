@@ -52,6 +52,8 @@
 
 ## Warp Simulator
 
+- [Phase 1F 视觉资源与 UI](warp-simulator/phase-1f-visual-refinement.md)：离线图片提取、横向结果卡、双侧抽屉、五列历史与验证证据。
+
 - [Phase 1E 可交互 UI](warp-simulator/phase-1e-ui-implementation.md)：页面内会话、星缘选择、结果／历史、资源复用及人工验收清单。
 - [Phase 1D 纯引擎开发](warp-simulator/phase-1d-engine-implementation.md)：v0.3 模型、严格卡池解析、原子状态转移与独立概率验证。
 - [Phase 1C 多工具项目结构重构](warp-simulator/phase-1c-project-restructuring.md)：工具目录归属、已有本地卡池配置保护、数据完整性与迁移验收。

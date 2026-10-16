@@ -3,14 +3,19 @@ import { useI18n } from 'vue-i18n'
 import { BookOpen, UserRound } from '@lucide/vue'
 import type { ItemPresentation } from '../model/presentation'
 import { useWarpPortrait } from '../composables/useWarpPortrait'
-const props = defineProps<{ item: ItemPresentation }>()
+const props = defineProps<{ item: ItemPresentation; artwork?: boolean }>()
 const { t } = useI18n()
-const { source, fail } = useWarpPortrait(() => props.item.portraitUrl)
+const { source, fail } = useWarpPortrait(() =>
+  props.artwork ? props.item.artworkUrl : (props.item.portraitUrl ?? props.item.artworkUrl),
+)
 </script>
 
 <template>
-  <span class="warp-visual">
-    <img v-if="source" :src="source" :alt="item.name" width="256" height="256" @error="fail" />
+  <span
+    class="warp-visual"
+    :class="{ 'warp-artwork': artwork, 'warp-cone': item.kind === 'light-cone' }"
+  >
+    <img v-if="source" :src="source" :alt="item.name" @error="fail" />
     <span
       v-else
       class="warp-visual-fallback"
@@ -36,6 +41,15 @@ const { source, fail } = useWarpPortrait(() => props.item.portraitUrl)
   height: 100%;
   min-width: 0;
   overflow: hidden;
+}
+.warp-artwork.warp-cone {
+  padding: 8px 12px;
+}
+.warp-artwork:not(.warp-cone) img {
+  object-position: center;
+}
+.warp-cone img {
+  object-position: center;
 }
 img {
   width: 100%;

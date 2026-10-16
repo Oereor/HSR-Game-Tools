@@ -408,7 +408,10 @@
       "pagination": "History pages",
       "previous": "Previous page",
       "next": "Next page",
-      "page": "Page {current} / {total}"
+      "page": "Page {current} / {total}",
+      "name": "Name",
+      "kind": "Type",
+      "rarity": "Rarity"
     },
     "reset": {
       "group": "Reset current pity group",
@@ -425,7 +428,8 @@
       "rarity": "{count} stars",
       "path": "Path",
       "element": "Type",
-      "unknown": "—"
+      "unknown": "—",
+      "notApplicable": "Not applicable"
     },
     "path": {
       "Elation": "Elation",
@@ -457,6 +461,27 @@
       "invalid-state": "The pity state is invalid. No results were committed.",
       "invalid-rng": "Invalid random value. Results were not committed; pity and history were kept.",
       "rng-threw": "Random generation failed. Results were not committed; pity and history were kept."
+    },
+    "panels": {
+      "controls": "Warp controls",
+      "closeControls": "Close warp controls",
+      "closeHistory": "Close warp history",
+      "ready": "Ready to warp"
+    },
+    "itemKind": {
+      "avatar": "Character",
+      "light-cone": "Light Cone",
+      "unknown": "Unknown type"
+    },
+    "details": {
+      "title": "Item details",
+      "open": "View details: {summary}",
+      "close": "Close item details",
+      "summary": "{name}, {kind}, {rarity}-star, Path: {path}, Element: {element}",
+      "source": "Warp source",
+      "eventUp": "UP hit on this pull",
+      "pity": "5-star pity count on this pull",
+      "record": "Record ID"
     }
   },
   "currencyWars": {

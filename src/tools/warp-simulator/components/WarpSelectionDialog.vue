@@ -16,7 +16,12 @@ const props = defineProps<{
   valid: boolean
   presentation: ReturnType<typeof createPresentation>
 }>()
-const emit = defineEmits<{ cancel: []; confirm: []; 'update:draft': [ids: string[]] }>()
+const emit = defineEmits<{
+  cancel: []
+  confirm: []
+  'update:draft': [ids: string[]]
+  'after-hide': []
+}>()
 const { t, locale } = useI18n()
 const query = ref('')
 watch(
@@ -35,6 +40,7 @@ const candidates = computed(() =>
 <template>
   <Dialog
     :visible="visible"
+    @after-hide="emit('after-hide')"
     modal
     :draggable="false"
     :header="t('warp.selection.title')"

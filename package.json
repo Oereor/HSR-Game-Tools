@@ -30,7 +30,9 @@
     "generate:warp-schema": "node --import tsx scripts/warp-data/cli.ts generate-schema",
     "find:warp-item": "node --import tsx scripts/warp-data/cli.ts find",
     "validate:warp-data": "node --import tsx scripts/warp-data/cli.ts validate",
-    "build:warp-data": "node --import tsx scripts/warp-data/cli.ts build"
+    "build:warp-data": "node --import tsx scripts/warp-data/cli.ts build",
+    "update:warp-visuals": "node --import tsx scripts/warp-visuals/cli.ts",
+    "validate:warp-visuals": "node --import tsx scripts/warp-visuals/cli.ts --check"
   },
   "dependencies": {
     "@lucide/vue": "1.55.0",

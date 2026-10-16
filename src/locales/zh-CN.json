@@ -408,7 +408,10 @@
       "pagination": "历史分页",
       "previous": "上一页",
       "next": "下一页",
-      "page": "第 {current} / {total} 页"
+      "page": "第 {current} / {total} 页",
+      "name": "名称",
+      "kind": "类别",
+      "rarity": "稀有度"
     },
     "reset": {
       "group": "重置当前保底组",
@@ -425,7 +428,8 @@
       "rarity": "{count} 星",
       "path": "命途",
       "element": "属性",
-      "unknown": "—"
+      "unknown": "—",
+      "notApplicable": "不适用"
     },
     "path": {
       "Elation": "欢愉",
@@ -457,6 +461,27 @@
       "invalid-state": "当前保底状态无效，未提交任何结果。",
       "invalid-rng": "随机数无效，本次结果未提交，保底及历史已保留。",
       "rng-threw": "随机数生成失败，本次结果未提交，保底及历史已保留。"
+    },
+    "panels": {
+      "controls": "跃迁控制",
+      "closeControls": "关闭跃迁控制",
+      "closeHistory": "关闭跃迁历史",
+      "ready": "已就绪"
+    },
+    "itemKind": {
+      "avatar": "角色",
+      "light-cone": "光锥",
+      "unknown": "未知类别"
+    },
+    "details": {
+      "title": "物品详情",
+      "open": "查看详情：{summary}",
+      "close": "关闭物品详情",
+      "summary": "{name}，{kind}，{rarity}星，命途：{path}，属性：{element}",
+      "source": "抽取来源",
+      "eventUp": "当次抽取命中 UP",
+      "pity": "当次五星保底抽数",
+      "record": "记录编号"
     }
   },
   "currencyWars": {

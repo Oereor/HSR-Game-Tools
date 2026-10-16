@@ -10,7 +10,7 @@
 
 其网页的费用与图片清单由独立 `visuals.json`／`visuals-manifest.json` 管理，不扩展算法快照。费用取锁定来源角色配置的 Rarity 并以商店一星购买价格核对，图片使用已存在的角色头像与用户准备的星徽文件；维护命令及哈希边界见[展示数据](currency-wars.md#独立展示数据)。普通运行不解析原始表、不下载或生成图片。
 
-排轴资源 validator 不将货币战争的 `game-assets/emblem/` 当作自己的额外资源，其他清单／哈希／尺寸检查保持严格。排轴显式更新器仍按原有整目录发布流程工作；执行该维护前须保留用户星徽目录，恢复后重新校验货币战争展示 Manifest。本轮没有运行或重构该发布器。
+排轴资源 validator 不将货币战争的 `game-assets/emblem/` 或 Warp 的 `game-assets/warp/` 当作自己的额外资源；各工具负责校验自有命名空间，其他清单／哈希／尺寸检查保持严格。排轴显式更新器仍按原有整目录发布流程工作；执行该维护前须保留用户星徽与 Warp 资源目录，恢复后重新校验两个工具的展示 Manifest。本轮没有运行或重构该发布器。
 
 当前来源分工：
 
@@ -148,8 +148,25 @@ npm run find:warp-item -- light-cone:21000
 
 生成产物可跟踪，只有 staging／backup／cache 被忽略；生成 JSON 使用固定序列化，不交给 Prettier 改写。普通 install、dev、test、build 无上游路径、网络数据请求或自动生成钩子；需要完全离线安装 npm 包时使用已有缓存及 `npm ci --offline`。Warp 纯引擎通过参数接收规范化 Snapshot，由 Resolver 产生抽取上下文；页面入口为懒加载的 `/warp-simulator`，不改变发布配置。
 
-### Warp 展示映射
+### Warp 展示资源
 
-[presentation.json](../src/tools/warp-simulator/data/presentation.json)位于运行时生成目录之外，保存当前 30 名可达角色的命途和已存在图片路径，独立于抽取资格和概率。一次性投影来源是本仓库现有规范化角色／资源快照，文件内记录固定 Commit、文件路径、SHA-256 和 StarRailRes 来源身份；运行时不导入排轴模块，正常构建不重新投影。相关测试核对来源、逐项映射及本地图片存在性。
+独立[展示目录](../src/tools/warp-simulator/data/visuals/)包含 `catalog.json` 和 `manifest.json`，替代 Phase 1E 的手工 `presentation.json`。其输入是当前 Warp Runtime Snapshot 的可达物品，不以完整来源目录作为抽取资格。展示只增补 canonical ID 对应的命途、角色属性、图片及双语图标信息，不改写业务 Snapshot、Banner 或引擎。
 
-本阶段不新增任何游戏图片。当前角色属性、光锥命途及图片仍缺失，由 Adapter 返回缺失值并使用中性占位；不按名称或 ID 拼接资源路径。未来补充映射须使用可追溯来源并单独审阅，不通过修改 Banner 或引擎补齐展示资料。
+[Source Lock](../scripts/warp-visuals/source-lock.json)固定 StarRailRes Commit `dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487` 及转换参数。显式更新读取该 Commit 的 Git 对象，不要求 HEAD 位于该 Commit，也不使用工作区修改／未跟踪内容；指定目录必须是 Git 根且锁定对象存在，不 fetch、不切分支、不写来源仓库。只解析 cn／en 的 characters、light_cones、paths、elements 八份索引，逐项核对 ID、星级与双语身份。
+
+```bash
+npm run update:warp-visuals -- --source local --root "/absolute/path/StarRailRes"
+npm run validate:warp-visuals
+```
+
+命途关联使用 `Warrior`、`Knight`、`Priest` 等内部 ID，名称不是身份键。角色立绘和光锥封面只使用索引给出的已存在路径；必要头像从现有规范化共享资源登记中复用，更新时核对共享 Manifest 的来源 Commit、文件哈希及图片尺寸。运行时不导入排轴模块。
+
+新增图片只写 `public/game-assets/warp/`，以内容及转换参数哈希命名并去重。Sharp 0.35.3 使用 WebP：角色最长边 768、光锥最长边 640，quality 82；命途／属性图标最长边 64、星级图最长边 160，quality 90；统一 alphaQuality 100、等比缩小、不放大、不裁切。当前 86 件物品新增 105 张图片、8,106,256 bytes，复用 30 张头像；这是当前测量，不是固定 Schema 数量。
+
+Manifest 记录源仓库及 Commit、八份索引和所用图片的来源文件／SHA-256／字节数、共享投影来源、业务快照哈希、生成时间、Sharp 与转换版本、输出路径／尺寸／哈希／字节数及缺失诊断。命途和属性名称来自双语索引，物品名称仍来自 Warp Snapshot。属性保留原始六位颜色；对比度修正仅在展示 Adapter 中完成，光锥不生成属性。
+
+缺少图片或来源条目时省略对应映射并记录诊断；图片解码失败、双语身份冲突、共享图片校验失败或无效颜色会中止更新。现有快照继续可用。普通 validator 仅检查仓库内产物，不读相邻仓库、下载、重新编码或修复文件。
+
+更新持有 `.warp-visuals-staging/update.lock`，先在本次 staging 完成完整校验，再备份并替换自有图片目录与展示目录；任何安装失败恢复两者，绝不搬移共享图片目录。回滚失败保留锁、staging 与 `.warp-visuals-backup/`；强制终止也可能留下恢复材料，须人工核对，不盲删。更新前建议停止 dev／preview，多目录替换不提供强杀期间无间隙可用性。
+
+普通 install／dev／test／build 不调用此更新器，测试只使用临时来源夹具。修改 Warp 业务快照或共享资源来源后需显式重新更新展示资源；校验会报告哈希漂移。排轴旧更新器仍整体替换 `public/game-assets/`，运行前须单独备份 `warp/` 与 `emblem/`，恢复后执行各自 validator；本轮未重构或执行该更新器。来源与许可通知继续见[第三方说明](third-party/README.md)，转换记录不改变游戏美术的权利归属。

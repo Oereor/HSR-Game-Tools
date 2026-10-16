@@ -1,6 +1,15 @@
 import type { ToolLocale } from '../../../locales/types'
 import type { WarpSnapshot } from '../data/schema'
 import type { PityState } from '../engine/types'
+import { warpVisualTokens } from '../../../theme/preset'
+import { readableColor } from './color'
+import {
+  emptyDefinitions,
+  safeAssetPath,
+  type VisualCatalog,
+  type VisualDefinitions,
+} from './visual-catalog'
+export type { VisualMetadata, VisualCatalog } from './visual-catalog'
 
 export const PATH_CODES = [
   'Elation',
@@ -22,12 +31,6 @@ export const ELEMENT_CODES = [
   'Quantum',
   'Imaginary',
 ] as const
-export interface VisualMetadata {
-  readonly path?: string
-  readonly element?: string
-  readonly portraitPath?: string
-}
-export type VisualCatalog = Readonly<Record<string, VisualMetadata>>
 export interface ItemPresentation {
   readonly id: string
   readonly name: string
@@ -36,26 +39,34 @@ export interface ItemPresentation {
   readonly path?: string
   readonly element?: string
   readonly portraitUrl?: string
+  readonly artworkUrl?: string
+  readonly pathName?: string
+  readonly pathIconUrl?: string
+  readonly elementName?: string
+  readonly elementIconUrl?: string
+  readonly elementColor?: string
+  readonly elementTextColor?: string
+  readonly starsUrl?: string
 }
 export function portraitUrl(path: string | undefined, base: string): string | undefined {
-  if (
-    !path ||
-    !path.startsWith('game-assets/') ||
-    /[\\:?#%]/.test(path) ||
-    path.split('/').some((part) => !part || part === '.' || part === '..')
-  )
-    return undefined
+  if (!safeAssetPath(path)) return undefined
   return base.replace(/\/?$/, '/') + path
 }
 export function createPresentation(
   snapshot: WarpSnapshot,
   visuals: VisualCatalog = {},
   base = '/',
+  definitions: VisualDefinitions = emptyDefinitions,
 ) {
   const items = new Map(snapshot.items.map((item) => [item.id, item]))
   const item = (id: string, locale: ToolLocale): ItemPresentation => {
     const source = items.get(id),
       visual = visuals[id]
+    const pathDefinition = visual?.path ? definitions.paths[visual.path] : undefined
+    const elementDefinition =
+      source?.kind === 'avatar' && visual?.element
+        ? definitions.elements[visual.element]
+        : undefined
     return {
       id,
       name: source?.names[locale] ?? id,
@@ -72,6 +83,16 @@ export function createPresentation(
           ? visual.element
           : undefined,
       portraitUrl: source ? portraitUrl(visual?.portraitPath, base) : undefined,
+      artworkUrl: source ? portraitUrl(visual?.artworkPath, base) : undefined,
+      pathName: pathDefinition?.names[locale],
+      pathIconUrl: portraitUrl(pathDefinition?.iconPath, base),
+      elementName: elementDefinition?.names[locale],
+      elementIconUrl: portraitUrl(elementDefinition?.iconPath, base),
+      elementColor: elementDefinition?.color,
+      elementTextColor: elementDefinition
+        ? readableColor(elementDefinition.color, warpVisualTokens.surface)
+        : undefined,
+      starsUrl: source ? portraitUrl(definitions.stars[source.rarity], base) : undefined,
     }
   }
   const search = (ids: readonly string[], query: string) => {

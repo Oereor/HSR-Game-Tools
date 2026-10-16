@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Mar-7th/StarRailRes.git",
+  "commit": "dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487",
+  "transform": {
+    "version": 1,
+    "avatarSize": 768,
+    "lightConeSize": 640,
+    "iconSize": 64,
+    "starSize": 160,
+    "quality": 82,
+    "iconQuality": 90,
+    "alphaQuality": 100
+  }
+}

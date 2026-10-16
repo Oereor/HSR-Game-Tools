@@ -1,7 +1,18 @@
 import { definePreset } from '@primeuix/themes'
 import Aura from '@primeuix/themes/aura'
+export const warpVisualTokens = {
+  surface: '#22252b',
+  rarity3: '#69b6f5',
+  rarity4: '#c593ff',
+  rarity5: '#f2cc76',
+} as const
 export const ToolsPreset = definePreset(Aura, {
   primitive: {
+    warpRarity: {
+      3: warpVisualTokens.rarity3,
+      4: warpVisualTokens.rarity4,
+      5: warpVisualTokens.rarity5,
+    },
     event: { 500: '#dfbc66' },
     currencyCost: { 1: '#f1eee7', 2: '#67bd96', 3: '#5fa9e7', 4: '#ae85d7', 5: '#c9a86b' },
     gold: {

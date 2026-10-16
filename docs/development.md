@@ -127,6 +127,8 @@ workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并
 | `npm run generate:warp-schema`         | 从本仓库目录和人工 JSONC 生成本地补全 Schema                        |
 | `npm run find:warp-item -- <名称或ID>` | 离线查询双语名称／内部 ID，可加 `--kind`、`--rarity`                |
 | `npm run build:warp-data`              | 验证人工配置后显式发布裁剪的 Warp 快照                              |
+| `npm run update:warp-visuals`          | 显式从锁定 StarRailRes Git 对象生成 Warp 展示资源                   |
+| `npm run validate:warp-visuals`        | 只读核对 Warp 展示快照、来源、共享图片及自有资源完整性              |
 | `npm run validate:warp-data`           | 只读核对 Warp 目录、配置、Schema、Manifest 和快照                   |
 | `npm run bench:engine`                 | 可选的引擎性能探针，不设机器相关硬阈值                              |
 
@@ -135,7 +137,7 @@ workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并
 货币战争网页入口为 `/currency-wars`，CLI 使用 `npm run currency-wars`。离线算法快照检查用 `npm run validate:currency-wars`，展示数据检查用 `npm run validate:currency-wars-visuals`；显式提取和 Worker/WASM 构建探针见[货币战争指南](currency-wars.md)。这些命令不接入 dev、test 或 build 的数据生成钩子，普通测试不启动浏览器。
 
 正常安装、开发、测试和构建不读取相邻的 HSR-Database、TurnBasedGameData 或 StarRailRes，也不触发下载、生成或旧站构建钩子。
-排轴数据显式更新需要与 Source Lock 匹配的 StarRailRes；Warp Catalog 显式更新需要其独立 Source Lock 匹配的 TurnBasedGameData。其他 Warp 命令仅消费仓库内文件，维护步骤见[Warp 数据基础设施](game-data.md#warp-数据基础设施)。HSR-Database 继续只用于只读调查与来源追溯。
+排轴数据显式更新需要与 Source Lock 匹配的 StarRailRes；Warp Catalog 显式更新需要其独立 Source Lock 匹配的 TurnBasedGameData。Warp 展示更新使用独立 Source Lock 固定的 StarRailRes Git 对象；其他 Warp 命令仅消费仓库内文件，维护步骤见[Warp 数据基础设施](game-data.md#warp-数据基础设施)。HSR-Database 继续只用于只读调查与来源追溯。
 
 维护者当前本地网络使用 `http://127.0.0.1:7890` 系统代理；这不是所有使用者必须具备的环境。
 需要该代理时，可仅对本次安装指定参数：
