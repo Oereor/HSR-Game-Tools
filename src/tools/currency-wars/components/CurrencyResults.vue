@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Check, Minus } from '@lucide/vue'
+import { Check, Minus, CircleCheck, Sparkles } from '@lucide/vue'
 import Tag from 'primevue/tag'
 import Message from 'primevue/message'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import CurrencyRoleCard from './CurrencyRoleCard.vue'
 import CurrencyImage from './CurrencyImage.vue'
+import CurrencyTrait from './CurrencyTrait.vue'
+import { resultSummary } from '../ui/result-summary'
 import { createVisuals, type VisualCatalog, type VisualMember } from '../ui/visuals'
 import type { SolvedAttempt } from '../ui/session'
 import type { Snapshot } from '../types'
@@ -23,6 +25,7 @@ const visuals = computed(() =>
   createVisuals(props.snapshot, props.catalog, import.meta.env.BASE_URL),
 )
 const result = computed(() => props.attempt.result)
+const summary = computed(() => resultSummary(props.attempt))
 const evaluation = computed(() => result.value.evaluation!)
 const lineup = computed(() => result.value.lineup!)
 const members = computed(() =>
@@ -74,26 +77,40 @@ watch(
     <Message v-else-if="historical" severity="info" :closable="false">{{
       t('currencyWars.result.historical')
     }}</Message>
-    <section class="currency-overview" aria-labelledby="currency-result-heading">
-      <h2 id="currency-result-heading" class="sr-only">{{ t('currencyWars.result.title') }}</h2>
-      <p class="currency-completion">
-        <strong>{{ evaluation.completedCount }} / {{ attempt.request.tasks.length }}</strong>
-        <span>{{ t('currencyWars.result.completion') }}</span>
-      </p>
-      <Tag
-        :value="t(`currencyWars.status.${result.status}`)"
-        :severity="result.status === 'optimal' ? 'success' : 'warn'"
-      />
-      <p class="currency-resources">
-        {{
-          t('currencyWars.result.resources', {
-            roles: lineup.members.length,
-            emblems: evaluation.emblemCount,
-            budget: attempt.request.emblemBudget,
-          })
-        }}
-      </p>
+    <section aria-labelledby="currency-lineup-heading">
+      <div class="currency-lineup-heading">
+        <h2 id="currency-lineup-heading">{{ t('currencyWars.result.lineup') }}</h2>
+      </div>
+      <ul class="currency-roster">
+        <CurrencyRoleCard
+          v-for="member in members"
+          :key="member.role.id"
+          :member="member"
+          @inspect="inspect"
+        />
+      </ul>
+      <p v-if="!members.length" class="currency-muted">{{ t('currencyWars.result.noRoles') }}</p>
     </section>
+    <div class="currency-summary" :aria-label="t('currencyWars.result.title')">
+      <Tag severity="secondary" class="currency-summary-tag">
+        <CircleCheck :size="18" class="currency-complete-icon" aria-hidden="true" />
+        <span>{{
+          t('currencyWars.result.completedSummary', {
+            completed: summary.completed,
+            total: summary.tasks,
+          })
+        }}</span>
+      </Tag>
+      <Tag severity="secondary" class="currency-summary-tag">
+        <Sparkles :size="18" class="currency-emblems-icon" aria-hidden="true" />
+        <span>{{
+          t('currencyWars.result.emblemsSummary', { used: summary.emblems, budget: summary.budget })
+        }}</span>
+      </Tag>
+    </div>
+    <Message v-if="result.status === 'feasible'" severity="warn" :closable="false">
+      {{ t('currencyWars.status.feasible') }}
+    </Message>
     <Message
       v-for="warning in evaluation.warnings"
       :key="warning"
@@ -108,28 +125,18 @@ watch(
         )
       }}
     </Message>
-    <section aria-labelledby="currency-lineup-heading">
-      <h2 id="currency-lineup-heading">{{ t('currencyWars.result.lineup') }}</h2>
-      <ul class="currency-roster">
-        <CurrencyRoleCard
-          v-for="member in members"
-          :key="member.role.id"
-          :member="member"
-          @inspect="inspect"
-        />
-      </ul>
-      <p v-if="!members.length" class="currency-muted">{{ t('currencyWars.result.noRoles') }}</p>
-      <ul v-if="specialMembers.length" class="currency-mechanics currency-muted">
-        <li v-for="member in specialMembers" :key="member.role.id">
-          {{ mechanicDescription(member) }}
-        </li>
-      </ul>
-    </section>
     <section aria-labelledby="currency-tasks-heading">
       <h2 id="currency-tasks-heading">{{ t('currencyWars.result.tasks') }}</h2>
       <ul class="currency-task-results">
         <li v-for="task in evaluation.tasks" :key="task.id">
-          <span class="currency-task-name">{{ visuals.trait(task.traitId).name }}</span>
+          <CurrencyTrait
+            class="currency-task-name"
+            :source="visuals.traitUrl(task.traitId)"
+            :name="visuals.trait(task.traitId).name"
+          />
+          <span class="currency-task-description">{{
+            t('currencyWars.result.taskGoal', { count: task.requiredCount })
+          }}</span>
           <span
             class="currency-task-count"
             :aria-label="
@@ -151,6 +158,14 @@ watch(
         </li>
       </ul>
     </section>
+    <details v-if="specialMembers.length" class="currency-disclosure">
+      <summary>{{ t('currencyWars.result.mechanics') }}</summary>
+      <ul v-if="specialMembers.length" class="currency-mechanics currency-muted">
+        <li v-for="member in specialMembers" :key="member.role.id">
+          {{ mechanicDescription(member) }}
+        </li>
+      </ul>
+    </details>
     <details class="currency-disclosure">
       <summary>
         {{ t('currencyWars.result.allActiveTraits', { count: activeTraits.length }) }}
@@ -159,13 +174,16 @@ watch(
         <li v-for="trait in activeTraits" :key="trait.traitId">
           <details>
             <summary>
-              {{
-                t('currencyWars.result.trait', {
-                  name: visuals.trait(trait.traitId).name,
+              <CurrencyTrait
+                :source="visuals.traitUrl(trait.traitId)"
+                :name="visuals.trait(trait.traitId).name"
+              />
+              <span>{{
+                t('currencyWars.result.traitCounts', {
                   count: trait.count,
                   threshold: trait.activeThreshold,
                 })
-              }}
+              }}</span>
             </summary>
             <p class="currency-muted">
               {{
@@ -183,6 +201,7 @@ watch(
     </details>
     <details class="currency-disclosure currency-solve-details">
       <summary>{{ t('currencyWars.result.details') }}</summary>
+      <p>{{ t(`currencyWars.status.${result.status}`) }}</p>
       <p>
         {{
           t('currencyWars.result.conditions', {
@@ -300,33 +319,42 @@ watch(
   gap: 24px;
   min-width: 0;
 }
-.currency-overview {
-  text-align: center;
-  padding: 8px 0;
+.currency-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
-.currency-completion {
-  display: grid;
-  gap: 4px;
-  margin: 0 0 12px;
-}
-.currency-completion strong {
-  font-size: 36px;
-  line-height: 1.2;
+.currency-summary-tag {
+  gap: 10px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-line);
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
-.currency-completion span,
-.currency-resources {
-  font-size: 13px;
-  color: var(--color-muted);
+.currency-complete-icon {
+  color: var(--color-ally);
 }
-.currency-resources {
-  margin: 12px 0 0;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
+.currency-emblems-icon {
+  color: var(--color-accent);
+}
+.currency-lineup-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.currency-lineup-heading h2 {
+  margin: 0;
+}
+.currency-lineup-heading::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: var(--color-line);
 }
 h2 {
-  font-size: 17px;
-  margin: 0 0 12px;
+  font-size: 20px;
+  margin: 0 0 14px;
 }
 .currency-muted,
 .currency-solve-details {
@@ -337,7 +365,9 @@ h2 {
 }
 .currency-roster {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 116px), 1fr));
+  --role-size: 128px;
+  grid-template-columns: repeat(auto-fill, minmax(0, var(--role-size)));
+  justify-content: start;
   gap: 16px 12px;
   padding: 0;
   margin: 0;
@@ -374,18 +404,40 @@ summary {
 }
 .currency-task-results li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 1.4fr) auto auto;
   align-items: center;
   gap: 12px;
-  padding: 8px 0;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--color-line);
   font-size: 13px;
 }
+.currency-task-results {
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.currency-task-results li:last-child {
+  border-bottom: 0;
+}
 .currency-task-name {
+  font-weight: 600;
+}
+.currency-task-description {
+  color: var(--color-muted);
+  font-size: 12px;
   overflow-wrap: anywhere;
+}
+.currency-trait-list summary {
+  --trait-icon-size: 28px;
+}
+.currency-trait-list summary > span:last-child {
+  margin-left: 8px;
+  color: var(--color-muted);
+  font-size: 12px;
 }
 .currency-task-count {
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .currency-task-status {
   display: flex;
@@ -420,12 +472,31 @@ summary {
   height: 32px;
   flex-shrink: 0;
 }
+@media (max-width: 1199px) {
+  .currency-task-results li {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 4px 8px;
+    padding: 8px;
+  }
+  .currency-task-description {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-left: 48px;
+  }
+}
 @media (max-width: 480px) {
   .currency-roster {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 100px), 1fr));
+    --role-size: 104px;
+    gap: 16px 10px;
   }
-  .currency-task-results li {
+  .currency-summary {
     gap: 8px;
+  }
+  .currency-summary-tag {
+    padding: 6px 10px;
+  }
+  .currency-task-status {
+    font-size: 11px;
   }
 }
 </style>

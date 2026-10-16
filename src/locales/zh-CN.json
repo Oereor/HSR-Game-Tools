@@ -510,14 +510,16 @@
       "time": "求解时间上限（秒）",
       "tasks": "目标任务",
       "editTasks": "编辑目标任务",
-      "moreTasks": "另有 {count} 项",
       "advanced": "高级设置",
       "confirmSelection": "确认",
       "cancelSelection": "取消",
       "selection": "已选 {selected} / {total}",
       "selectAll": "全选",
       "clear": "清空",
-      "task": "{name} ≥ {count} 人"
+      "task": "{name} ≥ {count} 人",
+      "limits": "编队限制",
+      "required": "至少 {count} 人",
+      "removeTask": "移除{name}（至少 {count} 人）"
     },
     "validation": {
       "slots": "请选择 11、12 或 13 个槽位。",
@@ -545,8 +547,6 @@
       "title": "求解结果",
       "stale": "配置已更改：下方方案对应上次求解条件，点击“开始求解”后才会更新。",
       "historical": "下方保留上次有效方案，不代表本次求解结果。",
-      "completion": "任务完成",
-      "resources": "{roles} 名角色 · {emblems} / {budget} 枚星徽",
       "details": "求解详情",
       "solverStatus": "求解器原始状态：{status}",
       "objectiveBound": "加权目标上界：{value}",
@@ -558,7 +558,6 @@
       "genericWarning": "本方案存在模型规则警告，请结合当前规则检查。",
       "lineup": "推荐阵容",
       "allActiveTraits": "查看全部激活羁绊（{count}）",
-      "trait": "{name} · {count} 人 · 已激活 {threshold} 人档",
       "contributors": "提供者：{names}",
       "tasks": "目标任务",
       "taskCounts": "要求 {required} 人 · 实际 {actual} 人",
@@ -566,7 +565,12 @@
       "incomplete": "未完成",
       "initial": "配置条件并选择任务后，点击“开始求解”查看角色与星徽方案。",
       "noRoles": "该方案无需上场角色。",
-      "noTraits": "该方案没有已激活羁绊。"
+      "noTraits": "该方案没有已激活羁绊。",
+      "completedSummary": "完成任务 {completed} / {total}",
+      "emblemsSummary": "使用星徽 {used} / {budget}",
+      "taskGoal": "队伍中至少包含 {count} 名该羁绊角色。",
+      "traitCounts": "{count} 人 · 已激活 {threshold} 人档",
+      "mechanics": "特殊机制说明"
     },
     "visual": {
       "missing": "{name}：图片暂不可用",

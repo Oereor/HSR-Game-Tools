@@ -2,6 +2,7 @@ import { isProxy } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { createCurrencyWarsSession } from '../../../src/tools/currency-wars/ui/session'
 import { createTaskSelection } from '../../../src/tools/currency-wars/ui/task-selection'
+import { resultSummary } from '../../../src/tools/currency-wars/ui/result-summary'
 import { loadPageData } from '../../../src/tools/currency-wars/ui/data'
 import type {
   WorkerPort,
@@ -56,6 +57,52 @@ function setup() {
 }
 
 describe('currency-wars page session', () => {
+  it('keeps the displayed summary tied to its request through form edits and failed or cancelled runs', () => {
+    const { session, workers, good } = setup()
+    session.start()
+    workers[0]!.emit(good())
+    const displayed = () => resultSummary(session.lastValid.value!)
+    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
+    session.form.taskIds = [tasks[0]!.id]
+    session.form.emblemBudget = 20
+    expect(session.stale.value).toBe(true)
+    session.start()
+    session.cancel()
+    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
+    session.start()
+    workers[2]!.emit({ status: 'no-result', elapsedSeconds: 0.1 })
+    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
+    session.dispose()
+  })
+
+  it('removes and reselects tasks independently when one trait has multiple thresholds', () => {
+    const sameTrait = [task(2007, 1, 'low'), task(2007, 2, 'high')]
+    const session = createCurrencyWarsSession(snapshot, sameTrait, () => new FakeWorker())
+    const selection = createTaskSelection(
+      sameTrait,
+      () => session.form.taskIds,
+      (ids) => {
+        session.form.taskIds = ids
+      },
+    )
+    selection.remove('low')
+    expect(session.form.taskIds).toEqual(['high'])
+    selection.open()
+    expect(selection.taskIds.value).toEqual(['high'])
+    selection.selectAll()
+    selection.cancel()
+    expect(session.form.taskIds).toEqual(['high'])
+    selection.open()
+    selection.selectAll()
+    selection.confirm()
+    expect(session.form.taskIds).toEqual(['low', 'high'])
+    selection.remove('high')
+    selection.remove('low')
+    expect(session.errors.value).toContain('taskIds')
+    expect(session.start()).toBe(false)
+    session.dispose()
+  })
+
   it('reports a new invalid attempt instead of retaining the preceding cancellation notice', () => {
     const { session, workers } = setup()
     session.start()

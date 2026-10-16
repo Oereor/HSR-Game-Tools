@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, realpath, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import lock from './source-lock.json'
@@ -15,6 +15,14 @@ import { record } from '../../src/tools/currency-wars/validation'
 const hash = (data: string | Buffer) => createHash('sha256').update(data).digest('hex')
 const json = (data: unknown) => JSON.stringify(data, null, 2) + '\n'
 const inputs = ['ExcelOutput/GridFightRoleBasicInfo.json', 'ExcelOutput/GridFightShopPrice.json']
+const assetPaths = (catalog: VisualCatalog) =>
+  [
+    ...new Set([
+      ...Object.values(catalog.portraits),
+      ...Object.values(catalog.emblems),
+      ...Object.values(catalog.traits ?? {}),
+    ]),
+  ].sort()
 
 export async function checkVisualData() {
   const snapshot = await loadSnapshot()
@@ -26,7 +34,7 @@ export async function checkVisualData() {
     !record(manifest) ||
     manifest.repository !== lock.repository ||
     manifest.commit !== lock.commit ||
-    manifest.transformVersion !== 1 ||
+    manifest.transformVersion !== 2 ||
     manifest.visualsSha256 !== hash(bytes) ||
     manifest.snapshotSha256 !== hash(await readFile(path.join(dataDirectory, 'snapshot.json'))) ||
     !record(manifest.assetSha256) ||
@@ -38,9 +46,7 @@ export async function checkVisualData() {
     throw new Error('Currency-wars visual provenance mismatch')
   const catalog: unknown = JSON.parse(bytes.toString('utf8'))
   assertVisualCatalog(catalog, snapshot)
-  const paths = [
-    ...new Set([...Object.values(catalog.portraits), ...Object.values(catalog.emblems)]),
-  ].sort()
+  const paths = assetPaths(catalog)
   if (Object.keys(manifest.assetSha256).length !== paths.length)
     throw new Error('Asset inventory mismatch')
   for (const file of paths)
@@ -94,18 +100,29 @@ async function main() {
   }
   for (const emblem of snapshot.emblems)
     catalog.emblems[String(emblem.traitId)] = `game-assets/emblem/${emblem.traitId}.webp`
+  // These user-provided local images are independent of the locked upstream cost data.
+  const traitDirectory = path.join(projectRoot, 'public/game-assets/currency-war-traits')
+  const available = new Set(
+    await readdir(traitDirectory).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') return []
+      throw error
+    }),
+  )
+  catalog.traits = Object.fromEntries(
+    snapshot.traits
+      .filter((trait) => available.has(`${trait.id}.webp`))
+      .map((trait) => [String(trait.id), `game-assets/currency-war-traits/${trait.id}.webp`]),
+  )
   assertVisualCatalog(catalog, snapshot)
   const assetSha256: Record<string, string> = {}
-  for (const file of [
-    ...new Set([...Object.values(catalog.portraits), ...Object.values(catalog.emblems)]),
-  ].sort())
+  for (const file of assetPaths(catalog))
     assetSha256[file] = hash(await readFile(path.join(projectRoot, 'public', file)))
   const bytes = json(catalog)
   const manifest = {
     repository: lock.repository,
     commit: lock.commit,
     gameVersion: lock.gameVersion,
-    transformVersion: 1,
+    transformVersion: 2,
     inputSha256,
     snapshotSha256: hash(await readFile(path.join(dataDirectory, 'snapshot.json'))),
     visualsSha256: hash(bytes),
@@ -114,6 +131,7 @@ async function main() {
       'Costs use source role Rarity, checked against GridFightShopPrice.BuyGoldStar1.',
       'Costs are keyed by form ID and never enter optimization.',
       'Portraits use avatarId; emblem images use traitId.',
+      'Trait icons use stable traitId and user-provided local currency-war-traits files, not the upstream cost source. Missing icons are omitted and use a neutral UI fallback.',
     ],
   }
   await mkdir(dataDirectory, { recursive: true })

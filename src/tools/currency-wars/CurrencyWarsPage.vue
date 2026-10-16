@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onUnmounted, reactive, ref } from 'vue'
+import { computed, nextTick, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Network, Play, Square } from '@lucide/vue'
+import { Network, Play, Square, X, Plus, Info } from '@lucide/vue'
 import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import InputNumber from 'primevue/inputnumber'
@@ -10,6 +10,8 @@ import Dialog from 'primevue/dialog'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import CurrencyResults from './components/CurrencyResults.vue'
+import CurrencyTrait from './components/CurrencyTrait.vue'
+import { createVisuals } from './ui/visuals'
 import { loadPageData } from './ui/data'
 import { createCurrencyWarsSession, type FormField } from './ui/session'
 import { createTaskSelection } from './ui/task-selection'
@@ -27,6 +29,9 @@ const state = data
   ? reactive(createCurrencyWarsSession(data.snapshot, data.tasks, createBrowserWorker))
   : undefined
 onUnmounted(() => state?.dispose())
+const visuals = data
+  ? createVisuals(data.snapshot, data.visuals, import.meta.env.BASE_URL)
+  : undefined
 const advancedOpen = ref(false)
 const selection = reactive(
   createTaskSelection(
@@ -53,6 +58,16 @@ const groups = computed(() =>
     .filter((group) => group.tasks.length),
 )
 const traitName = (id: number) => data!.snapshot.traits.find((trait) => trait.id === id)!.name
+async function removeTask(id: string, event: Event) {
+  const row = (event.currentTarget as HTMLElement).closest('li')
+  const next =
+    row?.nextElementSibling?.querySelector<HTMLButtonElement>('button') ??
+    row?.previousElementSibling?.querySelector<HTMLButtonElement>('button') ??
+    row?.closest('section')?.querySelector<HTMLButtonElement>('.currency-edit-tasks')
+  selection.remove(id)
+  await nextTick()
+  next?.focus()
+}
 const invalid = (field: FormField) => !!state?.attempted && state.errors.includes(field)
 function start() {
   state?.start()
@@ -88,102 +103,142 @@ const announcement = computed(() =>
     }}</Message>
     <div v-else class="currency-workspace">
       <section class="currency-controls" aria-labelledby="currency-config-heading">
-        <h2 id="currency-config-heading">{{ t('currencyWars.form.title') }}</h2>
+        <h2 id="currency-config-heading" class="sr-only">{{ t('currencyWars.form.title') }}</h2>
         <form @submit.prevent="start">
-          <div class="currency-field">
-            <span id="currency-slots-label">{{ t('currencyWars.form.slots') }}</span>
-            <SelectButton
-              v-model="state.form.slots"
-              :options="slotOptions"
-              option-label="label"
-              option-value="value"
-              :allow-empty="false"
-              aria-labelledby="currency-slots-label"
-              :invalid="invalid('slots')"
-            />
-            <p v-if="invalid('slots')" class="currency-error">
-              {{ t('currencyWars.validation.slots') }}
-            </p>
-          </div>
-          <div class="currency-field">
-            <label for="currency-budget">{{ t('currencyWars.form.budget') }}</label>
-            <InputNumber
-              v-model="state.form.emblemBudget"
-              input-id="currency-budget"
-              :min="12"
-              :max-fraction-digits="0"
-              :use-grouping="false"
-              :invalid="invalid('emblemBudget')"
-              :pt="{
-                pcInputText: {
-                  root: {
-                    'aria-describedby': invalid('emblemBudget')
-                      ? 'currency-budget-help currency-budget-error'
-                      : 'currency-budget-help',
-                  },
-                },
-              }"
-            />
-            <p id="currency-budget-help" class="currency-help">
-              {{ t('currencyWars.form.budgetHint') }}
-            </p>
-            <p v-if="invalid('emblemBudget')" id="currency-budget-error" class="currency-error">
-              {{ t('currencyWars.validation.emblemBudget') }}
-            </p>
-          </div>
-          <div class="currency-field">
-            <div class="currency-check">
-              <Checkbox
-                v-model="state.form.includeExperts"
-                input-id="currency-experts"
-                binary
-                :pt="{ input: { 'aria-describedby': 'currency-experts-help' } }"
-              /><label for="currency-experts">{{ t('currencyWars.form.experts') }}</label>
-            </div>
-            <p id="currency-experts-help" class="currency-help">
-              {{ t('currencyWars.form.expertsHint') }}
-            </p>
-          </div>
-          <div class="currency-task-heading">
-            <h3>{{ t('currencyWars.form.tasks') }}</h3>
-            <span>{{
-              t('currencyWars.form.selection', {
-                selected: state.form.taskIds.length,
-                total: data.tasks.length,
-              })
-            }}</span>
-          </div>
-          <ul v-if="selectedTasks.length" class="currency-task-summary">
-            <li v-for="task in selectedTasks.slice(0, 3)" :key="task.id">
-              {{
-                t('currencyWars.form.task', {
-                  name: traitName(task.traitId),
-                  count: task.requiredCount,
+          <section class="currency-task-config" aria-labelledby="currency-selected-heading">
+            <div class="currency-task-heading">
+              <h3 id="currency-selected-heading">{{ t('currencyWars.form.tasks') }}</h3>
+              <span aria-live="polite">{{
+                t('currencyWars.form.selection', {
+                  selected: state.form.taskIds.length,
+                  total: data.tasks.length,
                 })
-              }}
-            </li>
-            <li v-if="selectedTasks.length > 3" class="currency-help">
-              {{ t('currencyWars.form.moreTasks', { count: selectedTasks.length - 3 }) }}
-            </li>
-          </ul>
-          <p v-if="!state.form.taskIds.length" id="currency-task-error" class="currency-error">
-            {{ t('currencyWars.validation.taskIds') }}
-          </p>
-          <Button
-            type="button"
-            size="small"
-            severity="secondary"
-            outlined
-            :label="t('currencyWars.form.editTasks')"
-            :aria-describedby="!state.form.taskIds.length ? 'currency-task-error' : undefined"
-            @click="selection.open"
-          />
+              }}</span>
+            </div>
+            <ul
+              v-if="selectedTasks.length"
+              class="currency-task-summary"
+              tabindex="0"
+              :aria-label="t('currencyWars.form.tasks')"
+            >
+              <li v-for="task in selectedTasks" :key="task.id">
+                <div class="currency-selected-task">
+                  <CurrencyTrait
+                    :source="visuals?.traitUrl(task.traitId)"
+                    :name="traitName(task.traitId)"
+                  />
+                  <span class="currency-task-threshold">{{
+                    t('currencyWars.form.required', { count: task.requiredCount })
+                  }}</span>
+                </div>
+                <Button
+                  type="button"
+                  text
+                  rounded
+                  severity="secondary"
+                  class="currency-remove-task"
+                  :aria-label="
+                    t('currencyWars.form.removeTask', {
+                      name: traitName(task.traitId),
+                      count: task.requiredCount,
+                    })
+                  "
+                  @click="removeTask(task.id, $event)"
+                >
+                  <template #icon><X :size="15" aria-hidden="true" /></template>
+                </Button>
+              </li>
+            </ul>
+            <p v-else id="currency-task-error" class="currency-error">
+              {{ t('currencyWars.validation.taskIds') }}
+            </p>
+            <Button
+              type="button"
+              severity="secondary"
+              outlined
+              class="currency-edit-tasks"
+              :label="t('currencyWars.form.editTasks')"
+              :aria-describedby="!state.form.taskIds.length ? 'currency-task-error' : undefined"
+              @click="selection.open"
+            >
+              <template #icon><Plus :size="16" aria-hidden="true" /></template>
+            </Button>
+          </section>
+          <section class="currency-limits" aria-labelledby="currency-limits-heading">
+            <h3 id="currency-limits-heading">{{ t('currencyWars.form.limits') }}</h3>
+            <div class="currency-field">
+              <span id="currency-slots-label">{{ t('currencyWars.form.slots') }}</span>
+              <SelectButton
+                v-model="state.form.slots"
+                :options="slotOptions"
+                option-label="label"
+                option-value="value"
+                :allow-empty="false"
+                aria-labelledby="currency-slots-label"
+                :invalid="invalid('slots')"
+                :aria-describedby="invalid('slots') ? 'currency-slots-error' : undefined"
+              />
+              <p v-if="invalid('slots')" id="currency-slots-error" class="currency-error">
+                {{ t('currencyWars.validation.slots') }}
+              </p>
+            </div>
+            <div class="currency-field">
+              <label for="currency-budget">{{ t('currencyWars.form.budget') }}</label>
+              <InputNumber
+                v-model="state.form.emblemBudget"
+                input-id="currency-budget"
+                :min="12"
+                :max-fraction-digits="0"
+                :use-grouping="false"
+                :invalid="invalid('emblemBudget')"
+                :pt="{
+                  pcInputText: {
+                    root: {
+                      'aria-describedby': invalid('emblemBudget')
+                        ? 'currency-budget-help currency-budget-error'
+                        : 'currency-budget-help',
+                    },
+                  },
+                }"
+              />
+              <p id="currency-budget-help" class="currency-help">
+                {{ t('currencyWars.form.budgetHint') }}
+              </p>
+              <p v-if="invalid('emblemBudget')" id="currency-budget-error" class="currency-error">
+                {{ t('currencyWars.validation.emblemBudget') }}
+              </p>
+            </div>
+          </section>
           <details
             class="currency-advanced"
             :open="advancedOpen"
             @toggle="advancedOpen = ($event.target as HTMLDetailsElement).open"
           >
             <summary>{{ t('currencyWars.form.advanced') }}</summary>
+            <div class="currency-check currency-experts">
+              <Checkbox
+                v-model="state.form.includeExperts"
+                input-id="currency-experts"
+                binary
+                :pt="{ input: { 'aria-describedby': 'currency-experts-help' } }"
+              />
+              <label for="currency-experts">{{ t('currencyWars.form.experts') }}</label>
+              <Button
+                type="button"
+                text
+                rounded
+                severity="secondary"
+                class="currency-help-button"
+                :aria-label="t('currencyWars.form.expertsHint')"
+                v-tooltip.focus.top="t('currencyWars.form.expertsHint')"
+                :title="t('currencyWars.form.expertsHint')"
+              >
+                <template #icon><Info :size="15" aria-hidden="true" /></template>
+              </Button>
+              <span id="currency-experts-help" class="sr-only">{{
+                t('currencyWars.form.expertsHint')
+              }}</span>
+            </div>
             <div class="currency-field">
               <label for="currency-time">{{ t('currencyWars.form.time') }}</label>
               <InputNumber
@@ -305,12 +360,15 @@ const announcement = computed(() =>
                   },
                 }"
               />
-              <label :for="`currency-task-${task.id}`">{{
-                t('currencyWars.form.task', {
-                  name: traitName(task.traitId),
-                  count: task.requiredCount,
-                })
-              }}</label>
+              <label :for="`currency-task-${task.id}`">
+                <CurrencyTrait
+                  :source="visuals?.traitUrl(task.traitId)"
+                  :name="traitName(task.traitId)"
+                />
+                <span class="currency-option-threshold">{{
+                  t('currencyWars.form.required', { count: task.requiredCount })
+                }}</span>
+              </label>
             </div>
           </fieldset>
         </div>
@@ -402,9 +460,9 @@ h1 {
 }
 .currency-workspace {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
+  grid-template-columns: 320px minmax(0, 1fr);
   align-items: start;
-  gap: 28px;
+  gap: 24px;
 }
 .currency-controls {
   padding: 20px;
@@ -456,7 +514,7 @@ h2 {
 }
 h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 17px;
   color: var(--color-ink);
 }
 .currency-selection-actions {
@@ -465,12 +523,77 @@ h3 {
   margin: 4px 0;
 }
 .currency-task-summary {
-  padding: 0;
+  padding: 0 4px;
   margin: 12px 0;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   list-style: none;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+}
+.currency-task-summary li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 6px 0;
   font-size: 13px;
-  line-height: 1.8;
-  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--color-line);
+}
+.currency-task-summary li:last-child {
+  border-bottom: 0;
+}
+.currency-selected-task {
+  min-width: 0;
+}
+.currency-task-threshold {
+  display: block;
+  margin: -3px 0 0 48px;
+  font-size: 11px;
+  color: var(--color-muted);
+}
+.currency-remove-task {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+}
+.currency-edit-tasks {
+  width: 100%;
+  margin-top: 8px;
+}
+.currency-limits {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-line);
+}
+.currency-limits h3 {
+  margin-bottom: 16px;
+}
+.currency-limits .currency-field:last-child {
+  margin-bottom: 0;
+}
+.currency-experts {
+  margin-top: 12px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.currency-help-button {
+  width: 28px;
+  height: 28px;
+}
+.currency-task-option label {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.currency-option-threshold {
+  flex-shrink: 0;
+  color: var(--color-muted);
+  font-size: 12px;
 }
 .currency-selection-toolbar,
 .currency-selection-footer {
@@ -526,6 +649,8 @@ h3 {
 }
 .currency-advanced {
   margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-line);
   font-size: 13px;
 }
 .currency-advanced summary {
@@ -554,7 +679,13 @@ h3 {
   padding: 64px 20px;
   line-height: 1.8;
 }
-@media (max-width: 1039px) {
+@media (min-width: 960px) and (max-width: 1199px) {
+  .currency-workspace {
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 20px;
+  }
+}
+@media (max-width: 959px) {
   .currency-workspace {
     grid-template-columns: minmax(0, 1fr);
   }

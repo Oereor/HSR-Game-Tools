@@ -64,3 +64,5 @@
 
 - [控制台原型 V1 实现报告](currency-wars-v1-implementation.md)：锁定数据、MILP、特殊羁绊边界、性能与检查记录。
 - [网页 UI MVP 实现报告](currency-wars-ui-mvp-implementation.md)：Worker/WASM 接入、纯展示元数据、资源映射与人工验收边界。
+
+- [网页 UI 优化实施报告](currency-wars-ui-polish-implementation.md)：任务优先配置、阵容优先结果、真实羁绊图标、回归检查与本地人工验收清单。

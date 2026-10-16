@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { UserRound, ShieldQuestion } from '@lucide/vue'
 import { useCurrencyImage } from '../ui/useImage'
-const props = defineProps<{ source?: string; name: string; kind: 'role' | 'emblem' }>()
+const props = defineProps<{ source?: string; name: string; kind: 'role' | 'emblem' | 'trait' }>()
 const { t } = useI18n()
 const { source: visibleSource, fail } = useCurrencyImage(() => props.source)
 </script>

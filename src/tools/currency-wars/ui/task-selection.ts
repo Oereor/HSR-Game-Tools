@@ -28,6 +28,7 @@ export function createTaskSelection(
     open,
     cancel,
     confirm,
+    remove: (id: string) => applySelection(readSelection().filter((selected) => selected !== id)),
     selectAll: () => (taskIds.value = tasks.map((task) => task.id)),
     clear: () => (taskIds.value = []),
   }

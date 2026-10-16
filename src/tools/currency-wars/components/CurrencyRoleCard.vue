@@ -24,6 +24,9 @@ const { t } = useI18n()
         <span class="currency-role-cost">{{
           t('currencyWars.visual.cost', { cost: member.cost })
         }}</span>
+        <span v-if="member.role.expert" class="currency-role-expert">{{
+          t('currencyWars.visual.expert')
+        }}</span>
       </Button>
       <div
         class="currency-emblem-row"
@@ -34,11 +37,23 @@ const { t } = useI18n()
           :key="index"
           class="currency-emblem-slot"
           :class="{ 'currency-emblem-empty': !emblem }"
-          :title="emblem?.name ?? t('currencyWars.visual.emptySlot')"
-          v-tooltip="emblem?.traitName"
+          :title="
+            emblem
+              ? t('currencyWars.visual.emblemTrait', { name: emblem.name, trait: emblem.traitName })
+              : t('currencyWars.visual.emptySlot')
+          "
+          v-tooltip.focus.top="
+            emblem
+              ? t('currencyWars.visual.emblemTrait', { name: emblem.name, trait: emblem.traitName })
+              : undefined
+          "
           :tabindex="emblem ? 0 : undefined"
-          :role="emblem ? undefined : 'img'"
-          :aria-label="emblem?.name ?? t('currencyWars.visual.emptySlot')"
+          role="img"
+          :aria-label="
+            emblem
+              ? t('currencyWars.visual.emblemTrait', { name: emblem.name, trait: emblem.traitName })
+              : t('currencyWars.visual.emptySlot')
+          "
         >
           <CurrencyImage v-if="emblem" :source="emblem.url" :name="emblem.name" kind="emblem" />
         </span>
@@ -61,9 +76,8 @@ const { t } = useI18n()
   text-align: center;
 }
 .currency-role-visual {
-  --portrait-size: 116px;
   --emblem-gap: 3px;
-  width: var(--portrait-size);
+  width: 100%;
   max-width: 100%;
   flex-shrink: 0;
 }
@@ -85,12 +99,26 @@ const { t } = useI18n()
 .currency-role-cost {
   position: absolute;
   left: 3px;
-  bottom: 3px;
+  top: 4px;
   padding: 1px 5px;
   border-radius: 3px;
   background: var(--p-surface-950);
   color: var(--p-surface-50);
   font-size: 11px;
+}
+.currency-role-expert {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  background: var(--p-surface-950);
+  color: var(--p-surface-50);
+}
+.currency-emblem-slot:focus-visible {
+  outline: 2px solid var(--p-primary-color);
+  outline-offset: 2px;
 }
 .currency-emblem-row {
   display: grid;
@@ -117,6 +145,8 @@ h3 {
   margin: 3px 0 0;
   font-size: 13px;
   font-weight: 600;
+  line-height: 1.4;
+  max-width: 100%;
   overflow-wrap: anywhere;
 }
 p {

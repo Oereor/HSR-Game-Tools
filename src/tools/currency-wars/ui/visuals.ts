@@ -6,12 +6,14 @@ export interface VisualCatalog {
   costs: Record<string, RoleCost>
   portraits: Record<string, string>
   emblems: Record<string, string>
+  traits?: Record<string, string>
 }
 
 export type VisualMember = ReturnType<ReturnType<typeof createVisuals>['member']>
 
 export function assetUrl(path: string | undefined, base: string): string | undefined {
-  if (!path || !/^game-assets\/(character|emblem)\/[0-9]+\.webp$/.test(path)) return undefined
+  if (!path || !/^game-assets\/(character|emblem|currency-war-traits)\/[0-9]+\.webp$/.test(path))
+    return undefined
   return base.replace(/\/?$/, '/') + path
 }
 
@@ -46,6 +48,7 @@ export function createVisuals(snapshot: Snapshot, catalog: VisualCatalog, base =
     member,
     role: (id: string): RoleForm | undefined => roles.get(id),
     trait: (id: number) => traits.get(id)!,
+    traitUrl: (id: number) => assetUrl(catalog.traits?.[String(id)], base),
   }
 }
 
@@ -65,4 +68,14 @@ export function assertVisualCatalog(
   for (const emblem of snapshot.emblems)
     if (!assetUrl(c.emblems[String(emblem.traitId)], '/'))
       throw new Error('Missing emblem visual: ' + emblem.id)
+  if (c.traits !== undefined) {
+    if (!c.traits || typeof c.traits !== 'object' || Array.isArray(c.traits))
+      throw new Error('Invalid trait visuals')
+    for (const [id, path] of Object.entries(c.traits))
+      if (
+        !snapshot.traits.some((trait) => String(trait.id) === id) ||
+        path !== `game-assets/currency-war-traits/${id}.webp`
+      )
+        throw new Error('Invalid trait visual: ' + id)
+  }
 }

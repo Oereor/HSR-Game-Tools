@@ -510,14 +510,16 @@
       "time": "Solver time limit (seconds)",
       "tasks": "Target tasks",
       "editTasks": "Edit target tasks",
-      "moreTasks": "{count} more tasks",
       "advanced": "Advanced settings",
       "confirmSelection": "Confirm",
       "cancelSelection": "Cancel",
       "selection": "Selected {selected} / {total}",
       "selectAll": "Select all",
       "clear": "Clear",
-      "task": "{name} ≥ {count} members"
+      "task": "{name} ≥ {count} members",
+      "limits": "Lineup constraints",
+      "required": "At least {count}",
+      "removeTask": "Remove {name} (at least {count})"
     },
     "validation": {
       "slots": "Select 11, 12 or 13 slots.",
@@ -545,8 +547,6 @@
       "title": "Solve result",
       "stale": "Configuration changed: the lineup below uses the previous solve conditions. Start a new solve to update it.",
       "historical": "The previous valid lineup is retained below. It is not the result of the current attempt.",
-      "completion": "Tasks completed",
-      "resources": "{roles} characters · {emblems} / {budget} emblems",
       "details": "Solve details",
       "solverStatus": "Raw solver status: {status}",
       "objectiveBound": "Weighted objective bound: {value}",
@@ -558,7 +558,6 @@
       "genericWarning": "This lineup has a model warning. Review the current rules.",
       "lineup": "Recommended lineup",
       "allActiveTraits": "View all active traits ({count})",
-      "trait": "{name} · {count} members · Active tier: {threshold}",
       "contributors": "Contributors: {names}",
       "tasks": "Target tasks",
       "taskCounts": "Required {required} · Actual {actual}",
@@ -566,7 +565,12 @@
       "incomplete": "Incomplete",
       "initial": "Configure conditions and select tasks, then start solving to view a character and emblem lineup.",
       "noRoles": "This lineup does not require any characters.",
-      "noTraits": "This lineup has no active traits."
+      "noTraits": "This lineup has no active traits.",
+      "completedSummary": "Tasks completed {completed} / {total}",
+      "emblemsSummary": "Emblems used {used} / {budget}",
+      "taskGoal": "Include at least {count} characters with this trait.",
+      "traitCounts": "{count} characters · Tier {threshold} active",
+      "mechanics": "Special mechanics"
     },
     "visual": {
       "missing": "{name}: image unavailable",
