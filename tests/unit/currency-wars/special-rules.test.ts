@@ -59,7 +59,7 @@ describe('Issue 4 special rules', () => {
   )
 
   it.each([8007, 8009])(
-    'inherits additional emblem Classes once and rejects conflicts on Himeko for target %s',
+    'inherits only the two granted Classes and preserves equipment conflicts for target %s',
     async (id) => {
       const own = id === 8007 ? 2004 : 2012
       const other = id === 8007 ? 2012 : 2004
@@ -77,13 +77,22 @@ describe('Issue 4 special rules', () => {
       const evaluation = evaluateLineup(snapshot, input, lineup)
       expect(evaluation.valid, evaluation.errors.join('; ')).toBe(true)
       expect(evaluation.members.find((m) => m.formId === navigator.id)!.extraTraits.sort()).toEqual(
-        [2004, 2007, 2012],
+        [2004, 2012],
       )
-      expect(evaluation.completedCount).toBe(2)
+      expect(evaluation.members.find((m) => m.formId === String(id))!.finalTraits).toEqual([
+        1001,
+        own,
+        other,
+        2007,
+      ])
+      expect(evaluation.traits.find((t) => t.traitId === 2007)!.contributors).toEqual([String(id)])
+      expect(evaluation.traits.find((t) => t.traitId === other)!.count).toBe(2)
+      expect(evaluation.completedCount).toBe(1)
       const result = await solveCurrencyWars(snapshot, input)
-      expect(result.evaluation!.completedCount, result.message).toBe(2)
-      expect(result.evaluation!.emblemCount).toBe(2)
-      for (const conflict of [own, other, 2007]) {
+      expect(result.status, result.message).toBe('optimal')
+      expect(result.evaluation!.completedCount).toBe(1)
+      expect(result.evaluation!.emblemCount).toBe(1)
+      for (const conflict of [own, other]) {
         const bad = {
           members: [{ ...lineup.members[0]!, emblemIds: [emblem(conflict)] }, lineup.members[1]!],
         }
@@ -93,6 +102,18 @@ describe('Issue 4 special rules', () => {
           ),
         ).toBe(true)
       }
+      const sharedEmblem = evaluateLineup(
+        snapshot,
+        { ...input, emblemBudget: 3 },
+        {
+          members: [{ ...lineup.members[0]!, emblemIds: [emblem(2007)] }, lineup.members[1]!],
+        },
+      )
+      expect(sharedEmblem.valid, sharedEmblem.errors.join('; ')).toBe(true)
+      expect(sharedEmblem.completedCount).toBe(2)
+      expect(
+        sharedEmblem.members.find((m) => m.formId === navigator.id)!.extraTraits.sort(),
+      ).toEqual([2004, 2012])
       const innateConflict = toy([
         { ...navigator, innateTraits: [...navigator.innateTraits, other] },
         snapshot.roles[1]!,

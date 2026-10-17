@@ -120,20 +120,15 @@ export function buildModel(
       const q = expression([qName, 1])
       targetVars.set(target.id, qName)
       constrain(sum(q, [train, -1]), '<=', 0)
-      for (const trait of snapshot.traits.filter((t) => t.type === 'class')) {
-        if (navigatorGrantedTraits(target).includes(trait.id)) {
-          inherited.set(trait.id, [...(inherited.get(trait.id) ?? []), q])
-          continue
-        }
-        const targetPresence = direct.get(target.id)!.get(trait.id)!
-        if (!targetPresence.size) continue
-        // k is exactly (target chosen AND target has this Class trait), not an optional copy.
-        const k = expression([variable(), 1])
-        constrain(sum(k, [q, -1]), '<=', 0)
-        constrain(sum(k, [targetPresence, -1]), '<=', 0)
-        constrain(sum(k, [q, -1], [targetPresence, -1]), '>=', -1)
-        inherited.set(trait.id, [...(inherited.get(trait.id) ?? []), k])
-      }
+      // Emblems may qualify the target, but only innate Classes and explicit grants are copied.
+      const inheritable = new Set([
+        ...target.innateTraits.filter((id) =>
+          snapshot.traits.some((t) => t.id === id && t.type === 'class'),
+        ),
+        ...navigatorGrantedTraits(target),
+      ])
+      for (const traitId of inheritable)
+        inherited.set(traitId, [...(inherited.get(traitId) ?? []), q])
     }
     constrain(
       sum(...[...targetVars.values()].map((v) => expression([v, 1])), [selected(navigator), -1]),

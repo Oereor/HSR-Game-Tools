@@ -141,6 +141,28 @@ describe('complete configuration search', () => {
     }
   })
 
+  it('ranks three independently verified configurations without copying target emblem Classes', async () => {
+    const snapshot = toy([navigator, role(1, [1001, 2007])], [2007, 2008])
+    const input = request([task(2007, 2), task(2008, 2)], { emblemBudget: 1 })
+    const batch = await solveCurrencyWarsBatch(snapshot, input)
+    expect(batch.status, batch.message).toBe('optimal')
+    expect(batch.solutions).toHaveLength(3)
+    expect(new Set(batch.solutions.map((s) => s.signature)).size).toBe(3)
+    expect(batch.maximumCompletedProven).toBe(true)
+    expect(batch.minimumEmblemsProven).toBe(true)
+    expect(batch.solutions.map((s) => s.evaluation.objective)).toEqual([7, 6, 6])
+    for (const solution of batch.solutions) {
+      const independent = evaluateLineup(snapshot, input, solution.lineup)
+      expect(independent.valid, independent.errors.join('; ')).toBe(true)
+      expect(independent).toEqual(solution.evaluation)
+      expect(independent.completedCount).toBe(1)
+      expect(independent.tasks.find((t) => t.traitId === 2008)!.completed).toBe(false)
+      expect(independent.traits.find((t) => t.traitId === 2008)!.count).toBeLessThanOrEqual(1)
+      const himeko = independent.members.find((m) => m.formId === navigator.id)!
+      expect(himeko.extraTraits).not.toContain(2008)
+    }
+  })
+
   it('accepts the same roster with different emblem assignments and different navigator targets', async () => {
     const snapshot = toy([role(1, [2007]), role(2, [2007])], [2008])
     const batch = await solveCurrencyWarsBatch(

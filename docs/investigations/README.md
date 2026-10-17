@@ -64,6 +64,8 @@
 
 ## Currency Wars Optimizer
 
+- [Issue #6 领航员继承 Hotfix](currency-wars-navigator-inheritance-hotfix.md)：只继承固有流派与开拓者明确授予的流派，保留星徽目标资格，并记录回归及验证结果。
+
 - [Issue #4 特殊规则与多方案实施报告](currency-wars-issue-4-implementation.md)：开拓者继承、候选资格、完整配置排除、批次状态、真实快照 Benchmark 与人工验收。
 
 - [控制台原型 V1 实现报告](currency-wars-v1-implementation.md)：锁定数据、MILP、特殊羁绊边界、性能与检查记录。

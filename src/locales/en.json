@@ -582,7 +582,7 @@
       "innateTitle": "Innate traits",
       "extraTitle": "Traits granted by mechanics",
       "navigatorTarget": "Navigator target: {name}",
-      "trailblazerInheritance": "Targeting Trailblazer grants Himeko both Energy and Elation, plus other emblem Classes. Trailblazer’s own innate traits still depend on their front/back form."
+      "trailblazerInheritance": "Targeting Trailblazer always grants Himeko both Energy and Elation, without copying Classes added by the target’s emblems. Trailblazer’s own innate traits still depend on their front/back form, and their equipped emblems work as usual."
     },
     "termination": {
       "complete": "Requested plans found",

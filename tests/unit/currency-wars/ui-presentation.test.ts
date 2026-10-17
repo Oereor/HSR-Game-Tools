@@ -8,7 +8,7 @@ import {
 } from '../../../src/tools/currency-wars/ui/visuals'
 import { checkVisualData } from '../../../scripts/currency-wars/visual-data'
 import { evaluateLineup } from '../../../src/tools/currency-wars/evaluate'
-import { request } from './helpers'
+import { request, task } from './helpers'
 
 describe('currency-wars UI data and visuals', () => {
   it('maps real trait IDs to local icons, supports subpaths and permits absent icons and legacy catalogs', () => {
@@ -80,16 +80,33 @@ describe('currency-wars UI data and visuals', () => {
     const lineup = {
       members: [
         { formId: '1510', emblemIds: [], navigatorTarget: '1218' },
-        { formId: '1218', emblemIds: [35051001] },
+        { formId: '1218', emblemIds: [35051001, 35052010, 35052012] },
       ],
     }
-    const evaluated = evaluateLineup(snapshot, request(), lineup)
+    const evaluated = evaluateLineup(
+      snapshot,
+      request([task(2007, 2), task(2010, 2), task(2012, 2)], { emblemBudget: 3 }),
+      lineup,
+    )
+    expect(evaluated.valid, evaluated.errors.join('; ')).toBe(true)
     const member = createVisuals(snapshot, visuals).member(
       lineup.members[0]!,
       evaluated.members[0]!,
     )
     expect(member.target!.name).toBe('椒丘')
     expect(member.extra.map((t) => t.id)).toEqual([2007, 2008])
+    expect(evaluated.tasks.map((t) => [t.actualCount, t.completed])).toEqual([
+      [2, true],
+      [1, false],
+      [1, false],
+    ])
+    for (const traitId of [2010, 2012])
+      expect(evaluated.traits.find((t) => t.traitId === traitId)!.contributors).toEqual(['1218'])
+    const target = createVisuals(snapshot, visuals).member(
+      lineup.members[1]!,
+      evaluated.members[1]!,
+    )
+    expect(target.slots.map((slot) => slot!.traitId)).toEqual([1001, 2010, 2012])
   })
 
   it('registers a lazy page, keeps image-error fallback, and never calls the solver from the page thread', () => {

@@ -68,7 +68,7 @@ describe('independent lineup evaluator', () => {
       )
   })
 
-  it('inherits every Class, including emblem Classes; never Camp or Unique', () => {
+  it('inherits every innate Class from an emblem-qualified target, never emblem Classes, Camp or Unique', () => {
     const s = toy([navigator, role(1218, [1008, 2007, 2008, 3001])], [1001, 1007, 2004])
     const evaluation = evaluateLineup(s, request([], { emblemBudget: 3 }), {
       members: [
@@ -78,14 +78,50 @@ describe('independent lineup evaluator', () => {
     })
     expect(evaluation.valid).toBe(true)
     expect(evaluation.members.find((m) => m.formId === '1510')!.extraTraits.sort()).toEqual([
-      2004, 2007, 2008,
+      2007, 2008,
     ])
-    expect(evaluation.members.find((m) => m.formId === '1510')!.finalTraits).not.toEqual(
-      expect.arrayContaining([1008, 1007, 3001]),
-    )
+    for (const traitId of [1008, 1007, 3001])
+      expect(evaluation.members.find((m) => m.formId === '1510')!.finalTraits).not.toContain(
+        traitId,
+      )
     expect(evaluation.traits.find((t) => t.traitId === 1008)!.count).toBe(1)
     expect(evaluation.traits.find((t) => t.traitId === 3001)!.count).toBe(1)
+    expect(evaluation.traits.find((t) => t.traitId === 2004)).toMatchObject({
+      count: 1,
+      contributors: ['1218'],
+    })
+    expect(evaluation.members.find((m) => m.formId === '1218')!.finalTraits).toEqual(
+      expect.arrayContaining([1008, 2007, 2008, 3001, 1001, 1007, 2004]),
+    )
   })
+
+  it.each([
+    { innate: [1001, 2007], equipped: [2004], inherited: [2007] },
+    { innate: [2007], equipped: [1001, 2004], inherited: [2007] },
+    { innate: [1001], equipped: [2004], inherited: [] },
+    { innate: [1008], equipped: [1001, 2004], inherited: [] },
+    { innate: [1001, 2007, 2008], equipped: [2004], inherited: [2007, 2008] },
+  ])(
+    'copies only innate Classes: $innate with emblems $equipped',
+    ({ innate, equipped, inherited }) => {
+      const snapshot = toy([navigator, role(1, innate)], equipped)
+      const evaluation = evaluateLineup(snapshot, request(), {
+        members: [
+          { formId: navigator.id, emblemIds: [], navigatorTarget: '1' },
+          { formId: '1', emblemIds: equipped.map(emblem) },
+        ],
+      })
+      expect(evaluation.valid, evaluation.errors.join('; ')).toBe(true)
+      expect(evaluation.members.find((m) => m.formId === navigator.id)!.extraTraits).toEqual(
+        inherited,
+      )
+      expect(evaluation.members.find((m) => m.formId === '1')!.finalTraits).toEqual([
+        ...innate,
+        ...equipped,
+      ])
+      expect(evaluation.traits.find((t) => t.traitId === 2004)!.contributors).toEqual(['1'])
+    },
+  )
 
   it('rejects missing train qualification, self/missing targets, ordinary-role targets and duplicate inheritance', () => {
     const s = toy([navigator, role(1, [2007]), role(2, [1001, 2007])], [2007])
