@@ -8,6 +8,7 @@
   },
   "scripts": {
     "currency-wars": "node --import tsx scripts/currency-wars/cli.ts",
+    "bench:currency-wars": "node --import tsx scripts/currency-wars/benchmark.ts",
     "extract:currency-wars": "node --import tsx scripts/currency-wars/data.ts",
     "validate:currency-wars": "node --import tsx scripts/currency-wars/data.ts --check",
     "extract:currency-wars-visuals": "node --import tsx scripts/currency-wars/visual-data.ts",

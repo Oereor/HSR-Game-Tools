@@ -11,6 +11,12 @@ export interface VisualCatalog {
 
 export type VisualMember = ReturnType<ReturnType<typeof createVisuals>['member']>
 
+export function sortVisualMembers(members: VisualMember[]): VisualMember[] {
+  return [...members].sort(
+    (a, b) => b.cost - a.cost || (a.role.id < b.role.id ? -1 : a.role.id > b.role.id ? 1 : 0),
+  )
+}
+
 export function assetUrl(path: string | undefined, base: string): string | undefined {
   if (!path || !/^game-assets\/(character|emblem|currency-war-traits)\/[0-9]+\.webp$/.test(path))
     return undefined
@@ -47,6 +53,7 @@ export function createVisuals(snapshot: Snapshot, catalog: VisualCatalog, base =
   return {
     member,
     role: (id: string): RoleForm | undefined => roles.get(id),
+    portrait: (id: string) => assetUrl(catalog.portraits[String(roles.get(id)?.avatarId)], base),
     trait: (id: number) => traits.get(id)!,
     traitUrl: (id: number) => assetUrl(catalog.traits?.[String(id)], base),
   }

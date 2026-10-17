@@ -62,6 +62,8 @@
 
 ## Currency Wars Optimizer
 
+- [Issue #4 特殊规则与多方案实施报告](currency-wars-issue-4-implementation.md)：开拓者继承、候选资格、完整配置排除、批次状态、真实快照 Benchmark 与人工验收。
+
 - [控制台原型 V1 实现报告](currency-wars-v1-implementation.md)：锁定数据、MILP、特殊羁绊边界、性能与检查记录。
 - [网页 UI MVP 实现报告](currency-wars-ui-mvp-implementation.md)：Worker/WASM 接入、纯展示元数据、资源映射与人工验收边界。
 

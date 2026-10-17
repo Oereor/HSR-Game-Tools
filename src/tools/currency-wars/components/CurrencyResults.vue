@@ -6,33 +6,51 @@ import Tag from 'primevue/tag'
 import Message from 'primevue/message'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
+import SelectButton from 'primevue/selectbutton'
 import CurrencyRoleCard from './CurrencyRoleCard.vue'
 import CurrencyImage from './CurrencyImage.vue'
 import CurrencyTrait from './CurrencyTrait.vue'
 import { resultSummary } from '../ui/result-summary'
-import { createVisuals, type VisualCatalog, type VisualMember } from '../ui/visuals'
+import {
+  createVisuals,
+  sortVisualMembers,
+  type VisualCatalog,
+  type VisualMember,
+} from '../ui/visuals'
 import type { SolvedAttempt } from '../ui/session'
-import type { Snapshot } from '../types'
+import type { CandidateSolution, Snapshot } from '../types'
 const props = defineProps<{
   snapshot: Snapshot
   catalog: VisualCatalog
   attempt: SolvedAttempt
+  solution: CandidateSolution
+  selectedIndex: number
   stale: boolean
   historical: boolean
 }>()
+const emit = defineEmits<{ select: [index: number] }>()
 const { t, n } = useI18n()
 const visuals = computed(() =>
   createVisuals(props.snapshot, props.catalog, import.meta.env.BASE_URL),
 )
-const result = computed(() => props.attempt.result)
-const summary = computed(() => resultSummary(props.attempt))
+const batch = computed(() => props.attempt.result)
+const result = computed(() => props.solution)
+const solutionOptions = computed(() =>
+  batch.value.solutions.map((_, index) => ({
+    value: index,
+    label: t('currencyWars.result.solution', { index: index + 1 }),
+  })),
+)
+const summary = computed(() => resultSummary(props.attempt, result.value))
 const evaluation = computed(() => result.value.evaluation!)
 const lineup = computed(() => result.value.lineup!)
 const members = computed(() =>
-  lineup.value.members.map((member) =>
-    visuals.value.member(
-      member,
-      evaluation.value.members.find((m) => m.formId === member.formId)!,
+  sortVisualMembers(
+    lineup.value.members.map((member) =>
+      visuals.value.member(
+        member,
+        evaluation.value.members.find((m) => m.formId === member.formId)!,
+      ),
     ),
   ),
 )
@@ -62,7 +80,7 @@ function mechanicDescription(member: VisualMember) {
     : t('currencyWars.visual.bronyaUnassigned', { name: member.role.name })
 }
 watch(
-  () => props.attempt,
+  () => props.solution,
   () => {
     roleDetailsOpen.value = false
   },
@@ -80,6 +98,17 @@ watch(
     <section aria-labelledby="currency-lineup-heading">
       <div class="currency-lineup-heading">
         <h2 id="currency-lineup-heading">{{ t('currencyWars.result.lineup') }}</h2>
+        <SelectButton
+          v-if="solutionOptions.length > 1"
+          :model-value="selectedIndex"
+          :options="solutionOptions"
+          option-label="label"
+          option-value="value"
+          :allow-empty="false"
+          size="small"
+          :aria-label="t('currencyWars.result.chooseSolution')"
+          @update:model-value="emit('select', $event)"
+        />
       </div>
       <ul class="currency-roster">
         <CurrencyRoleCard
@@ -108,7 +137,7 @@ watch(
         }}</span>
       </Tag>
     </div>
-    <Message v-if="result.status === 'feasible'" severity="warn" :closable="false">
+    <Message v-if="!result.originalOptimal" severity="warn" :closable="false">
       {{ t('currencyWars.status.feasible') }}
     </Message>
     <Message
@@ -185,13 +214,24 @@ watch(
                 })
               }}</span>
             </summary>
-            <p class="currency-muted">
-              {{
+            <ul
+              class="currency-contributors currency-muted"
+              :aria-label="
                 t('currencyWars.result.contributors', {
                   names: trait.contributors.map((id) => visuals.role(id)?.name ?? id).join(' · '),
                 })
-              }}
-            </p>
+              "
+            >
+              <li v-for="id in trait.contributors" :key="id">
+                <span class="currency-contributor-image"
+                  ><CurrencyImage
+                    :source="visuals.portrait(id)"
+                    :name="visuals.role(id)?.name ?? id"
+                    kind="role"
+                /></span>
+                <span>{{ visuals.role(id)?.name ?? id }}</span>
+              </li>
+            </ul>
           </details>
         </li>
       </ul>
@@ -201,7 +241,38 @@ watch(
     </details>
     <details class="currency-disclosure currency-solve-details">
       <summary>{{ t('currencyWars.result.details') }}</summary>
-      <p>{{ t(`currencyWars.status.${result.status}`) }}</p>
+      <p>
+        {{
+          t(
+            result.originalOptimal
+              ? 'currencyWars.result.originalOptimal'
+              : 'currencyWars.result.candidateOnly',
+          )
+        }}
+      </p>
+      <p>
+        {{
+          t('currencyWars.result.proof', {
+            count: t(
+              batch.maximumCompletedProven
+                ? 'currencyWars.result.proven'
+                : 'currencyWars.result.unproven',
+            ),
+            emblems: t(
+              batch.minimumEmblemsProven
+                ? 'currencyWars.result.proven'
+                : 'currencyWars.result.unproven',
+            ),
+          })
+        }}
+      </p>
+      <p>
+        {{
+          t('currencyWars.result.batchEnd', {
+            reason: t(`currencyWars.termination.${batch.termination}`),
+          })
+        }}
+      </p>
       <p>
         {{
           t('currencyWars.result.conditions', {
@@ -234,12 +305,20 @@ watch(
       <p>
         {{
           t('currencyWars.result.elapsed', {
+            seconds: n(batch.totalElapsedSeconds, { maximumFractionDigits: 3 }),
+          })
+        }}
+      </p>
+      <p>
+        {{
+          t('currencyWars.result.candidateElapsed', {
             seconds: n(result.elapsedSeconds, { maximumFractionDigits: 3 }),
+            found: n(result.foundAtSeconds, { maximumFractionDigits: 3 }),
           })
         }}
       </p>
       <p v-if="result.solverStatus">
-        {{ t('currencyWars.result.solverStatus', { status: result.solverStatus }) }}
+        {{ t('currencyWars.result.subproblemStatus', { status: result.solverStatus }) }}
       </p>
       <p v-if="Number.isFinite(result.objectiveBound)">
         {{ t('currencyWars.result.objectiveBound', { value: result.objectiveBound }) }}
@@ -247,7 +326,6 @@ watch(
       <p v-if="Number.isFinite(result.gap)">
         {{ t('currencyWars.result.gap', { value: result.gap }) }}
       </p>
-      <p v-if="result.message">{{ result.message }}</p>
     </details>
     <Dialog
       v-model:visible="roleDetailsOpen"
@@ -263,15 +341,16 @@ watch(
         <p v-if="selectedMember.role.position">
           {{ t(`currencyWars.visual.${selectedMember.role.position}`) }}
         </p>
-        <p>
-          {{
-            t('currencyWars.visual.innate', {
-              names:
-                selectedMember.innate.map((trait) => trait.name).join(' · ') ||
-                t('currencyWars.none'),
-            })
-          }}
-        </p>
+        <h3>{{ t('currencyWars.visual.innateTitle') }}</h3>
+        <div class="currency-detail-traits">
+          <CurrencyTrait
+            v-for="trait in selectedMember.innate"
+            :key="trait.id"
+            :source="visuals.traitUrl(trait.id)"
+            :name="trait.name"
+          />
+          <span v-if="!selectedMember.innate.length">{{ t('currencyWars.none') }}</span>
+        </div>
         <h3>{{ t('currencyWars.visual.wornEmblems') }}</h3>
         <ul class="currency-detail-emblems">
           <li v-for="(emblem, index) in selectedMember.slots" :key="index">
@@ -286,14 +365,32 @@ watch(
             <span v-else class="currency-muted">{{ t('currencyWars.visual.emptySlot') }}</span>
           </li>
         </ul>
-        <p>
-          {{
-            t('currencyWars.visual.extra', {
-              names:
-                selectedMember.extra.map((trait) => trait.name).join(' · ') ||
-                t('currencyWars.none'),
-            })
-          }}
+        <h3>{{ t('currencyWars.visual.extraTitle') }}</h3>
+        <div class="currency-detail-traits">
+          <CurrencyTrait
+            v-for="trait in selectedMember.extra"
+            :key="trait.id"
+            :source="visuals.traitUrl(trait.id)"
+            :name="trait.name"
+          />
+          <span v-if="!selectedMember.extra.length">{{ t('currencyWars.none') }}</span>
+        </div>
+        <div v-if="selectedMember.target" class="currency-navigator-target">
+          <span class="currency-detail-emblem-image"
+            ><CurrencyImage
+              :source="visuals.portrait(selectedMember.target.id)"
+              :name="selectedMember.target.name"
+              kind="role"
+          /></span>
+          <span>{{
+            t('currencyWars.visual.navigatorTarget', { name: selectedMember.target.name })
+          }}</span>
+        </div>
+        <p
+          v-if="selectedMember.target && ['8007', '8009'].includes(selectedMember.target.id)"
+          class="currency-muted"
+        >
+          {{ t('currencyWars.visual.trailblazerInheritance') }}
         </p>
         <p v-if="selectedMember.role.mechanic">{{ mechanicDescription(selectedMember) }}</p>
         <p class="currency-muted">
@@ -341,6 +438,7 @@ watch(
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
   margin-bottom: 14px;
 }
 .currency-lineup-heading h2 {
@@ -457,6 +555,36 @@ summary {
 .currency-role-details h3 {
   font-size: 13px;
   margin: 16px 0 8px;
+}
+.currency-detail-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  --trait-icon-size: 24px;
+}
+.currency-contributors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 8px 0 0;
+  margin: 0;
+  list-style: none;
+}
+.currency-contributors li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.currency-contributor-image {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.currency-navigator-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
 }
 .currency-detail-emblems {
   display: grid;

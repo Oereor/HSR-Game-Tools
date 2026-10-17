@@ -507,7 +507,7 @@
       "expertsHint": "Makes experts eligible; does not require selecting them.",
       "expertsAllowed": "Experts allowed",
       "expertsExcluded": "Experts excluded",
-      "time": "Solver time limit (seconds)",
+      "time": "Total search budget (seconds)",
       "tasks": "Target tasks",
       "editTasks": "Edit target tasks",
       "advanced": "Advanced settings",
@@ -520,7 +520,8 @@
       "limits": "Lineup constraints",
       "required": "At least {count}",
       "requiredCompact": "≥ {count}",
-      "removeTask": "Remove {name} (at least {count})"
+      "removeTask": "Remove {name} (at least {count})",
+      "timeHint": "All plans share this budget, including initialization; verified best candidates are kept when time expires."
     },
     "validation": {
       "slots": "Select 11, 12 or 13 slots.",
@@ -554,7 +555,7 @@
       "gap": "Optimality gap: {value}",
       "conditions": "Lineup conditions: {slots} slots · Emblem budget {budget} · {experts} · Limit {time}s · {tasks} tasks",
       "selectedTasks": "Tasks selected for this lineup: {names}",
-      "elapsed": "Solve time: {seconds}s",
+      "elapsed": "Total batch time: {seconds}s",
       "bronyaWarning": "Bronya’s two trait counts are tied and the game’s tie rule is unconfirmed. She contributes to neither side; the completed count is a conservative lower bound.",
       "genericWarning": "This lineup has a model warning. Review the current rules.",
       "lineup": "Recommended lineup",
@@ -571,7 +572,17 @@
       "emblemsSummary": "Emblems used {used} / {budget}",
       "taskGoal": "Include at least {count} characters with this trait.",
       "traitCounts": "{count} characters · Tier {threshold} active",
-      "mechanics": "Special mechanics"
+      "mechanics": "Special mechanics",
+      "solution": "Plan {index}",
+      "chooseSolution": "Choose a recommended plan",
+      "proof": "Original problem: maximum completed tasks {count}; minimum emblem use {emblems}.",
+      "proven": "proven",
+      "unproven": "not proven",
+      "batchEnd": "Batch search ended: {reason}",
+      "candidateElapsed": "Candidate search: {seconds}s; verified {found}s after request start.",
+      "subproblemStatus": "This candidate’s constrained subproblem status: {status} (after configuration exclusions)",
+      "originalOptimal": "This candidate attains the proven optimum of the original problem.",
+      "candidateOnly": "This candidate is independently validated; it is not marked globally optimal for the original problem."
     },
     "visual": {
       "missing": "{name}: image unavailable",
@@ -591,7 +602,18 @@
       "emblemTrait": "{name} · {trait}",
       "innate": "Innate: {names}",
       "extra": "Special additions: {names}",
-      "formId": "Form ID: {id}"
+      "formId": "Form ID: {id}",
+      "innateTitle": "Innate traits",
+      "extraTitle": "Traits granted by mechanics",
+      "navigatorTarget": "Navigator target: {name}",
+      "trailblazerInheritance": "Targeting Trailblazer grants Himeko both Energy and Elation, plus other emblem Classes. Trailblazer’s own innate traits still depend on their front/back form."
+    },
+    "termination": {
+      "complete": "Requested plans found",
+      "exhausted": "No further configurations meet the quality requirement",
+      "budget": "Shared time budget reached",
+      "error": "Solver or verification error",
+      "empty": "No tasks selected"
     }
   }
 }

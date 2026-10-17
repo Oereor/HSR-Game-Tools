@@ -1,11 +1,12 @@
 import type { SolvedAttempt } from './session'
+import type { CandidateSolution } from '../types'
 
 /** Totals belong to the displayed attempt, never to the currently editable form. */
-export function resultSummary(attempt: SolvedAttempt) {
+export function resultSummary(attempt: SolvedAttempt, solution: CandidateSolution) {
   return {
-    completed: attempt.result.evaluation!.completedCount,
+    completed: solution.evaluation.completedCount,
     tasks: attempt.request.tasks.length,
-    emblems: attempt.result.evaluation!.emblemCount,
+    emblems: solution.evaluation.emblemCount,
     budget: attempt.request.emblemBudget,
   }
 }

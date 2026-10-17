@@ -114,7 +114,7 @@ describe('currency-wars UI data and visuals', () => {
       /solveCurrencyWars|highsSolver/,
     )
     expect(source('src/tools/currency-wars/browser/solver.worker.ts')).toContain(
-      'solveCurrencyWars(snapshot, request, browserSolver)',
+      'solveCurrencyWarsBatch(snapshot, request, browserSolver)',
     )
     const image = source('src/tools/currency-wars/components/CurrencyImage.vue')
     expect(image).toContain('@error=')

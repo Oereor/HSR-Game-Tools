@@ -34,7 +34,7 @@ export async function checkVisualData() {
     !record(manifest) ||
     manifest.repository !== lock.repository ||
     manifest.commit !== lock.commit ||
-    manifest.transformVersion !== 2 ||
+    manifest.transformVersion !== 3 ||
     manifest.visualsSha256 !== hash(bytes) ||
     manifest.snapshotSha256 !== hash(await readFile(path.join(dataDirectory, 'snapshot.json'))) ||
     !record(manifest.assetSha256) ||
@@ -96,7 +96,8 @@ async function main() {
     if (!sourceRole || ![1, 2, 3, 4, 5].includes(sourceRole.Rarity))
       throw new Error('Missing cost: ' + form.id)
     catalog.costs[form.id] = sourceRole.Rarity as RoleCost
-    catalog.portraits[String(form.avatarId)] = `game-assets/character/${form.avatarId}.webp`
+    const portraitId = [8007, 8009].includes(form.avatarId) ? 8008 : form.avatarId
+    catalog.portraits[String(form.avatarId)] = `game-assets/character/${portraitId}.webp`
   }
   for (const emblem of snapshot.emblems)
     catalog.emblems[String(emblem.traitId)] = `game-assets/emblem/${emblem.traitId}.webp`
@@ -122,7 +123,7 @@ async function main() {
     repository: lock.repository,
     commit: lock.commit,
     gameVersion: lock.gameVersion,
-    transformVersion: 2,
+    transformVersion: 3,
     inputSha256,
     snapshotSha256: hash(await readFile(path.join(dataDirectory, 'snapshot.json'))),
     visualsSha256: hash(bytes),
@@ -130,7 +131,7 @@ async function main() {
     notes: [
       'Costs use source role Rarity, checked against GridFightShopPrice.BuyGoldStar1.',
       'Costs are keyed by form ID and never enter optimization.',
-      'Portraits use avatarId; emblem images use traitId.',
+      'Portraits use avatarId, with 8007 and 8009 explicitly mapped to the visually verified local Stelle portrait 8008.webp; emblem images use traitId.',
       'Trait icons use stable traitId and user-provided local currency-war-traits files, not the upstream cost source. Missing icons are omitted and use a neutral UI fallback.',
     ],
   }

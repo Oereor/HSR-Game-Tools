@@ -259,12 +259,15 @@ const announcement = computed(() =>
                   pcInputText: {
                     root: {
                       'aria-describedby': invalid('timeLimitSeconds')
-                        ? 'currency-time-error'
-                        : undefined,
+                        ? 'currency-time-help currency-time-error'
+                        : 'currency-time-help',
                     },
                   },
                 }"
               />
+              <p id="currency-time-help" class="currency-help">
+                {{ t('currencyWars.form.timeHint') }}
+              </p>
               <p v-if="invalid('timeLimitSeconds')" id="currency-time-error" class="currency-error">
                 {{ t('currencyWars.validation.timeLimitSeconds') }}
               </p>
@@ -429,10 +432,13 @@ const announcement = computed(() =>
           </details>
         </Message>
         <CurrencyResults
-          v-if="state.lastValid"
+          v-if="state.lastValid && state.selectedSolution"
           :snapshot="data.snapshot"
           :catalog="data.visuals"
           :attempt="state.lastValid"
+          :solution="state.selectedSolution"
+          :selected-index="state.selectedSolutionIndex"
+          @select="state.selectSolution"
           :stale="state.stale"
           :historical="state.historical"
         />

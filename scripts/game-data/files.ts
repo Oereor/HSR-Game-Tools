@@ -76,7 +76,9 @@ export async function validateGameFiles(root: string, lock?: SourceLock, overlay
     // Other tools own these explicit namespaces; planner inventory stays strict.
     .filter(
       (f) =>
-        !f.startsWith('public/game-assets/emblem/') && !f.startsWith('public/game-assets/warp/'),
+        !f.startsWith('public/game-assets/emblem/') &&
+        !f.startsWith('public/game-assets/currency-war-traits/') &&
+        !f.startsWith('public/game-assets/warp/'),
     )
   if (
     JSON.stringify(actualAssets.sort()) !==

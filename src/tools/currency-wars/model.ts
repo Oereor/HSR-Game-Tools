@@ -1,4 +1,5 @@
-import type { OptimizationRequest, RoleForm, Snapshot } from './types'
+import type { Lineup, OptimizationRequest, RoleForm, Snapshot } from './types'
+import { isEligibleRole, navigatorGrantedTraits } from './rules'
 import { validateRequest } from './validation'
 
 type Expression = Map<string, number>
@@ -11,13 +12,25 @@ export interface BuiltModel {
   taskColumns: Map<string, string>
   columnNames: string[]
   rowCount: number
+  constraints: { expression: Expression; relation: '<=' | '>=' | '='; rhs: number }[]
+}
+
+export interface ModelSearch {
+  excluded?: Lineup[]
+  minimumCompleted?: number
+  exactCompleted?: number
 }
 
 /** Build CPLEX LP text using generated column names, never user-controlled identifiers. */
-export function buildModel(snapshot: Snapshot, request: OptimizationRequest): BuiltModel {
+export function buildModel(
+  snapshot: Snapshot,
+  request: OptimizationRequest,
+  search: ModelSearch = {},
+): BuiltModel {
   validateRequest(snapshot, request)
   const columns: string[] = []
   const rows: string[] = []
+  const constraints: BuiltModel['constraints'] = []
   const variable = () => {
     const name = 'v' + columns.length
     columns.push(name)
@@ -50,10 +63,11 @@ export function buildModel(snapshot: Snapshot, request: OptimizationRequest): Bu
         return
       throw new Error('Contradictory constant constraint')
     }
+    constraints.push({ expression: e, relation, rhs })
     rows.push(` r${rows.length}: ${format(e)} ${relation} ${rhs}`)
   }
 
-  const roles = snapshot.roles.filter((r) => request.includeExperts || !r.expert)
+  const roles = snapshot.roles.filter((r) => isEligibleRole(r, request))
   const roleColumns = new Map(roles.map((r) => [r.id, variable()]))
   const selected = (r: RoleForm) => expression([roleColumns.get(r.id)!, 1])
   const emblemColumns = new Map<string, Map<number, string>>()
@@ -107,6 +121,10 @@ export function buildModel(snapshot: Snapshot, request: OptimizationRequest): Bu
       targetVars.set(target.id, qName)
       constrain(sum(q, [train, -1]), '<=', 0)
       for (const trait of snapshot.traits.filter((t) => t.type === 'class')) {
+        if (navigatorGrantedTraits(target).includes(trait.id)) {
+          inherited.set(trait.id, [...(inherited.get(trait.id) ?? []), q])
+          continue
+        }
         const targetPresence = direct.get(target.id)!.get(trait.id)!
         if (!targetPresence.size) continue
         // k is exactly (target chosen AND target has this Class trait), not an optional copy.
@@ -178,6 +196,29 @@ export function buildModel(snapshot: Snapshot, request: OptimizationRequest): Bu
       task.requiredCount - 1,
     )
   }
+  const completed = sum(...[...taskColumns.values()].map((v) => expression([v, 1])))
+  if (search.exactCompleted !== undefined) constrain(completed, '=', search.exactCompleted)
+  else if (search.minimumCompleted !== undefined)
+    constrain(completed, '>=', search.minimumCompleted)
+  // Exclude the complete binary player configuration, including its zero decisions.
+  // Each emblem variable is per role and kind, never per interchangeable display slot.
+  for (const lineup of search.excluded ?? []) {
+    const members = new Map(lineup.members.map((member) => [member.formId, member]))
+    const decisions: [string, boolean][] = []
+    for (const [id, column] of roleColumns) {
+      const member = members.get(id)
+      decisions.push([column, !!member])
+      for (const [emblemId, v] of emblemColumns.get(id)!)
+        decisions.push([v, member?.emblemIds.includes(emblemId) ?? false])
+      for (const [targetId, v] of targetColumns.get(id) ?? [])
+        decisions.push([v, member?.navigatorTarget === targetId])
+    }
+    constrain(
+      expression(...decisions.map(([v, on]): [string, number] => [v, on ? -1 : 1])),
+      '>=',
+      1 - decisions.filter(([, on]) => on).length,
+    )
+  }
   // An empty eligible roster still has task columns. The solver orchestrator skips empty task lists.
   const lp = `Maximize\n obj: ${format(sum(...objectiveTerms))}\nSubject To\n${rows.join('\n')}\nBinary\n ${columns.join(' ')}\nEnd\n`
   return {
@@ -189,5 +230,6 @@ export function buildModel(snapshot: Snapshot, request: OptimizationRequest): Bu
     taskColumns,
     columnNames: columns,
     rowCount: rows.length,
+    constraints,
   }
 }

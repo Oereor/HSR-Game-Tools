@@ -10,7 +10,8 @@ import type {
   ResultMessage,
 } from '../../../src/tools/currency-wars/browser/protocol'
 import { evaluateLineup } from '../../../src/tools/currency-wars/evaluate'
-import type { OptimizationResult } from '../../../src/tools/currency-wars/types'
+import type { OptimizationBatch } from '../../../src/tools/currency-wars/types'
+import { lineupSignature } from '../../../src/tools/currency-wars/signature'
 import { role, task, toy } from './helpers'
 
 class FakeWorker implements WorkerPort {
@@ -25,7 +26,7 @@ class FakeWorker implements WorkerPort {
   terminate() {
     this.terminated = true
   }
-  emit(result: OptimizationResult, id = this.messages[0]!.requestId) {
+  emit(result: Partial<OptimizationBatch>, id = this.messages[0]!.requestId) {
     this.onmessage?.({ data: { requestId: id, result } } as MessageEvent<ResultMessage>)
   }
 }
@@ -38,7 +39,7 @@ function setup() {
     workers.push(worker)
     return worker
   })
-  const good = (index = workers.length - 1): OptimizationResult => {
+  const good = (index = workers.length - 1): OptimizationBatch => {
     const request = workers[index]!.messages[0]!.request
     const lineup = {
       members: [
@@ -48,20 +49,82 @@ function setup() {
     }
     return {
       status: 'optimal',
-      elapsedSeconds: 0.25,
-      lineup,
-      evaluation: evaluateLineup(snapshot, request, lineup),
+      request,
+      totalElapsedSeconds: 0.25,
+      termination: 'complete',
+      maximumCompletedProven: true,
+      minimumEmblemsProven: true,
+      maximumCompleted: request.tasks.length,
+      stages: [],
+      solutions: [
+        {
+          id: 'solution-1',
+          signature: lineupSignature(lineup),
+          lineup,
+          evaluation: evaluateLineup(snapshot, request, lineup),
+          solverStatus: 'optimal',
+          subproblemOptimal: true,
+          originalOptimal: true,
+          elapsedSeconds: 0.25,
+          foundAtSeconds: 0.25,
+        },
+      ],
     }
   }
   return { session, workers, good }
 }
 
 describe('currency-wars page session', () => {
+  it('switches a unified candidate, rejects invalid indices and resets only on a new valid batch', () => {
+    const { session, workers, good } = setup()
+    session.form.taskIds = [tasks[0]!.id]
+    session.start()
+    const batch = good()
+    const lineup = { members: [{ formId: '1', emblemIds: [] }] }
+    batch.solutions.push({
+      ...batch.solutions[0]!,
+      id: 'solution-2',
+      signature: lineupSignature(lineup),
+      lineup,
+      evaluation: evaluateLineup(snapshot, batch.request, lineup),
+      solverStatus: 'timeLimit',
+      subproblemOptimal: false,
+    })
+    workers[0]!.emit(batch)
+    session.selectSolution(1)
+    expect(session.selectedSolution.value).toBe(batch.solutions[1])
+    expect(session.selectedSolution.value!.lineup).toBe(lineup)
+    expect(
+      session.selectedSolution.value!.evaluation.traits.find((t) => t.traitId === 2008)!
+        .contributors,
+    ).toEqual([])
+    expect(session.selectedSolution.value!.solverStatus).toBe('timeLimit')
+    expect(resultSummary(session.lastValid.value!, session.selectedSolution.value!)).toEqual({
+      completed: 1,
+      tasks: 1,
+      emblems: 0,
+      budget: 12,
+    })
+    session.selectSolution(3)
+    session.selectSolution(-1)
+    expect(session.selectedSolutionIndex.value).toBe(1)
+    session.form.emblemBudget = 20
+    expect(session.stale.value).toBe(true)
+    session.start()
+    session.cancel()
+    expect(session.selectedSolutionIndex.value).toBe(1)
+    expect(session.lastValid.value!.result.solutions).toBe(batch.solutions)
+    session.start()
+    workers[2]!.emit(good())
+    expect(session.selectedSolutionIndex.value).toBe(0)
+    expect(session.selectedSolution.value).toBe(session.lastValid.value!.result.solutions[0])
+    expect(workers).toHaveLength(3)
+  })
   it('keeps the displayed summary tied to its request through form edits and failed or cancelled runs', () => {
     const { session, workers, good } = setup()
     session.start()
     workers[0]!.emit(good())
-    const displayed = () => resultSummary(session.lastValid.value!)
+    const displayed = () => resultSummary(session.lastValid.value!, session.selectedSolution.value!)
     expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
     session.form.taskIds = [tasks[0]!.id]
     session.form.emblemBudget = 20
@@ -70,7 +133,7 @@ describe('currency-wars page session', () => {
     session.cancel()
     expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
     session.start()
-    workers[2]!.emit({ status: 'no-result', elapsedSeconds: 0.1 })
+    workers[2]!.emit({ ...good(), status: 'no-result', solutions: [], totalElapsedSeconds: 0.1 })
     expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
     session.dispose()
   })
@@ -320,7 +383,9 @@ describe('currency-wars page session', () => {
       const previous = session.lastValid.value
       session.start()
       workers[1]!.emit(
-        status === 'feasible' ? { ...good(), status } : { status, elapsedSeconds: 0.1 },
+        status === 'feasible'
+          ? { ...good(), status }
+          : { ...good(), status, solutions: [], totalElapsedSeconds: 0.1 },
       )
       expect(session.lastAttempt.value!.result.status).toBe(status)
       if (status === 'feasible') expect(session.lastValid.value!.result.status).toBe('feasible')
@@ -342,7 +407,7 @@ describe('currency-wars page session', () => {
       session.start()
       if (kind === 'runtime') workers[0]!.onerror!({ preventDefault() {} } as ErrorEvent)
       if (kind === 'message') workers[0]!.onmessageerror!({} as MessageEvent)
-      if (kind === 'malformed') workers[0]!.emit({ status: 'optimal', elapsedSeconds: 1 })
+      if (kind === 'malformed') workers[0]!.emit({ status: 'optimal', totalElapsedSeconds: 1 })
       expect(session.failure.value).toBe(kind === 'runtime' ? 'runtime' : 'message')
       expect(session.lastValid.value).toBeUndefined()
       expect(workers[0]!.terminated).toBe(true)
