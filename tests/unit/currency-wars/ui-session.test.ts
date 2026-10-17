@@ -1,4 +1,4 @@
-import { isProxy } from 'vue'
+import { computed, isProxy } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { createCurrencyWarsSession } from '../../../src/tools/currency-wars/ui/session'
 import { createTaskSelection } from '../../../src/tools/currency-wars/ui/task-selection'
@@ -12,7 +12,8 @@ import type {
 import { evaluateLineup } from '../../../src/tools/currency-wars/evaluate'
 import type { OptimizationBatch } from '../../../src/tools/currency-wars/types'
 import { lineupSignature } from '../../../src/tools/currency-wars/signature'
-import { role, task, toy } from './helpers'
+import { emblem, role, task, toy } from './helpers'
+import { summarizeEmblemDemand } from '../../../src/tools/currency-wars/ui/crafting'
 
 class FakeWorker implements WorkerPort {
   onmessage: WorkerPort['onmessage'] = null
@@ -32,9 +33,9 @@ class FakeWorker implements WorkerPort {
 }
 const snapshot = toy([role(1, [2007]), role(2, [2008])])
 const tasks = [task(2007, 1), task(2008, 1)]
-function setup() {
+function setup(testSnapshot = snapshot) {
   const workers: FakeWorker[] = []
-  const session = createCurrencyWarsSession(snapshot, tasks, () => {
+  const session = createCurrencyWarsSession(testSnapshot, tasks, () => {
     const worker = new FakeWorker()
     workers.push(worker)
     return worker
@@ -61,7 +62,7 @@ function setup() {
           id: 'solution-1',
           signature: lineupSignature(lineup),
           lineup,
-          evaluation: evaluateLineup(snapshot, request, lineup),
+          evaluation: evaluateLineup(testSnapshot, request, lineup),
           solverStatus: 'optimal',
           subproblemOptimal: true,
           originalOptimal: true,
@@ -75,6 +76,74 @@ function setup() {
 }
 
 describe('currency-wars page session', () => {
+  it('derives emblem demands from all three selected candidates without solving and retains Last Valid through stale, failure and cancellation', () => {
+    const demandSnapshot = toy(snapshot.roles, [2004, 2012, 1001])
+    const { session, workers, good } = setup(demandSnapshot)
+    session.start()
+    const batch = good()
+    const lineups = [
+      {
+        members: [
+          { formId: '1', emblemIds: [emblem(2004)] },
+          { formId: '2', emblemIds: [emblem(2004)] },
+        ],
+      },
+      {
+        members: [
+          { formId: '1', emblemIds: [emblem(2012)] },
+          { formId: '2', emblemIds: [emblem(1001)] },
+        ],
+      },
+      {
+        members: [
+          { formId: '1', emblemIds: [] },
+          { formId: '2', emblemIds: [] },
+        ],
+      },
+    ]
+    batch.solutions = lineups.map((lineup, index) => ({
+      ...batch.solutions[0]!,
+      id: `solution-${index + 1}`,
+      signature: lineupSignature(lineup),
+      lineup,
+      evaluation: evaluateLineup(demandSnapshot, batch.request, lineup),
+    }))
+    workers[0]!.emit(batch)
+    const demands = computed(() => summarizeEmblemDemand(session.selectedSolution.value!))
+    const expected = [
+      [{ emblemId: emblem(2004), count: 2 }],
+      [
+        { emblemId: emblem(1001), count: 1 },
+        { emblemId: emblem(2012), count: 1 },
+      ],
+      [],
+    ]
+    for (let index = 0; index < 3; index++) {
+      session.selectSolution(index)
+      expect(demands.value).toEqual(expected[index])
+      expect(demands.value.reduce((sum, d) => sum + d.count, 0)).toBe(
+        session.selectedSolution.value!.evaluation.emblemCount,
+      )
+    }
+    expect(workers).toHaveLength(1)
+    expect(workers[0]!.messages).toHaveLength(1)
+    session.selectSolution(1)
+    session.form.emblemBudget = 20
+    expect(session.stale.value).toBe(true)
+    session.start()
+    workers.at(-1)!.emit({ ...good(), status: 'error', solutions: [] })
+    expect(session.historical.value).toBe(true)
+    expect(demands.value).toEqual(expected[1])
+    session.start()
+    workers.at(-1)!.emit({ ...good(), status: 'no-result', solutions: [] })
+    expect(demands.value).toEqual(expected[1])
+    session.start()
+    session.cancel()
+    expect(demands.value).toEqual(expected[1])
+    expect(session.lastValid.value!.result.solutions).toBe(batch.solutions)
+    session.dispose()
+  })
+
   it('switches a unified candidate, rejects invalid indices and resets only on a new valid batch', () => {
     const { session, workers, good } = setup()
     session.form.taskIds = [tasks[0]!.id]

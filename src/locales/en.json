@@ -562,6 +562,14 @@
       "originalOptimal": "This candidate attains the proven optimum of the original problem.",
       "candidateOnly": "This candidate is independently validated; it is not marked globally optimal for the original problem."
     },
+    "crafting": {
+      "title": "Emblem requirements",
+      "empty": "This lineup uses no emblems.",
+      "quantity": "{name}: {count} required",
+      "recipes": "Crafting recipes",
+      "or": "or",
+      "recipeHint": "Each recipe crafts one emblem. When multiple recipes are shown, choose any one."
+    },
     "visual": {
       "missing": "{name}: image unavailable",
       "cost": "Cost {cost}",

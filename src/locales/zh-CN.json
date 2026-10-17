@@ -562,6 +562,14 @@
       "originalOptimal": "本方案达到原问题已证明的最优目标。",
       "candidateOnly": "本方案是独立验证的合法候选；未标记为原问题全局最优。"
     },
+    "crafting": {
+      "title": "星徽需求",
+      "empty": "该方案未使用星徽。",
+      "quantity": "{name}：需要 {count} 个",
+      "recipes": "合成方式",
+      "or": "或",
+      "recipeHint": "每条配方可合成一个星徽；多条配方任选其一。"
+    },
     "visual": {
       "missing": "{name}：图片暂不可用",
       "cost": "{cost} 费",

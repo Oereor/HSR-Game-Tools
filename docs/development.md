@@ -109,32 +109,34 @@ workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并
 
 以下定义以 [package.json 的 scripts](../package.json) 为准，按变更选择检查，不作为每次任务的完整执行清单。
 
-| 命令                                   | 用途                                                                |
-| -------------------------------------- | ------------------------------------------------------------------- |
-| `npm ci`                               | 按锁文件安装依赖                                                    |
-| `npm run dev` / `npm run preview`      | 本地开发 / 预览已有构建                                             |
-| `npm run type-check`                   | Vue、应用与工具配置的 TypeScript 检查                               |
-| `npm test`                             | Vitest 确定性单元测试                                               |
-| `npm run lint`                         | ESLint，只检查、不自动修复                                          |
-| `npm run format:check`                 | 按现有忽略项检查 Prettier 格式                                      |
-| `npm run format`                       | 全仓格式写入，仅在明确需要时执行                                    |
-| `npm run validate:i18n`                | 校验双语消息结构、参数与语法                                        |
-| `npm run validate:game-data`           | 校验快照、Manifest、来源锁定、文件哈希及图片                        |
-| `npm run validate:planner-templates`   | 校验人工审阅的方案模板和双语介绍                                    |
-| `npm run build`                        | 将现有应用和快照构建至 dist，不生成游戏数据                         |
-| `npm run update:game-data`             | 显式数据更新；参数和前提见[游戏数据维护](game-data.md#显式更新流程) |
-| `npm run update:warp-catalog`          | 显式读取锁定的本地 TurnBasedGameData，生成独立 Warp 目录            |
-| `npm run generate:warp-schema`         | 从本仓库目录和人工 JSONC 生成本地补全 Schema                        |
-| `npm run find:warp-item -- <名称或ID>` | 离线查询双语名称／内部 ID，可加 `--kind`、`--rarity`                |
-| `npm run build:warp-data`              | 验证人工配置后显式发布裁剪的 Warp 快照                              |
-| `npm run update:warp-visuals`          | 显式从锁定 StarRailRes Git 对象生成 Warp 展示资源                   |
-| `npm run validate:warp-visuals`        | 只读核对 Warp 展示快照、来源、共享图片及自有资源完整性              |
-| `npm run validate:warp-data`           | 只读核对 Warp 目录、配置、Schema、Manifest 和快照                   |
-| `npm run bench:engine`                 | 可选的引擎性能探针，不设机器相关硬阈值                              |
+| 命令                                                                  | 用途                                                                |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `npm ci`                                                              | 按锁文件安装依赖                                                    |
+| `npm run dev` / `npm run preview`                                     | 本地开发 / 预览已有构建                                             |
+| `npm run type-check`                                                  | Vue、应用与工具配置的 TypeScript 检查                               |
+| `npm test`                                                            | Vitest 确定性单元测试                                               |
+| `npm run lint`                                                        | ESLint，只检查、不自动修复                                          |
+| `npm run format:check`                                                | 按现有忽略项检查 Prettier 格式                                      |
+| `npm run format`                                                      | 全仓格式写入，仅在明确需要时执行                                    |
+| `npm run validate:i18n`                                               | 校验双语消息结构、参数与语法                                        |
+| `npm run validate:game-data`                                          | 校验快照、Manifest、来源锁定、文件哈希及图片                        |
+| `npm run validate:planner-templates`                                  | 校验人工审阅的方案模板和双语介绍                                    |
+| `npm run build`                                                       | 将现有应用和快照构建至 dist，不生成游戏数据                         |
+| `npm run update:game-data`                                            | 显式数据更新；参数和前提见[游戏数据维护](game-data.md#显式更新流程) |
+| `npm run update:warp-catalog`                                         | 显式读取锁定的本地 TurnBasedGameData，生成独立 Warp 目录            |
+| `npm run generate:warp-schema`                                        | 从本仓库目录和人工 JSONC 生成本地补全 Schema                        |
+| `npm run find:warp-item -- <名称或ID>`                                | 离线查询双语名称／内部 ID，可加 `--kind`、`--rarity`                |
+| `npm run build:warp-data`                                             | 验证人工配置后显式发布裁剪的 Warp 快照                              |
+| `npm run update:warp-visuals`                                         | 显式从锁定 StarRailRes Git 对象生成 Warp 展示资源                   |
+| `npm run validate:warp-visuals`                                       | 只读核对 Warp 展示快照、来源、共享图片及自有资源完整性              |
+| `npm run validate:warp-data`                                          | 只读核对 Warp 目录、配置、Schema、Manifest 和快照                   |
+| `npm run extract:currency-wars-crafts -- --root ../TurnBasedGameData` | 显式提取锁定赛季星徽合成目录及本地材料资源映射                      |
+| `npm run validate:currency-wars-crafts`                               | 离线核对配方目录、来源、覆盖、材料引用与图片哈希                    |
+| `npm run bench:engine`                                                | 可选的引擎性能探针，不设机器相关硬阈值                              |
 
 ## 上游仓库与网络
 
-货币战争网页入口为 `/currency-wars`，CLI 使用 `npm run currency-wars`。离线算法快照检查用 `npm run validate:currency-wars`，展示数据检查用 `npm run validate:currency-wars-visuals`；显式提取和 Worker/WASM 构建探针见[货币战争指南](currency-wars.md)。这些命令不接入 dev、test 或 build 的数据生成钩子，普通测试不启动浏览器。
+货币战争网页入口为 `/currency-wars`，CLI 使用 `npm run currency-wars`。离线算法快照检查用 `npm run validate:currency-wars`，展示数据检查用 `npm run validate:currency-wars-visuals`，合成目录与材料图片检查用 `npm run validate:currency-wars-crafts`；显式提取和 Worker/WASM 构建探针见[货币战争指南](currency-wars.md)。这些命令不接入 dev、test 或 build 的数据生成钩子，普通测试不启动浏览器。
 
 正常安装、开发、测试和构建不读取相邻的 HSR-Database、TurnBasedGameData 或 StarRailRes，也不触发下载、生成或旧站构建钩子。
 排轴数据显式更新需要与 Source Lock 匹配的 StarRailRes；Warp Catalog 显式更新需要其独立 Source Lock 匹配的 TurnBasedGameData。Warp 展示更新使用独立 Source Lock 固定的 StarRailRes Git 对象；其他 Warp 命令仅消费仓库内文件，维护步骤见[Warp 数据基础设施](game-data.md#warp-数据基础设施)。HSR-Database 继续只用于只读调查与来源追溯。
@@ -166,7 +168,7 @@ npm test -- tests/unit/action-planner/planner-document-file.test.ts tests/unit/a
 全仓稳定化或发布前集中验收时，逐项记录命令的退出状态、失败原因与未验证范围：
 
 1. `type-check`、`test`、`lint`、`format:check`、`validate:i18n`。
-2. `validate:game-data`、`validate:planner-templates`、`validate:warp-data`、`validate:warp-visuals`、`validate:currency-wars`、`validate:currency-wars-visuals`。
+2. `validate:game-data`、`validate:planner-templates`、`validate:warp-data`、`validate:warp-visuals`、`validate:currency-wars`、`validate:currency-wars-visuals`、`validate:currency-wars-crafts`。
 3. `build` 后运行 `verify:currency-wars-browser`；检查子路径时另构建到 `.cache/currency-wars-subpath`，使用 `--base /hsr/`，探针传入相同目录及 Base，完整命令见[货币战争指南](currency-wars.md#worker-与-wasm)。
 4. 检查实际修改文件的格式、文档链接／锚点、`git diff --check` 和 Git 状态。
 

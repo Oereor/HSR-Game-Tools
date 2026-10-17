@@ -22,6 +22,16 @@
 
 界面提示有简体中文和英文，角色、星徽及羁绊名称沿用当前中文快照。空任务、非法配置、Worker 异常与超时无结果均有反馈。本版模型和特殊规则限制仍然适用。
 
+## 星徽需求
+
+网页结果在目标任务列表后默认展开「星徽需求」，可手动折叠。统计只遍历当前选中候选的 `lineup.members[].emblemIds`，按稳定星徽 ID 累加；仅展示实际使用项，按数量降序、ID 升序排列，总数等于该方案的 `evaluation.emblemCount`。切换方案即时更新，不重新求解；过期、历史或上次有效结果继续显示原候选的数据，不读取正在编辑的配置。零星徽方案显示空状态。
+
+每行显示星徽图标、名称、需求数量及该赛季的全部合法合成配方。每条配方合成一个星徽，多条配方之间的「或」表示替代关系；例如欢愉星徽可使用垃圾袋与红钻，或垃圾袋与蓝钻，不需要同时消耗两组材料。没有当前赛季配方的星徽仍正常计数，合成区域仅显示 `—`；这只表示经过权威数据核对无配方，数据提取或校验失败会明确报错。
+
+本功能不汇总材料总量，不处理库存、合成次数、差额、配方选择或最低成本。材料名称来自锁定游戏数据，所有图片使用本地资源；缺图时保留名称并显示中性占位。640px 及以下把配方放到该行下方，材料允许换行。
+
+此功能仅扩充网页结果展示，CLI 的单方案输出与求解规则保持不变。
+
 ## 控制台使用
 
 使用项目要求的 Node.js 24.x（最低 24.12）与 npm，按锁文件安装依赖后，从仓库根目录执行：
@@ -131,6 +141,27 @@ npm run extract:currency-wars-visuals -- --root ../TurnBasedGameData
 npm run validate:currency-wars-visuals
 ```
 
+### 星徽合成目录与材料资源
+
+独立的 `data/currency-wars/crafts.json`／`crafts-manifest.json` 仅用于展示，不扩展算法 `Emblem`、角色快照或任务文件。目录版本为 1，明确记录 Season 1；对每种快照星徽保留一个配方数组，无当前赛季配方时使用空数组，缺少目录键视为错误。
+
+显式提取使用同一 Source Lock 的 `GridFightCraftConfig`、`GridFightSeasonCraft`、`GridFightEquipment`、`GridFightItems` 与中文 TextMap。先以 `CraftID` 和 `SeasonID` 过滤赛季，再以 `CraftEquipID` 关联星徽装备 ID；材料不局限于 Basic 装备或钻石，垃圾袋也按真实物品 ID 和名称保留。名称 Hash 复用精确整数词法解析，不经 JavaScript Number 转换。
+
+同产物不同材料配方全部保留；仅材料顺序不同的等价多重集合合并，并用 `craftIds` 保留所有来源配方 ID。两件相同材料不会被误去重为一件。当前锁定数据核对为 22 种星徽、17 种可合成、18 条配方；欢愉星徽 `35052012` 保留 CraftID 57、58 两条替代配方。这些数量是该来源的结果，不是永久 Schema 限制。
+
+材料图标使用用户提供的 `public/game-assets/currency-war-equipments/{物品ID}.webp`，原文件不转换、不下载。当前 11 种材料名称和 128×128 WebP 均齐全。图标路径与可选缺图 ID、全部映射图片 SHA-256 由 Craft Manifest 单独记录，原有角色、星徽、羁绊 Visual Catalog 不变。图片以 contain 保持比例，URL 兼容 `BASE_URL`。
+
+```bash
+npm run extract:currency-wars-crafts -- --root ../TurnBasedGameData
+npm run validate:currency-wars-crafts
+```
+
+提取要求来源为干净的 Git 根目录且 HEAD 等于锁定 Commit，只写新的合成目录与 Manifest。Manifest 保存来源、赛季、转换版本、五份输入哈希、算法快照哈希、目录哈希、资源哈希及覆盖统计；重复提取字节一致。校验只读本仓库产物，不访问上游。普通安装、开发、测试和构建不运行提取器。
+
+权威输入缺失、格式错误、无效赛季关联、产物／材料引用或名称解析错误均阻止生成；图片缺失则记录缺图 ID，保留配方和材料名称，不能据缺图推断无配方。补齐图片后显式重新提取并校验。已映射图片被删除或修改时，资源校验明确失败，网页加载失败仍使用名称与中性占位。
+
+实现和本次验证见 [Issue #7 实施报告](investigations/currency-wars-emblem-crafting-issue-7.md)。
+
 ### Worker 与 WASM
 
 浏览器 Worker 调用 `solveCurrencyWarsBatch`，CLI 的 `solveCurrencyWars` 是相同编排的单方案兼容包装。通过 `createHighsSolver(loader)` 仅替换 HiGHS 加载方法。求解选项、状态解释、解码与独立验证没有另写一套。每次运行通过结构化消息传递请求与结果，带运行 ID，旧实例响应不会覆盖新状态。
@@ -196,5 +227,6 @@ npm run lint
 6. 触屏点击或键盘激活头像打开角色详情，内容正确且不推动网格重排；Tab、Escape 和关闭后的焦点恢复正常，新有效结果替换时旧详情关闭。
 7. 默认呈现阵容、两个摘要 Tag 和目标任务列表；检查真实羁绊图标及缺图回退，展开特殊机制说明和全部激活羁绊可查机制、人数、档位和贡献者，展开求解详情可查原始条件及实际返回的技术信息。非法时限提交时自动展开高级设置并关联错误输入。
 8. 在简中／英文、1440px／1024px／390px 下检查两栏／纵向布局、弹窗内容滚动、13 人网格、长名称、任务统计和键盘焦点，无明显横向溢出。
+9. 检查「星徽需求」默认展开、可用键盘折叠，切换候选后数量和配方同步且不重新求解。欢愉两条配方用「或」分隔；无配方星徽正常计数且显示 `—`，零星徽显示空状态。模拟材料图加载失败时保留名称和占位，窄屏配方换行且无横向溢出；过期、取消、失败时仍对应当前保留方案。
 
 网页原始接入见[UI MVP 实施报告](investigations/currency-wars-ui-mvp-implementation.md)，本轮布局、资源与验证边界见[UI 优化实施报告](investigations/currency-wars-ui-polish-implementation.md)。

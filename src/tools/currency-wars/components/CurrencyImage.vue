@@ -2,7 +2,11 @@
 import { useI18n } from 'vue-i18n'
 import { UserRound, ShieldQuestion } from '@lucide/vue'
 import { useImageSource } from '../../../composables/useImageSource'
-const props = defineProps<{ source?: string; name: string; kind: 'role' | 'emblem' | 'trait' }>()
+const props = defineProps<{
+  source?: string
+  name: string
+  kind: 'role' | 'emblem' | 'trait' | 'material'
+}>()
 const { t } = useI18n()
 const { source: visibleSource, fail } = useImageSource(() => props.source)
 </script>

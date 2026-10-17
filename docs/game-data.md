@@ -10,7 +10,9 @@
 
 其网页的费用与图片清单由独立 `visuals.json`／`visuals-manifest.json` 管理，不扩展算法快照。费用取锁定来源角色配置的 Rarity 并以商店一星购买价格核对，图片使用已存在的角色头像与用户准备的星徽文件；维护命令及哈希边界见[展示数据](currency-wars.md#独立展示数据)。普通运行不解析原始表、不下载或生成图片。
 
-排轴资源 validator 不将货币战争的 `game-assets/emblem/`、`game-assets/currency-war-traits/` 或 Warp 的 `game-assets/warp/` 当作自己的额外资源；各工具负责校验自有命名空间，其他清单／哈希／尺寸检查保持严格。排轴显式更新器仍按原有整目录发布流程工作；执行前必须备份这三个目录，完成后恢复并分别运行 Warp 与货币战争视觉校验。该限制适用于后续每次显式排轴数据维护，不能仅凭排轴校验通过判断其他工具的资源完整。
+星徽配方与材料图另由 `crafts.json`／`crafts-manifest.json` 管理，沿用同一锁定来源与 Season 1，不参与求解。完整关联、显式提取及离线校验见[星徽合成目录与材料资源](currency-wars.md#星徽合成目录与材料资源)。
+
+排轴资源 validator 不将货币战争的 `game-assets/emblem/`、`game-assets/currency-war-traits/`、`game-assets/currency-war-equipments/` 或 Warp 的 `game-assets/warp/` 当作自己的额外资源；各工具负责校验自有命名空间，其他清单／哈希／尺寸检查保持严格。排轴显式更新器仍按原有整目录发布流程工作；执行前必须备份这四个目录，完成后恢复并分别运行 Warp、货币战争视觉及合成目录校验。该限制适用于后续每次显式排轴数据维护，不能仅凭排轴校验通过判断其他工具的资源完整。
 
 当前来源分工：
 

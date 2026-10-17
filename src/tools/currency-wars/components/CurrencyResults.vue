@@ -10,6 +10,8 @@ import SelectButton from 'primevue/selectbutton'
 import CurrencyRoleCard from './CurrencyRoleCard.vue'
 import CurrencyImage from './CurrencyImage.vue'
 import CurrencyTrait from './CurrencyTrait.vue'
+import CurrencyEmblemDemand from './CurrencyEmblemDemand.vue'
+import { createEmblemDemand, type CurrencyWarsCraftCatalog } from '../ui/crafting'
 import { resultSummary } from '../ui/result-summary'
 import {
   createVisuals,
@@ -22,6 +24,7 @@ import type { CandidateSolution, Snapshot } from '../types'
 const props = defineProps<{
   snapshot: Snapshot
   catalog: VisualCatalog
+  crafts: CurrencyWarsCraftCatalog
   attempt: SolvedAttempt
   solution: CandidateSolution
   selectedIndex: number
@@ -44,6 +47,15 @@ const solutionOptions = computed(() =>
 const summary = computed(() => resultSummary(props.attempt, result.value))
 const evaluation = computed(() => result.value.evaluation!)
 const lineup = computed(() => result.value.lineup!)
+const emblemDemands = computed(() =>
+  createEmblemDemand(
+    result.value,
+    props.snapshot,
+    props.crafts,
+    props.catalog,
+    import.meta.env.BASE_URL,
+  ),
+)
 const members = computed(() =>
   sortVisualMembers(
     lineup.value.members.map((member) =>
@@ -187,6 +199,7 @@ watch(
         </li>
       </ul>
     </section>
+    <CurrencyEmblemDemand :demands="emblemDemands" />
     <details v-if="specialMembers.length" class="currency-disclosure">
       <summary>{{ t('currencyWars.result.mechanics') }}</summary>
       <ul v-if="specialMembers.length" class="currency-mechanics currency-muted">
