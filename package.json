@@ -13,6 +13,8 @@
     "validate:currency-wars": "node --import tsx scripts/currency-wars/data.ts --check",
     "extract:currency-wars-visuals": "node --import tsx scripts/currency-wars/visual-data.ts",
     "validate:currency-wars-visuals": "node --import tsx scripts/currency-wars/visual-data.ts --check",
+    "extract:currency-wars-crafts": "node --import tsx scripts/currency-wars/craft-data.ts",
+    "validate:currency-wars-crafts": "node --import tsx scripts/currency-wars/craft-data.ts --check",
     "verify:currency-wars-browser": "node --import tsx scripts/currency-wars/verify-browser-worker.ts",
     "dev": "vite --host 127.0.0.1",
     "preview": "vite preview --host 127.0.0.1",

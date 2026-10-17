@@ -562,6 +562,14 @@
       "originalOptimal": "This candidate attains the proven optimum of the original problem.",
       "candidateOnly": "This candidate is independently validated; it is not marked globally optimal for the original problem."
     },
+    "crafting": {
+      "title": "Emblem requirements",
+      "empty": "This lineup uses no emblems.",
+      "quantity": "{name}: {count} required",
+      "recipes": "Crafting recipes",
+      "or": "or",
+      "recipeHint": "Each recipe crafts one emblem. When multiple recipes are shown, choose any one."
+    },
     "visual": {
       "missing": "{name}: image unavailable",
       "cost": "Cost {cost}",
@@ -582,7 +590,7 @@
       "innateTitle": "Innate traits",
       "extraTitle": "Traits granted by mechanics",
       "navigatorTarget": "Navigator target: {name}",
-      "trailblazerInheritance": "Targeting Trailblazer grants Himeko both Energy and Elation, plus other emblem Classes. Trailblazer’s own innate traits still depend on their front/back form."
+      "trailblazerInheritance": "Targeting Trailblazer always grants Himeko both Energy and Elation, without copying Classes added by the target’s emblems. Trailblazer’s own innate traits still depend on their front/back form, and their equipped emblems work as usual."
     },
     "termination": {
       "complete": "Requested plans found",

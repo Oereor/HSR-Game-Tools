@@ -118,7 +118,7 @@ describe('small independent game-data contract', () => {
       }),
     ).toThrow()
   })
-  it('detects changed bytes rather than accepting a recorded checksum', async () => {
+  it('detects changed bytes and isolates Currency Wars material assets without accepting unknown assets', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'hsr-data-corruption-'))
     temps.push(root)
     const output = projectGameData(fixture(), lock, overlays)
@@ -147,6 +147,15 @@ describe('small independent game-data contract', () => {
       }),
     )
     await expect(validateGameFiles(root)).rejects.toThrow(/Checksum/)
+    await writeFile(path.join(root, 'src/tools/action-planner/data/game/catalog.json'), bytes)
+    await mkdir(path.join(root, 'public/game-assets/currency-war-equipments'), { recursive: true })
+    await writeFile(
+      path.join(root, 'public/game-assets/currency-war-equipments/350601.webp'),
+      'owned by craft catalog',
+    )
+    await expect(validateGameFiles(root)).resolves.toMatchObject({ assets: 0 })
+    await writeFile(path.join(root, 'public/game-assets/unknown.webp'), 'unexpected')
+    await expect(validateGameFiles(root)).rejects.toThrow(/Unexpected or missing asset/)
   })
   it('restores both previous output directories after an injected publish failure', async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), 'hsr-data-rollback-'))

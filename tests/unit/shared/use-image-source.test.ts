@@ -33,4 +33,15 @@ describe('per-instance image source fallback', () => {
     expect(first.source.value).toBe(url.value)
     expect(second.source.value).toBe(url.value)
   })
+
+  it('falls back for unavailable material images and recovers when the candidate uses another material', () => {
+    const url = ref<string | undefined>('/hsr/game-assets/currency-war-equipments/350601.webp')
+    const material = useImageSource(() => url.value)
+    material.fail()
+    expect(material.source.value).toBeUndefined()
+    url.value = '/hsr/game-assets/currency-war-equipments/352101.webp'
+    expect(material.source.value).toBe(url.value)
+    url.value = undefined
+    expect(material.source.value).toBeUndefined()
+  })
 })

@@ -18,7 +18,12 @@ export function sortVisualMembers(members: VisualMember[]): VisualMember[] {
 }
 
 export function assetUrl(path: string | undefined, base: string): string | undefined {
-  if (!path || !/^game-assets\/(character|emblem|currency-war-traits)\/[0-9]+\.webp$/.test(path))
+  if (
+    !path ||
+    !/^game-assets\/(character|emblem|currency-war-traits|currency-war-equipments)\/[0-9]+\.webp$/.test(
+      path,
+    )
+  )
     return undefined
   return base.replace(/\/?$/, '/') + path
 }

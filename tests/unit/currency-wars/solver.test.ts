@@ -125,13 +125,26 @@ describe('HiGHS integer optimization', () => {
     expect(result.evaluation!.traits.find((t) => t.traitId === 1008)!.count).toBe(1)
   })
 
-  it('copies emblem Classes compulsorily and avoids illegal duplicates rather than deduplicating', async () => {
+  it('cannot complete an extra task by inheriting a target emblem Class', async () => {
     const s = toy([navigator, role(1, [1001, 2007])], [2007, 2008])
     const input = request([task(2007, 2), task(2008, 2)], { emblemBudget: 1 })
     const result = await solveCurrencyWars(s, input)
-    expect(result.evaluation!.completedCount, result.message).toBe(2)
-    expect(result.evaluation!.emblemCount).toBe(1)
+    expect(result.status, result.message).toBe('optimal')
+    expect(result.evaluation!.completedCount).toBe(1)
+    expect(result.evaluation!.emblemCount).toBe(0)
+    expect(result.evaluation!.objective).toBe(7)
     expect(result.lineup!.members.find((m) => m.formId === '1510')!.emblemIds).toEqual([])
+    expect(result.lineup!.members.find((m) => m.formId === '1510')!.navigatorTarget).toBe('1')
+    expect(result.evaluation!.members.find((m) => m.formId === '1510')!.extraTraits).toEqual([2007])
+    expect(result.evaluation!.traits.find((t) => t.traitId === 2007)).toMatchObject({
+      count: 2,
+      contributors: expect.arrayContaining(['1', '1510']),
+    })
+    expect(result.evaluation!.tasks.find((t) => t.traitId === 2008)).toMatchObject({
+      actualCount: 0,
+      completed: false,
+    })
+    expect(evaluateLineup(s, input, result.lineup!)).toEqual(result.evaluation)
     expect(result.evaluation!.objective).toBe(oracle(s, input))
   })
 

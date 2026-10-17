@@ -78,6 +78,7 @@ export async function validateGameFiles(root: string, lock?: SourceLock, overlay
       (f) =>
         !f.startsWith('public/game-assets/emblem/') &&
         !f.startsWith('public/game-assets/currency-war-traits/') &&
+        !f.startsWith('public/game-assets/currency-war-equipments/') &&
         !f.startsWith('public/game-assets/warp/'),
     )
   if (

@@ -83,9 +83,9 @@ export function evaluateLineup(
       errors.push('Navigator target lacks the train camp trait')
       continue
     }
-    // Only Class traits are copied. Camp and Unique traits also remain distinct in the snapshot.
+    // Emblems qualify targets but do not expand the copied innate Classes or explicit grants.
     const inherited = new Set([
-      ...target.finalTraits.filter((id) => traitTypes.get(id) === 'class'),
+      ...targetRole.innateTraits.filter((id) => traitTypes.get(id) === 'class'),
       ...navigatorGrantedTraits(targetRole),
     ])
     for (const traitId of inherited) {

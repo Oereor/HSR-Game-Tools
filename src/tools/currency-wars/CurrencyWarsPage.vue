@@ -435,6 +435,7 @@ const announcement = computed(() =>
           v-if="state.lastValid && state.selectedSolution"
           :snapshot="data.snapshot"
           :catalog="data.visuals"
+          :crafts="data.crafts"
           :attempt="state.lastValid"
           :solution="state.selectedSolution"
           :selected-index="state.selectedSolutionIndex"
