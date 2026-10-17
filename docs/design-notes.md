@@ -1,6 +1,6 @@
 # UI 设计规范
 
-本指南描述首页、行动序列模拟器与跃迁模拟器当前使用的 UI 语言。机制与状态职责见[排轴架构](architecture/action-order-simulator.md)和[跃迁架构](architecture/warp-simulator.md)，翻译维护见[Site Messages](site-messages.md)。
+本指南描述首页、行动序列模拟器、跃迁模拟器与货币战争优化器当前使用的 UI 语言。机制与状态职责见[排轴架构](architecture/action-order-simulator.md)、[跃迁架构](architecture/warp-simulator.md)和[货币战争指南](currency-wars.md)，翻译维护见[Site Messages](site-messages.md)。
 历史 UI 取舍和验证记录保存在 [investigations](investigations/README.md)，不作为当前阶段状态说明。
 
 ## 主题与组件职责
@@ -29,6 +29,8 @@ Focus Ring 为 2px、offset 3px；普通控件圆角 6px，业务卡片 6–8px�
 
 PrimeVue 负责基本控件、Tabs、Dialog、Tooltip 和 Splitter；工具自身负责布局、行动卡、操作卡、头像与语义标识。
 不让 PrimeVue Card 决定信息架构，不批量覆盖内部 `.p-*` 类、不全量注册图标，也不加入新 UI 框架。
+
+Warp 与货币战争的图片加载状态共用 [useImageSource](../src/composables/useImageSource.ts)。每个实例只记住最近失败的 URL，保持中性占位，其他 URL 可正常加载；资源映射、占位内容与业务状态仍由各工具维护，不建立全局图片缓存。
 
 ## 首页工具集合
 

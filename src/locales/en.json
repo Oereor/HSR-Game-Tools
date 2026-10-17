@@ -404,7 +404,6 @@
       "count": "{count} entries",
       "limit": "Keeps the latest {count} entries on this page, newest first.",
       "empty": "No warps yet.",
-      "fiveCount": "5-star pity count for this pull: {count}",
       "pagination": "History pages",
       "previous": "Previous page",
       "next": "Next page",
@@ -430,26 +429,6 @@
       "element": "Type",
       "unknown": "—",
       "notApplicable": "Not applicable"
-    },
-    "path": {
-      "Elation": "Elation",
-      "Knight": "Preservation",
-      "Mage": "Erudition",
-      "Memory": "Remembrance",
-      "Priest": "Abundance",
-      "Rogue": "The Hunt",
-      "Shaman": "Harmony",
-      "Warlock": "Nihility",
-      "Warrior": "Destruction"
-    },
-    "element": {
-      "Physical": "Physical",
-      "Fire": "Fire",
-      "Ice": "Ice",
-      "Thunder": "Lightning",
-      "Wind": "Wind",
-      "Quantum": "Quantum",
-      "Imaginary": "Imaginary"
     },
     "error": {
       "invalid-snapshot": "Banner data is invalid. No warp was performed.",
@@ -550,7 +529,6 @@
       "stale": "Configuration changed: the lineup below uses the previous solve conditions. Start a new solve to update it.",
       "historical": "The previous valid lineup is retained below. It is not the result of the current attempt.",
       "details": "Solve details",
-      "solverStatus": "Raw solver status: {status}",
       "objectiveBound": "Weighted objective bound: {value}",
       "gap": "Optimality gap: {value}",
       "conditions": "Lineup conditions: {slots} slots · Emblem budget {budget} · {experts} · Limit {time}s · {tasks} tasks",
@@ -600,8 +578,6 @@
       "closeDetails": "Close character details",
       "wornEmblems": "Equipped emblems",
       "emblemTrait": "{name} · {trait}",
-      "innate": "Innate: {names}",
-      "extra": "Special additions: {names}",
       "formId": "Form ID: {id}",
       "innateTitle": "Innate traits",
       "extraTitle": "Traits granted by mechanics",

@@ -35,6 +35,8 @@
 
 ## 文档收尾
 
+- [全仓技术债清理与稳定化](repository-stabilization-closeout.md)：近期迭代后的引用审查、跨平台路径修复、共享图片状态、失效消息清理及完整维护验收基线。
+
 - [部署前文档整理](pre-production-documentation-closeout.md)：现行文档体系、迁移去向、准确性与文档验证结果。
 - [第三方来源与发布通知现状](../third-party/README.md)：项目 MIT 与独立第三方条款、静态产物通知及发布前待确认事项。
 - [部署前深度清理与 Vercel 准备](pre-deployment-deep-cleanup.md)：Dead Code、测试与动态消息审查、SPA Rewrite 和部署前工程验证。

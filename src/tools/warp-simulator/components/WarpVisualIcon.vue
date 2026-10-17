@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useWarpPortrait } from '../composables/useWarpPortrait'
+import { useImageSource } from '../../../composables/useImageSource'
 const props = defineProps<{ url?: string; label: string; stars?: boolean }>()
-const { source, fail } = useWarpPortrait(() => props.url)
+const { source, fail } = useImageSource(() => props.url)
 </script>
 
 <template>

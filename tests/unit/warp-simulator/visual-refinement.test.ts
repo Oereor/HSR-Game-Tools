@@ -13,7 +13,7 @@ import catalog from '../../../src/tools/warp-simulator/data/visuals/catalog.json
 import { contrastRatio, readableColor } from '../../../src/tools/warp-simulator/model/color'
 import { warpVisualTokens } from '../../../src/theme/preset'
 import { useWarpOverlay } from '../../../src/tools/warp-simulator/composables/useWarpOverlay'
-import { useWarpPortrait } from '../../../src/tools/warp-simulator/composables/useWarpPortrait'
+import { useImageSource } from '../../../src/composables/useImageSource'
 import { useWarpSimulator } from '../../../src/tools/warp-simulator/composables/useWarpSimulator'
 import { seeded } from '../../fixtures/warp-simulator/fixture'
 
@@ -124,7 +124,7 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
     overlay.openDialog(() => {}, 'warp-action-selection')
     expect(overlay.afterDialogHide()).toBe('warp-action-selection')
     const url = ref(adapter.item('avatar:1503', 'en').artworkUrl),
-      image = useWarpPortrait(() => url.value)
+      image = useImageSource(() => url.value)
     image.fail()
     expect(image.source.value).toBeUndefined()
     for (const locale of ['zh-CN', 'en'] as const) {

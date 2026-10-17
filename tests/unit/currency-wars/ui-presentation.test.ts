@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs'
-import { ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { loadPageData } from '../../../src/tools/currency-wars/ui/data'
 import {
@@ -10,7 +9,6 @@ import {
 import { checkVisualData } from '../../../scripts/currency-wars/visual-data'
 import { evaluateLineup } from '../../../src/tools/currency-wars/evaluate'
 import { request } from './helpers'
-import { useCurrencyImage } from '../../../src/tools/currency-wars/ui/useImage'
 
 describe('currency-wars UI data and visuals', () => {
   it('maps real trait IDs to local icons, supports subpaths and permits absent icons and legacy catalogs', () => {
@@ -48,17 +46,6 @@ describe('currency-wars UI data and visuals', () => {
     ).toThrow()
   })
 
-  it('keeps a failed image on a fallback and permits a different URL to load', () => {
-    const url = ref<string | undefined>('/game-assets/emblem/1001.webp')
-    const image = useCurrencyImage(() => url.value)
-    expect(image.source.value).toBe(url.value)
-    image.fail()
-    expect(image.source.value).toBeUndefined()
-    url.value = '/game-assets/emblem/2007.webp'
-    expect(image.source.value).toBe(url.value)
-    url.value = undefined
-    expect(image.source.value).toBeUndefined()
-  })
   it('loads all 25 formal tasks and independently verified display metadata', async () => {
     const data = loadPageData()
     expect(data.tasks).toHaveLength(25)

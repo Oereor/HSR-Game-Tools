@@ -161,6 +161,17 @@ npm test -- tests/unit/action-planner/planner-document-file.test.ts tests/unit/a
 消息修改运行 i18n 校验；模板修改运行模板校验及方案文件相关测试；数据维护按游戏数据指南验证。
 代码变更按范围选择类型检查、lint、格式检查与构建，不将历史报告中的一次通过结果当成本次验收。
 
+### 稳定维护验收清单
+
+全仓稳定化或发布前集中验收时，逐项记录命令的退出状态、失败原因与未验证范围：
+
+1. `type-check`、`test`、`lint`、`format:check`、`validate:i18n`。
+2. `validate:game-data`、`validate:planner-templates`、`validate:warp-data`、`validate:warp-visuals`、`validate:currency-wars`、`validate:currency-wars-visuals`。
+3. `build` 后运行 `verify:currency-wars-browser`；检查子路径时另构建到 `.cache/currency-wars-subpath`，使用 `--base /hsr/`，探针传入相同目录及 Base，完整命令见[货币战争指南](currency-wars.md#worker-与-wasm)。
+4. 检查实际修改文件的格式、文档链接／锚点、`git diff --check` 和 Git 状态。
+
+上述名称均为现有 npm scripts；不把更新器或数据生成命令作为校验前置步骤。Warp 配置的 `incomplete` 与正式空模板目录是明确保留的状态，不通过补造内容使报告变绿。人工 JSONC 的纯格式调整也会改变 Manifest 输入哈希，必须确认解析内容不变并同步相应来源元数据，不重建无变化的业务快照。保留原有 CI 范围，此清单用于集中维护验收。
+
 Codex 默认不执行 Computer Use、Playwright、Puppeteer、真实浏览器截图或其他浏览器自动化；普通测试命令不触发浏览器测试。
 只有用户明确要求某次浏览器自动化验收时才例外。UI 视觉与真实交互由用户在本地人工验收，建议覆盖 1440px、1024px、390px 和两种语言。
 

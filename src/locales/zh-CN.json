@@ -404,7 +404,6 @@
       "count": "{count} 条",
       "limit": "仅保留本页最近 {count} 条记录，按最新优先排列。",
       "empty": "暂无跃迁记录。",
-      "fiveCount": "当次五星保底抽数：{count}",
       "pagination": "历史分页",
       "previous": "上一页",
       "next": "下一页",
@@ -430,26 +429,6 @@
       "element": "属性",
       "unknown": "—",
       "notApplicable": "不适用"
-    },
-    "path": {
-      "Elation": "欢愉",
-      "Knight": "存护",
-      "Mage": "智识",
-      "Memory": "记忆",
-      "Priest": "丰饶",
-      "Rogue": "巡猎",
-      "Shaman": "同谐",
-      "Warlock": "虚无",
-      "Warrior": "毁灭"
-    },
-    "element": {
-      "Physical": "物理",
-      "Fire": "火",
-      "Ice": "冰",
-      "Thunder": "雷",
-      "Wind": "风",
-      "Quantum": "量子",
-      "Imaginary": "虚数"
     },
     "error": {
       "invalid-snapshot": "卡池数据无效，未进行跃迁。",
@@ -550,7 +529,6 @@
       "stale": "配置已更改：下方方案对应上次求解条件，点击“开始求解”后才会更新。",
       "historical": "下方保留上次有效方案，不代表本次求解结果。",
       "details": "求解详情",
-      "solverStatus": "求解器原始状态：{status}",
       "objectiveBound": "加权目标上界：{value}",
       "gap": "最优间隙（Gap）：{value}",
       "conditions": "方案条件：{slots} 槽 · 星徽预算 {budget} · {experts} · 时限 {time} 秒 · {tasks} 项任务",
@@ -600,8 +578,6 @@
       "closeDetails": "关闭角色详情",
       "wornEmblems": "佩戴星徽",
       "emblemTrait": "{name} · {trait}",
-      "innate": "固有：{names}",
-      "extra": "特殊新增：{names}",
       "formId": "形态 ID：{id}",
       "innateTitle": "固有羁绊",
       "extraTitle": "特殊机制新增羁绊",

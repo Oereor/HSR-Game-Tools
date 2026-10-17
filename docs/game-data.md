@@ -10,7 +10,7 @@
 
 其网页的费用与图片清单由独立 `visuals.json`／`visuals-manifest.json` 管理，不扩展算法快照。费用取锁定来源角色配置的 Rarity 并以商店一星购买价格核对，图片使用已存在的角色头像与用户准备的星徽文件；维护命令及哈希边界见[展示数据](currency-wars.md#独立展示数据)。普通运行不解析原始表、不下载或生成图片。
 
-排轴资源 validator 不将货币战争的 `game-assets/emblem/`、`game-assets/currency-war-traits/` 或 Warp 的 `game-assets/warp/` 当作自己的额外资源；各工具负责校验自有命名空间，其他清单／哈希／尺寸检查保持严格。排轴显式更新器仍按原有整目录发布流程工作；执行该维护前须保留用户星徽与 Warp 资源目录，恢复后重新校验两个工具的展示 Manifest。本轮没有运行或重构该发布器。
+排轴资源 validator 不将货币战争的 `game-assets/emblem/`、`game-assets/currency-war-traits/` 或 Warp 的 `game-assets/warp/` 当作自己的额外资源；各工具负责校验自有命名空间，其他清单／哈希／尺寸检查保持严格。排轴显式更新器仍按原有整目录发布流程工作；执行前必须备份这三个目录，完成后恢复并分别运行 Warp 与货币战争视觉校验。该限制适用于后续每次显式排轴数据维护，不能仅凭排轴校验通过判断其他工具的资源完整。
 
 当前来源分工：
 
@@ -169,4 +169,4 @@ Manifest 记录源仓库及 Commit、八份索引和所用图片的来源文件�
 
 更新持有 `.warp-visuals-staging/update.lock`，先在本次 staging 完成完整校验，再备份并替换自有图片目录与展示目录；任何安装失败恢复两者，绝不搬移共享图片目录。回滚失败保留锁、staging 与 `.warp-visuals-backup/`；强制终止也可能留下恢复材料，须人工核对，不盲删。更新前建议停止 dev／preview，多目录替换不提供强杀期间无间隙可用性。
 
-普通 install／dev／test／build 不调用此更新器，测试只使用临时来源夹具。修改 Warp 业务快照或共享资源来源后需显式重新更新展示资源；校验会报告哈希漂移。排轴旧更新器仍整体替换 `public/game-assets/`，运行前须单独备份 `warp/` 与 `emblem/`，恢复后执行各自 validator；本轮未重构或执行该更新器。来源与许可通知继续见[第三方说明](third-party/README.md)，转换记录不改变游戏美术的权利归属。
+普通 install／dev／test／build 不调用此更新器，测试只使用临时来源夹具。修改 Warp 业务快照或共享资源来源后需显式重新更新展示资源；校验会报告哈希漂移。排轴整目录发布前的跨工具资源保护要求见[数据边界](#数据边界与来源)。来源与许可通知继续见[第三方说明](third-party/README.md)，转换记录不改变游戏美术的权利归属。

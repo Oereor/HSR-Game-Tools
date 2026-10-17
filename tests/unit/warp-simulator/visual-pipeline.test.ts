@@ -276,6 +276,11 @@ describe('explicit Warp visual updater', () => {
     expect(source.read('index.json')?.toString()).toBe('{"locked":true}')
     expect(source.read('missing.png')).toBeUndefined()
     const before = git('status', '--porcelain')
+    const nested = path.join(root, 'nested')
+    await mkdir(nested)
+    await expect(gitSource(nested, { ...lock, commit })).rejects.toThrow(
+      'Source must be a Git root',
+    )
     await expect(gitSource(root, { ...lock, commit: '0'.repeat(40) })).rejects.toThrow()
     expect(git('status', '--porcelain')).toBe(before)
   })

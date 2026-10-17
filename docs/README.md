@@ -28,7 +28,7 @@
 
 [investigations 索引](investigations/README.md)整理迁移、架构调查、功能实施与验证记录。
 历史资料中的“当前”“尚未实现”“推荐方案”、版本、数量和测试结果均属于原报告的日期与阶段，不代表今日状态。
-已有报告保留原路径；本次收尾记录见[部署前文档整理报告](investigations/pre-production-documentation-closeout.md)。
+已有报告保留原路径；最新全仓维护基线与未解决事项见[稳定化收尾报告](investigations/repository-stabilization-closeout.md)，文档体系整理经过见[部署前文档整理报告](investigations/pre-production-documentation-closeout.md)。
 
 ## 文档维护约定
 

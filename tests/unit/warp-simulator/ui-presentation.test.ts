@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { existsSync } from 'node:fs'
 import zhCN from '../../../src/locales/zh-CN.json'
@@ -16,7 +15,6 @@ import {
   pityRows,
   portraitUrl,
 } from '../../../src/tools/warp-simulator/model/presentation'
-import { useWarpPortrait } from '../../../src/tools/warp-simulator/composables/useWarpPortrait'
 import { createSessionState } from '../../../src/tools/warp-simulator/engine/state'
 import { fixture } from '../../fixtures/warp-simulator/fixture'
 import type { ToolLocale } from '../../../src/locales/types'
@@ -103,22 +101,13 @@ describe('Warp presentation and checked local assets', () => {
   ])('does not construct unsafe or missing image URLs: %s', (path) => {
     expect(portraitUrl(path, '/sub/')).toBeUndefined()
   })
-  it('handles root and subpath URLs, load failure and a subsequent different image', () => {
+  it('maps root and subpath URLs without changing the resource identity', () => {
     expect(portraitUrl('game-assets/character/1003.webp', '/')).toBe(
       '/game-assets/character/1003.webp',
     )
     expect(portraitUrl('game-assets/character/1003.webp', '/tools')).toBe(
       '/tools/game-assets/character/1003.webp',
     )
-    const url = ref<string>(),
-      visual = useWarpPortrait(() => url.value)
-    expect(visual.source.value).toBeUndefined()
-    url.value = '/tools/game-assets/character/1003.webp'
-    expect(visual.source.value).toBe(url.value)
-    visual.fail()
-    expect(visual.source.value).toBeUndefined()
-    url.value = '/tools/game-assets/character/1004.webp'
-    expect(visual.source.value).toBe(url.value)
   })
   it('searches both languages and stable IDs with normalized case/width', () => {
     const snapshot = fixture()

@@ -33,7 +33,7 @@
         "light-cone:20021",
         "light-cone:20022",
         "light-cone:20023",
-        "light-cone:20024"
+        "light-cone:20024",
       ],
       "fourStar": [
         "avatar:1001",
@@ -88,7 +88,7 @@
         "light-cone:21048",
         "light-cone:21051",
         "light-cone:21054",
-        "light-cone:21066"
+        "light-cone:21066",
       ],
       "fiveStar": [
         "avatar:1003",
@@ -97,12 +97,10 @@
         "avatar:1104",
         "avatar:1107",
         "avatar:1209",
-        "avatar:1211"
+        "avatar:1211",
       ],
-      "evidence": [
-        "来自游戏内数据。"
-      ]
-    }
+      "evidence": ["来自游戏内数据。"],
+    },
   ],
   "banners": [
     {
@@ -111,15 +109,9 @@
       "pityGroup": "pity:event-avatar",
       "sharedPool": "event-avatar-default",
       "up5": "avatar:1503",
-      "up4": [
-        "avatar:1201",
-        "avatar:1214",
-        "avatar:1312"
-      ],
-      "evidence": [
-        "4.6 版本角色活动跃迁"
-      ]
-    }
+      "up4": ["avatar:1201", "avatar:1214", "avatar:1312"],
+      "evidence": ["4.6 版本角色活动跃迁"],
+    },
   ],
   "pending": [
     {

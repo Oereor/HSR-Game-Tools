@@ -41,14 +41,20 @@ export async function gitSource(
   root: string,
   lock: SourceLock = sourceLock,
 ): Promise<SourceReader> {
-  const resolved = await realpath(root)
+  const resolved = path.normalize(await realpath(root))
   const git = (...args: string[]) =>
     execFileSync('git', ['-C', resolved, ...args], {
       maxBuffer: 32 * 1024 * 1024,
       stdio: ['ignore', 'pipe', 'pipe'],
     })
-  if (git('rev-parse', '--show-toplevel').toString().trim() !== resolved)
-    throw new Error('Source must be a Git root')
+  const gitRoot = path.normalize(
+    await realpath(git('rev-parse', '--show-toplevel').toString().trim()),
+  )
+  const sameRoot =
+    process.platform === 'win32'
+      ? gitRoot.toLowerCase() === resolved.toLowerCase()
+      : gitRoot === resolved
+  if (!sameRoot) throw new Error('Source must be a Git root')
   git('cat-file', '-e', lock.commit + '^{commit}')
   const files = new Set(
     git('ls-tree', '-r', '--name-only', lock.commit).toString().trim().split('\n'),

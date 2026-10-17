@@ -2,10 +2,10 @@
 import { useI18n } from 'vue-i18n'
 import { BookOpen, UserRound } from '@lucide/vue'
 import type { ItemPresentation } from '../model/presentation'
-import { useWarpPortrait } from '../composables/useWarpPortrait'
+import { useImageSource } from '../../../composables/useImageSource'
 const props = defineProps<{ item: ItemPresentation; artwork?: boolean }>()
 const { t } = useI18n()
-const { source, fail } = useWarpPortrait(() =>
+const { source, fail } = useImageSource(() =>
   props.artwork ? props.item.artworkUrl : (props.item.portraitUrl ?? props.item.artworkUrl),
 )
 </script>
