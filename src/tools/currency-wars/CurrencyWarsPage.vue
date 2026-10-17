@@ -124,12 +124,19 @@ const announcement = computed(() =>
               <li v-for="task in selectedTasks" :key="task.id">
                 <div class="currency-selected-task">
                   <CurrencyTrait
+                    v-tooltip.top="traitName(task.traitId)"
+                    class="currency-selected-trait"
                     :source="visuals?.traitUrl(task.traitId)"
                     :name="traitName(task.traitId)"
+                    :title="traitName(task.traitId)"
                   />
-                  <span class="currency-task-threshold">{{
-                    t('currencyWars.form.required', { count: task.requiredCount })
-                  }}</span>
+                  <span
+                    class="currency-task-threshold"
+                    :aria-label="t('currencyWars.form.required', { count: task.requiredCount })"
+                    >{{
+                      t('currencyWars.form.requiredCompact', { count: task.requiredCount })
+                    }}</span
+                  >
                 </div>
                 <Button
                   type="button"
@@ -523,7 +530,7 @@ h3 {
   margin: 4px 0;
 }
 .currency-task-summary {
-  padding: 0 4px;
+  padding: 0 8px;
   margin: 12px 0;
   max-height: 300px;
   overflow-y: auto;
@@ -536,27 +543,46 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
-  padding: 6px 0;
-  font-size: 13px;
-  border-bottom: 1px solid var(--color-line);
+  gap: 8px;
+  box-sizing: border-box;
+  height: 54px;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-line) 45%, transparent);
 }
 .currency-task-summary li:last-child {
   border-bottom: 0;
 }
 .currency-selected-task {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
 }
+.currency-selected-trait {
+  --trait-icon-size: 32px;
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.currency-selected-task :deep(.currency-trait-name) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .currency-task-threshold {
-  display: block;
-  margin: -3px 0 0 48px;
-  font-size: 11px;
+  flex-shrink: 0;
+  font-size: 12px;
   color: var(--color-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .currency-remove-task {
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
 }
 .currency-edit-tasks {
   width: 100%;

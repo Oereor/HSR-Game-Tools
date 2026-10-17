@@ -519,6 +519,7 @@
       "task": "{name} ≥ {count} members",
       "limits": "Lineup constraints",
       "required": "At least {count}",
+      "requiredCompact": "≥ {count}",
       "removeTask": "Remove {name} (at least {count})"
     },
     "validation": {

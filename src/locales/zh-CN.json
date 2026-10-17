@@ -519,6 +519,7 @@
       "task": "{name} ≥ {count} 人",
       "limits": "编队限制",
       "required": "至少 {count} 人",
+      "requiredCompact": "≥ {count}",
       "removeTask": "移除{name}（至少 {count} 人）"
     },
     "validation": {
