@@ -1,5 +1,6 @@
 import type { Evaluation, Lineup, MemberEvaluation, OptimizationRequest, Snapshot } from './types'
 import { validateRequest } from './validation'
+import { isEligibleRole, navigatorGrantedTraits } from './rules'
 
 /** Independent evaluation: no solver columns, constraints or model helpers are used here. */
 export function evaluateLineup(
@@ -28,7 +29,7 @@ export function evaluateLineup(
     if (memberIds.has(role.id)) errors.push('Duplicate role form: ' + role.id)
     identityIds.add(role.identityId)
     memberIds.add(role.id)
-    if (role.expert && !request.includeExperts) errors.push('Expert is excluded: ' + role.id)
+    if (!isEligibleRole(role, request)) errors.push('Role is excluded: ' + role.id)
     if (member.emblemIds.length > 3) errors.push('Too many emblems on role: ' + role.id)
     emblemCount += member.emblemIds.length
     const seenEmblems = new Set<number>()
@@ -83,7 +84,11 @@ export function evaluateLineup(
       continue
     }
     // Only Class traits are copied. Camp and Unique traits also remain distinct in the snapshot.
-    for (const traitId of target.finalTraits.filter((id) => traitTypes.get(id) === 'class')) {
+    const inherited = new Set([
+      ...target.finalTraits.filter((id) => traitTypes.get(id) === 'class'),
+      ...navigatorGrantedTraits(targetRole),
+    ])
+    for (const traitId of inherited) {
       if (self.finalTraits.includes(traitId))
         errors.push('Navigator inherited trait conflict: ' + traitId)
       else {

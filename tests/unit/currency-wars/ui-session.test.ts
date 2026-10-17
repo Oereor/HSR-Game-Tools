@@ -1,13 +1,17 @@
 import { isProxy } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { createCurrencyWarsSession } from '../../../src/tools/currency-wars/ui/session'
+import { createTaskSelection } from '../../../src/tools/currency-wars/ui/task-selection'
+import { resultSummary } from '../../../src/tools/currency-wars/ui/result-summary'
+import { loadPageData } from '../../../src/tools/currency-wars/ui/data'
 import type {
   WorkerPort,
   SolveMessage,
   ResultMessage,
 } from '../../../src/tools/currency-wars/browser/protocol'
 import { evaluateLineup } from '../../../src/tools/currency-wars/evaluate'
-import type { OptimizationResult } from '../../../src/tools/currency-wars/types'
+import type { OptimizationBatch } from '../../../src/tools/currency-wars/types'
+import { lineupSignature } from '../../../src/tools/currency-wars/signature'
 import { role, task, toy } from './helpers'
 
 class FakeWorker implements WorkerPort {
@@ -22,7 +26,7 @@ class FakeWorker implements WorkerPort {
   terminate() {
     this.terminated = true
   }
-  emit(result: OptimizationResult, id = this.messages[0]!.requestId) {
+  emit(result: Partial<OptimizationBatch>, id = this.messages[0]!.requestId) {
     this.onmessage?.({ data: { requestId: id, result } } as MessageEvent<ResultMessage>)
   }
 }
@@ -35,7 +39,7 @@ function setup() {
     workers.push(worker)
     return worker
   })
-  const good = (index = workers.length - 1): OptimizationResult => {
+  const good = (index = workers.length - 1): OptimizationBatch => {
     const request = workers[index]!.messages[0]!.request
     const lineup = {
       members: [
@@ -45,26 +49,134 @@ function setup() {
     }
     return {
       status: 'optimal',
-      elapsedSeconds: 0.25,
-      lineup,
-      evaluation: evaluateLineup(snapshot, request, lineup),
+      request,
+      totalElapsedSeconds: 0.25,
+      termination: 'complete',
+      maximumCompletedProven: true,
+      minimumEmblemsProven: true,
+      maximumCompleted: request.tasks.length,
+      stages: [],
+      solutions: [
+        {
+          id: 'solution-1',
+          signature: lineupSignature(lineup),
+          lineup,
+          evaluation: evaluateLineup(snapshot, request, lineup),
+          solverStatus: 'optimal',
+          subproblemOptimal: true,
+          originalOptimal: true,
+          elapsedSeconds: 0.25,
+          foundAtSeconds: 0.25,
+        },
+      ],
     }
   }
   return { session, workers, good }
 }
 
 describe('currency-wars page session', () => {
+  it('switches a unified candidate, rejects invalid indices and resets only on a new valid batch', () => {
+    const { session, workers, good } = setup()
+    session.form.taskIds = [tasks[0]!.id]
+    session.start()
+    const batch = good()
+    const lineup = { members: [{ formId: '1', emblemIds: [] }] }
+    batch.solutions.push({
+      ...batch.solutions[0]!,
+      id: 'solution-2',
+      signature: lineupSignature(lineup),
+      lineup,
+      evaluation: evaluateLineup(snapshot, batch.request, lineup),
+      solverStatus: 'timeLimit',
+      subproblemOptimal: false,
+    })
+    workers[0]!.emit(batch)
+    session.selectSolution(1)
+    expect(session.selectedSolution.value).toBe(batch.solutions[1])
+    expect(session.selectedSolution.value!.lineup).toBe(lineup)
+    expect(
+      session.selectedSolution.value!.evaluation.traits.find((t) => t.traitId === 2008)!
+        .contributors,
+    ).toEqual([])
+    expect(session.selectedSolution.value!.solverStatus).toBe('timeLimit')
+    expect(resultSummary(session.lastValid.value!, session.selectedSolution.value!)).toEqual({
+      completed: 1,
+      tasks: 1,
+      emblems: 0,
+      budget: 12,
+    })
+    session.selectSolution(3)
+    session.selectSolution(-1)
+    expect(session.selectedSolutionIndex.value).toBe(1)
+    session.form.emblemBudget = 20
+    expect(session.stale.value).toBe(true)
+    session.start()
+    session.cancel()
+    expect(session.selectedSolutionIndex.value).toBe(1)
+    expect(session.lastValid.value!.result.solutions).toBe(batch.solutions)
+    session.start()
+    workers[2]!.emit(good())
+    expect(session.selectedSolutionIndex.value).toBe(0)
+    expect(session.selectedSolution.value).toBe(session.lastValid.value!.result.solutions[0])
+    expect(workers).toHaveLength(3)
+  })
+  it('keeps the displayed summary tied to its request through form edits and failed or cancelled runs', () => {
+    const { session, workers, good } = setup()
+    session.start()
+    workers[0]!.emit(good())
+    const displayed = () => resultSummary(session.lastValid.value!, session.selectedSolution.value!)
+    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
+    session.form.taskIds = [tasks[0]!.id]
+    session.form.emblemBudget = 20
+    expect(session.stale.value).toBe(true)
+    session.start()
+    session.cancel()
+    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
+    session.start()
+    workers[2]!.emit({ ...good(), status: 'no-result', solutions: [], totalElapsedSeconds: 0.1 })
+    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
+    session.dispose()
+  })
+
+  it('removes and reselects tasks independently when one trait has multiple thresholds', () => {
+    const sameTrait = [task(2007, 1, 'low'), task(2007, 2, 'high')]
+    const session = createCurrencyWarsSession(snapshot, sameTrait, () => new FakeWorker())
+    const selection = createTaskSelection(
+      sameTrait,
+      () => session.form.taskIds,
+      (ids) => {
+        session.form.taskIds = ids
+      },
+    )
+    selection.remove('low')
+    expect(session.form.taskIds).toEqual(['high'])
+    selection.open()
+    expect(selection.taskIds.value).toEqual(['high'])
+    selection.selectAll()
+    selection.cancel()
+    expect(session.form.taskIds).toEqual(['high'])
+    selection.open()
+    selection.selectAll()
+    selection.confirm()
+    expect(session.form.taskIds).toEqual(['low', 'high'])
+    selection.remove('high')
+    selection.remove('low')
+    expect(session.errors.value).toContain('taskIds')
+    expect(session.start()).toBe(false)
+    session.dispose()
+  })
+
   it('reports a new invalid attempt instead of retaining the preceding cancellation notice', () => {
     const { session, workers } = setup()
     session.start()
     session.cancel()
-    session.clearSelection()
+    session.form.taskIds = []
     expect(session.start()).toBe(false)
     expect(session.cancelled.value).toBe(false)
     expect(session.failure.value).toBe('input')
     expect(workers).toHaveLength(1)
   })
-  it('defaults to all tasks and supports stable-ID selection, clear and select all', () => {
+  it('preserves the default parameters and stable task IDs', () => {
     const { session } = setup()
     expect(session.form).toMatchObject({
       slots: 13,
@@ -73,12 +185,114 @@ describe('currency-wars page session', () => {
       includeExperts: false,
       taskIds: tasks.map((t) => t.id),
     })
-    session.clearSelection()
+    session.form.taskIds = []
     expect(session.start()).toBe(false)
     expect(session.errors.value).toContain('taskIds')
-    session.selectAll()
     session.form.taskIds = [tasks[1]!.id]
     expect(session.form.taskIds).toEqual([tasks[1]!.id])
+    session.dispose()
+  })
+
+  it('edits all 25 formal tasks in a detached draft and discards cancelled or closed changes', () => {
+    const data = loadPageData()
+    const session = createCurrencyWarsSession(data.snapshot, data.tasks, () => new FakeWorker())
+    const selection = createTaskSelection(
+      data.tasks,
+      () => session.form.taskIds,
+      (ids) => {
+        session.form.taskIds = ids
+      },
+    )
+    const original = [...session.form.taskIds]
+    selection.open()
+    expect(selection.taskIds.value).toEqual(original)
+    expect(selection.taskIds.value).not.toBe(session.form.taskIds)
+    selection.taskIds.value.splice(0, 1)
+    expect(session.form.taskIds).toEqual(original)
+    selection.clear()
+    expect(selection.taskIds.value).toEqual([])
+    selection.selectAll()
+    expect(selection.taskIds.value).toEqual(data.tasks.map((task) => task.id))
+    expect(selection.taskIds.value).toHaveLength(25)
+    selection.clear()
+    selection.cancel()
+    expect(selection.visible.value).toBe(false)
+    expect(session.form.taskIds).toEqual(original)
+    selection.open()
+    expect(selection.taskIds.value).toEqual(original)
+    selection.cancel()
+    session.dispose()
+  })
+
+  it('keeps the current result fresh until a changed task draft is confirmed, then submits the confirmed tasks', () => {
+    const { session, workers, good } = setup()
+    const selection = createTaskSelection(
+      tasks,
+      () => session.form.taskIds,
+      (ids) => {
+        session.form.taskIds = ids
+      },
+    )
+    session.start()
+    workers[0]!.emit(good())
+    const previous = session.lastValid.value
+    selection.open()
+    selection.clear()
+    expect(session.stale.value).toBe(false)
+    expect(session.errors.value).toEqual([])
+    selection.cancel()
+    expect(session.lastValid.value).toBe(previous)
+    expect(session.stale.value).toBe(false)
+    selection.open()
+    selection.taskIds.value.reverse()
+    selection.confirm()
+    expect(session.stale.value).toBe(false)
+    selection.open()
+    selection.taskIds.value = [tasks[1]!.id]
+    const draft = selection.taskIds.value
+    selection.confirm()
+    expect(selection.visible.value).toBe(false)
+    expect(session.form.taskIds).toEqual([tasks[1]!.id])
+    selection.confirm()
+    expect(session.form.taskIds).toEqual([tasks[1]!.id])
+    expect(session.form.taskIds).not.toBe(draft)
+    expect(session.stale.value).toBe(true)
+    expect(session.lastValid.value).toBe(previous)
+    expect(previous!.request.tasks).toEqual(tasks)
+    expect(session.start()).toBe(true)
+    expect(workers[1]!.messages[0]!.request.tasks).toEqual([tasks[1]])
+    workers[1]!.emit(good())
+    expect(session.stale.value).toBe(false)
+    session.dispose()
+  })
+
+  it('rejects an empty confirmed selection without losing the valid result and can select all again', () => {
+    const { session, workers, good } = setup()
+    const selection = createTaskSelection(
+      tasks,
+      () => session.form.taskIds,
+      (ids) => {
+        session.form.taskIds = ids
+      },
+    )
+    session.start()
+    workers[0]!.emit(good())
+    const previous = session.lastValid.value
+    selection.open()
+    selection.clear()
+    selection.confirm()
+    expect(session.form.taskIds).toEqual([])
+    expect(session.stale.value).toBe(true)
+    expect(session.errors.value).toContain('taskIds')
+    expect(session.start()).toBe(false)
+    expect(workers).toHaveLength(1)
+    expect(session.lastValid.value).toBe(previous)
+    selection.open()
+    selection.selectAll()
+    selection.confirm()
+    expect(session.stale.value).toBe(false)
+    expect(session.start()).toBe(true)
+    expect(workers[1]!.messages[0]!.request.tasks).toEqual(tasks)
     session.dispose()
   })
 
@@ -169,7 +383,9 @@ describe('currency-wars page session', () => {
       const previous = session.lastValid.value
       session.start()
       workers[1]!.emit(
-        status === 'feasible' ? { ...good(), status } : { status, elapsedSeconds: 0.1 },
+        status === 'feasible'
+          ? { ...good(), status }
+          : { ...good(), status, solutions: [], totalElapsedSeconds: 0.1 },
       )
       expect(session.lastAttempt.value!.result.status).toBe(status)
       if (status === 'feasible') expect(session.lastValid.value!.result.status).toBe('feasible')
@@ -191,7 +407,7 @@ describe('currency-wars page session', () => {
       session.start()
       if (kind === 'runtime') workers[0]!.onerror!({ preventDefault() {} } as ErrorEvent)
       if (kind === 'message') workers[0]!.onmessageerror!({} as MessageEvent)
-      if (kind === 'malformed') workers[0]!.emit({ status: 'optimal', elapsedSeconds: 1 })
+      if (kind === 'malformed') workers[0]!.emit({ status: 'optimal', totalElapsedSeconds: 1 })
       expect(session.failure.value).toBe(kind === 'runtime' ? 'runtime' : 'message')
       expect(session.lastValid.value).toBeUndefined()
       expect(workers[0]!.terminated).toBe(true)

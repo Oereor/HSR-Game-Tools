@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
-import Tag from 'primevue/tag'
+import WarpVisualIcon from './WarpVisualIcon.vue'
 import { ChevronLeft, ChevronRight, History } from '@lucide/vue'
 import type { ToolLocale } from '../../../locales/types'
 import type { HistoryEntry } from '../composables/useWarpSimulator'
@@ -13,9 +13,8 @@ const props = defineProps<{
   total: number
   page: number
   presentation: ReturnType<typeof createPresentation>
-  sourceLabel: (bannerId: string) => string
 }>()
-const emit = defineEmits<{ page: [page: number] }>()
+const emit = defineEmits<{ page: [page: number]; details: [entry: HistoryEntry] }>()
 const { t, locale } = useI18n()
 const rows = computed(() =>
   props.entries.map((entry) => ({
@@ -35,42 +34,68 @@ const rows = computed(() =>
     </header>
     <p class="warp-history-limit">{{ t('warp.history.limit', { count: HISTORY_LIMIT }) }}</p>
     <p v-if="!total" class="warp-history-empty">{{ t('warp.history.empty') }}</p>
-    <ol v-else class="warp-history-list" :aria-label="t('warp.history.title')">
-      <li v-for="{ entry, item } in rows" :key="entry.id" class="warp-history-row">
-        <span
-          class="warp-history-rarity"
-          :class="`warp-history-rarity-${entry.event.rarity}`"
-          :aria-label="t('warp.visual.rarity', { count: entry.event.rarity })"
-          >{{ entry.event.rarity }}★</span
-        >
-        <div class="warp-history-item">
-          <div class="warp-history-name">
-            <strong :title="item.name">{{ item.name }}</strong
-            ><Tag v-if="entry.event.isUp === true" :value="t('warp.up')" severity="secondary" />
-          </div>
-          <p>
-            {{ t('warp.visual.path') }} ·
-            {{ item.path ? t(`warp.path.${item.path}`) : t('warp.visual.unknown')
-            }}<template v-if="item.kind === 'avatar'">
-              · {{ t('warp.visual.element') }} ·
-              {{
-                item.element ? t(`warp.element.${item.element}`) : t('warp.visual.unknown')
-              }}</template
-            >
-          </p>
-          <p class="warp-history-source">
-            {{ sourceLabel(entry.event.bannerId)
-            }}<span v-if="entry.event.rarity === 5">
-              ·
-              {{
-                t('warp.history.fiveCount', { count: entry.event.pityBefore.pullsSinceLast5 + 1 })
-              }}</span
-            >
-          </p>
-        </div>
-        <span class="warp-history-number">#{{ entry.id }}</span>
-      </li>
-    </ol>
+    <div
+      v-else
+      class="warp-history-scroll"
+      role="region"
+      :aria-label="t('warp.history.title')"
+      tabindex="0"
+    >
+      <table class="warp-history-table">
+        <thead>
+          <tr>
+            <th scope="col">{{ t('warp.history.name') }}</th>
+            <th scope="col">{{ t('warp.history.kind') }}</th>
+            <th scope="col">{{ t('warp.history.rarity') }}</th>
+            <th scope="col">{{ t('warp.visual.path') }}</th>
+            <th scope="col">{{ t('warp.visual.element') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="{ entry, item } in rows" :key="entry.id">
+            <td>
+              <Button
+                :id="`warp-history-${entry.id}`"
+                v-tooltip="item.name"
+                unstyled
+                class="warp-history-name"
+                :aria-label="t('warp.details.open', { summary: item.name })"
+                aria-haspopup="dialog"
+                @click="emit('details', entry)"
+                >{{ item.name }}</Button
+              >
+            </td>
+            <td>{{ t(`warp.itemKind.${item.kind ?? 'unknown'}`) }}</td>
+            <td>
+              <WarpVisualIcon
+                :url="item.starsUrl"
+                :label="t('warp.visual.rarity', { count: entry.event.rarity })"
+                stars
+              />
+            </td>
+            <td>
+              <span class="warp-history-meta"
+                ><WarpVisualIcon
+                  :url="item.pathIconUrl"
+                  :label="item.pathName ?? t('warp.visual.unknown')"
+                />{{ item.pathName ?? t('warp.visual.unknown') }}</span
+              >
+            </td>
+            <td>
+              <span
+                v-if="item.kind === 'avatar'"
+                class="warp-history-meta"
+                :style="{ color: item.elementTextColor }"
+                ><WarpVisualIcon
+                  :url="item.elementIconUrl"
+                  :label="item.elementName ?? t('warp.visual.unknown')"
+                />{{ item.elementName ?? t('warp.visual.unknown') }}</span
+              >
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <nav
       v-if="total > HISTORY_PAGE_SIZE"
       class="warp-history-pagination"
@@ -103,9 +128,6 @@ const rows = computed(() =>
 
 <style scoped>
 .warp-history {
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid var(--color-line);
   min-width: 0;
 }
 .warp-history-heading {
@@ -122,7 +144,8 @@ const rows = computed(() =>
   font-size: 16px;
 }
 .warp-history-heading > span,
-.warp-history-limit {
+.warp-history-limit,
+.warp-history-empty {
   font-size: 12px;
   color: var(--color-muted);
 }
@@ -130,64 +153,65 @@ const rows = computed(() =>
   margin: 8px 0 14px;
   line-height: 1.6;
 }
-.warp-history-empty {
-  font-size: 13px;
-  color: var(--color-muted);
+.warp-history-scroll {
+  overflow-x: auto;
 }
-.warp-history-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.warp-history-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-line) 65%, transparent);
-}
-.warp-history-rarity {
-  width: 28px;
-  flex-shrink: 0;
-  margin-top: 3px;
-  color: var(--color-muted);
+.warp-history-table {
+  width: 100%;
+  min-width: 660px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: left;
   font-size: 12px;
+  background: var(--color-surface);
 }
-.warp-history-rarity-5 {
-  color: var(--color-accent);
+th,
+td {
+  padding: 10px 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--color-line);
 }
-.warp-history-rarity-4 {
-  color: var(--p-surface-200);
+th {
+  font-weight: 500;
+  color: var(--color-muted);
 }
-.warp-history-item {
-  min-width: 0;
-  flex: 1;
+th:first-child {
+  width: auto;
+}
+th:nth-child(2) {
+  width: 78px;
+}
+th:nth-child(3) {
+  width: 88px;
+}
+th:nth-child(4) {
+  width: 128px;
+}
+th:nth-child(5) {
+  width: 110px;
 }
 .warp-history-name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 22px;
-}
-.warp-history-name strong {
+  display: block;
+  width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 500;
-  font-size: 13px;
+  text-align: left;
+  color: var(--color-ink);
+  padding: 4px 0;
+  background: transparent;
+  border: 0;
+  font: inherit;
+  border-radius: 3px;
 }
-.warp-history-item p {
-  margin: 4px 0 0;
-  font-size: 11px;
-  color: var(--color-muted);
-  line-height: 1.5;
-  overflow-wrap: anywhere;
+.warp-history-name:hover {
+  color: var(--color-accent);
 }
-.warp-history-number {
-  color: var(--color-muted);
-  font-size: 10px;
-  font-variant-numeric: tabular-nums;
-  padding-top: 5px;
+.warp-history-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .warp-history-pagination {
   display: flex;

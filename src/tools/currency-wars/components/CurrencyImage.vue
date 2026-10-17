@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { UserRound, ShieldQuestion } from '@lucide/vue'
-import { useCurrencyImage } from '../ui/useImage'
-const props = defineProps<{ source?: string; name: string; kind: 'role' | 'emblem' }>()
+import { useImageSource } from '../../../composables/useImageSource'
+const props = defineProps<{ source?: string; name: string; kind: 'role' | 'emblem' | 'trait' }>()
 const { t } = useI18n()
-const { source: visibleSource, fail } = useCurrencyImage(() => props.source)
+const { source: visibleSource, fail } = useImageSource(() => props.source)
 </script>
 
 <template>

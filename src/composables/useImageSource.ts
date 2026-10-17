@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 
-/** A failed URL stays on its neutral fallback; a different mapped URL can load normally. */
-export function useWarpPortrait(url: () => string | undefined) {
+/** Cache the most recently failed URL per instance; another mapped URL may load normally. */
+export function useImageSource(url: () => string | undefined) {
   const failedUrl = ref<string>()
   const source = computed(() => (url() !== failedUrl.value ? url() : undefined))
   function fail() {

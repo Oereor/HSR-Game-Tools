@@ -1,25 +1,51 @@
 import { readFileSync } from 'node:fs'
-import { ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { loadPageData } from '../../../src/tools/currency-wars/ui/data'
-import { assetUrl, createVisuals } from '../../../src/tools/currency-wars/ui/visuals'
+import {
+  assetUrl,
+  assertVisualCatalog,
+  createVisuals,
+} from '../../../src/tools/currency-wars/ui/visuals'
 import { checkVisualData } from '../../../scripts/currency-wars/visual-data'
 import { evaluateLineup } from '../../../src/tools/currency-wars/evaluate'
 import { request } from './helpers'
-import { useCurrencyImage } from '../../../src/tools/currency-wars/ui/useImage'
 
 describe('currency-wars UI data and visuals', () => {
-  it('keeps a failed image on a fallback and permits a different URL to load', () => {
-    const url = ref<string | undefined>('/game-assets/emblem/1001.webp')
-    const image = useCurrencyImage(() => url.value)
-    expect(image.source.value).toBe(url.value)
-    image.fail()
-    expect(image.source.value).toBeUndefined()
-    url.value = '/game-assets/emblem/2007.webp'
-    expect(image.source.value).toBe(url.value)
-    url.value = undefined
-    expect(image.source.value).toBeUndefined()
+  it('maps real trait IDs to local icons, supports subpaths and permits absent icons and legacy catalogs', () => {
+    const { snapshot, visuals } = loadPageData()
+    expect(Object.keys(visuals.traits!)).toHaveLength(32)
+    expect(
+      snapshot.traits.filter((trait) => !visuals.traits![trait.id]).map((trait) => trait.id),
+    ).toEqual([1014])
+    expect(createVisuals(snapshot, visuals).traitUrl(1001)).toBe(
+      '/game-assets/currency-war-traits/1001.webp',
+    )
+    expect(createVisuals(snapshot, visuals, '/hsr/').traitUrl(1001)).toBe(
+      '/hsr/game-assets/currency-war-traits/1001.webp',
+    )
+    expect(createVisuals(snapshot, visuals, '/hsr').traitUrl(1014)).toBeUndefined()
+    const legacy = { ...visuals, traits: undefined }
+    expect(() => assertVisualCatalog(legacy, snapshot)).not.toThrow()
+    expect(createVisuals(snapshot, legacy).traitUrl(1001)).toBeUndefined()
+    for (const path of [
+      'https://example.test/1001.webp',
+      'game-assets/currency-war-traits/../1001.webp',
+    ])
+      expect(assetUrl(path, '/')).toBeUndefined()
+    expect(() =>
+      assertVisualCatalog(
+        { ...visuals, traits: { '1001': 'game-assets/currency-war-traits/1002.webp' } },
+        snapshot,
+      ),
+    ).toThrow()
+    expect(() =>
+      assertVisualCatalog(
+        { ...visuals, traits: { '9999': 'game-assets/currency-war-traits/9999.webp' } },
+        snapshot,
+      ),
+    ).toThrow()
   })
+
   it('loads all 25 formal tasks and independently verified display metadata', async () => {
     const data = loadPageData()
     expect(data.tasks).toHaveLength(25)
@@ -75,7 +101,7 @@ describe('currency-wars UI data and visuals', () => {
       /solveCurrencyWars|highsSolver/,
     )
     expect(source('src/tools/currency-wars/browser/solver.worker.ts')).toContain(
-      'solveCurrencyWars(snapshot, request, browserSolver)',
+      'solveCurrencyWarsBatch(snapshot, request, browserSolver)',
     )
     const image = source('src/tools/currency-wars/components/CurrencyImage.vue')
     expect(image).toContain('@error=')

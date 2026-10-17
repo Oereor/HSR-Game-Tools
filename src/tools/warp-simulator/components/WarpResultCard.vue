@@ -1,112 +1,142 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Tag from 'primevue/tag'
+import Button from 'primevue/button'
 import type { HistoryEntry } from '../composables/useWarpSimulator'
 import type { ItemPresentation } from '../model/presentation'
 import WarpItemVisual from './WarpItemVisual.vue'
-defineProps<{ entry: HistoryEntry; item: ItemPresentation; index: number; single: boolean }>()
+import WarpVisualIcon from './WarpVisualIcon.vue'
+const props = defineProps<{
+  entry: HistoryEntry
+  item: ItemPresentation
+  index: number
+  single: boolean
+}>()
+const emit = defineEmits<{ details: [entry: HistoryEntry] }>()
 const { t } = useI18n()
+const summary = computed(() =>
+  t('warp.details.summary', {
+    name: props.item.name,
+    kind: t(`warp.itemKind.${props.item.kind ?? 'unknown'}`),
+    rarity: props.entry.event.rarity,
+    path: props.item.pathName ?? t('warp.visual.unknown'),
+    element:
+      props.item.kind === 'avatar'
+        ? (props.item.elementName ?? t('warp.visual.unknown'))
+        : t('warp.visual.notApplicable'),
+  }),
+)
 </script>
 
 <template>
-  <article
+  <Button
+    :id="`warp-result-${entry.id}`"
+    v-tooltip="summary"
+    unstyled
+    type="button"
     class="warp-result-card"
     :class="[`warp-rarity-${entry.event.rarity}`, { 'warp-result-single': single }]"
     :style="{ '--warp-delay': `${index * 50}ms` }"
+    :aria-label="t('warp.details.open', { summary })"
+    aria-haspopup="dialog"
+    @click="emit('details', entry)"
   >
-    <div class="warp-card-top">
-      <span class="warp-card-order">{{ index + 1 }}</span
-      ><Tag v-if="entry.event.isUp === true" :value="t('warp.up')" severity="secondary" />
-    </div>
-    <div class="warp-card-visual"><WarpItemVisual :item="item" /></div>
-    <p class="warp-stars" :aria-label="t('warp.visual.rarity', { count: entry.event.rarity })">
-      {{ entry.event.rarity }}★
-    </p>
-    <h3 class="warp-item-name" :title="item.name">{{ item.name }}</h3>
-    <p class="warp-card-meta" :title="t('warp.visual.path')">
-      {{ t('warp.visual.path') }} ·
-      {{ item.path ? t(`warp.path.${item.path}`) : t('warp.visual.unknown') }}
-    </p>
-    <p v-if="item.kind === 'avatar'" class="warp-card-meta">
-      {{ t('warp.visual.element') }} ·
-      {{ item.element ? t(`warp.element.${item.element}`) : t('warp.visual.unknown') }}
-    </p>
-  </article>
+    <span class="warp-card-visual"><WarpItemVisual :item="item" artwork /></span>
+    <span class="warp-card-icons">
+      <span v-if="entry.event.isUp === true" class="warp-up">{{ t('warp.up') }}</span>
+      <WarpVisualIcon
+        v-tooltip="item.pathName ?? t('warp.visual.unknown')"
+        :url="item.pathIconUrl"
+        :label="item.pathName ?? t('warp.visual.unknown')"
+      />
+      <WarpVisualIcon
+        v-if="item.kind === 'avatar'"
+        v-tooltip="item.elementName ?? t('warp.visual.unknown')"
+        :url="item.elementIconUrl"
+        :label="item.elementName ?? t('warp.visual.unknown')"
+      />
+      <WarpVisualIcon
+        :url="item.starsUrl"
+        :label="t('warp.visual.rarity', { count: entry.event.rarity })"
+        stars
+      />
+    </span>
+  </Button>
 </template>
 
 <style scoped>
 .warp-result-card {
-  --warp-rarity: var(--p-surface-500);
+  --warp-rarity: var(--p-warp-rarity-3);
+  --warp-glow: 12%;
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px;
+  align-items: stretch;
+  width: 100%;
+  aspect-ratio: 2 / 1;
   min-width: 0;
-  padding: 10px;
-  border: 1px solid color-mix(in srgb, var(--warp-rarity) 50%, var(--color-line));
-  border-top: 2px solid var(--warp-rarity);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--warp-rarity) 4%, var(--color-surface));
+  min-height: 136px;
+  padding: 0;
+  overflow: hidden;
+  color: var(--color-ink);
+  border: 2px solid var(--warp-rarity);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow:
+    0 0 14px color-mix(in srgb, var(--warp-rarity) var(--warp-glow), transparent),
+    inset 0 0 8px color-mix(in srgb, var(--warp-rarity) 10%, transparent);
   animation: warp-result-in 180ms ease-out both;
   animation-delay: var(--warp-delay);
 }
 .warp-rarity-4 {
-  --warp-rarity: var(--p-surface-200);
+  --warp-rarity: var(--p-warp-rarity-4);
+  --warp-glow: 26%;
 }
 .warp-rarity-5 {
-  --warp-rarity: var(--color-accent);
+  --warp-rarity: var(--p-warp-rarity-5);
+  --warp-glow: 38%;
 }
-.warp-card-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 22px;
-}
-.warp-card-order {
-  font-size: 11px;
-  color: var(--color-muted);
-  font-variant-numeric: tabular-nums;
+.warp-result-card:hover {
+  background: color-mix(in srgb, var(--warp-rarity) 5%, var(--color-surface));
 }
 .warp-card-visual {
-  width: 100%;
-  height: 88px;
-  margin: 6px 0 8px;
+  display: block;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
 }
-.warp-result-card .warp-stars {
-  margin: 0 0 5px;
+.warp-card-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 4px;
+  border-left: 1px solid color-mix(in srgb, var(--warp-rarity) 28%, transparent);
+}
+.warp-card-icons :deep(.warp-stars-icon) {
+  width: 64px;
+  height: 16px;
+}
+.warp-up {
+  font-size: 10px;
+  line-height: 1.1;
   color: var(--warp-rarity);
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-.warp-result-card .warp-item-name {
-  margin: 0 0 7px;
-  font-size: 13px;
-  line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.warp-result-card .warp-card-meta {
-  margin: 3px 0 0;
-  color: var(--color-muted);
-  font-size: 11px;
-  overflow-wrap: anywhere;
-  line-height: 1.5;
 }
 .warp-result-single {
-  width: min(100%, 320px);
-  padding: 20px;
+  max-width: 620px;
+  grid-template-columns: minmax(0, 1fr) 100px;
 }
-.warp-result-single .warp-card-visual {
-  height: 180px;
+.warp-result-single .warp-card-icons {
+  gap: 18px;
 }
-.warp-result-single .warp-item-name {
-  font-size: 20px;
-  white-space: normal;
-  overflow-wrap: anywhere;
+.warp-result-single :deep(.warp-icon:not(.warp-stars-icon)) {
+  width: 36px;
+  height: 36px;
 }
-.warp-result-single .warp-stars {
-  font-size: 15px;
-}
-.warp-result-single .warp-card-meta {
-  font-size: 13px;
+.warp-result-single :deep(.warp-stars-icon) {
+  width: 84px;
+  height: 20px;
 }
 @keyframes warp-result-in {
   from {

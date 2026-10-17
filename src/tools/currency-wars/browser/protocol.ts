@@ -1,4 +1,4 @@
-import type { OptimizationRequest, OptimizationResult, Snapshot } from '../types'
+import type { OptimizationRequest, OptimizationBatch, Snapshot } from '../types'
 
 export interface SolveMessage {
   requestId: number
@@ -7,7 +7,7 @@ export interface SolveMessage {
 }
 export interface ResultMessage {
   requestId: number
-  result: OptimizationResult
+  result: OptimizationBatch
 }
 
 export type WorkerFailure = 'unavailable' | 'runtime' | 'message'

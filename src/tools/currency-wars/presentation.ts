@@ -30,7 +30,7 @@ export function formatResult(
   }
   const lines = [
     `求解状态：${labels[result.status]}${result.solverStatus ? ` [${result.solverStatus}]` : ''}`,
-    `耗时：${result.elapsedSeconds.toFixed(3)} 秒；求解器时限：${request.timeLimitSeconds} 秒`,
+    `耗时：${result.elapsedSeconds.toFixed(3)} 秒；请求时间预算：${request.timeLimitSeconds} 秒`,
     `规则范围：布洛妮娅平局两侧不计人数；初版禁止其作为领航员目标。`,
   ]
   if (result.message) lines.push(result.message)

@@ -35,6 +35,8 @@
 
 ## 文档收尾
 
+- [全仓技术债清理与稳定化](repository-stabilization-closeout.md)：近期迭代后的引用审查、跨平台路径修复、共享图片状态、失效消息清理及完整维护验收基线。
+
 - [部署前文档整理](pre-production-documentation-closeout.md)：现行文档体系、迁移去向、准确性与文档验证结果。
 - [第三方来源与发布通知现状](../third-party/README.md)：项目 MIT 与独立第三方条款、静态产物通知及发布前待确认事项。
 - [部署前深度清理与 Vercel 准备](pre-deployment-deep-cleanup.md)：Dead Code、测试与动态消息审查、SPA Rewrite 和部署前工程验证。
@@ -52,6 +54,8 @@
 
 ## Warp Simulator
 
+- [Phase 1F 视觉资源与 UI](warp-simulator/phase-1f-visual-refinement.md)：离线图片提取、横向结果卡、双侧抽屉、五列历史与验证证据。
+
 - [Phase 1E 可交互 UI](warp-simulator/phase-1e-ui-implementation.md)：页面内会话、星缘选择、结果／历史、资源复用及人工验收清单。
 - [Phase 1D 纯引擎开发](warp-simulator/phase-1d-engine-implementation.md)：v0.3 模型、严格卡池解析、原子状态转移与独立概率验证。
 - [Phase 1C 多工具项目结构重构](warp-simulator/phase-1c-project-restructuring.md)：工具目录归属、已有本地卡池配置保护、数据完整性与迁移验收。
@@ -60,5 +64,9 @@
 
 ## Currency Wars Optimizer
 
+- [Issue #4 特殊规则与多方案实施报告](currency-wars-issue-4-implementation.md)：开拓者继承、候选资格、完整配置排除、批次状态、真实快照 Benchmark 与人工验收。
+
 - [控制台原型 V1 实现报告](currency-wars-v1-implementation.md)：锁定数据、MILP、特殊羁绊边界、性能与检查记录。
 - [网页 UI MVP 实现报告](currency-wars-ui-mvp-implementation.md)：Worker/WASM 接入、纯展示元数据、资源映射与人工验收边界。
+
+- [网页 UI 优化实施报告](currency-wars-ui-polish-implementation.md)：任务优先配置、阵容优先结果、真实羁绊图标、回归检查与本地人工验收清单。

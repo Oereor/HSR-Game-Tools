@@ -127,6 +127,8 @@ workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并
 | `npm run generate:warp-schema`         | 从本仓库目录和人工 JSONC 生成本地补全 Schema                        |
 | `npm run find:warp-item -- <名称或ID>` | 离线查询双语名称／内部 ID，可加 `--kind`、`--rarity`                |
 | `npm run build:warp-data`              | 验证人工配置后显式发布裁剪的 Warp 快照                              |
+| `npm run update:warp-visuals`          | 显式从锁定 StarRailRes Git 对象生成 Warp 展示资源                   |
+| `npm run validate:warp-visuals`        | 只读核对 Warp 展示快照、来源、共享图片及自有资源完整性              |
 | `npm run validate:warp-data`           | 只读核对 Warp 目录、配置、Schema、Manifest 和快照                   |
 | `npm run bench:engine`                 | 可选的引擎性能探针，不设机器相关硬阈值                              |
 
@@ -135,7 +137,7 @@ workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并
 货币战争网页入口为 `/currency-wars`，CLI 使用 `npm run currency-wars`。离线算法快照检查用 `npm run validate:currency-wars`，展示数据检查用 `npm run validate:currency-wars-visuals`；显式提取和 Worker/WASM 构建探针见[货币战争指南](currency-wars.md)。这些命令不接入 dev、test 或 build 的数据生成钩子，普通测试不启动浏览器。
 
 正常安装、开发、测试和构建不读取相邻的 HSR-Database、TurnBasedGameData 或 StarRailRes，也不触发下载、生成或旧站构建钩子。
-排轴数据显式更新需要与 Source Lock 匹配的 StarRailRes；Warp Catalog 显式更新需要其独立 Source Lock 匹配的 TurnBasedGameData。其他 Warp 命令仅消费仓库内文件，维护步骤见[Warp 数据基础设施](game-data.md#warp-数据基础设施)。HSR-Database 继续只用于只读调查与来源追溯。
+排轴数据显式更新需要与 Source Lock 匹配的 StarRailRes；Warp Catalog 显式更新需要其独立 Source Lock 匹配的 TurnBasedGameData。Warp 展示更新使用独立 Source Lock 固定的 StarRailRes Git 对象；其他 Warp 命令仅消费仓库内文件，维护步骤见[Warp 数据基础设施](game-data.md#warp-数据基础设施)。HSR-Database 继续只用于只读调查与来源追溯。
 
 维护者当前本地网络使用 `http://127.0.0.1:7890` 系统代理；这不是所有使用者必须具备的环境。
 需要该代理时，可仅对本次安装指定参数：
@@ -158,6 +160,17 @@ npm test -- tests/unit/action-planner/planner-document-file.test.ts tests/unit/a
 
 消息修改运行 i18n 校验；模板修改运行模板校验及方案文件相关测试；数据维护按游戏数据指南验证。
 代码变更按范围选择类型检查、lint、格式检查与构建，不将历史报告中的一次通过结果当成本次验收。
+
+### 稳定维护验收清单
+
+全仓稳定化或发布前集中验收时，逐项记录命令的退出状态、失败原因与未验证范围：
+
+1. `type-check`、`test`、`lint`、`format:check`、`validate:i18n`。
+2. `validate:game-data`、`validate:planner-templates`、`validate:warp-data`、`validate:warp-visuals`、`validate:currency-wars`、`validate:currency-wars-visuals`。
+3. `build` 后运行 `verify:currency-wars-browser`；检查子路径时另构建到 `.cache/currency-wars-subpath`，使用 `--base /hsr/`，探针传入相同目录及 Base，完整命令见[货币战争指南](currency-wars.md#worker-与-wasm)。
+4. 检查实际修改文件的格式、文档链接／锚点、`git diff --check` 和 Git 状态。
+
+上述名称均为现有 npm scripts；不把更新器或数据生成命令作为校验前置步骤。Warp 配置的 `incomplete` 与正式空模板目录是明确保留的状态，不通过补造内容使报告变绿。人工 JSONC 的纯格式调整也会改变 Manifest 输入哈希，必须确认解析内容不变并同步相应来源元数据，不重建无变化的业务快照。保留原有 CI 范围，此清单用于集中维护验收。
 
 Codex 默认不执行 Computer Use、Playwright、Puppeteer、真实浏览器截图或其他浏览器自动化；普通测试命令不触发浏览器测试。
 只有用户明确要求某次浏览器自动化验收时才例外。UI 视觉与真实交互由用户在本地人工验收，建议覆盖 1440px、1024px、390px 和两种语言。

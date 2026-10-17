@@ -1,54 +1,50 @@
 import { describe, expect, it } from 'vitest'
-import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { createHash } from 'node:crypto'
-import { readFileSync, existsSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import zhCN from '../../../src/locales/zh-CN.json'
 import en from '../../../src/locales/en.json'
-import visuals from '../../../src/tools/warp-simulator/data/presentation.json'
+import visuals from '../../../src/tools/warp-simulator/data/visuals/catalog.json'
+import manifest from '../../../src/tools/warp-simulator/data/visuals/manifest.json'
 import {
   warpSnapshot,
   warpVisuals,
+  warpVisualDefinitions,
 } from '../../../src/tools/warp-simulator/data/adapters/warp-data'
 import {
   createPresentation,
   pityRows,
   portraitUrl,
 } from '../../../src/tools/warp-simulator/model/presentation'
-import { useWarpPortrait } from '../../../src/tools/warp-simulator/composables/useWarpPortrait'
 import { createSessionState } from '../../../src/tools/warp-simulator/engine/state'
 import { fixture } from '../../fixtures/warp-simulator/fixture'
 import type { ToolLocale } from '../../../src/locales/types'
 
 describe('Warp presentation and checked local assets', () => {
-  it('projects the thirty current avatars from checked metadata, with provenance and existing assets', () => {
-    const source = readFileSync(new URL('../../../' + visuals.source.file, import.meta.url))
-    expect(createHash('sha256').update(source).digest('hex')).toBe(visuals.source.sha256)
-    const catalog = JSON.parse(source.toString())
-    expect(Object.keys(warpVisuals)).toEqual(
-      warpSnapshot.items.filter((item) => item.kind === 'avatar').map((item) => item.id),
-    )
-    expect(Object.keys(warpVisuals)).toHaveLength(30)
-    for (const [id, metadata] of Object.entries(warpVisuals)) {
-      const item = catalog.characters.find(
-        (row: { id: string }) => row.id === id.slice('avatar:'.length),
-      )
-      expect(metadata.path).toBe(item.form.pathCode)
-      expect(metadata.portraitPath).toBe(catalog.assets[item.assetKey].path)
-      expect(existsSync(new URL('../../../public/' + metadata.portraitPath, import.meta.url))).toBe(
-        true,
-      )
+  it('covers only reachable items with checked original paths and shared portraits', () => {
+    expect(Object.keys(warpVisuals)).toEqual(warpSnapshot.items.map((item) => item.id))
+    expect(Object.keys(warpVisuals)).toHaveLength(86)
+    expect(manifest.source.commit).toBe('dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487')
+    expect(manifest.missingAssets).toEqual([])
+    for (const metadata of Object.values(warpVisuals)) {
+      for (const file of [metadata.portraitPath, metadata.artworkPath].filter(Boolean))
+        expect(existsSync(new URL('../../../public/' + file, import.meta.url))).toBe(true)
     }
+    expect(Object.keys(visuals.paths)).toHaveLength(9)
+    expect(Object.keys(visuals.elements)).toHaveLength(7)
   })
   it('uses Warp localized names and optional visuals independently of engine identity', () => {
-    const adapter = createPresentation(warpSnapshot, warpVisuals, '/tools/')
+    const adapter = createPresentation(warpSnapshot, warpVisuals, '/tools/', warpVisualDefinitions)
     expect(adapter.item('avatar:1503', 'zh-CN')).toMatchObject({
       id: 'avatar:1503',
       name: '真珠',
       path: 'Elation',
       portraitUrl: '/tools/game-assets/character/1503.webp',
     })
-    expect(adapter.item('avatar:1503', 'zh-CN').element).toBeUndefined()
+    expect(adapter.item('avatar:1503', 'zh-CN')).toMatchObject({
+      element: 'Ice',
+      pathName: '欢愉',
+      elementName: '冰',
+    })
     expect(adapter.item('avatar:1503', 'en').name).toBe(
       warpSnapshot.items.find((v) => v.id === 'avatar:1503')!.names.en,
     )
@@ -56,7 +52,9 @@ describe('Warp presentation and checked local assets', () => {
       kind: 'light-cone',
       rarity: 3,
     })
-    expect(adapter.item('light-cone:20000', 'zh-CN').portraitUrl).toBeUndefined()
+    expect(adapter.item('light-cone:20000', 'zh-CN').artworkUrl).toMatch(
+      /^\/tools\/game-assets\/warp\//,
+    )
   })
   it('keeps unknown path/element neutral and never shows light-cone elements or invented images', () => {
     const adapter = createPresentation(fixture(), {
@@ -79,7 +77,7 @@ describe('Warp presentation and checked local assets', () => {
       element: undefined,
       portraitUrl: undefined,
     })
-    expect(adapter.item('avatar:999', 'en')).toEqual({
+    expect(adapter.item('avatar:999', 'en')).toMatchObject({
       id: 'avatar:999',
       name: 'avatar:999',
       kind: undefined,
@@ -103,22 +101,13 @@ describe('Warp presentation and checked local assets', () => {
   ])('does not construct unsafe or missing image URLs: %s', (path) => {
     expect(portraitUrl(path, '/sub/')).toBeUndefined()
   })
-  it('handles root and subpath URLs, load failure and a subsequent different image', () => {
+  it('maps root and subpath URLs without changing the resource identity', () => {
     expect(portraitUrl('game-assets/character/1003.webp', '/')).toBe(
       '/game-assets/character/1003.webp',
     )
     expect(portraitUrl('game-assets/character/1003.webp', '/tools')).toBe(
       '/tools/game-assets/character/1003.webp',
     )
-    const url = ref<string>(),
-      visual = useWarpPortrait(() => url.value)
-    expect(visual.source.value).toBeUndefined()
-    url.value = '/tools/game-assets/character/1003.webp'
-    expect(visual.source.value).toBe(url.value)
-    visual.fail()
-    expect(visual.source.value).toBeUndefined()
-    url.value = '/tools/game-assets/character/1004.webp'
-    expect(visual.source.value).toBe(url.value)
   })
   it('searches both languages and stable IDs with normalized case/width', () => {
     const snapshot = fixture()

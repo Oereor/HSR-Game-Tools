@@ -1,20 +1,31 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import Drawer from 'primevue/drawer'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
-import { Ticket, Tickets as TicketsIcon, UsersRound, RotateCcw, Sparkles } from '@lucide/vue'
+import {
+  Ticket,
+  Tickets as TicketsIcon,
+  UsersRound,
+  RotateCcw,
+  Sparkles,
+  SlidersHorizontal,
+  History,
+} from '@lucide/vue'
 import type { ToolLocale } from '../../locales/types'
-import { warpSnapshot, warpVisuals } from './data/adapters/warp-data'
-import { useWarpSimulator } from './composables/useWarpSimulator'
+import { warpSnapshot, warpVisuals, warpVisualDefinitions } from './data/adapters/warp-data'
+import { useWarpSimulator, type HistoryEntry } from './composables/useWarpSimulator'
+import { useWarpOverlay } from './composables/useWarpOverlay'
 import { createPresentation } from './model/presentation'
 import WarpPityPanel from './components/WarpPityPanel.vue'
 import WarpItemVisual from './components/WarpItemVisual.vue'
 import WarpSelectionDialog from './components/WarpSelectionDialog.vue'
 import WarpResultCard from './components/WarpResultCard.vue'
 import WarpHistory from './components/WarpHistory.vue'
+import WarpItemDetails from './components/WarpItemDetails.vue'
 
 const { t, locale } = useI18n()
 const simulator = useWarpSimulator()
@@ -36,20 +47,16 @@ const {
   announcement,
   canPull,
 } = simulator
-const presentation = createPresentation(warpSnapshot, warpVisuals, import.meta.env.BASE_URL)
+const overlay = useWarpOverlay()
+const { panel } = overlay
+const details = shallowRef<HistoryEntry>()
+const presentation = createPresentation(
+  warpSnapshot,
+  warpVisuals,
+  import.meta.env.BASE_URL,
+  warpVisualDefinitions,
+)
 const item = (id: string) => presentation.item(id, locale.value as ToolLocale)
-const bannerOptions = computed(() =>
-  simulator.banners.map(({ banner }) => ({
-    id: banner.id,
-    label: banner.up5
-      ? t('warp.bannerSource', { name: item(banner.up5).name, type: t(`warp.kind.${banner.kind}`) })
-      : t(`warp.kind.${banner.kind}`),
-  })),
-)
-const upItem = computed(() =>
-  activeBanner.value?.banner.up5 ? item(activeBanner.value.banner.up5) : undefined,
-)
-const controlsLocked = computed(() => busy.value || selectionOpen.value || !!resetScope.value)
 function sourceLabel(bannerId: string) {
   const banner = warpSnapshot.banners.find((entry) => entry.id === bannerId)
   return banner
@@ -58,15 +65,174 @@ function sourceLabel(bannerId: string) {
       : t(`warp.kind.${banner.kind}`)
     : bannerId
 }
+const bannerOptions = computed(() =>
+  simulator.banners.map(({ banner }) => ({ id: banner.id, label: sourceLabel(banner.id) })),
+)
+const upItem = computed(() =>
+  activeBanner.value?.banner.up5 ? item(activeBanner.value.banner.up5) : undefined,
+)
+const controlsLocked = computed(() => busy.value || selectionOpen.value || !!resetScope.value)
+const needsSelection = computed(
+  () => activeBanner.value?.requiresSelection && selectedAvatarIds.value.length !== 7,
+)
+function focus(id: string | undefined) {
+  if (id) void nextTick(() => document.getElementById(id)?.focus())
+}
+function afterPanelHide() {
+  focus(overlay.afterPanelHide())
+}
+function afterPanelShow() {
+  focus(overlay.takeFocus())
+}
+function afterDialogHide() {
+  focus(overlay.afterDialogHide())
+}
+function openSelection(triggerId: string) {
+  overlay.openDialog(() => {
+    simulator.openSelection()
+  }, triggerId)
+}
+function openReset(scope: 'group' | 'all') {
+  overlay.openDialog(() => {
+    simulator.requestReset(scope)
+  }, `warp-reset-${scope}`)
+}
+function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
+  overlay.openDialog(() => {
+    details.value = entry
+  }, `warp-${source}-${entry.id}`)
+}
 </script>
 
 <template>
   <div class="warp-page">
     <header class="warp-page-heading">
-      <Ticket :size="24" :stroke-width="1.75" aria-hidden="true" />
-      <h1>{{ t('warp.title') }}</h1>
+      <div class="warp-page-title">
+        <Ticket :size="24" :stroke-width="1.75" aria-hidden="true" />
+        <h1>{{ t('warp.title') }}</h1>
+      </div>
+      <p class="warp-current-banner">
+        {{ activeBanner ? sourceLabel(activeBanner.banner.id) : t('warp.noBanners') }}
+      </p>
+      <div class="warp-panel-actions">
+        <Button
+          id="warp-controls-trigger"
+          :label="t('warp.panels.controls')"
+          severity="secondary"
+          outlined
+          :aria-expanded="panel === 'controls'"
+          aria-controls="warp-controls-drawer"
+          @click="overlay.openPanel('controls')"
+          ><template #icon><SlidersHorizontal :size="16" aria-hidden="true" /></template
+        ></Button>
+        <Button
+          id="warp-history-trigger"
+          :label="t('warp.history.title')"
+          severity="secondary"
+          outlined
+          :aria-expanded="panel === 'history'"
+          aria-controls="warp-history-drawer"
+          @click="overlay.openPanel('history')"
+          ><template #icon><History :size="16" aria-hidden="true" /></template
+        ></Button>
+      </div>
     </header>
-    <div class="warp-workspace">
+    <section aria-labelledby="warp-results-title" class="warp-results">
+      <div class="warp-results-heading">
+        <h2 id="warp-results-title">
+          <Sparkles :size="18" aria-hidden="true" />{{ t('warp.results.title') }}
+        </h2>
+        <span v-if="latestResults.length">{{
+          t('warp.results.count', { count: latestResults.length })
+        }}</span>
+      </div>
+      <p v-if="latestResults.length" class="warp-result-source">
+        {{ sourceLabel(latestResults[0].event.bannerId) }}
+      </p>
+      <div v-if="!latestResults.length" class="warp-results-empty">
+        <Ticket :size="36" :stroke-width="1.25" aria-hidden="true" />
+        <p>{{ t('warp.results.empty') }}</p>
+      </div>
+      <div
+        v-else
+        class="warp-result-grid"
+        :class="{
+          'warp-ten-grid': latestResults.length === 10,
+          'warp-single-grid': latestResults.length === 1,
+        }"
+      >
+        <WarpResultCard
+          v-for="(entry, index) in latestResults"
+          :key="`${entry.batchId}:${entry.id}`"
+          :entry="entry"
+          :item="item(entry.event.itemId)"
+          :index="index"
+          :single="latestResults.length === 1"
+          @details="showDetails($event, 'result')"
+        />
+      </div>
+    </section>
+    <div class="warp-actionbar">
+      <p id="warp-choice-status" class="warp-action-status">
+        {{
+          !activeBanner
+            ? t('warp.noBanners')
+            : needsSelection
+              ? t('warp.selection.required')
+              : activeBanner.requiresSelection
+                ? t('warp.selection.ready')
+                : t('warp.panels.ready')
+        }}
+      </p>
+      <Button
+        v-if="activeBanner?.requiresSelection"
+        id="warp-action-selection"
+        :label="t(selectedAvatarIds.length ? 'warp.selection.edit' : 'warp.selection.choose')"
+        size="small"
+        severity="secondary"
+        outlined
+        :disabled="controlsLocked"
+        @click="openSelection('warp-action-selection')"
+        ><template #icon><UsersRound :size="16" aria-hidden="true" /></template
+      ></Button>
+      <div class="warp-actions" :aria-busy="busy">
+        <Button
+          :label="t('warp.pullOne')"
+          severity="secondary"
+          outlined
+          :disabled="!canPull"
+          :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
+          @click="simulator.draw(1)"
+          ><template #icon><Ticket :size="17" aria-hidden="true" /></template
+        ></Button>
+        <Button
+          :label="t('warp.pullTen')"
+          :disabled="!canPull"
+          :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
+          @click="simulator.draw(10)"
+          ><template #icon><TicketsIcon :size="17" aria-hidden="true" /></template
+        ></Button>
+      </div>
+      <p v-if="diagnostic" id="warp-draw-error" class="warp-error" role="alert">
+        {{ t(`warp.error.${diagnostic.code}`) }}
+      </p>
+    </div>
+    <Drawer
+      block-scroll
+      id="warp-controls-drawer"
+      :visible="panel === 'controls'"
+      position="left"
+      :header="t('warp.panels.controls')"
+      :style="{ width: '25rem', maxWidth: '100vw' }"
+      :close-button-props="{ 'aria-label': t('warp.panels.closeControls') }"
+      @update:visible="
+        (value) => {
+          if (!value) overlay.closePanel()
+        }
+      "
+      @after-hide="afterPanelHide"
+      @after-show="afterPanelShow"
+    >
       <section class="warp-controls" aria-labelledby="warp-banner-heading">
         <h2 id="warp-banner-heading">{{ t('warp.bannerTitle') }}</h2>
         <label id="warp-banner-label" for="warp-banner" class="warp-field-label">{{
@@ -130,10 +296,11 @@ function sourceLabel(bannerId: string) {
               outlined
               :disabled="controlsLocked"
               aria-describedby="warp-choice-status"
-              @click="simulator.openSelection"
+              id="warp-selection-trigger"
+              @click="openSelection('warp-selection-trigger')"
               ><template #icon><UsersRound :size="16" aria-hidden="true" /></template
             ></Button>
-            <p id="warp-choice-status" class="warp-muted">
+            <p id="warp-control-choice-status" class="warp-muted">
               {{
                 t(
                   selectedAvatarIds.length === 7
@@ -144,39 +311,6 @@ function sourceLabel(bannerId: string) {
             </p>
           </div>
         </template>
-        <div class="warp-actions" :aria-busy="busy">
-          <Button
-            :label="t('warp.pullOne')"
-            severity="secondary"
-            outlined
-            :disabled="!canPull"
-            :aria-describedby="
-              diagnostic
-                ? 'warp-draw-error'
-                : activeBanner?.requiresSelection
-                  ? 'warp-choice-status'
-                  : undefined
-            "
-            @click="simulator.draw(1)"
-            ><template #icon><Ticket :size="17" aria-hidden="true" /></template
-          ></Button>
-          <Button
-            :label="t('warp.pullTen')"
-            :disabled="!canPull"
-            :aria-describedby="
-              diagnostic
-                ? 'warp-draw-error'
-                : activeBanner?.requiresSelection
-                  ? 'warp-choice-status'
-                  : undefined
-            "
-            @click="simulator.draw(10)"
-            ><template #icon><TicketsIcon :size="17" aria-hidden="true" /></template
-          ></Button>
-        </div>
-        <p v-if="diagnostic" id="warp-draw-error" class="warp-error" role="alert">
-          {{ t(`warp.error.${diagnostic.code}`) }}
-        </p>
         <div class="warp-reset-actions">
           <Button
             :label="t('warp.reset.group')"
@@ -184,7 +318,8 @@ function sourceLabel(bannerId: string) {
             severity="secondary"
             text
             :disabled="controlsLocked || !activeBanner"
-            @click="simulator.requestReset('group')"
+            id="warp-reset-group"
+            @click="openReset('group')"
             ><template #icon><RotateCcw :size="14" aria-hidden="true" /></template
           ></Button>
           <Button
@@ -193,57 +328,38 @@ function sourceLabel(bannerId: string) {
             severity="secondary"
             text
             :disabled="controlsLocked"
-            @click="simulator.requestReset('all')"
+            id="warp-reset-all"
+            @click="openReset('all')"
           />
         </div>
         <p class="warp-memory-note">{{ t('warp.memoryOnly') }}</p>
       </section>
-
-      <div class="warp-output">
-        <section aria-labelledby="warp-results-title" class="warp-results">
-          <div class="warp-results-heading">
-            <h2 id="warp-results-title">
-              <Sparkles :size="18" aria-hidden="true" />{{ t('warp.results.title') }}
-            </h2>
-            <span v-if="latestResults.length">{{
-              t('warp.results.count', { count: latestResults.length })
-            }}</span>
-          </div>
-          <p v-if="latestResults.length" class="warp-result-source">
-            {{ sourceLabel(latestResults[0].event.bannerId) }}
-          </p>
-          <div v-if="!latestResults.length" class="warp-results-empty">
-            <Ticket :size="36" :stroke-width="1.25" aria-hidden="true" />
-            <p>{{ t('warp.results.empty') }}</p>
-          </div>
-          <div
-            v-else
-            class="warp-result-grid"
-            :class="{
-              'warp-ten-grid': latestResults.length === 10,
-              'warp-single-grid': latestResults.length === 1,
-            }"
-          >
-            <WarpResultCard
-              v-for="(entry, index) in latestResults"
-              :key="`${entry.batchId}:${entry.id}`"
-              :entry="entry"
-              :item="item(entry.event.itemId)"
-              :index="index"
-              :single="latestResults.length === 1"
-            />
-          </div>
-        </section>
-        <WarpHistory
-          :entries="visibleHistory"
-          :total="session.history.length"
-          :page="historyPage"
-          :presentation="presentation"
-          :source-label="sourceLabel"
-          @page="simulator.setHistoryPage"
-        />
-      </div>
-    </div>
+    </Drawer>
+    <Drawer
+      block-scroll
+      id="warp-history-drawer"
+      :visible="panel === 'history'"
+      position="right"
+      :header="t('warp.history.title')"
+      :style="{ width: '49rem', maxWidth: '100vw' }"
+      :close-button-props="{ 'aria-label': t('warp.panels.closeHistory') }"
+      @update:visible="
+        (value) => {
+          if (!value) overlay.closePanel()
+        }
+      "
+      @after-hide="afterPanelHide"
+      @after-show="afterPanelShow"
+    >
+      <WarpHistory
+        :entries="visibleHistory"
+        :total="session.history.length"
+        :page="historyPage"
+        :presentation="presentation"
+        @page="simulator.setHistoryPage"
+        @details="showDetails($event, 'history')"
+      />
+    </Drawer>
     <div class="warp-sr-only" role="status" aria-live="polite" aria-atomic="true">
       <span v-if="announcement" :key="`${announcement.key}:${announcement.batchId ?? ''}`">{{
         t(announcement.key, { count: announcement.count ?? 0 })
@@ -258,6 +374,14 @@ function sourceLabel(bannerId: string) {
       @update:draft="simulator.setSelectionDraft"
       @cancel="simulator.cancelSelection"
       @confirm="simulator.confirmSelection"
+      @after-hide="afterDialogHide"
+    />
+    <WarpItemDetails
+      :entry="details"
+      :item="details ? item(details.event.itemId) : undefined"
+      :source-label="details ? sourceLabel(details.event.bannerId) : ''"
+      @close="details = undefined"
+      @after-hide="afterDialogHide"
     />
     <Dialog
       :visible="!!resetScope"
@@ -271,6 +395,7 @@ function sourceLabel(bannerId: string) {
           if (!value) simulator.cancelReset()
         }
       "
+      @after-hide="afterDialogHide"
     >
       <p class="warp-reset-description">
         {{ t(resetScope === 'group' ? 'warp.reset.groupConfirm' : 'warp.reset.allConfirm') }}
@@ -290,39 +415,6 @@ function sourceLabel(bannerId: string) {
 </template>
 
 <style scoped>
-.warp-page {
-  min-width: 0;
-}
-.warp-page-heading {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 28px;
-}
-.warp-page-heading > svg {
-  color: var(--color-accent);
-}
-.warp-page-heading h1 {
-  margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-}
-.warp-workspace {
-  display: grid;
-  grid-template-columns: minmax(320px, 2fr) minmax(0, 3fr);
-  gap: 32px;
-  align-items: start;
-}
-.warp-controls {
-  padding: 24px;
-  border: 1px solid var(--color-line);
-  border-radius: 8px;
-  background: var(--color-surface);
-  min-width: 0;
-}
-.warp-controls h2 {
-  margin: 0 0 20px;
-  font-size: 17px;
-}
 .warp-field-label {
   display: block;
   margin-bottom: 8px;
@@ -398,15 +490,6 @@ function sourceLabel(bannerId: string) {
   font-size: 12px;
   line-height: 1.6;
 }
-.warp-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 24px;
-}
-.warp-actions > * {
-  min-width: 0;
-}
 .warp-reset-actions {
   display: flex;
   flex-wrap: wrap;
@@ -424,13 +507,52 @@ function sourceLabel(bannerId: string) {
   font-size: 13px;
   line-height: 1.6;
 }
-.warp-output {
+
+.warp-page {
   min-width: 0;
+}
+.warp-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  margin-bottom: 28px;
+}
+.warp-page-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.warp-page-title > svg {
+  color: var(--color-accent);
+}
+.warp-page-title h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+.warp-current-banner {
+  font-size: 12px;
+  color: var(--color-muted);
+  flex: 1 1 220px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.warp-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.warp-results {
+  min-height: max(380px, calc(100dvh - 330px));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 8px 28px;
 }
 .warp-results-heading {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   gap: 12px;
   margin-bottom: 12px;
 }
@@ -438,8 +560,8 @@ function sourceLabel(bannerId: string) {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 16px;
   margin: 0;
-  font-size: 17px;
 }
 .warp-results-heading > span,
 .warp-result-source {
@@ -447,29 +569,28 @@ function sourceLabel(bannerId: string) {
   color: var(--color-muted);
 }
 .warp-result-source {
-  margin: 0 0 18px;
+  margin: 0 0 20px;
   overflow-wrap: anywhere;
 }
 .warp-results-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-content: center;
+  justify-items: center;
   gap: 12px;
-  min-height: 260px;
-  color: var(--color-muted);
+  flex: 1;
+  min-height: 280px;
   border: 1px dashed var(--color-line);
   border-radius: 8px;
   padding: 24px;
+  color: var(--color-muted);
   text-align: center;
-}
-.warp-results-empty p {
   font-size: 13px;
-  line-height: 1.7;
 }
 .warp-result-grid {
   display: grid;
-  gap: 10px;
+  gap: clamp(12px, 1.7vw, 22px);
+  align-content: center;
+  flex: 1;
 }
 .warp-single-grid {
   justify-items: center;
@@ -487,6 +608,41 @@ function sourceLabel(bannerId: string) {
 .warp-ten-grid > :nth-child(4) {
   grid-column: 1 / span 2;
 }
+.warp-actionbar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 14px 12px calc(14px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-line);
+  background: var(--color-page);
+  z-index: 1;
+}
+.warp-action-status {
+  flex: 1 1 210px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+.warp-actions {
+  display: flex;
+  gap: 10px;
+}
+.warp-actionbar .warp-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+.warp-controls {
+  min-width: 0;
+}
+.warp-controls h2 {
+  margin: 0 0 20px;
+  font-size: 16px;
+}
 .warp-sr-only {
   position: absolute;
   width: 1px;
@@ -502,15 +658,6 @@ function sourceLabel(bannerId: string) {
   line-height: 1.8;
 }
 @media (max-width: 1039px) {
-  .warp-workspace {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
-  }
-}
-@media (max-width: 640px) {
-  .warp-controls {
-    padding: 18px;
-  }
   .warp-ten-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -519,6 +666,23 @@ function sourceLabel(bannerId: string) {
   .warp-ten-grid > :nth-child(4),
   .warp-ten-grid > :nth-child(8) {
     grid-column: auto;
+  }
+  .warp-page-heading {
+    margin-bottom: 16px;
+  }
+  .warp-panel-actions {
+    width: 100%;
+  }
+}
+@media (max-width: 400px) {
+  .warp-ten-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .warp-actions {
+    width: 100%;
+  }
+  .warp-actions > * {
+    flex: 1;
   }
 }
 </style>

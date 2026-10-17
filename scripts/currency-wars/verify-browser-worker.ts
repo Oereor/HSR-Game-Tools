@@ -88,10 +88,13 @@ async function main() {
     if (
       response.requestId !== 1 ||
       result.status !== 'optimal' ||
-      !result.lineup ||
-      !result.evaluation ||
-      !evaluateLineup(snapshot, request, result.lineup).valid ||
-      result.evaluation.completedCount !== 1 ||
+      !result.solutions.length ||
+      result.solutions.length > 3 ||
+      result.solutions.some(
+        (solution) =>
+          !evaluateLineup(snapshot, request, solution.lineup).valid ||
+          solution.evaluation.completedCount !== 1,
+      ) ||
       !fetched.length ||
       ticks <= startTicks
     )
@@ -100,8 +103,9 @@ async function main() {
       JSON.stringify({
         base,
         status: result.status,
-        completed: result.evaluation.completedCount,
-        emblems: result.evaluation.emblemCount,
+        completed: result.solutions.map((s) => s.evaluation.completedCount),
+        emblems: result.solutions.map((s) => s.evaluation.emblemCount),
+        candidates: result.solutions.length,
         wasm: fetched,
         mainThreadTicks: ticks - startTicks,
         note: 'Built browser code + real WASM in an isolated VM thread; not real-browser acceptance.',

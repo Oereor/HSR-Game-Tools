@@ -1,5 +1,6 @@
 import { computed, reactive, ref, shallowRef } from 'vue'
-import type { OptimizationRequest, OptimizationResult, Snapshot, Task } from '../types'
+import type { OptimizationRequest, OptimizationBatch, Snapshot, Task } from '../types'
+import { lineupSignature } from '../signature'
 import type { WorkerFactory, WorkerFailure, WorkerPort } from '../browser/protocol'
 import { validateRequest } from '../validation'
 
@@ -14,7 +15,7 @@ export type FormField = 'slots' | 'emblemBudget' | 'timeLimitSeconds' | 'taskIds
 export interface SolvedAttempt {
   requestId: number
   request: OptimizationRequest
-  result: OptimizationResult
+  result: OptimizationBatch
 }
 export function formErrors(form: SolverForm, tasks: Task[]): FormField[] {
   const errors: FormField[] = []
@@ -70,6 +71,10 @@ export function createCurrencyWarsSession(
   const failure = shallowRef<WorkerFailure | 'input' | 'data'>()
   const lastAttempt = shallowRef<SolvedAttempt>()
   const lastValid = shallowRef<SolvedAttempt>()
+  const selectedSolutionIndex = ref(0)
+  const selectedSolution = computed(
+    () => lastValid.value?.result.solutions[selectedSolutionIndex.value],
+  )
   const runningRequest = shallowRef<OptimizationRequest>()
   const errors = computed(() => formErrors(form, tasks))
   let sequence = 0
@@ -138,21 +143,42 @@ export function createCurrencyWarsSession(
       worker.onmessage = (event) => {
         if (disposed || activeId !== id || event.data?.requestId !== id) return
         const result = event.data.result
-        if (
-          !result ||
-          !['optimal', 'feasible', 'no-result', 'infeasible', 'error', 'empty'].includes(
-            result.status,
-          ) ||
-          !Number.isFinite(result.elapsedSeconds) ||
-          (['optimal', 'feasible'].includes(result.status) &&
-            (!result.lineup || result.evaluation?.valid !== true))
-        ) {
+        try {
+          if (
+            !result ||
+            !['optimal', 'feasible', 'no-result', 'infeasible', 'error', 'empty'].includes(
+              result.status,
+            ) ||
+            !Number.isFinite(result.totalElapsedSeconds) ||
+            !Array.isArray(result.solutions) ||
+            result.solutions.length > 3 ||
+            requestFingerprint(result.request) !== requestFingerprint(submitted) ||
+            (['optimal', 'feasible'].includes(result.status) &&
+              (!result.solutions.length ||
+                result.solutions.some(
+                  (solution) =>
+                    !solution.lineup ||
+                    solution.evaluation?.valid !== true ||
+                    solution.signature !== lineupSignature(solution.lineup),
+                ) ||
+                new Set(result.solutions.map((solution) => solution.signature)).size !==
+                  result.solutions.length ||
+                new Set(result.solutions.map((solution) => solution.evaluation.completedCount))
+                  .size !== 1))
+          ) {
+            fail(id, 'message')
+            return
+          }
+        } catch {
           fail(id, 'message')
           return
         }
         const attempt: SolvedAttempt = { requestId: id, request: submitted, result }
         lastAttempt.value = attempt
-        if (result.status === 'optimal' || result.status === 'feasible') lastValid.value = attempt
+        if (result.status === 'optimal' || result.status === 'feasible') {
+          lastValid.value = attempt
+          selectedSolutionIndex.value = 0
+        }
         release()
       }
       worker.onerror = (event) => {
@@ -179,12 +205,6 @@ export function createCurrencyWarsSession(
     disposed = true
     release()
   }
-  function selectAll() {
-    form.taskIds = tasks.map((t) => t.id)
-  }
-  function clearSelection() {
-    form.taskIds = []
-  }
   return {
     form,
     busy,
@@ -194,13 +214,21 @@ export function createCurrencyWarsSession(
     cancelled,
     lastAttempt,
     lastValid,
+    selectedSolutionIndex,
+    selectedSolution,
+    selectSolution: (index: number) => {
+      if (
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < (lastValid.value?.result.solutions.length ?? 0)
+      )
+        selectedSolutionIndex.value = index
+    },
     runningRequest,
     stale,
     historical,
     start,
     cancel,
     dispose,
-    selectAll,
-    clearSelection,
   }
 }

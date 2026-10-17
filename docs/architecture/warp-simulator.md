@@ -1,8 +1,8 @@
 # 跃迁模拟器
 
-本指南描述 Phase 1D 纯引擎与 Phase 1E 页面当前实现。模型由维护者确定，标识为 `hsr-warp`，版本为 `v0.3`；它是**本项目的标准模型，不代表已经取得或验证游戏服务器源码**。历史调查不能覆盖本指南中的既定规则。
+本指南描述 Phase 1D 纯引擎、Phase 1E 会话与 Phase 1F 展示当前实现。模型由维护者确定，标识为 `hsr-warp`，版本为 `v0.3`；它是**本项目的标准模型，不代表已经取得或验证游戏服务器源码**。历史调查不能覆盖本指南中的既定规则。
 
-数据维护见[游戏数据指南](../game-data.md#warp-数据基础设施)，实施证据见 [Phase 1D 报告](../investigations/warp-simulator/phase-1d-engine-implementation.md)和 [Phase 1E 报告](../investigations/warp-simulator/phase-1e-ui-implementation.md)。`/warp-simulator` 提供单抽、十连、星缘选择及页面内历史，没有用户存档、导入导出或统计面板。
+数据维护见[游戏数据指南](../game-data.md#warp-数据基础设施)，实施证据见 [Phase 1D 报告](../investigations/warp-simulator/phase-1d-engine-implementation.md)、[Phase 1E 报告](../investigations/warp-simulator/phase-1e-ui-implementation.md)和 [Phase 1F 报告](../investigations/warp-simulator/phase-1f-visual-refinement.md)。`/warp-simulator` 提供单抽、十连、星缘选择及页面内历史，没有用户存档、导入导出或统计面板。
 
 ## 模块与输入边界
 
@@ -139,12 +139,14 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 ## 展示资源与降级
 
-[presentation.json](../../src/tools/warp-simulator/data/presentation.json)是独立薄映射，仅保存当前 30 名角色的已核实命途和已有本地头像路径。来源为本仓库已提交的规范化角色／资源映射，记录来源 Commit、文件 SHA-256 及上游身份。不是新抽取资格名单，不修改 Warp 数据生成产物；普通运行与构建不生成它、不读取上游仓库，也不导入排轴模块。
+[visuals](../../src/tools/warp-simulator/data/visuals/)为独立的规范化展示快照，来源锁定和显式离线维护见[游戏数据指南](../game-data.md#warp-展示资源)。它不表达抽取资格，不修改引擎输入，不在普通构建中生成。共享头像的复用仅发生于维护阶段；运行时无排轴业务导入或原始来源依赖。
 
-`createPresentation(snapshot, visuals?, base?)` 按 canonical ID 取得 Warp 中英文名称及可选 `path`、`element`、`portraitUrl`；图片 URL 只由已登记的安全相对路径与 BASE_URL 组合，不猜路径。`useWarpPortrait` 对加载失败的 URL 使用与无映射相同的中性占位，切换到其他已登记 URL 时可重新加载。
+`createPresentation(snapshot, visuals?, base?, definitions?)` 继续按 canonical ID 从 Warp Snapshot 取得名称、类别、稀有度，另外返回命途内部 ID／本地化名称／图标、角色属性内部 ID／名称／图标／原色／可读色、头像、立绘／封面及星级图片 URL。物品路径只由登记的安全 `game-assets/*.webp` 相对路径与 BASE_URL 组合。光锥无属性；缺失元数据和加载失败均使用中性占位，不猜测资源。
 
-当前 30 名角色有命途及头像，但无已核实属性；光锥暂无命途／图片映射。缺失元数据用“—”或图像占位表达，光锥不显示属性。后续可扩展独立的展示来源，但不得把这些字段写回引擎或据名称推断内容。
+`useWarpOverlay` 只管理互斥 Drawer、Dialog 进入队列及恢复焦点 ID，不引用会话或 RNG。控制与历史默认收起，结果区域和常驻抽取栏保持挂载；打开／关闭面板不会重建 `useWarpSimulator` 或结果批次。Dialog 先等待 Drawer 的 after-hide，关闭后恢复来源面板／触发项；DOM 焦点恢复只在页面层执行。
 
-双语文案集中于 `warp.*`，历史和结果的名称随语言改变但身份、UP 和 RNG 不变。十连的 3–4–3 布局与 CSS 入场动画只消费已提交事件，使用稳定批次／条目 key；reduced-motion 关闭动画。视觉及键盘／焦点／响应式仍需维护者本地人工验收。
+结果卡为图像与 Icon 构成的可激活横向卡；Tooltip、ARIA 和共用 `WarpItemDetails` 提供完整文字及既有事件详情。历史共用同一 Presentation Adapter，五列语义表格保持最新优先；最新批次仍保持实际抽取顺序。星缘选择、抽取、分页、重置和历史容量仍使用原有会话实现。
 
-持久化、导入导出、统计图表、复杂演出及更多展示资源属于后续阶段；当前不定义存档格式，不实现常驻 300 抽自选或新手池。
+双语 UI 文案集中于 `warp.*`，官方命途／属性名称来自展示快照。语言、动画与资源加载不改变身份、UP 或 RNG。结果卡稳定 key 与 reduced-motion 规则保持不变，稀有度 Token 仅作用于结果卡。真实视觉、键盘／触屏、焦点及响应式由维护者人工验收。
+
+持久化、导入导出、统计图表和复杂演出仍未实现；真实 Banner 的后续维护需单独审阅，不自动进入下一阶段。
