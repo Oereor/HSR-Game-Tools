@@ -8,6 +8,7 @@ import {
   safeAssetPath,
   type VisualCatalog,
   type VisualDefinitions,
+  type VisualImage,
 } from './visual-catalog'
 export type { VisualMetadata, VisualCatalog } from './visual-catalog'
 
@@ -31,6 +32,11 @@ export const ELEMENT_CODES = [
   'Quantum',
   'Imaginary',
 ] as const
+export interface ImagePresentation {
+  readonly url: string
+  readonly width: number
+  readonly height: number
+}
 export interface ItemPresentation {
   readonly id: string
   readonly name: string
@@ -47,6 +53,20 @@ export interface ItemPresentation {
   readonly elementColor?: string
   readonly elementTextColor?: string
   readonly starsUrl?: string
+  readonly revealArtwork?: ImagePresentation
+  readonly revealPathIcon?: ImagePresentation
+  readonly revealStars?: ImagePresentation
+}
+function revealImage(image: VisualImage | undefined, base: string): ImagePresentation | undefined {
+  const url = portraitUrl(image?.path, base)
+  return url &&
+    image &&
+    Number.isSafeInteger(image.width) &&
+    image.width > 0 &&
+    Number.isSafeInteger(image.height) &&
+    image.height > 0
+    ? { url, width: image.width, height: image.height }
+    : undefined
 }
 export function portraitUrl(path: string | undefined, base: string): string | undefined {
   if (!safeAssetPath(path)) return undefined
@@ -93,6 +113,9 @@ export function createPresentation(
         ? readableColor(elementDefinition.color, warpVisualTokens.surface)
         : undefined,
       starsUrl: source ? portraitUrl(definitions.stars[source.rarity], base) : undefined,
+      revealArtwork: source ? revealImage(visual?.revealArtwork, base) : undefined,
+      revealPathIcon: revealImage(pathDefinition?.revealIcon, base),
+      revealStars: source ? revealImage(definitions.revealStars?.[source.rarity], base) : undefined,
     }
   }
   const search = (ids: readonly string[], query: string) => {

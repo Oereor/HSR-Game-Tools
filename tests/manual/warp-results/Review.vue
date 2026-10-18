@@ -52,6 +52,8 @@ const {
   locked: revealLocked,
   current: revealEntry,
   phase: revealPhase,
+  artworkReady,
+  identityReady,
   displayedEntries,
 } = reveal
 const played = ref(false)
@@ -145,6 +147,10 @@ watchEffect(() => {
         revealEntry ? presentation.item(revealEntry.event.itemId, locale as ToolLocale) : undefined
       "
       :phase="revealPhase"
+      :artwork-ready="artworkReady"
+      :identity-ready="identityReady"
+      @artwork-ready="reveal.markArtworkReady"
+      @identity-ready="reveal.markIdentityReady"
       @activate="reveal.activate"
       @escape="reveal.escape"
       @after-hide="afterRevealHide"

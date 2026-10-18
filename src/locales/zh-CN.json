@@ -459,6 +459,7 @@
       "kind": "类别：{kind}"
     },
     "reveal": {
+      "loading": "图片加载中，Escape 可结束当前展示",
       "title": "跃迁结果：{name}",
       "action": "{name}。{action}。Escape 结束当前展示。",
       "skip": "点击直接查看物品图片",

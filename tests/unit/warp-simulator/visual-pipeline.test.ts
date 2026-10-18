@@ -124,7 +124,7 @@ describe('explicit Warp visual updater', () => {
     const root = fileURLToPath(new URL('../../../', import.meta.url))
     expect(await validateVisuals(root)).toMatchObject({
       items: 86,
-      newAssets: 105,
+      newAssets: 201,
       reusedAssets: 30,
       missing: 0,
     })
@@ -146,14 +146,89 @@ describe('explicit Warp visual updater', () => {
     expect(catalog.paths.Warrior.names).toEqual({ 'zh-CN': '毁灭', en: 'Destruction' })
     expect(catalog.paths.Warrior.iconPath).toBe(catalog.elements.Quantum.iconPath)
     expect(new Set(Object.values(catalog.stars)).size).toBe(1)
-    expect((await readdir(path.join(f.stage, assetDirectory))).length).toBe(4)
+    expect(catalog.items['avatar:1'].revealArtwork).toMatchObject({ width: 16, height: 24 })
+    expect(catalog.items['avatar:1'].revealArtwork).toEqual(
+      catalog.items['light-cone:1'].revealArtwork,
+    )
+    expect(catalog.paths.Warrior.revealIcon).toMatchObject({ width: 16, height: 24 })
+    expect(catalog.revealStars['5']).toMatchObject({ width: 16, height: 24 })
+    expect(manifest.inputs['image/character_portrait/1.png']).toMatchObject({
+      width: 16,
+      height: 24,
+    })
+    expect(new Set(manifest.assets.map((asset) => asset.purpose)).size).toBe(7)
+    expect((await readdir(path.join(f.stage, assetDirectory))).length).toBe(7)
     expect(manifest.inputs['index_new/cn/characters.json']).toEqual(
       metadata(f.inputs['index_new/cn/characters.json']!),
     )
     await publishVisuals(f.root, f.stage, 'fixture')
-    expect(await validateVisuals(f.root)).toMatchObject({ items: 2, newAssets: 4, reusedAssets: 1 })
+    expect(await validateVisuals(f.root)).toMatchObject({ items: 2, newAssets: 7, reusedAssets: 1 })
     expect(await readFile(path.join(f.root, 'public/game-assets/character/1.webp'))).toEqual(before)
   })
+  it('reuses verified bytes and repairs a missing or corrupt cached output', async () => {
+    const f = await fixture()
+    const first = await generateVisuals(f.root, f.stage, f.source)
+    await publishVisuals(f.root, f.stage, 'cache')
+    const again = await generateVisuals(f.root, path.join(f.root, 'second'), f.source)
+    expect(again.files).toEqual(first.files)
+    const hd = first.assets.find((asset) => asset.purpose === 'reveal-artwork')!
+    await rm(path.join(f.root, 'public/' + hd.output))
+    const repaired = await generateVisuals(f.root, path.join(f.root, 'third'), f.source)
+    expect(repaired.files).toEqual(first.files)
+    await write(f.root, 'public/' + hd.output, 'corrupted')
+    const decoded = await generateVisuals(f.root, path.join(f.root, 'fourth'), f.source)
+    expect(decoded.files).toEqual(first.files)
+  })
+  it.each([
+    'purpose',
+    'source-dimensions',
+    'profile',
+    'missing-mapping',
+    'unsafe-path',
+    'extra-source',
+  ])('rejects HD provenance drift: %s', async (mutation) => {
+    const f = await fixture()
+    const manifest = await generateVisuals(f.root, f.stage, f.source)
+    await publishVisuals(f.root, f.stage, 'provenance')
+    const hd = manifest.assets.find((asset) => asset.purpose === 'reveal-artwork')!
+    if (mutation === 'purpose') hd.purpose = 'icon'
+    if (mutation === 'source-dimensions') manifest.inputs[hd.source]!.width = 2048
+    if (mutation === 'profile') hd.transformKey = hd.transformKey.replace(':88:', ':82:')
+    if (mutation === 'missing-mapping')
+      manifest.assets = manifest.assets.filter((asset) => asset !== hd)
+    if (mutation === 'unsafe-path') {
+      manifest.inputs['../bad.png'] = manifest.inputs[hd.source]!
+      hd.source = '../bad.png'
+    }
+    if (mutation === 'extra-source') manifest.inputs['extra.png'] = manifest.inputs[hd.source]!
+    await write(f.root, visualDirectory + '/manifest.json', JSON.stringify(manifest))
+    await expect(validateVisuals(f.root)).rejects.toThrow(/provenance|conversion|inventory/)
+  })
+  it.each([0, 1])(
+    'restores HD catalog, manifest and bytes after publish failure at %i',
+    async (phase) => {
+      const f = await fixture()
+      const first = await generateVisuals(f.root, f.stage, f.source)
+      await publishVisuals(f.root, f.stage, 'hd-initial')
+      const catalog = await readFile(path.join(f.root, visualDirectory, 'catalog.json'))
+      const manifest = await readFile(path.join(f.root, visualDirectory, 'manifest.json'))
+      const replacements = path.join(f.root, 'replacement')
+      await generateVisuals(f.root, replacements, f.source)
+      await expect(
+        publishVisuals(f.root, replacements, 'hd-failure', (index) => {
+          if (index === phase) throw new Error('injected HD failure')
+        }),
+      ).rejects.toThrow('injected HD failure')
+      expect(await readFile(path.join(f.root, visualDirectory, 'catalog.json'))).toEqual(catalog)
+      expect(await readFile(path.join(f.root, visualDirectory, 'manifest.json'))).toEqual(manifest)
+      for (const file of Object.keys(first.files).filter((file) =>
+        file.startsWith(assetDirectory),
+      )) {
+        expect(first.files[file]).toMatchObject(metadata(await readFile(path.join(f.root, file))))
+      }
+      expect(await validateVisuals(f.root)).toMatchObject({ missing: 0 })
+    },
+  )
   it('omits missing images explicitly and detects output corruption and unexpected assets', async () => {
     const f = await fixture()
     delete f.inputs['image/character_portrait/1.png']
@@ -165,7 +240,7 @@ describe('explicit Warp visual updater', () => {
       reason: 'missing-source-file',
     })
     await publishVisuals(f.root, f.stage, 'missing')
-    expect(await validateVisuals(f.root)).toMatchObject({ missing: 1 })
+    expect(await validateVisuals(f.root)).toMatchObject({ missing: 2 })
     await write(f.root, assetDirectory + '/extra.webp', 'bad')
     await expect(validateVisuals(f.root)).rejects.toThrow(/Unexpected/)
     await rm(path.join(f.root, assetDirectory, 'extra.webp'))
@@ -200,7 +275,7 @@ describe('explicit Warp visual updater', () => {
     )
     expect(catalog.items['light-cone:1']).toEqual({})
     expect(catalog.paths.Warrior.iconPath).toBeUndefined()
-    expect(manifest.missingAssets).toHaveLength(2)
+    expect(manifest.missingAssets).toHaveLength(3)
   })
   it('keeps the previous official snapshot intact after decoding or localization failure', async () => {
     const f = await fixture()

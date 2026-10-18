@@ -12,14 +12,28 @@ import { fixture, selectedAvatarIds } from '../../fixtures/warp-simulator/fixtur
 const fixtures = resultDisplayScenarios()
 const entries = (id: string) => fixtures.find((scenario) => scenario.id === id)!.entries
 const scopes: ReturnType<typeof effectScope>[] = []
-function setup(reduced = false) {
+function setup(reduced = false, assetsReady = true) {
   const motion = ref(reduced)
   const scope = effectScope()
   scopes.push(scope)
-  return { motion, scope, reveal: scope.run(() => useWarpReveal(motion))! }
+  const reveal = scope.run(() => {
+    const reveal = useWarpReveal(motion)
+    if (assetsReady)
+      watch([reveal.current, reveal.phase, reveal.batchId], () => ready(reveal), { flush: 'sync' })
+    return reveal
+  })!
+  return { motion, scope, reveal }
+}
+function ready(reveal: ReturnType<typeof useWarpReveal>) {
+  const entry = reveal.current.value
+  if (entry) {
+    reveal.markIdentityReady(entry.batchId, entry.id)
+    reveal.markArtworkReady(entry.batchId, entry.id)
+  }
 }
 function begin(reveal: ReturnType<typeof useWarpReveal>, batch: readonly HistoryEntry[]) {
   expect(reveal.beginBatch(batch[0]!.batchId, batch)).toBe(true)
+  ready(reveal)
 }
 function endCurrent(reveal: ReturnType<typeof useWarpReveal>) {
   reveal.escape()
@@ -58,15 +72,13 @@ describe('Committed batch reveal state machine', () => {
     },
   )
 
-  it('plays the five-star path, stars and artwork in order without auto-dismissal', () => {
+  it('plays the combined five-star identity then artwork without auto-dismissal', () => {
     const { reveal } = setup()
     begin(reveal, entries('single-avatar-5'))
-    expect(reveal.phase.value).toBe('intro')
+    expect(reveal.phase.value).toBe('identity')
     vi.advanceTimersByTime(1099)
-    expect(reveal.phase.value).toBe('intro')
+    expect(reveal.phase.value).toBe('identity')
     vi.advanceTimersByTime(1)
-    expect(reveal.phase.value).toBe('stars')
-    vi.advanceTimersByTime(1100)
     expect(reveal.phase.value).toBe('artwork')
     vi.advanceTimersByTime(400)
     expect(reveal.phase.value).toBe('waiting')
@@ -99,7 +111,7 @@ describe('Committed batch reveal state machine', () => {
         expect(reveal.current.value).toBe(current)
         expect(reveal.displayedEntries.value).toEqual(previous)
         seen.push(reveal.current.value!.id)
-        vi.advanceTimersByTime(2600)
+        vi.advanceTimersByTime(1500)
         reveal.activate()
         reveal.activate()
         vi.advanceTimersByTime(400)
@@ -112,7 +124,7 @@ describe('Committed batch reveal state machine', () => {
     },
   )
 
-  it.each([0, 1100])('clicking a prelude at %ims skips only to the current artwork', (delay) => {
+  it.each([0, 700])('clicking a prelude at %ims skips only to the current artwork', (delay) => {
     const { reveal } = setup()
     begin(reveal, entries('five-mixed'))
     const first = reveal.current.value
@@ -130,7 +142,7 @@ describe('Committed batch reveal state machine', () => {
     expect(reveal.current.value).toBe(first)
   })
 
-  it.each([0, 1100, 2200, 2600])(
+  it.each([0, 1100, 1200, 1500])(
     'Escape ends the current item at %ims, not the whole queue',
     (delay) => {
       const { reveal } = setup()
@@ -141,7 +153,7 @@ describe('Committed batch reveal state machine', () => {
       reveal.escape()
       vi.advanceTimersByTime(400)
       expect(reveal.current.value).toBe(expected[1])
-      expect(reveal.phase.value).toBe('intro')
+      expect(reveal.phase.value).toBe('identity')
       expect(reveal.visible.value).toBe(true)
     },
   )
@@ -161,7 +173,7 @@ describe('Committed batch reveal state machine', () => {
     expect(vi.getTimerCount()).toBe(0)
     motion.value = false
     endCurrent(reveal)
-    expect(reveal.phase.value).toBe('intro')
+    expect(reveal.phase.value).toBe('identity')
     motion.value = true
     expect(reveal.phase.value).toBe('waiting')
   })
@@ -175,7 +187,7 @@ describe('Committed batch reveal state machine', () => {
     begin(reveal, entries('single-avatar-5'))
     expect(reveal.afterHide()).toBe(false)
     vi.advanceTimersByTime(1100)
-    expect(reveal.phase.value).toBe('stars')
+    expect(reveal.phase.value).toBe('artwork')
     expect(reveal.current.value).toBe(entries('single-avatar-5')[0])
   })
 
@@ -235,5 +247,49 @@ describe('Committed batch reveal state machine', () => {
     expect(simulator.session.value).toBe(committed)
     expect(JSON.stringify(committed)).toBe(before)
     expect(rng.consumed).toBe(consumed)
+  })
+  it('waits for both identity images and then artwork readiness before enabling confirmation', () => {
+    const { reveal } = setup(false, false)
+    const batch = entries('single-avatar-5')
+    reveal.beginBatch(batch[0]!.batchId, batch)
+    vi.advanceTimersByTime(60_000)
+    expect(reveal.phase.value).toBe('identity')
+    expect(vi.getTimerCount()).toBe(0)
+    reveal.markIdentityReady(batch[0]!.batchId, batch[0]!.id)
+    vi.advanceTimersByTime(1100)
+    expect(reveal.phase.value).toBe('artwork')
+    reveal.activate()
+    vi.advanceTimersByTime(60_000)
+    expect(reveal.phase.value).toBe('artwork')
+    reveal.markArtworkReady(batch[0]!.batchId, batch[0]!.id)
+    vi.advanceTimersByTime(399)
+    expect(reveal.phase.value).toBe('artwork')
+    vi.advanceTimersByTime(1)
+    expect(reveal.phase.value).toBe('waiting')
+  })
+  it('rejects stale readiness and can skip/escape while resources are pending', () => {
+    const { reveal, scope } = setup(false, false)
+    const first = entries('five-mixed')
+    reveal.beginBatch(first[0]!.batchId, first)
+    reveal.activate()
+    expect(reveal.phase.value).toBe('artwork')
+    endCurrent(reveal)
+    expect(reveal.phase.value).toBe('identity')
+    expect(reveal.markArtworkReady(first[0]!.batchId, first[0]!.id)).toBe(false)
+    expect(reveal.markIdentityReady(first[0]!.batchId, first[0]!.id)).toBe(false)
+    const current = reveal.current.value!
+    scope.stop()
+    expect(reveal.markArtworkReady(current.batchId, current.id)).toBe(false)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+  it('uses no animation delay when reduced-motion artwork finally loads', () => {
+    const { reveal } = setup(true, false)
+    const batch = entries('single-avatar-5')
+    reveal.beginBatch(batch[0]!.batchId, batch)
+    expect(reveal.phase.value).toBe('artwork')
+    expect(vi.getTimerCount()).toBe(0)
+    reveal.markArtworkReady(batch[0]!.batchId, batch[0]!.id)
+    expect(reveal.phase.value).toBe('waiting')
+    expect(vi.getTimerCount()).toBe(0)
   })
 })

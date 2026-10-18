@@ -121,19 +121,58 @@ export function resultDisplayScenarios(
       `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#3b4049"/><rect x="2" y="2" width="${width - 4}" height="${height - 4}" fill="none" stroke="#f1eee7" stroke-width="4"/><circle cx="${width / 2}" cy="${height / 2}" r="${Math.min(width, height) / 4}" fill="#c9a86b"/></svg>`,
     )
   add('image-fallbacks', [avatar4, cone4, avatar5, cone5, ...allThree.slice(0, 6)], [], {
-    [avatar4.id]: { artworkUrl: undefined, pathIconUrl: undefined },
+    [avatar4.id]: {
+      artworkUrl: undefined,
+      pathIconUrl: undefined,
+      revealArtwork: undefined,
+      revealPathIcon: undefined,
+    },
     [cone4.id]: {
       artworkUrl: '/tests/manual/warp-results/missing-fixture.webp',
       starsUrl: undefined,
+      revealArtwork: undefined,
     },
-    [avatar5.id]: { artworkUrl: svg(800, 80) },
-    [cone5.id]: { artworkUrl: svg(80, 800) },
+    [avatar5.id]: { artworkUrl: svg(800, 80), revealArtwork: undefined },
+    [cone5.id]: { artworkUrl: svg(80, 800), revealArtwork: undefined },
   })
   add('missing-artwork', [avatar5], [], {
-    [avatar5.id]: { artworkUrl: undefined, pathIconUrl: undefined, starsUrl: undefined },
+    [avatar5.id]: {
+      artworkUrl: undefined,
+      pathIconUrl: undefined,
+      starsUrl: undefined,
+      revealArtwork: undefined,
+      revealPathIcon: undefined,
+      revealStars: undefined,
+    },
   })
   add('failed-artwork', [cone4], [], {
-    [cone4.id]: { artworkUrl: '/tests/manual/warp-results/missing-fixture.webp' },
+    [cone4.id]: {
+      artworkUrl: '/tests/manual/warp-results/missing-fixture.webp',
+      revealArtwork: {
+        url: '/tests/manual/warp-results/missing-hd-fixture.webp',
+        width: 902,
+        height: 1260,
+      },
+    },
+  })
+  add('hd-fallback', [avatar5], [], {
+    [avatar5.id]: {
+      revealArtwork: {
+        url: '/tests/manual/warp-results/missing-hd-fixture.webp',
+        width: 2048,
+        height: 2048,
+      },
+      revealPathIcon: {
+        url: '/tests/manual/warp-results/missing-path-fixture.webp',
+        width: 512,
+        height: 512,
+      },
+      revealStars: {
+        url: '/tests/manual/warp-results/missing-stars-fixture.webp',
+        width: 640,
+        height: 128,
+      },
+    },
   })
   return Object.freeze(scenarios)
 }

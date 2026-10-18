@@ -136,33 +136,27 @@ const summary = computed(() =>
   inset: 0;
 }
 .warp-card-icons {
+  --warp-icon-size: 36px;
+  --warp-stars-width: 80px;
+  --warp-icon-align: start;
+  --warp-icon-position: left center;
   display: grid;
   grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   padding: 8px 8px;
   border-left: 1px solid color-mix(in srgb, var(--warp-rarity) 28%, transparent);
 }
 .warp-icon-slot {
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   display: grid;
   align-items: center;
   justify-items: start;
   min-width: 0;
   min-height: 0;
-}
-.warp-card-icons :deep(.warp-icon) {
-  width: 36px;
-  height: 36px;
-  max-width: 100%;
-  max-height: 100%;
-  justify-content: flex-start;
-}
-.warp-card-icons :deep(.warp-icon img) {
-  object-position: left center;
-}
-.warp-card-icons :deep(.warp-stars-icon) {
-  width: 80px;
-  height: 20px;
 }
 .warp-up {
   position: absolute;
@@ -179,13 +173,9 @@ const summary = computed(() =>
 .warp-result-single {
   max-width: 620px;
 }
-.warp-result-single :deep(.warp-icon:not(.warp-stars-icon)) {
-  width: 48px;
-  height: 48px;
-}
-.warp-result-single :deep(.warp-stars-icon) {
-  width: 100px;
-  height: 24px;
+.warp-result-single .warp-card-icons {
+  --warp-icon-size: 48px;
+  --warp-stars-width: 100px;
 }
 @keyframes warp-result-in {
   from {

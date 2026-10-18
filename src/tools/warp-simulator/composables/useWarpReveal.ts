@@ -1,13 +1,15 @@
 import { computed, onScopeDispose, readonly, ref, shallowRef, watch, type Ref } from 'vue'
 import type { HistoryEntry } from './useWarpSimulator'
 
-export type RevealPhase = 'idle' | 'intro' | 'stars' | 'artwork' | 'waiting' | 'leaving'
-export const REVEAL_TIMING = { fade: 400, hold: 300, prelude: 1100 } as const
+export type RevealPhase = 'idle' | 'identity' | 'artwork' | 'waiting' | 'leaving'
+export const REVEAL_TIMING = { fade: 400, hold: 300, identity: 1100 } as const
 
 /** Presentation gate over committed records. Never owns or mutates an engine session. */
 export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
   const phase = ref<RevealPhase>('idle')
   const visible = ref(false)
+  const artworkReady = ref(false)
+  const identityReady = ref(false)
   const pending = shallowRef<{ id: number; entries: readonly HistoryEntry[] }>()
   const queue = shallowRef<readonly HistoryEntry[]>([])
   const cursor = ref(0)
@@ -27,19 +29,28 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
   function later(callback: () => void, delay: number) {
     const token = revision
     timer = setTimeout(() => {
+      if (disposed || token !== revision) return
       timer = undefined
-      if (!disposed && token === revision) callback()
+      callback()
     }, delay)
   }
   function enter(next: RevealPhase) {
     clearTimer()
+    const token = revision
     phase.value = next
-    if (next === 'intro') later(() => enter('stars'), REVEAL_TIMING.prelude)
-    else if (next === 'stars') later(() => enter('artwork'), REVEAL_TIMING.prelude)
-    else if (next === 'artwork') later(() => enter('waiting'), REVEAL_TIMING.fade)
+    // A synchronous ready event can re-enter this stage (e.g. a cached placeholder).
+    if (token !== revision || phase.value !== next) return
+    if (next === 'identity' && identityReady.value)
+      later(() => enter('artwork'), REVEAL_TIMING.identity)
+    else if (next === 'artwork' && artworkReady.value) {
+      if (reducedMotion.value) phase.value = 'waiting'
+      else later(() => enter('waiting'), REVEAL_TIMING.fade)
+    }
   }
   function showCurrent() {
-    enter(reducedMotion.value ? 'waiting' : current.value?.event.rarity === 5 ? 'intro' : 'artwork')
+    artworkReady.value = false
+    identityReady.value = false
+    enter(!reducedMotion.value && current.value?.event.rarity === 5 ? 'identity' : 'artwork')
   }
   function finishLeaving() {
     clearTimer()
@@ -56,10 +67,40 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
   }
   function activate() {
     if (!visible.value) return
-    if (phase.value === 'intro' || phase.value === 'stars') enter('artwork')
+    if (phase.value === 'identity') enter('artwork')
     else if (phase.value === 'waiting') advance()
   }
+  function markArtworkReady(batchId: number, entryId: number) {
+    if (
+      disposed ||
+      !visible.value ||
+      pending.value?.id !== batchId ||
+      current.value?.id !== entryId ||
+      phase.value === 'leaving' ||
+      artworkReady.value
+    )
+      return false
+    artworkReady.value = true
+    if (phase.value === 'artwork') enter('artwork')
+    return true
+  }
+  function markIdentityReady(batchId: number, entryId: number) {
+    if (
+      disposed ||
+      !visible.value ||
+      pending.value?.id !== batchId ||
+      current.value?.id !== entryId ||
+      phase.value === 'leaving' ||
+      identityReady.value
+    )
+      return false
+    identityReady.value = true
+    if (phase.value === 'identity') enter('identity')
+    return true
+  }
   function reset() {
+    identityReady.value = false
+    artworkReady.value = false
     clearTimer()
     visible.value = false
     pending.value = undefined
@@ -111,7 +152,7 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
     (enabled) => {
       if (!enabled || !visible.value) return
       if (phase.value === 'leaving') finishLeaving()
-      else enter('waiting')
+      else enter('artwork')
     },
     { flush: 'sync' },
   )
@@ -127,6 +168,10 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
     current,
     batchId: computed(() => pending.value?.id),
     displayedEntries: readonly(displayedEntries),
+    identityReady: readonly(identityReady),
+    markIdentityReady,
+    artworkReady: readonly(artworkReady),
+    markArtworkReady,
     beginBatch,
     activate,
     escape: advance,

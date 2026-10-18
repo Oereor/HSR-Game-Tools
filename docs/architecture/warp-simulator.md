@@ -143,19 +143,21 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 `useWarpReveal(reducedMotion)` 只保存 UI 状态：待展示批次、过滤后的演出队列、游标、阶段、Dialog 可见性及上一批已展示记录引用。单抽队列包含唯一结果；十连只过滤五星，不改变相对顺序。无队列立即发布普通结果；有队列保留上一批普通结果，在最后一项确认并收到 after-hide 后才发布完整新批次，防止提前闪现或在黑幕下播完卡片入场动画。展示引用不是另一份可编辑业务会话。
 
-阶段为 idle／intro／stars／artwork／waiting／leaving。五星 intro 与 stars 各使用 400ms 淡入、300ms 停留、400ms 淡出；其余单抽直接 artwork。图片淡入 400ms 后 waiting，无自动关闭。前置阶段激活只跳到当前 artwork；artwork 阶段激活不推进，waiting 才进入 400ms leaving，再进入下一项或关闭。Escape 可在任意可见阶段结束当前项，不退出整队列；leaving 的重复输入不产生额外推进。
+阶段为 idle／identity／artwork／waiting／leaving。五星的命途与 Star5 位于同一个 identity 容器，两者均就绪后共同淡入 400ms、停留 300ms、淡出 400ms；其余单抽直接 artwork。当前图片或最终占位就绪后才开始 400ms 图片淡入，然后 waiting，无自动关闭。前置阶段激活只跳到当前 artwork；artwork 加载／淡入期间激活不推进，waiting 才进入 400ms leaving，再进入下一项或关闭。Escape 可在资源待加载时及任意可见阶段结束当前项，不退出整队列；leaving 的重复输入不产生额外推进。
 
-每次批次／阶段变化清除旧计时器并递增版本标识。重复／更旧 Batch ID 不重播，替换批次和作用域销毁取消旧状态；旧 Dialog 隐藏回调不能释放仍可见的新批次。全部重置清除展示引用，不复用业务批次身份。Reduced Motion 初始直接 waiting，运行中启用时取消阶段计时，若正在离场则直接完成当前项离场。媒体查询监听器和计时器随作用域销毁。
+每次批次／阶段变化清除旧计时器并递增版本标识，也防止同步 ready 回调重入时重复排程。重复／更旧 Batch ID 不重播，替换批次和作用域销毁取消旧状态；旧 Dialog 隐藏回调不能释放仍可见的新批次。资源 ready 事件携带 batchId／entryId，状态机核对当前身份、可见性、离场与销毁状态后才接受；旧图片加载不能推进新项。全部重置清除展示引用，不复用业务批次身份。Reduced Motion 跳过 identity 和淡入，在资源就绪后直接 waiting；运行中启用时取消阶段计时，若正在离场则直接完成当前项离场。媒体查询、DPR／视口监听器和计时器随作用域销毁。
 
-`WarpRevealOverlay` 只接收 visible、entry、item、phase，发送 activate／escape／after-hide，不创建会话或队列。PrimeVue Dialog 提供模态、滚动锁和焦点陷阱，内部原生按钮覆盖全屏、支持点击和键盘；纯黑背景与资源 contain 适配不使用概率或物品 ID 特判。页面在演出及隐藏完成前保持 inert 和抽取锁，after-hide 释放门控后恢复原抽取按钮焦点。原 `useWarpOverlay` 继续仅负责 Drawer／详情等原有交互，不承担演出状态。
+`WarpRevealOverlay` 接收 visible、entry、item、phase 及 identityReady／artworkReady，发送 activate／escape／after-hide 和带身份的 identity-ready／artwork-ready，不创建会话或队列。`WarpRevealImage` 与 `useWarpRevealSource` 处理高清→轻量→中性占位的顺序回退；图片 load 后使用 naturalWidth／naturalHeight 限制实际展示尺寸，缺图占位也视为就绪。仅当前项挂载图片，identity 时可预加载当前 Artwork；语言引起的等价元数据对象不会重置请求。`useWarpPixelRatio` 订阅 resolution、窗口和 visualViewport 变化，显示范围不超过实际像素尺寸／DPR、可用视口和既有最大范围。PrimeVue Dialog 提供模态、滚动锁和焦点陷阱，内部原生按钮覆盖全屏、支持点击和键盘；纯黑背景与 contain 适配不使用概率或物品 ID 特判。页面在演出及隐藏完成前保持 inert 和抽取锁，after-hide 释放门控后恢复原抽取按钮焦点。原 `useWarpOverlay` 继续仅负责 Drawer／详情等原有交互，不承担演出状态。
 
-确定性机制验证与人工清单见 [Phase 1H 报告](../investigations/warp-simulator/phase-1h-reveal-animation-and-ui-polish.md)。正式 Snapshot 无五星光锥，测试图中的合成身份和复用封面不进入生产候选池或资源快照。
+确定性机制验证与人工清单见 [Phase 1I 报告](../investigations/warp-simulator/phase-1i-reveal-quality-fixes.md)，初次演出实现记录见 [Phase 1H](../investigations/warp-simulator/phase-1h-reveal-animation-and-ui-polish.md)。正式 Snapshot 无五星光锥，测试图中的合成身份和复用封面不进入生产候选池或资源快照。
 
 ## 展示资源与降级
 
 [visuals](../../src/tools/warp-simulator/data/visuals/)为独立的规范化展示快照，来源锁定和显式离线维护见[游戏数据指南](../game-data.md#warp-展示资源)。它不表达抽取资格，不修改引擎输入，不在普通构建中生成。共享头像的复用仅发生于维护阶段；运行时无排轴业务导入或原始来源依赖。
 
 `createPresentation(snapshot, visuals?, base?, definitions?)` 继续按 canonical ID 从 Warp Snapshot 取得名称、类别、稀有度，另外返回命途内部 ID／本地化名称／图标、角色属性内部 ID／名称／图标／原色／可读色、头像、立绘／封面及星级图片 URL。物品路径只由登记的安全 `game-assets/*.webp` 相对路径与 BASE_URL 组合。光锥无属性；缺失元数据和加载失败均使用中性占位，不猜测资源。
+
+Catalog 的可选高清字段为 items[id].revealArtwork、paths[id].revealIcon 和 revealStars[5]，统一保存 path／width／height；兼容原 schemaVersion 1。Adapter 对应提供 revealArtwork／revealPathIcon／revealStars，均为 url／width／height，不替换 artworkUrl／pathIconUrl／starsUrl。普通卡片与详情不选择高清字段；只有演出图片组件发出高清请求。离线资源 Manifest v2 校验用途、转换参数、源／输出尺寸、不放大、哈希和引用覆盖，详见[资源维护](../game-data.md#warp-展示资源)。
 
 `useWarpOverlay` 只管理互斥 Drawer、Dialog 进入队列及恢复焦点 ID，不引用会话或 RNG。控制与历史默认收起，结果区域和常驻抽取栏保持挂载；打开／关闭面板不会重建 `useWarpSimulator` 或结果批次。Dialog 先等待 Drawer 的 after-hide，关闭后恢复来源面板／触发项；DOM 焦点恢复只在页面层执行。
 

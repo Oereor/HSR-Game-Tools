@@ -459,6 +459,7 @@
       "kind": "Type: {kind}"
     },
     "reveal": {
+      "loading": "Loading image. Escape ends the current reveal",
       "title": "Warp result: {name}",
       "action": "{name}. {action}. Escape ends the current reveal.",
       "skip": "Click to view the item artwork",

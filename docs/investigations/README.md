@@ -54,6 +54,8 @@
 
 ## Warp Simulator
 
+- [Phase 1I 演出与资源修复](warp-simulator/phase-1i-reveal-quality-fixes.md)：五星同步组合、独立高清资源与 DPR 限制、星级溢出修复及人工验收清单。
+
 - [Phase 1F 视觉资源与 UI](warp-simulator/phase-1f-visual-refinement.md)：离线图片提取、横向结果卡、双侧抽屉、五列历史与验证证据。
 
 - [Phase 1E 可交互 UI](warp-simulator/phase-1e-ui-implementation.md)：页面内会话、星缘选择、结果／历史、资源复用及人工验收清单。

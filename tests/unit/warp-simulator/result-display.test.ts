@@ -104,8 +104,12 @@ describe('Result display review fixtures', () => {
     const { entries, overrides } = scenario('image-fallbacks')
     expect(entries).toHaveLength(10)
     const [missing, failed, wide, tall] = entries.map(({ event }) => overrides[event.itemId])
-    expect(missing).toEqual({ artworkUrl: undefined, pathIconUrl: undefined })
-    expect(failed).toEqual({
+    expect(missing).toMatchObject({
+      artworkUrl: undefined,
+      pathIconUrl: undefined,
+      revealArtwork: undefined,
+    })
+    expect(failed).toMatchObject({
       artworkUrl: '/tests/manual/warp-results/missing-fixture.webp',
       starsUrl: undefined,
     })
@@ -113,7 +117,10 @@ describe('Result display review fixtures', () => {
     expect(decodeURIComponent(tall!.artworkUrl!)).toContain('viewBox="0 0 80 800"')
     expect(
       scenarios
-        .filter(({ id }) => !['image-fallbacks', 'missing-artwork', 'failed-artwork'].includes(id))
+        .filter(
+          ({ id }) =>
+            !['image-fallbacks', 'missing-artwork', 'failed-artwork', 'hd-fallback'].includes(id),
+        )
         .every(({ overrides }) => !Object.keys(overrides).length),
     ).toBe(true)
   })

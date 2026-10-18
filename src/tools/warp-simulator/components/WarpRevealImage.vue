@@ -1,0 +1,89 @@
+<script setup lang="ts">
+import { computed, watch } from 'vue'
+import { BookOpen, UserRound } from '@lucide/vue'
+import type { ImagePresentation } from '../model/presentation'
+import { useWarpRevealSource, revealPixelLimit } from '../composables/useWarpRevealSource'
+
+const props = defineProps<{
+  preferred?: ImagePresentation
+  fallbackUrl?: string
+  label: string
+  pixelRatio: number
+  kind?: 'avatar' | 'light-cone'
+  batchId: number
+  entryId: number
+}>()
+const emit = defineEmits<{ ready: [batchId: number, entryId: number] }>()
+const image = useWarpRevealSource(
+  () => props.preferred,
+  () => props.fallbackUrl,
+)
+const { source, dimensions, ready } = image
+const limit = computed(() =>
+  dimensions.value
+    ? revealPixelLimit(dimensions.value.width, dimensions.value.height, props.pixelRatio)
+    : {},
+)
+watch(
+  ready,
+  (value) => {
+    if (value) emit('ready', props.batchId, props.entryId)
+  },
+  { immediate: true },
+)
+function load(event: Event) {
+  const target = event.target as HTMLImageElement
+  image.load(target.getAttribute('src') ?? '', target.naturalWidth, target.naturalHeight)
+}
+function fail(event: Event) {
+  image.fail((event.target as HTMLImageElement).getAttribute('src') ?? '')
+}
+</script>
+
+<template>
+  <span class="warp-reveal-image" role="img" :aria-label="label">
+    <img
+      v-if="source"
+      :key="source"
+      :src="source"
+      alt=""
+      :style="limit"
+      :class="{ 'warp-reveal-image-loading': !ready }"
+      @load="load"
+      @error="fail"
+    />
+    <BookOpen
+      v-else-if="kind === 'light-cone'"
+      :size="36"
+      :stroke-width="1.25"
+      aria-hidden="true"
+    />
+    <UserRound v-else-if="kind === 'avatar'" :size="36" :stroke-width="1.25" aria-hidden="true" />
+    <span v-else aria-hidden="true">—</span>
+  </span>
+</template>
+
+<style scoped>
+.warp-reveal-image {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  color: var(--color-muted);
+}
+img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  object-fit: contain;
+}
+.warp-reveal-image-loading {
+  visibility: hidden;
+}
+</style>

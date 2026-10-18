@@ -57,6 +57,8 @@ const {
   visible: revealVisible,
   locked: revealLocked,
   phase: revealPhase,
+  artworkReady,
+  identityReady,
   current: revealEntry,
   displayedEntries,
 } = reveal
@@ -372,6 +374,10 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       :entry="revealEntry"
       :item="revealEntry ? item(revealEntry.event.itemId) : undefined"
       :phase="revealPhase"
+      :artwork-ready="artworkReady"
+      :identity-ready="identityReady"
+      @artwork-ready="reveal.markArtworkReady"
+      @identity-ready="reveal.markIdentityReady"
       @activate="reveal.activate"
       @escape="reveal.escape"
       @after-hide="afterRevealHide"
