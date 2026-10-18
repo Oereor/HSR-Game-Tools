@@ -56,6 +56,8 @@ export interface ItemPresentation {
   readonly revealArtwork?: ImagePresentation
   readonly revealPathIcon?: ImagePresentation
   readonly revealStars?: ImagePresentation
+  readonly cardStars?: ImagePresentation
+  readonly cardStarsReferenceAspectRatio?: number
 }
 function revealImage(image: VisualImage | undefined, base: string): ImagePresentation | undefined {
   const url = portraitUrl(image?.path, base)
@@ -79,6 +81,8 @@ export function createPresentation(
   definitions: VisualDefinitions = emptyDefinitions,
 ) {
   const items = new Map(snapshot.items.map((item) => [item.id, item]))
+  const fiveStars = revealImage(definitions.cardStars?.[5], base)
+  const cardStarsReferenceAspectRatio = fiveStars ? fiveStars.width / fiveStars.height : 5
   const item = (id: string, locale: ToolLocale): ItemPresentation => {
     const source = items.get(id),
       visual = visuals[id]
@@ -116,6 +120,8 @@ export function createPresentation(
       revealArtwork: source ? revealImage(visual?.revealArtwork, base) : undefined,
       revealPathIcon: revealImage(pathDefinition?.revealIcon, base),
       revealStars: source ? revealImage(definitions.revealStars?.[source.rarity], base) : undefined,
+      cardStars: source ? revealImage(definitions.cardStars?.[source.rarity], base) : undefined,
+      cardStarsReferenceAspectRatio,
     }
   }
   const search = (ids: readonly string[], query: string) => {

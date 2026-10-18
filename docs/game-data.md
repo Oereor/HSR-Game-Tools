@@ -163,11 +163,13 @@ npm run validate:warp-visuals
 
 命途关联使用 `Warrior`、`Knight`、`Priest` 等内部 ID，名称不是身份键。角色立绘和光锥封面只使用索引给出的已存在路径；必要头像从现有规范化共享资源登记中复用，更新时核对共享 Manifest 的来源 Commit、文件哈希及图片尺寸。运行时不导入排轴模块。
 
-新增图片只写 `public/game-assets/warp/`，以内容及转换参数哈希命名并去重。Source Lock 转换版本为 2，来源 Commit 不变；Sharp 0.35.3 使用 WebP。普通卡片保留角色最长边 768、光锥最长边 640、quality 82，命途／属性图标最长边 64、星级图最长边 160、quality 90；旧转换键与 URL 保持稳定。独立演出 Artwork 最长边上限 2048、quality 88，演出命途最长边 512、Star5 最长边 640、quality 90。统一 alphaQuality 100、inside、withoutEnlargement，不裁切、不放大；角色源为 2048×2048，光锥源仅 1258–1260px 高，保留其原生尺寸。普通卡片只请求轻量 URL，不使用不存在的 srcset。
+新增图片只写 `public/game-assets/warp/`，以内容及转换参数哈希命名并去重。Source Lock 转换版本为 3，来源 Commit 不变；Sharp 0.35.3 使用 WebP。角色最长边 768、光锥最长边 640、quality 82，命途／属性图标最长边 64、旧星级图最长边 160、quality 90；旧转换键与 URL 保持稳定。独立演出 Artwork 最长边上限 2048、quality 88，演出命途最长边 512、Star5 最长边 640、quality 90。这些既有用途统一 alphaQuality 100、inside、withoutEnlargement，不裁切、不放大；角色源为 2048×2048，光锥源仅 1258–1260px 高，保留其原生尺寸。普通卡片只请求轻量 Artwork，不使用不存在的 srcset。
 
-当前 86 件物品自有图片共 201 张、39,840,756 bytes，其中旧 105 张 8,106,256 bytes、演出新增 96 张 31,734,500 bytes（86 Artwork、9 命途、1 Star5）；另复用 30 张共享头像。这是本次测量，不是固定 Schema 数量。Catalog schemaVersion 1 以可选 path／width／height 变体扩展；运行时仅当前演出项按需请求高清图，加载失败依次回退轻量图与中性占位，按实际像素尺寸／DPR 限制显示范围。56 张光锥源分辨率限制逐项见 [Phase 1I 报告](investigations/warp-simulator/phase-1i-reveal-quality-fixes.md)。
+裁切星级 `card-stars` 使用 Sharp 零阈值透明检测，和原始 RGBA 非零 Alpha 边界交叉核对。只裁掉完全透明区域，验证每颗星的重复单元及三档源高度／内容一致，再等比缩至内容高 64px、四边各加 2px 透明安全边，quality 90、alphaQuality 100、不放大。输出为 196×68、260×68、324×68，统一内容缩放比例；裁切矩形之外不得存在有效 Alpha，空图、异常比例或重复单元不一致会阻止发布。原始仓库只读，不运行时裁图。Catalog 的可选 cardStars[3/4/5] 保存 path／width／height，供结果卡和最终 Artwork 信息面板选择；历史、详情和五星 identity 前置演出继续使用原星级。缺少裁切图时中性占位，不回退到带长空白的旧星级。源图变更需重新审阅这些边界和重复单元，不盲用历史裁切值。
 
-Manifest schemaVersion 2 记录源仓库及 Commit、八份索引和所用图片的来源文件／SHA-256／字节数／原始尺寸、每项转换用途及转换键、共享投影来源、业务快照哈希、生成时间、Sharp 与转换版本、输出路径／尺寸／哈希／字节数及缺失诊断。validator 将每种用途与 Source Lock 的参数对应，检查安全路径、精确等比缩放且不放大、高清映射尺寸、引用覆盖、来源清单及严格文件清单。命途和属性名称来自双语索引，物品名称仍来自 Warp Snapshot。属性保留原始六位颜色；对比度修正仅在展示 Adapter 中完成，光锥不生成属性。
+当前 86 件物品自有图片共 204 张、39,870,124 bytes：原轻量 105 张 8,106,256 bytes、演出 96 张 31,734,500 bytes、裁切星级 3 张 29,368 bytes；另复用 30 张共享头像。这是本次测量，不是固定 Schema 数量。Catalog schemaVersion 1 以可选变体扩展；运行时仅当前演出项按需请求高清图，加载失败依次回退轻量图与中性占位，按实际像素尺寸／DPR 限制显示范围。56 张光锥源分辨率限制逐项见 [Phase 1I 报告](investigations/warp-simulator/phase-1i-reveal-quality-fixes.md)。
+
+Manifest schemaVersion 3 记录源仓库及 Commit、八份索引和所用图片的来源文件／SHA-256／字节数／原始尺寸、每项转换用途及转换键、共享投影来源、业务快照哈希、生成时间、Sharp 与转换版本、输出路径／尺寸／哈希／字节数及缺失诊断。card-stars 另记实际裁切矩形，新键含源 SHA-256、配方标识、透明阈值、矩形、内容高度、安全边、quality 和 alphaQuality；其他用途保留旧键。validator 将每种用途与 Source Lock 参数对应，检查安全路径、裁切边界／比例／统一源高度、精确输出尺寸、不放大、映射尺寸、引用覆盖、来源及严格文件清单。普通 validator 不读源图，Alpha 完整性由显式生成及合成测试核对。命途和属性名称来自双语索引，物品名称仍来自 Warp Snapshot。属性保留原始六位颜色；对比度修正仅在展示 Adapter 中完成，光锥不生成属性。
 
 显式更新可复用前一次 Manifest（含旧 v1）中来源仓库／Commit、Sharp 版本、源文件、转换键相同且输出字节数／哈希验证通过的文件，避免未变 lossy 图片重编码造成字节漂移；缺失或损坏缓存重新生成，staging 全量校验仍执行。内容与转换键相同的多项引用只输出一份文件，普通图与高清图不会因用途名不同而产生同参数重复内容。改变转换算法语义时需同步版本、转换键及校验，不能盲目信任旧缓存。
 

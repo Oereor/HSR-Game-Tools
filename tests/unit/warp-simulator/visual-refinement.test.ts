@@ -99,7 +99,7 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
       expect(() => assertVisualCatalog(invalid, warpSnapshot)).toThrow(/reveal/)
     }
   })
-  it('keeps all three native star images at 5:1 and bounds their shared component to the slot', () => {
+  it('preserves legacy star images and bounds only the card variant with a shared height', () => {
     for (const rarity of [3, 4, 5] as const) {
       const file =
         manifest.files[
@@ -115,7 +115,10 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
     // Structural regression guards only; real pixel sizing is manually accepted.
     expect(read('WarpVisualIcon')).toContain('width: min(var(--warp-stars-width, 80px), 100%)')
     expect(read('WarpVisualIcon')).toContain('aspect-ratio: 5 / 1')
+    expect(read('WarpVisualIcon')).toContain('calc(100cqi / var(--warp-stars-reference-aspect))')
     expect(read('WarpResultCard')).toContain('grid-template-columns: minmax(0, 1fr)')
+    expect(read('WarpResultCard')).not.toContain('warp-icon-slot')
+    expect(read('WarpResultCard')).toContain(':image="item.cardStars"')
     expect(read('WarpResultCard')).not.toContain(':deep(.warp-icon)')
     expect(read('WarpResultCard')).not.toContain('revealArtwork')
     expect(read('WarpItemVisual')).not.toContain('revealArtwork')

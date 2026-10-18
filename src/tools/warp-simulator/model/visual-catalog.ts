@@ -24,6 +24,7 @@ export interface VisualDefinitions {
   readonly elements: Readonly<Record<string, VisualDefinition & { readonly color: string }>>
   readonly stars: Readonly<Partial<Record<3 | 4 | 5, string>>>
   readonly revealStars?: Readonly<Partial<Record<3 | 4 | 5, VisualImage>>>
+  readonly cardStars?: Readonly<Partial<Record<3 | 4 | 5, VisualImage>>>
 }
 export interface WarpVisualCatalog extends VisualDefinitions {
   readonly schemaVersion: 1
@@ -52,13 +53,14 @@ export function visualAssetPaths(catalog: WarpVisualCatalog): string[] {
         ...Object.values(catalog.elements).map((row) => row.iconPath),
         ...Object.values(catalog.stars),
         ...Object.values(catalog.revealStars ?? {}).map((row) => row?.path),
+        ...Object.values(catalog.cardStars ?? {}).map((row) => row?.path),
       ].filter((value): value is string => value !== undefined),
     ),
   ].sort()
 }
 const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
-function assertImage(value: unknown) {
+function assertImage(value: unknown, kind = 'reveal') {
   if (
     !record(value) ||
     !safeAssetPath(value.path) ||
@@ -67,7 +69,7 @@ function assertImage(value: unknown) {
     !Number.isSafeInteger(value.height) ||
     Number(value.height) <= 0
   )
-    throw new Error('Invalid reveal image path/dimensions')
+    throw new Error(`Invalid ${kind} image path/dimensions`)
 }
 /** Checks only the tool-owned projection; never reads upstream data. */
 export function assertVisualCatalog(
@@ -141,6 +143,13 @@ export function assertVisualCatalog(
     for (const [rarity, image] of Object.entries(value.revealStars)) {
       if (rarity !== '5') throw new Error('Unexpected reveal rarity image')
       assertImage(image)
+    }
+  }
+  if (value.cardStars !== undefined) {
+    if (!record(value.cardStars)) throw new Error('Invalid card star mapping')
+    for (const [rarity, image] of Object.entries(value.cardStars)) {
+      if (!['3', '4', '5'].includes(rarity)) throw new Error('Unexpected card rarity image')
+      assertImage(image, 'card star')
     }
   }
 }

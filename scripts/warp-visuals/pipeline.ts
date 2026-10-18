@@ -3,6 +3,13 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
+import {
+  inspectStarCrop,
+  validStarCrop,
+  cardStarDimensions,
+  cardStarKey,
+  type StarCrop,
+} from './card-stars'
 import sourceLock from './source-lock.json'
 import { digest, metadata, inside, exists, readBytes } from '../warp-data/files'
 import type { WarpSnapshot } from '../../src/tools/warp-simulator/data/schema'
@@ -23,7 +30,7 @@ const plannerManifestFile = 'src/tools/action-planner/data/game/manifest.json'
 type SourceLock = typeof sourceLock
 type FileMeta = ReturnType<typeof metadata>
 export interface VisualManifest {
-  schemaVersion: 2
+  schemaVersion: 3
   source: { repository: string; commit: string }
   generatedAt: string
   transform: SourceLock['transform'] & { sharpVersion: string }
@@ -38,6 +45,7 @@ export interface VisualManifest {
     source: string
     output: string
     transformKey: string
+    crop?: StarCrop
   }[]
   missingAssets: { id: string; slot: string; sourcePath?: string; reason: string }[]
 }
@@ -49,6 +57,7 @@ type ConversionPurpose =
   | 'reveal-artwork'
   | 'reveal-icon'
   | 'reveal-stars'
+  | 'card-stars'
 function profile(purpose: ConversionPurpose, lock: SourceLock): [number, number] {
   const t = lock.transform
   switch (purpose) {
@@ -131,7 +140,7 @@ export async function validateVisuals(
   assertVisualCatalog(catalog, snapshot)
   const manifest = await json<VisualManifest>(root, visualDirectory + '/manifest.json')
   if (
-    manifest.schemaVersion !== 2 ||
+    manifest.schemaVersion !== 3 ||
     manifest.source.repository !== lock.repository ||
     manifest.source.commit !== lock.commit ||
     JSON.stringify(manifest.transform) !==
@@ -148,8 +157,38 @@ export async function validateVisuals(
     for (const name of ['characters', 'light_cones', 'paths', 'elements'])
       if (!manifest.inputs[`index_new/${locale}/${name}.json`])
         throw new Error('Missing visual index provenance')
+  let starSourceHeight: number | undefined
   for (const asset of manifest.assets) {
     const source = manifest.inputs[asset.source]
+    if (asset.purpose === 'card-stars') {
+      const settings = lock.transform.cardStars
+      const crop = asset.crop
+      const output = manifest.files['public/' + asset.output]
+      if (
+        !source ||
+        !Number.isSafeInteger(source.width) ||
+        !Number.isSafeInteger(source.height) ||
+        !validStarCrop(crop, Number(source.width), Number(source.height), Number(asset.id)) ||
+        settings.method !== 'alpha-trim' ||
+        settings.threshold !== 0 ||
+        !Number.isSafeInteger(settings.contentHeight) ||
+        settings.contentHeight <= 0 ||
+        !Number.isSafeInteger(settings.padding) ||
+        settings.padding < 0 ||
+        asset.slot !== 'card-stars' ||
+        asset.source !== `icon/deco/Star${asset.id}.png` ||
+        asset.transformKey !==
+          cardStarKey(source.sha256, crop, settings, lock.transform.alphaQuality) ||
+        asset.output !== `game-assets/warp/${digest(asset.transformKey)}.webp` ||
+        (starSourceHeight !== undefined && crop.height !== starSourceHeight)
+      )
+        throw new Error('Invalid card star crop/provenance')
+      const dimensions = cardStarDimensions(crop, settings)
+      if (output?.width !== dimensions.width || output?.height !== dimensions.height)
+        throw new Error('Invalid card star dimensions')
+      starSourceHeight = crop.height
+      continue
+    }
     const [hash, size, quality, alpha, extra] = asset.transformKey.split(':')
     const [expectedSize, expectedQuality] = profile(asset.purpose, lock)
     const output = manifest.files['public/' + asset.output]
@@ -160,6 +199,7 @@ export async function validateVisuals(
     )
     if (
       !source ||
+      asset.crop !== undefined ||
       /[\\:?#%]/.test(asset.source) ||
       asset.source.split('/').some((part) => !part || part === '.' || part === '..') ||
       source.sha256 !== hash ||
@@ -233,6 +273,14 @@ export async function validateVisuals(
     }
   for (const rarity of [3, 4, 5] as const)
     reference(String(rarity), 'stars', catalog.stars[rarity], 'stars')
+  for (const rarity of [3, 4, 5] as const)
+    reference(
+      String(rarity),
+      'card-stars',
+      catalog.cardStars?.[rarity]?.path,
+      'card-stars',
+      catalog.cardStars?.[rarity],
+    )
   reference(
     '5',
     'reveal-stars',
@@ -314,7 +362,7 @@ export async function generateVisuals(
   const snapshotBytes = await readBytes(root, snapshotFile)
   const snapshot = JSON.parse(snapshotBytes.toString()) as WarpSnapshot
   const manifest: VisualManifest = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     source: { repository: lock.repository, commit: lock.commit },
     generatedAt: new Date().toISOString(),
     transform: { ...lock.transform, sharpVersion: sharp.versions.sharp },
@@ -354,7 +402,9 @@ export async function generateVisuals(
     paths: Record<string, VisualDefinition> = {},
     elements: Record<string, VisualDefinition & { color: string }> = {},
     stars: Partial<Record<3 | 4 | 5, string>> = {},
-    revealStars: Partial<Record<3 | 4 | 5, VisualImage>> = {}
+    revealStars: Partial<Record<3 | 4 | 5, VisualImage>> = {},
+    cardStars: Partial<Record<3 | 4 | 5, VisualImage>> = {}
+  let starSample: { height: number; hash: string } | undefined
   const converted = new Map<string, string>()
   // Reuse only checksum-verified outputs of the same locked source and exact
   // conversion key. Re-encoding an unchanged lossy image need not be byte stable.
@@ -401,7 +451,21 @@ export async function generateVisuals(
       width: original.width,
       height: original.height,
     }
-    const transformKey = `${digest(bytes)}:${size}:${quality}:${lock.transform.alphaQuality}`
+    let crop: StarCrop | undefined
+    if (purpose === 'card-stars') {
+      const inspected = await inspectStarCrop(bytes, Number(id))
+      crop = inspected.crop
+      if (
+        starSample &&
+        (starSample.height !== crop.height || starSample.hash !== inspected.starHash)
+      )
+        throw new Error('Inconsistent star scale/content across rarities')
+      starSample = { height: crop.height, hash: inspected.starHash }
+    }
+    const settings = lock.transform.cardStars
+    const transformKey = crop
+      ? cardStarKey(digest(bytes), crop, settings, lock.transform.alphaQuality)
+      : `${digest(bytes)}:${size}:${quality}:${lock.transform.alphaQuality}`
     let output = converted.get(transformKey)
     if (!output) {
       output = `game-assets/warp/${digest(transformKey)}.webp`
@@ -417,11 +481,27 @@ export async function generateVisuals(
         (await exists(await inside(root, 'public/' + output)))
           ? await readBytes(root, 'public/' + output)
           : undefined
+      const conversion = crop
+        ? sharp(bytes)
+            .extract(crop)
+            .resize({ height: settings.contentHeight, withoutEnlargement: true })
+            .extend({
+              top: settings.padding,
+              bottom: settings.padding,
+              left: settings.padding,
+              right: settings.padding,
+              background: { r: 0, g: 0, b: 0, alpha: 0 },
+            })
+        : sharp(bytes).resize({
+            width: size,
+            height: size,
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
       const result =
         cached && digest(cached) === old?.sha256 && cached.length === old.bytes
           ? { data: cached, info: await sharp(cached).metadata() }
-          : await sharp(bytes)
-              .resize({ width: size, height: size, fit: 'inside', withoutEnlargement: true })
+          : await conversion
               .webp({ quality, alphaQuality: lock.transform.alphaQuality })
               .toBuffer({ resolveWithObject: true })
       await write(stage, 'public/' + output, result.data)
@@ -432,7 +512,15 @@ export async function generateVisuals(
       }
       converted.set(transformKey, output)
     }
-    manifest.assets.push({ id, slot, purpose, source: sourcePath, output, transformKey })
+    manifest.assets.push({
+      id,
+      slot,
+      purpose,
+      source: sourcePath,
+      output,
+      transformKey,
+      ...(crop ? { crop } : {}),
+    })
     return output
   }
   async function revealAsset(
@@ -537,15 +625,32 @@ export async function generateVisuals(
       ),
     }
   }
-  for (const rarity of [3, 4, 5] as const)
-    stars[rarity] = await asset(
+  for (const rarity of [3, 4, 5] as const) {
+    const file = await asset(
       String(rarity),
       'stars',
       `icon/deco/Star${rarity}.png`,
       lock.transform.starSize,
       lock.transform.iconQuality,
     )
-  revealStars[5] = await revealAsset('5', 'reveal-stars', 'icon/deco/Star5.png')
+    if (file) stars[rarity] = file
+  }
+  const revealFiveStars = await revealAsset('5', 'reveal-stars', 'icon/deco/Star5.png')
+  if (revealFiveStars) revealStars[5] = revealFiveStars
+  for (const rarity of [3, 4, 5] as const) {
+    const file = await asset(
+      String(rarity),
+      'card-stars',
+      `icon/deco/Star${rarity}.png`,
+      lock.transform.cardStars.contentHeight,
+      lock.transform.cardStars.quality,
+      'card-stars',
+    )
+    if (file) {
+      const meta = manifest.files['public/' + file]!
+      cardStars[rarity] = { path: file, width: meta.width!, height: meta.height! }
+    }
+  }
   const catalog: WarpVisualCatalog = {
     schemaVersion: 1,
     items,
@@ -553,6 +658,7 @@ export async function generateVisuals(
     elements,
     stars,
     revealStars,
+    cardStars,
   }
   assertVisualCatalog(catalog, snapshot)
   const catalogBytes = serialize(catalog)

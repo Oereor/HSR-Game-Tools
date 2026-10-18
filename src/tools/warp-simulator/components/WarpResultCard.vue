@@ -52,23 +52,22 @@ const summary = computed(() =>
   >
     <span class="warp-card-visual"><WarpItemVisual :item="item" artwork crop /></span>
     <span v-if="entry.event.isUp === true" class="warp-up">{{ t('warp.up') }}</span>
-    <span class="warp-card-icons">
-      <span class="warp-icon-slot">
+    <span class="warp-card-metadata">
+      <span class="warp-metadata-cluster">
+        <span class="warp-metadata-icons">
+          <WarpVisualIcon
+            :url="item.pathIconUrl"
+            :label="item.pathName ?? t('warp.visual.unknown')"
+          />
+          <WarpVisualIcon
+            v-if="item.kind === 'avatar'"
+            :url="item.elementIconUrl"
+            :label="item.elementName ?? t('warp.visual.unknown')"
+          />
+        </span>
         <WarpVisualIcon
-          :url="item.pathIconUrl"
-          :label="item.pathName ?? t('warp.visual.unknown')"
-        />
-      </span>
-      <span class="warp-icon-slot">
-        <WarpVisualIcon
-          v-if="item.kind === 'avatar'"
-          :url="item.elementIconUrl"
-          :label="item.elementName ?? t('warp.visual.unknown')"
-        />
-      </span>
-      <span class="warp-icon-slot">
-        <WarpVisualIcon
-          :url="item.starsUrl"
+          :image="item.cardStars"
+          :reference-aspect-ratio="item.cardStarsReferenceAspectRatio ?? 5"
           :label="t('warp.visual.rarity', { count: entry.event.rarity })"
           stars
         />
@@ -86,7 +85,7 @@ const summary = computed(() =>
   --warp-glow-spread: 0px;
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(56px, 27%);
+  grid-template-columns: minmax(0, 1fr) minmax(80px, 30%);
   grid-template-rows: minmax(0, 1fr);
   align-items: stretch;
   width: 100%;
@@ -135,28 +134,35 @@ const summary = computed(() =>
   position: absolute;
   inset: 0;
 }
-.warp-card-icons {
-  --warp-icon-size: 36px;
-  --warp-stars-width: 80px;
-  --warp-icon-align: start;
-  --warp-icon-position: left center;
+.warp-card-metadata {
+  --warp-icon-size: min(32px, calc((100cqi - 8px) / 2));
+  --warp-stars-target-height: 18px;
+  --warp-metadata-gap: 14px;
+  container-type: inline-size;
   display: grid;
-  grid-template-rows: repeat(3, minmax(0, 1fr));
   grid-template-columns: minmax(0, 1fr);
+  place-items: center;
   min-width: 0;
   min-height: 0;
-  padding: 8px 8px;
-  border-left: 1px solid color-mix(in srgb, var(--warp-rarity) 28%, transparent);
+  padding: 8px 6px;
+  border-left: 1px solid color-mix(in srgb, var(--warp-rarity) 14%, transparent);
 }
-.warp-icon-slot {
-  width: 100%;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
+.warp-metadata-cluster {
   display: grid;
-  align-items: center;
-  justify-items: start;
+  justify-items: center;
+  align-content: center;
+  gap: var(--warp-metadata-gap);
+  width: 100%;
   min-width: 0;
-  min-height: 0;
+}
+.warp-metadata-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 .warp-up {
   position: absolute;
@@ -173,9 +179,10 @@ const summary = computed(() =>
 .warp-result-single {
   max-width: 620px;
 }
-.warp-result-single .warp-card-icons {
-  --warp-icon-size: 48px;
-  --warp-stars-width: 100px;
+.warp-result-single .warp-card-metadata {
+  --warp-icon-size: min(40px, calc((100cqi - 8px) / 2));
+  --warp-stars-target-height: 23px;
+  --warp-metadata-gap: 20px;
 }
 @keyframes warp-result-in {
   from {

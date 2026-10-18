@@ -11,8 +11,12 @@ import reviewEn from '../../manual/warp-results/en.json'
 // The current runtime snapshot contains no five-star light cones. Keep this
 // synthetic identity and its reused four-star artwork entirely in the test graph.
 export const syntheticConeId = 'fixture:light-cone:5'
+export const syntheticLongNameId = 'fixture:avatar:long-name'
 const coneTemplate = warpSnapshot.items
   .filter((item) => item.kind === 'light-cone' && item.rarity === 4)
+  .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0]!
+const avatarTemplate = warpSnapshot.items
+  .filter((item) => item.kind === 'avatar' && item.rarity === 5)
   .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))[0]!
 export const resultDisplaySnapshot: WarpSnapshot = {
   ...warpSnapshot,
@@ -24,11 +28,17 @@ export const resultDisplaySnapshot: WarpSnapshot = {
       rarity: 5,
       names: { 'zh-CN': reviewZhCN.syntheticCone, en: reviewEn.syntheticCone },
     },
+    {
+      ...avatarTemplate,
+      id: syntheticLongNameId,
+      names: { 'zh-CN': reviewZhCN.syntheticLongName, en: reviewEn.syntheticLongName },
+    },
   ],
 }
 export const resultDisplayVisuals = {
   ...warpVisuals,
   [syntheticConeId]: warpVisuals[coneTemplate.id]!,
+  [syntheticLongNameId]: warpVisuals[avatarTemplate.id]!,
 }
 
 export interface ResultDisplayScenario {
@@ -130,6 +140,7 @@ export function resultDisplayScenarios(
     [cone4.id]: {
       artworkUrl: '/tests/manual/warp-results/missing-fixture.webp',
       starsUrl: undefined,
+      cardStars: undefined,
       revealArtwork: undefined,
     },
     [avatar5.id]: { artworkUrl: svg(800, 80), revealArtwork: undefined },
@@ -140,6 +151,7 @@ export function resultDisplayScenarios(
       artworkUrl: undefined,
       pathIconUrl: undefined,
       starsUrl: undefined,
+      cardStars: undefined,
       revealArtwork: undefined,
       revealPathIcon: undefined,
       revealStars: undefined,
@@ -147,6 +159,11 @@ export function resultDisplayScenarios(
   })
   add('failed-artwork', [cone4], [], {
     [cone4.id]: {
+      cardStars: {
+        url: '/tests/manual/warp-results/missing-card-stars.webp',
+        width: 260,
+        height: 68,
+      },
       artworkUrl: '/tests/manual/warp-results/missing-fixture.webp',
       revealArtwork: {
         url: '/tests/manual/warp-results/missing-hd-fixture.webp',
@@ -172,6 +189,19 @@ export function resultDisplayScenarios(
         width: 640,
         height: 128,
       },
+    },
+  })
+  const officialLongName = snapshot.items.find((item) => item.id === 'light-cone:21015')
+  const syntheticLongName = snapshot.items.find((item) => item.id === syntheticLongNameId)
+  if (!officialLongName || !syntheticLongName) throw new Error('Missing long-name review identity')
+  add('reveal-official-long-name', [officialLongName])
+  add('reveal-long-name', [syntheticLongName])
+  add('reveal-metadata-missing', [avatar5], [], {
+    [avatar5.id]: {
+      pathName: undefined,
+      pathIconUrl: undefined,
+      elementName: undefined,
+      elementIconUrl: undefined,
     },
   })
   return Object.freeze(scenarios)

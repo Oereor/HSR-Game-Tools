@@ -1015,5 +1015,22 @@
       "width": 640,
       "height": 128
     }
+  },
+  "cardStars": {
+    "3": {
+      "path": "game-assets/warp/0d354ddfa4fb8352c9b6950cd41d4bd8e97327b1552b28ea0bc3affb32b94b57.webp",
+      "width": 196,
+      "height": 68
+    },
+    "4": {
+      "path": "game-assets/warp/57536f2d0e4d3ddfbf31112d424dd7c959b285cd7b3bf72b553e67d463340b14.webp",
+      "width": 260,
+      "height": 68
+    },
+    "5": {
+      "path": "game-assets/warp/6a1a59f907c8e28fba419cb25e3991b0a8456f1a1f4cf4fbd6ca0d2b2a7137f6.webp",
+      "width": 324,
+      "height": 68
+    }
   }
 }

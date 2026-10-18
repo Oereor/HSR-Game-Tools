@@ -157,7 +157,9 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 `createPresentation(snapshot, visuals?, base?, definitions?)` 继续按 canonical ID 从 Warp Snapshot 取得名称、类别、稀有度，另外返回命途内部 ID／本地化名称／图标、角色属性内部 ID／名称／图标／原色／可读色、头像、立绘／封面及星级图片 URL。物品路径只由登记的安全 `game-assets/*.webp` 相对路径与 BASE_URL 组合。光锥无属性；缺失元数据和加载失败均使用中性占位，不猜测资源。
 
-Catalog 的可选高清字段为 items[id].revealArtwork、paths[id].revealIcon 和 revealStars[5]，统一保存 path／width／height；兼容原 schemaVersion 1。Adapter 对应提供 revealArtwork／revealPathIcon／revealStars，均为 url／width／height，不替换 artworkUrl／pathIconUrl／starsUrl。普通卡片与详情不选择高清字段；只有演出图片组件发出高清请求。离线资源 Manifest v2 校验用途、转换参数、源／输出尺寸、不放大、哈希和引用覆盖，详见[资源维护](../game-data.md#warp-展示资源)。
+Catalog 的可选高清字段为 items[id].revealArtwork、paths[id].revealIcon 和 revealStars[5]，统一保存 path／width／height；兼容原 schemaVersion 1。Adapter 对应提供 revealArtwork／revealPathIcon／revealStars，均为 url／width／height，不替换 artworkUrl／pathIconUrl／starsUrl。普通卡片与详情不选择高清字段；只有演出图片组件发出高清请求。离线资源 Manifest 校验用途、转换参数、源／输出尺寸、不放大、哈希和引用覆盖，详见[资源维护](../game-data.md#warp-展示资源)。
+
+裁切星级 cardStars[3/4/5] 同样使用 path／width／height；Adapter 提供可选 cardStars 图片描述与 cardStarsReferenceAspectRatio，后者取裁切五星图宽高比，缺失时以 5 保守限制。卡片的两行 Metadata 信息簇和最终 Artwork 信息面板选择 cardStars，资源缺失／失败使用中性占位；历史、详情和五星 identity 前置演出仍使用旧 starsUrl／revealStars，不发生隐式替换。WarpVisualIcon 的 image／referenceAspectRatio 可选输入由结果卡和最终 Artwork 信息面板启用，按共同参考比约束三档高度；旧 url／stars 调用保留原行为。Manifest v3 新增裁切追溯，维护规则见[资源维护](../game-data.md#warp-展示资源)。这些元数据派生不调用 RNG 或修改会话。
 
 `useWarpOverlay` 只管理互斥 Drawer、Dialog 进入队列及恢复焦点 ID，不引用会话或 RNG。控制与历史默认收起，结果区域和常驻抽取栏保持挂载；打开／关闭面板不会重建 `useWarpSimulator` 或结果批次。Dialog 先等待 Drawer 的 after-hide，关闭后恢复来源面板／触发项；DOM 焦点恢复只在页面层执行。
 

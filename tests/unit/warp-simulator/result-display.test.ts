@@ -119,7 +119,13 @@ describe('Result display review fixtures', () => {
       scenarios
         .filter(
           ({ id }) =>
-            !['image-fallbacks', 'missing-artwork', 'failed-artwork', 'hd-fallback'].includes(id),
+            ![
+              'image-fallbacks',
+              'missing-artwork',
+              'failed-artwork',
+              'hd-fallback',
+              'reveal-metadata-missing',
+            ].includes(id),
         )
         .every(({ overrides }) => !Object.keys(overrides).length),
     ).toBe(true)

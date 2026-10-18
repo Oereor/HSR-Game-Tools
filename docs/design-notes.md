@@ -114,7 +114,9 @@ Tooltip 使用转义文本并保留 Escape 关闭，效果含文字和符号，�
 
 星缘 Dialog 使用可搜索的双列头像 Checkbox 网格，≤480px 单列；支持中英文名和 ID，显示已选数量，七名确认、取消丢弃草稿。重置 Dialog 解释当前组／全部的实际范围，默认焦点落在取消。抽屉使用 PrimeVue 的 Escape、焦点陷阱、遮罩及滚动锁，真实键盘交互由维护者验收。
 
-单抽和十连通过纯展示组件 `WarpResults` 共用横向卡片，约 2.1:1 外框，左图／右信息栏约 73%／27%。信息栏固定三个等高 Grid 槽位：上命途、中属性、下原生星级图，统一左对齐、垂直居中、左右 Padding 8px；光锥中间留空，不添加虚假属性标签。UP 使用独立左上角叠层，不影响图标定位。普通命途／属性 Icon 目标为 36px，单抽为 48px；星级目标宽度分别为 80px／100px，以原生 5:1 比例显示。信息栏和槽位均使用可收缩的 minmax(0, 1fr) 轨道及 min-width: 0，`WarpVisualIcon` 集中管理尺寸，星级宽度取目标宽度与槽位可用宽度的较小值。父级仅提供 CSS 变量，不再深层覆盖固定宽高，不截断第五颗星或裁切卡片外光；UP 为 11px。
+单抽和十连通过纯展示组件 `WarpResults` 共用横向卡片，约 2.1:1 外框。右侧 Metadata 区为 30%、最小 80px，横向 Padding 6px、纵向 8px，分隔线为稀有度色 14% 混色。内部是水平、垂直居中的紧凑两行信息簇：上行命途与角色属性，图标间距 8px；下行卡片专用裁切星级。光锥只渲染命途、自然居中，不保留空属性槽。十连图标目标 32px、两行间距 14px；单抽 40px／20px；行距不随卡片高度增长。UP 保持独立左上角叠层、11px，不参与布局。
+
+Metadata 使用 inline-size 查询容器，内部可收缩 Grid 和 min-width: 0 约束固有尺寸；图标尺寸按两个图标加 8px 间距共同限制，光锥单图标不额外放大。`WarpVisualIcon` 的卡片模式采用各星级自然宽高比，目标高度十连 18px、单抽 23px；三档实际高度均取目标值与“容器可用宽度／五星裁切图宽高比”的较小值，不让五星先独立缩小。五颗星最大宽约 85.8px／109.6px，三星、四星保持相同单颗星尺度。原星级调用保留 5:1 显示，仅历史和详情继续使用；无父级 deep 固定宽高覆盖，卡片外层不裁切。
 
 单抽最大宽 620px；十连桌面以八列 Grid 的双列跨度形成 3–4–3，保持实际顺序、等大卡片与每排居中。<1040px 降为两列，≤640px 为一列。网格统一行列间距 36px、内边距 24px；有结果时从标题向下自然排版，不用视口最小高度、弹性填充或垂直居中分配多余空间。空状态单独保留最小高度。结果标题 19px，来源／抽数辅助信息 13px，不改全站字体。
 
@@ -126,9 +128,13 @@ Warp 专属稀有度 Token 集中于 preset，结果卡与历史名称共用：�
 
 演出背景、Dialog 外壳及全屏按钮始终纯黑 `#000000`，不使用主题遮罩渐变。`WarpRevealImage` 为当前演出项按需选择独立高清资源，失败依次回退轻量资源、中性占位；仅预加载当前 Artwork，不提前请求队列其他项。角色和光锥完整 contain、居中，显示范围同时受可用视口、原最大宽 1200px 和实际像素尺寸除以当前 DPR 限制，不为铺满屏幕放大低分辨率图。缩放／跨屏／视口变化时更新 DPR；轻量回退也按真实尺寸限制。普通结果卡与详情继续使用原轻量资源。使用 PrimeVue 模态、焦点陷阱及滚动锁，背景页面 inert、抽取入口锁定至 after-hide，再恢复发起抽取按钮焦点。Reduced Motion 在图片或最终占位就绪后直接等待确认，运行中启用时取消非必要动画。资源、语言与演出不消费 RNG，不改变历史或保底；状态机与生命周期规则见[跃迁架构](architecture/warp-simulator.md#全屏结果演出)。
 
+最终 Artwork 使用 `WarpRevealMetadata` 提供三行左对齐信息：本地化名称、cardStars 裁切星级、命途 Icon＋名称及角色属性 Icon＋名称。面板定位于现有最大宽 1200px Artwork 舞台的左下角，不跟随实际图片外框，也不锚定 Viewport。黑色 75% 透明背景、16px Padding／偏移、8px 行距、6px 圆角，宽度 min(360px, 100% - 32px)；名称 26px／600 字重并使用既有稀有度色，星级高 22px，Metadata 图标 22px、文字 14px。命途中性色，属性直接使用 Adapter 的 elementTextColor。宽度 ≤640px 或高度 ≤480px 时 Padding／偏移 12px、最大宽 320px，名称 20px、星级高 18px、图标 20px、文字 13px。长名称完整换行，第三行可组间换行；缺少分组名称则省略该组，光锥无属性，两组均缺失显示本地化未知；缺图使用中性占位。
+
+信息面板仅在 Artwork 就绪且当前显示阶段为 artwork／waiting 时挂载，随已有父容器淡入，并在最终 Artwork 离场时共同淡出；identity 和图片加载期间不显示。它不增加状态、计时器、ready 门控或焦点目标，pointer-events none 让点击继续由全屏按钮处理。按钮保留原名称与操作提示，aria-describedby 在面板出现时指向仅含稀有度和 Metadata 的本地化摘要，避免图标与相邻文字重复播报。规则及人工场景见 [Phase 1K 报告](investigations/warp-simulator/phase-1k-reveal-metadata-overlay.md)。
+
 结果卡 Tooltip 使用转义文本的三行信息：名称（命途·角色属性）、稀有度、类别；只连接实际存在的元数据，光锥不显示属性。使用 PrimeVue Tooltip 的 text Pass Through 设置 white-space: pre-line，不插入 HTML；ARIA 及点击详情保留完整信息。
 
-本地开发可打开 `/tests/manual/warp-results/index.html`，切换全三星、四星／五星混排、十连单五星、各类单抽和图片异常的固定场景，点击演出按钮复现同一正式状态机，并可模拟 Reduced Motion、检查同批历史。该独立入口复用正式结果组件、主题、双语与详情 Dialog，不注册正式路由、不进入生产构建入口、不调用引擎或保存会话。人工展示记录不能视为合法卡池结果；正式 Snapshot 暂无五星光锥，夹具以明确标识的合成身份复用四星封面检查该样式，不修改正式数据。正式会话仍只消费真实引擎事件。最新视觉／演出复现步骤见 [Phase 1H 报告](investigations/warp-simulator/phase-1h-reveal-animation-and-ui-polish.md)。
+本地开发可打开 `/tests/manual/warp-results/index.html`，切换全三星、四星／五星混排、十连单五星、各类单抽和图片异常的固定场景，点击演出按钮复现同一正式状态机，并可模拟 Reduced Motion、检查同批历史。该独立入口复用正式结果组件、主题、双语与详情 Dialog，不注册正式路由、不进入生产构建入口、不调用引擎或保存会话。人工展示记录不能视为合法卡池结果；正式 Snapshot 暂无五星光锥，夹具以明确标识的合成身份复用四星封面检查该样式，不修改正式数据。正式会话仍只消费真实引擎事件。Metadata 人工比较步骤见 [Phase 1J 报告](investigations/warp-simulator/phase-1j-metadata-layout-refinement.md)，高清演出见 [Phase 1I](investigations/warp-simulator/phase-1i-reveal-quality-fixes.md)。
 
 历史使用五列语义表格，顺序为名称、类别、原生星级图、命途 Icon＋名称、属性 Icon＋名称。正文 14px、行高 1.6、单元格 Padding 12px／10px，名称按稀有度着色、弹性截断并提供完整 Tooltip；Hover 使用下划线，Focus 保留同色清晰轮廓。其余列宽稳定，表格最小宽 720px，光锥属性留空。属性文字保留来源色，必要时最小幅度混白，确保在 `#22252b` Surface 上至少 4.5:1。历史容器自身横向滚动，不拆成纵向标签；顺序、每页 25 条和最近 1000 条限制保持不变。
 

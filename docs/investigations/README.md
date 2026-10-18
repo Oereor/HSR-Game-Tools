@@ -54,6 +54,10 @@
 
 ## Warp Simulator
 
+- [Phase 1K 全屏 Artwork 信息面板](warp-simulator/phase-1k-reveal-metadata-overlay.md)：三行本地化物品信息、舞台定位、同步淡入与无障碍描述及验收步骤。
+
+- [Phase 1J Metadata 排版精修](warp-simulator/phase-1j-metadata-layout-refinement.md)：卡片专用透明裁切星级、统一单颗星尺度、两行居中信息簇及验收清单。
+
 - [Phase 1I 演出与资源修复](warp-simulator/phase-1i-reveal-quality-fixes.md)：五星同步组合、独立高清资源与 DPR 限制、星级溢出修复及人工验收清单。
 
 - [Phase 1F 视觉资源与 UI](warp-simulator/phase-1f-visual-refinement.md)：离线图片提取、横向结果卡、双侧抽屉、五列历史与验证证据。

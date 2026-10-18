@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "source": {
     "repository": "https://github.com/Mar-7th/StarRailRes.git",
     "commit": "dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487"
   },
-  "generatedAt": "2026-10-18T08:54:49.107Z",
+  "generatedAt": "2026-10-18T09:55:31.866Z",
   "transform": {
-    "version": 2,
+    "version": 3,
     "avatarSize": 768,
     "lightConeSize": 640,
     "iconSize": 64,
@@ -18,6 +18,13 @@
     "revealIconSize": 512,
     "revealStarSize": 640,
     "revealQuality": 88,
+    "cardStars": {
+      "method": "alpha-trim",
+      "threshold": 0,
+      "contentHeight": 64,
+      "padding": 2,
+      "quality": 90
+    },
     "sharpVersion": "0.35.3"
   },
   "snapshotSha256": "ae2c48bd0f9493b25665796b26ff0136651e56eba1fc31f1de352e27d83ab0c0",
@@ -2082,9 +2089,27 @@
       "width": 640,
       "height": 128
     },
+    "public/game-assets/warp/0d354ddfa4fb8352c9b6950cd41d4bd8e97327b1552b28ea0bc3affb32b94b57.webp": {
+      "bytes": 7860,
+      "sha256": "1acf4386d4b1d1a7189326295974b4b8f763c93305705bdf6e7b8684d377beae",
+      "width": 196,
+      "height": 68
+    },
+    "public/game-assets/warp/57536f2d0e4d3ddfbf31112d424dd7c959b285cd7b3bf72b553e67d463340b14.webp": {
+      "bytes": 9736,
+      "sha256": "981ce9c988d03ec3083bdc53fd4db10b45408612257d46b3ca478051234ddd54",
+      "width": 260,
+      "height": 68
+    },
+    "public/game-assets/warp/6a1a59f907c8e28fba419cb25e3991b0a8456f1a1f4cf4fbd6ca0d2b2a7137f6.webp": {
+      "bytes": 11772,
+      "sha256": "b42f1c05160f622f4ff1effc5e19cde13ca1fd3c67f3ac8a8fb4327e20f68366",
+      "width": 324,
+      "height": 68
+    },
     "src/tools/warp-simulator/data/visuals/catalog.json": {
-      "bytes": 38357,
-      "sha256": "9c878cd418a3c4667f1e8b89f5cd9cf44a761a3e35b2a015645a9a95b8939587"
+      "bytes": 38861,
+      "sha256": "62cd7195338ec1b76dfa15878fe6c5ab01f6a8f6f4a902849228930b905cff57"
     }
   },
   "assets": [
@@ -3695,6 +3720,48 @@
       "source": "icon/deco/Star5.png",
       "output": "game-assets/warp/3c6b9614b3914604c832f93f8c04c13a5ce077769f95bfde2504a370d1e5ae04.webp",
       "transformKey": "2da28ebcdb934a447c35dedf704af883838fa5eaee00d75c96d84b86e224ed9a:640:90:100"
+    },
+    {
+      "id": "3",
+      "slot": "card-stars",
+      "purpose": "card-stars",
+      "source": "icon/deco/Star3.png",
+      "output": "game-assets/warp/0d354ddfa4fb8352c9b6950cd41d4bd8e97327b1552b28ea0bc3affb32b94b57.webp",
+      "transformKey": "{\"sourceSha256\":\"98bcdd05ff0620190273eea8a61faa02c25cdfe5fbf318ef5425c4ca79dc88f2\",\"recipe\":\"card-stars-v1\",\"method\":\"alpha-trim\",\"threshold\":0,\"crop\":{\"left\":0,\"top\":0,\"width\":384,\"height\":128},\"contentHeight\":64,\"padding\":2,\"quality\":90,\"alphaQuality\":100}",
+      "crop": {
+        "left": 0,
+        "top": 0,
+        "width": 384,
+        "height": 128
+      }
+    },
+    {
+      "id": "4",
+      "slot": "card-stars",
+      "purpose": "card-stars",
+      "source": "icon/deco/Star4.png",
+      "output": "game-assets/warp/57536f2d0e4d3ddfbf31112d424dd7c959b285cd7b3bf72b553e67d463340b14.webp",
+      "transformKey": "{\"sourceSha256\":\"ccaf0b2a10d0476836f1670ca9b52d4b5fe0473253962157d1328c26984abcac\",\"recipe\":\"card-stars-v1\",\"method\":\"alpha-trim\",\"threshold\":0,\"crop\":{\"left\":0,\"top\":0,\"width\":512,\"height\":128},\"contentHeight\":64,\"padding\":2,\"quality\":90,\"alphaQuality\":100}",
+      "crop": {
+        "left": 0,
+        "top": 0,
+        "width": 512,
+        "height": 128
+      }
+    },
+    {
+      "id": "5",
+      "slot": "card-stars",
+      "purpose": "card-stars",
+      "source": "icon/deco/Star5.png",
+      "output": "game-assets/warp/6a1a59f907c8e28fba419cb25e3991b0a8456f1a1f4cf4fbd6ca0d2b2a7137f6.webp",
+      "transformKey": "{\"sourceSha256\":\"2da28ebcdb934a447c35dedf704af883838fa5eaee00d75c96d84b86e224ed9a\",\"recipe\":\"card-stars-v1\",\"method\":\"alpha-trim\",\"threshold\":0,\"crop\":{\"left\":0,\"top\":0,\"width\":640,\"height\":128},\"contentHeight\":64,\"padding\":2,\"quality\":90,\"alphaQuality\":100}",
+      "crop": {
+        "left": 0,
+        "top": 0,
+        "width": 640,
+        "height": 128
+      }
     }
   ],
   "missingAssets": []

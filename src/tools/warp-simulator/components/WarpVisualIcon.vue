@@ -1,11 +1,39 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useImageSource } from '../../../composables/useImageSource'
-const props = defineProps<{ url?: string; label: string; stars?: boolean }>()
-const { source, fail } = useImageSource(() => props.url)
+import type { ImagePresentation } from '../model/presentation'
+const props = defineProps<{
+  url?: string
+  label: string
+  stars?: boolean
+  image?: ImagePresentation
+  referenceAspectRatio?: number
+}>()
+const croppedStars = computed(() => props.stars && props.referenceAspectRatio !== undefined)
+const { source, fail } = useImageSource(() => (croppedStars.value ? props.image?.url : props.url))
+const starStyle = computed(() => {
+  if (!croppedStars.value) return undefined
+  const ratio =
+    props.referenceAspectRatio &&
+    Number.isFinite(props.referenceAspectRatio) &&
+    props.referenceAspectRatio > 0
+      ? props.referenceAspectRatio
+      : 5
+  return {
+    '--warp-stars-reference-aspect': ratio,
+    '--warp-stars-aspect': props.image ? props.image.width / props.image.height : ratio,
+  }
+})
 </script>
 
 <template>
-  <span class="warp-icon" :class="{ 'warp-stars-icon': stars }" role="img" :aria-label="label">
+  <span
+    class="warp-icon"
+    :class="{ 'warp-stars-icon': stars, 'warp-card-stars': croppedStars }"
+    :style="starStyle"
+    role="img"
+    :aria-label="label"
+  >
     <img v-if="source" :src="source" alt="" @error="fail" />
     <span v-else aria-hidden="true" class="warp-icon-missing">—</span>
   </span>
@@ -43,5 +71,14 @@ const { source, fail } = useImageSource(() => props.url)
 }
 .warp-icon-missing {
   color: var(--color-muted);
+}
+.warp-card-stars {
+  --warp-stars-height: min(
+    var(--warp-stars-target-height, 18px),
+    calc(100cqi / var(--warp-stars-reference-aspect))
+  );
+  width: calc(var(--warp-stars-height) * var(--warp-stars-aspect));
+  height: var(--warp-stars-height);
+  aspect-ratio: auto;
 }
 </style>

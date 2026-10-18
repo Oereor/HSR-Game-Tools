@@ -7,6 +7,8 @@ import type { HistoryEntry } from '../composables/useWarpSimulator'
 import { REVEAL_TIMING, type RevealPhase } from '../composables/useWarpReveal'
 import type { ItemPresentation } from '../model/presentation'
 import WarpRevealImage from './WarpRevealImage.vue'
+import WarpRevealMetadata from './WarpRevealMetadata.vue'
+import { showRevealMetadata } from './reveal-metadata'
 import { useWarpPixelRatio } from '../composables/useWarpPixelRatio'
 
 const props = defineProps<{
@@ -48,6 +50,10 @@ watch(
   { flush: 'sync' },
 )
 const stage = computed(() => (props.phase === 'leaving' ? leavingStage.value : props.phase))
+const metadataVisible = computed(() => showRevealMetadata(stage.value, props.artworkReady))
+const metadataDescriptionId = computed(
+  () => `warp-reveal-metadata-${props.entry?.batchId}-${props.entry?.id}`,
+)
 const hint = computed(() =>
   t(
     props.phase === 'artwork' && !props.artworkReady
@@ -105,6 +111,7 @@ function keydown(event: KeyboardEvent) {
         :aria-label="
           t('warp.reveal.action', { name: item?.name ?? t('warp.visual.unknown'), action: hint })
         "
+        :aria-describedby="metadataVisible && entry && item ? metadataDescriptionId : undefined"
         @click="emit('activate')"
         @keydown="keydown"
       >
@@ -151,6 +158,12 @@ function keydown(event: KeyboardEvent) {
               :batch-id="entry.batchId"
               :entry-id="entry.id"
               @ready="(batchId, entryId) => emit('artwork-ready', batchId, entryId)"
+            />
+            <WarpRevealMetadata
+              v-if="metadataVisible"
+              :item="item"
+              :rarity="entry.event.rarity"
+              :description-id="metadataDescriptionId"
             />
           </span>
         </span>

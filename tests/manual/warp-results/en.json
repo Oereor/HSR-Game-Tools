@@ -2,6 +2,7 @@
   "title": "Warp result display review",
   "notice": "Synthetic display records, not real pulls. No gacha engine or saved session; UP, source and pity are for review only. The runtime snapshot has no five-star light cones, so the synthetic one reuses an existing four-star cover.",
   "syntheticCone": "Synthetic five-star light cone (four-star cover, display review only)",
+  "syntheticLongName": "Synthetic character with an unusually long name to review full wrapping and boundaries of the reveal metadata panel on narrow screens (display review only)",
   "scenario": "Fixed scenario",
   "replay": "Replay entrance animation",
   "order": "Current order (record number → item ID)",
@@ -18,7 +19,10 @@
     "image-fallbacks": "Missing / failed images / extreme aspect ratios",
     "missing-artwork": "Single pull with missing images and icons",
     "failed-artwork": "Single pull with failed HD and lightweight artwork",
-    "hd-fallback": "Five-star HD failure with lightweight artwork and icon fallback"
+    "hd-fallback": "Five-star HD failure with lightweight artwork and icon fallback",
+    "reveal-official-long-name": "Light cone with the longest official English name",
+    "reveal-long-name": "Synthetic character with a long name",
+    "reveal-metadata-missing": "Missing path and element metadata"
   },
   "play": "Play current reveal",
   "reducedMotion": "Simulate reduced motion (system preference still applies)"

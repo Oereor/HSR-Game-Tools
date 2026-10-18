@@ -18,6 +18,7 @@ import { metadata } from '../../../scripts/warp-data/files'
 import { validateGameFiles } from '../../../scripts/game-data/files'
 import { fileURLToPath } from 'node:url'
 import type { WarpSnapshot } from '../../../src/tools/warp-simulator/data/schema'
+import { starFixture } from '../../fixtures/warp-simulator/stars'
 
 const temps: string[] = []
 afterEach(async () => {
@@ -114,9 +115,9 @@ async function fixture() {
     'image/light_cone_portrait/1.png',
     'icon/path/Destruction.png',
     'icon/element/Quantum.png',
-    ...[3, 4, 5].map((n) => `icon/deco/Star${n}.png`),
   ])
     inputs[file] = image
+  for (const rarity of [3, 4, 5]) inputs[`icon/deco/Star${rarity}.png`] = await starFixture(rarity)
   return { root, stage, inputs, source: { read: (file: string) => inputs[file] } }
 }
 describe('explicit Warp visual updater', () => {
@@ -124,7 +125,7 @@ describe('explicit Warp visual updater', () => {
     const root = fileURLToPath(new URL('../../../', import.meta.url))
     expect(await validateVisuals(root)).toMatchObject({
       items: 86,
-      newAssets: 201,
+      newAssets: 204,
       reusedAssets: 30,
       missing: 0,
     })
@@ -145,24 +146,29 @@ describe('explicit Warp visual updater', () => {
     expect(catalog.items['light-cone:1'].element).toBeUndefined()
     expect(catalog.paths.Warrior.names).toEqual({ 'zh-CN': '毁灭', en: 'Destruction' })
     expect(catalog.paths.Warrior.iconPath).toBe(catalog.elements.Quantum.iconPath)
-    expect(new Set(Object.values(catalog.stars)).size).toBe(1)
+    expect(new Set(Object.values(catalog.stars)).size).toBe(3)
     expect(catalog.items['avatar:1'].revealArtwork).toMatchObject({ width: 16, height: 24 })
     expect(catalog.items['avatar:1'].revealArtwork).toEqual(
       catalog.items['light-cone:1'].revealArtwork,
     )
     expect(catalog.paths.Warrior.revealIcon).toMatchObject({ width: 16, height: 24 })
-    expect(catalog.revealStars['5']).toMatchObject({ width: 16, height: 24 })
+    expect(catalog.revealStars['5']).toMatchObject({ width: 640, height: 128 })
+    expect(catalog.cardStars['3']).toMatchObject({ width: 196, height: 68 })
     expect(manifest.inputs['image/character_portrait/1.png']).toMatchObject({
       width: 16,
       height: 24,
     })
-    expect(new Set(manifest.assets.map((asset) => asset.purpose)).size).toBe(7)
-    expect((await readdir(path.join(f.stage, assetDirectory))).length).toBe(7)
+    expect(new Set(manifest.assets.map((asset) => asset.purpose)).size).toBe(8)
+    expect((await readdir(path.join(f.stage, assetDirectory))).length).toBe(12)
     expect(manifest.inputs['index_new/cn/characters.json']).toEqual(
       metadata(f.inputs['index_new/cn/characters.json']!),
     )
     await publishVisuals(f.root, f.stage, 'fixture')
-    expect(await validateVisuals(f.root)).toMatchObject({ items: 2, newAssets: 7, reusedAssets: 1 })
+    expect(await validateVisuals(f.root)).toMatchObject({
+      items: 2,
+      newAssets: 12,
+      reusedAssets: 1,
+    })
     expect(await readFile(path.join(f.root, 'public/game-assets/character/1.webp'))).toEqual(before)
   })
   it('reuses verified bytes and repairs a missing or corrupt cached output', async () => {
@@ -178,6 +184,57 @@ describe('explicit Warp visual updater', () => {
     await write(f.root, 'public/' + hd.output, 'corrupted')
     const decoded = await generateVisuals(f.root, path.join(f.root, 'fourth'), f.source)
     expect(decoded.files).toEqual(first.files)
+  })
+  it.each(['crop', 'key', 'dimensions', 'mapping', 'checksum'])(
+    'rejects card star corruption: %s',
+    async (mutation) => {
+      const f = await fixture()
+      const manifest = await generateVisuals(f.root, f.stage, f.source)
+      await publishVisuals(f.root, f.stage, 'card-star-corrupt')
+      const asset = manifest.assets.find((asset) => asset.purpose === 'card-stars')!
+      if (mutation === 'crop') asset.crop!.left++
+      if (mutation === 'key') asset.transformKey += ':changed'
+      if (mutation === 'dimensions') manifest.files['public/' + asset.output]!.width!++
+      if (mutation === 'mapping') {
+        const catalogFile = visualDirectory + '/catalog.json'
+        const catalog = JSON.parse((await readFile(path.join(f.root, catalogFile))).toString())
+        delete catalog.cardStars[asset.id]
+        await write(f.root, catalogFile, JSON.stringify(catalog))
+      }
+      if (mutation === 'checksum') await write(f.root, 'public/' + asset.output, 'corrupt')
+      await write(f.root, visualDirectory + '/manifest.json', JSON.stringify(manifest))
+      await expect(validateVisuals(f.root)).rejects.toThrow(/card star|mapping|checksum/)
+    },
+  )
+  it('diagnoses missing card stars and preserves official files after invalid alpha content', async () => {
+    const f = await fixture()
+    delete f.inputs['icon/deco/Star4.png']
+    const manifest = await generateVisuals(f.root, f.stage, f.source)
+    expect(manifest.missingAssets.filter((row) => row.id === '4')).toEqual([
+      { id: '4', slot: 'stars', sourcePath: 'icon/deco/Star4.png', reason: 'missing-source-file' },
+      {
+        id: '4',
+        slot: 'card-stars',
+        sourcePath: 'icon/deco/Star4.png',
+        reason: 'missing-source-file',
+      },
+    ])
+    await publishVisuals(f.root, f.stage, 'missing-stars')
+    expect(await validateVisuals(f.root)).toMatchObject({ missing: 2 })
+    const before = await readFile(path.join(f.root, visualDirectory, 'manifest.json'))
+    f.inputs['icon/deco/Star4.png'] = await sharp({
+      create: { width: 640, height: 128, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+      .png()
+      .toBuffer()
+    await expect(
+      withUpdateLock(f.root, async (stage, runId) => {
+        await generateVisuals(f.root, stage, f.source)
+        await publishVisuals(f.root, stage, runId)
+      }),
+    ).rejects.toThrow(/empty/)
+    expect(await readFile(path.join(f.root, visualDirectory, 'manifest.json'))).toEqual(before)
+    expect(await validateVisuals(f.root)).toMatchObject({ missing: 2 })
   })
   it.each([
     'purpose',
