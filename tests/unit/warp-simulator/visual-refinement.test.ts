@@ -150,9 +150,13 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
       new URL('../../../src/tools/warp-simulator/components/WarpResultCard.vue', import.meta.url),
       'utf8',
     )
-    expect(page).toContain(':key="`${entry.batchId}:${entry.id}`"')
+    const results = readFileSync(
+      new URL('../../../src/tools/warp-simulator/components/WarpResults.vue', import.meta.url),
+      'utf8',
+    )
+    expect(results).toContain(':key="`${entry.batchId}:${entry.id}`"')
     expect(card).toContain('prefers-reduced-motion: reduce')
     expect(card).not.toMatch(/Math\.random|draw\(/)
-    expect(page.indexOf('</section>')).toBeLessThan(page.indexOf('<Drawer'))
+    expect(page.indexOf('<WarpResults')).toBeLessThan(page.indexOf('<Drawer'))
   })
 })

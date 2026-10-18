@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { BookOpen, UserRound } from '@lucide/vue'
 import type { ItemPresentation } from '../model/presentation'
 import { useImageSource } from '../../../composables/useImageSource'
-const props = defineProps<{ item: ItemPresentation; artwork?: boolean }>()
+const props = defineProps<{ item: ItemPresentation; artwork?: boolean; crop?: boolean }>()
 const { t } = useI18n()
 const { source, fail } = useImageSource(() =>
   props.artwork ? props.item.artworkUrl : (props.item.portraitUrl ?? props.item.artworkUrl),
@@ -13,7 +13,11 @@ const { source, fail } = useImageSource(() =>
 <template>
   <span
     class="warp-visual"
-    :class="{ 'warp-artwork': artwork, 'warp-cone': item.kind === 'light-cone' }"
+    :class="{
+      'warp-artwork': artwork,
+      'warp-crop': artwork && crop,
+      'warp-cone': item.kind === 'light-cone',
+    }"
   >
     <img v-if="source" :src="source" :alt="item.name" @error="fail" />
     <span
@@ -45,8 +49,20 @@ const { source, fail } = useImageSource(() =>
 .warp-artwork.warp-cone {
   padding: 8px 12px;
 }
-.warp-artwork:not(.warp-cone) img {
-  object-position: center;
+.warp-artwork {
+  position: relative;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+}
+.warp-artwork img {
+  display: block;
+  min-width: 0;
+  min-height: 0;
+}
+.warp-artwork.warp-crop:not(.warp-cone) img {
+  object-fit: cover;
+  object-position: center 40%;
 }
 .warp-cone img {
   object-position: center;

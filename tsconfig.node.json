@@ -12,6 +12,7 @@
     "types": ["node"],
     "allowImportingTsExtensions": true
   },
+  "exclude": ["tests/manual/warp-results/**"],
   "include": [
     "env.d.ts",
     "vite.config.ts",

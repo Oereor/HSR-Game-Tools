@@ -11,7 +11,6 @@ import {
   Tickets as TicketsIcon,
   UsersRound,
   RotateCcw,
-  Sparkles,
   SlidersHorizontal,
   History,
 } from '@lucide/vue'
@@ -23,7 +22,7 @@ import { createPresentation } from './model/presentation'
 import WarpPityPanel from './components/WarpPityPanel.vue'
 import WarpItemVisual from './components/WarpItemVisual.vue'
 import WarpSelectionDialog from './components/WarpSelectionDialog.vue'
-import WarpResultCard from './components/WarpResultCard.vue'
+import WarpResults from './components/WarpResults.vue'
 import WarpHistory from './components/WarpHistory.vue'
 import WarpItemDetails from './components/WarpItemDetails.vue'
 
@@ -137,41 +136,12 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
         ></Button>
       </div>
     </header>
-    <section aria-labelledby="warp-results-title" class="warp-results">
-      <div class="warp-results-heading">
-        <h2 id="warp-results-title">
-          <Sparkles :size="18" aria-hidden="true" />{{ t('warp.results.title') }}
-        </h2>
-        <span v-if="latestResults.length">{{
-          t('warp.results.count', { count: latestResults.length })
-        }}</span>
-      </div>
-      <p v-if="latestResults.length" class="warp-result-source">
-        {{ sourceLabel(latestResults[0].event.bannerId) }}
-      </p>
-      <div v-if="!latestResults.length" class="warp-results-empty">
-        <Ticket :size="36" :stroke-width="1.25" aria-hidden="true" />
-        <p>{{ t('warp.results.empty') }}</p>
-      </div>
-      <div
-        v-else
-        class="warp-result-grid"
-        :class="{
-          'warp-ten-grid': latestResults.length === 10,
-          'warp-single-grid': latestResults.length === 1,
-        }"
-      >
-        <WarpResultCard
-          v-for="(entry, index) in latestResults"
-          :key="`${entry.batchId}:${entry.id}`"
-          :entry="entry"
-          :item="item(entry.event.itemId)"
-          :index="index"
-          :single="latestResults.length === 1"
-          @details="showDetails($event, 'result')"
-        />
-      </div>
-    </section>
+    <WarpResults
+      :entries="latestResults"
+      :presentation="presentation"
+      :source-label="latestResults.length ? sourceLabel(latestResults[0].event.bannerId) : ''"
+      @details="showDetails($event, 'result')"
+    />
     <div class="warp-actionbar">
       <p id="warp-choice-status" class="warp-action-status">
         {{
@@ -542,72 +512,6 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   flex-wrap: wrap;
   gap: 8px;
 }
-.warp-results {
-  min-height: max(380px, calc(100dvh - 330px));
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 12px 8px 28px;
-}
-.warp-results-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.warp-results-heading h2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  margin: 0;
-}
-.warp-results-heading > span,
-.warp-result-source {
-  font-size: 12px;
-  color: var(--color-muted);
-}
-.warp-result-source {
-  margin: 0 0 20px;
-  overflow-wrap: anywhere;
-}
-.warp-results-empty {
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 12px;
-  flex: 1;
-  min-height: 280px;
-  border: 1px dashed var(--color-line);
-  border-radius: 8px;
-  padding: 24px;
-  color: var(--color-muted);
-  text-align: center;
-  font-size: 13px;
-}
-.warp-result-grid {
-  display: grid;
-  gap: clamp(12px, 1.7vw, 22px);
-  align-content: center;
-  flex: 1;
-}
-.warp-single-grid {
-  justify-items: center;
-}
-.warp-ten-grid {
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-}
-.warp-ten-grid > * {
-  grid-column: span 2;
-}
-.warp-ten-grid > :nth-child(1),
-.warp-ten-grid > :nth-child(8) {
-  grid-column: 2 / span 2;
-}
-.warp-ten-grid > :nth-child(4) {
-  grid-column: 1 / span 2;
-}
 .warp-actionbar {
   position: sticky;
   bottom: 0;
@@ -658,15 +562,6 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   line-height: 1.8;
 }
 @media (max-width: 1039px) {
-  .warp-ten-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .warp-ten-grid > *,
-  .warp-ten-grid > :nth-child(1),
-  .warp-ten-grid > :nth-child(4),
-  .warp-ten-grid > :nth-child(8) {
-    grid-column: auto;
-  }
   .warp-page-heading {
     margin-bottom: 16px;
   }
@@ -675,9 +570,6 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   }
 }
 @media (max-width: 400px) {
-  .warp-ten-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .warp-actions {
     width: 100%;
   }
