@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import zhCN from '../../../src/locales/zh-CN.json'
 import en from '../../../src/locales/en.json'
 import visuals from '../../../src/tools/warp-simulator/data/visuals/catalog.json'
 import manifest from '../../../src/tools/warp-simulator/data/visuals/manifest.json'
+import sourceLock from '../../../scripts/warp-visuals/source-lock.json'
 import {
   warpSnapshot,
+  warpManifest,
   warpVisuals,
   warpVisualDefinitions,
 } from '../../../src/tools/warp-simulator/data/adapters/warp-data'
@@ -22,8 +25,20 @@ import type { ToolLocale } from '../../../src/locales/types'
 describe('Warp presentation and checked local assets', () => {
   it('covers only reachable items with checked original paths and shared portraits', () => {
     expect(Object.keys(warpVisuals)).toEqual(warpSnapshot.items.map((item) => item.id))
-    expect(Object.keys(warpVisuals)).toHaveLength(86)
-    expect(manifest.source.commit).toBe('dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487')
+    expect(Object.keys(warpVisuals)).toHaveLength(warpManifest.counts.items)
+    expect(manifest.source.commit).toBe(sourceLock.commit)
+    expect(manifest.snapshotSha256).toBe(
+      createHash('sha256')
+        .update(
+          readFileSync(
+            new URL(
+              '../../../src/tools/warp-simulator/data/runtime/snapshot.json',
+              import.meta.url,
+            ),
+          ),
+        )
+        .digest('hex'),
+    )
     expect(manifest.missingAssets).toEqual([])
     for (const metadata of Object.values(warpVisuals)) {
       for (const file of [metadata.portraitPath, metadata.artworkPath].filter(Boolean))
@@ -31,6 +46,34 @@ describe('Warp presentation and checked local assets', () => {
     }
     expect(Object.keys(visuals.paths)).toHaveLength(9)
     expect(Object.keys(visuals.elements)).toHaveLength(7)
+  })
+  it('serves every current candidate and UP item through the common adapter with checked resource bytes', () => {
+    for (const [file, metadata] of Object.entries(manifest.files)) {
+      const bytes = readFileSync(new URL('../../../' + file, import.meta.url))
+      expect(bytes.length).toBe(metadata.bytes)
+      expect(createHash('sha256').update(bytes).digest('hex')).toBe(metadata.sha256)
+    }
+    const adapter = createPresentation(warpSnapshot, warpVisuals, '/tools/', warpVisualDefinitions)
+    for (const source of warpSnapshot.items) {
+      for (const locale of ['zh-CN', 'en'] as const) {
+        const item = adapter.item(source.id, locale)
+        expect(item.name).toBe(source.names[locale])
+        expect(item.artworkUrl).toMatch(/^\/tools\/game-assets\/warp\//)
+        expect(item.revealArtwork?.url).toMatch(/^\/tools\/game-assets\/warp\//)
+        expect(item.pathName).toBeTruthy()
+        expect(item.pathIconUrl).toBeTruthy()
+        expect(item.revealPathIcon?.url).toBeTruthy()
+        expect(item.starsUrl).toBeTruthy()
+        expect(item.cardStars?.url).toBeTruthy()
+        if (source.kind === 'avatar') {
+          expect(item.portraitUrl).toMatch(/^\/tools\/game-assets\/character\//)
+          expect(item.elementName).toBeTruthy()
+          expect(item.elementIconUrl).toBeTruthy()
+        } else {
+          expect(item.element).toBeUndefined()
+        }
+      }
+    }
   })
   it('uses Warp localized names and optional visuals independently of engine identity', () => {
     const adapter = createPresentation(warpSnapshot, warpVisuals, '/tools/', warpVisualDefinitions)

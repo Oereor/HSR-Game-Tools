@@ -28,17 +28,21 @@ function choose(simulator: Simulator, ids = selectedAvatarIds) {
   expect(simulator.confirmSelection()).toBe(true)
 }
 describe('page-owned Warp session', () => {
-  it('loads maintained 2139 despite incomplete Manifest, without selecting or consuming RNG', async () => {
+  it('loads maintained Banners despite pending configuration, without selecting or consuming RNG', async () => {
     const rng = seeded(1),
-      simulator = useWarpSimulator({ rng })
-    expect(warpManifest.configurationStatus).toBe('incomplete')
-    expect(simulator.banners.map((v) => v.banner.id)).toEqual(['gacha:2139'])
-    expect(simulator.activeBanner.value?.banner.up5).toBe('avatar:1503')
+      simulator = useWarpSimulator({ rng, storage: () => undefined })
+    expect(warpManifest.configurationStatus).toBe(
+      warpManifest.counts.pending || !warpSnapshot.banners.length ? 'incomplete' : 'complete',
+    )
+    expect(simulator.banners.map((v) => v.banner.id)).toEqual(warpSnapshot.banners.map((v) => v.id))
+    expect(simulator.banners).toHaveLength(warpManifest.counts.readyBanners)
+    expect(simulator.activeBanner.value?.requiresSelection).toBe(true)
     expect(simulator.selectedAvatarIds.value).toEqual([])
     expect(simulator.canPull.value).toBe(false)
     expect(await simulator.draw(10)).toBe(false)
     expect(rng.consumed).toBe(0)
-    choose(simulator, [...warpSnapshot.sharedPools[0].fiveStar])
+    // A test-only witness; the page itself must never choose a default seven.
+    choose(simulator, simulator.activeBanner.value!.eligibleAvatarIds.slice(0, 7))
     expect(simulator.canPull.value).toBe(true)
     expect(await simulator.draw(1)).toBe(true)
     expect(simulator.latestResults.value).toHaveLength(1)
@@ -148,7 +152,7 @@ describe('page-owned Warp session', () => {
     expect(simulator.busy.value).toBe(false)
     expect(simulator.session.value.history).toHaveLength(10)
   })
-  it('inherits both guarantees across same-group Banners and saves choices by Banner', async () => {
+  it('inherits both guarantees and shares confirmed choices across same-group Banners', async () => {
     const snapshot = fixture()
     snapshot.banners.push({
       ...snapshot.banners[0],
@@ -167,7 +171,7 @@ describe('page-owned Warp session', () => {
     expect(pity).toMatchObject({ guaranteed5: true, guaranteed4: true })
     simulator.selectBanner('gacha:200')
     expect(simulator.pity.value).toBe(pity)
-    expect(simulator.selectedAvatarIds.value).toEqual([])
+    expect(simulator.selectedAvatarIds.value).toEqual(selectedAvatarIds)
     choose(simulator, ['avatar:8', ...selectedAvatarIds.slice(1)])
     await simulator.draw(1)
     expect(simulator.latestResults.value[0].event).toMatchObject({
@@ -177,7 +181,7 @@ describe('page-owned Warp session', () => {
     })
     expect(simulator.pity.value).toMatchObject({ guaranteed5: false, guaranteed4: true })
     simulator.selectBanner('gacha:100')
-    expect(simulator.selectedAvatarIds.value).toEqual(selectedAvatarIds)
+    expect(simulator.selectedAvatarIds.value).toEqual(['avatar:8', ...selectedAvatarIds.slice(1)])
   })
   it('keeps all five groups independent and projects N/A guarantees', async () => {
     const simulator = useWarpSimulator({ snapshot: fixture(), rng: { next: () => 0.99 } })

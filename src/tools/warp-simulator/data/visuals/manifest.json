@@ -4,7 +4,7 @@
     "repository": "https://github.com/Mar-7th/StarRailRes.git",
     "commit": "dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487"
   },
-  "generatedAt": "2026-10-18T09:55:31.866Z",
+  "generatedAt": "2026-10-18T14:39:38.191Z",
   "transform": {
     "version": 3,
     "avatarSize": 768,
@@ -27,7 +27,7 @@
     },
     "sharpVersion": "0.35.3"
   },
-  "snapshotSha256": "ae2c48bd0f9493b25665796b26ff0136651e56eba1fc31f1de352e27d83ab0c0",
+  "snapshotSha256": "27eadbffaf4a18ff43336ebf1113dcaee38a4ab2c1c78e9ffda43697c3ebf40a",
   "inputs": {
     "index_new/cn/characters.json": {
       "bytes": 105211,
@@ -133,6 +133,18 @@
       "width": 2048,
       "height": 2048
     },
+    "icon/element/Quantum.png": {
+      "bytes": 20831,
+      "sha256": "4613e83123fd7bc0f784eb19593e8b82757992a2761c10430a67e556b518a43f",
+      "width": 256,
+      "height": 256
+    },
+    "image/character_portrait/1006.png": {
+      "bytes": 4144961,
+      "sha256": "e835099d486095b016b628bf26b89c0b92a474d3107f67178a354ac1b73cc756",
+      "width": 2048,
+      "height": 2048
+    },
     "icon/path/Destruction.png": {
       "bytes": 35340,
       "sha256": "919ccb82844203346be3b5a8457f9390b7474e20c066b44ce752a5bb8e3b86aa",
@@ -172,6 +184,12 @@
     "image/character_portrait/1101.png": {
       "bytes": 3402546,
       "sha256": "42f335ae45d4ff36a29e5fbe09f6e1653b15f41f2ecb2a012c9b5247fd6b9f1b",
+      "width": 2048,
+      "height": 2048
+    },
+    "image/character_portrait/1102.png": {
+      "bytes": 3472913,
+      "sha256": "d03a431b21e95ec6d9cbe3b02b8120821cc438cfe89e4697b44e7b02945c0e5f",
       "width": 2048,
       "height": 2048
     },
@@ -229,12 +247,6 @@
       "width": 2048,
       "height": 2048
     },
-    "icon/element/Quantum.png": {
-      "bytes": 20831,
-      "sha256": "4613e83123fd7bc0f784eb19593e8b82757992a2761c10430a67e556b518a43f",
-      "width": 256,
-      "height": 256
-    },
     "image/character_portrait/1110.png": {
       "bytes": 3129652,
       "sha256": "3e0bf41fad73156533ee8c47ed99cf2994616ea07b98d72e0fa421064e91c8a0",
@@ -259,6 +271,12 @@
       "width": 2048,
       "height": 2048
     },
+    "image/character_portrait/1205.png": {
+      "bytes": 4010497,
+      "sha256": "08bcfc539e148c57b990427b530fd88545572ba361aa886940cc6b1bca181d4c",
+      "width": 2048,
+      "height": 2048
+    },
     "image/character_portrait/1206.png": {
       "bytes": 3606034,
       "sha256": "39db7c580cfcb0f52cd5906570c2e9776fafadf5884d2be0bc440c03fd4091e4",
@@ -268,6 +286,12 @@
     "image/character_portrait/1207.png": {
       "bytes": 4175683,
       "sha256": "94727a1486e02836c71d025e5704fa1199737a2837e71a5e9a2ffe9de145bd4a",
+      "width": 2048,
+      "height": 2048
+    },
+    "image/character_portrait/1208.png": {
+      "bytes": 3532082,
+      "sha256": "b134f60614a533d148afd7a7887913a834b50811623f75c36adff54f4630edc7",
       "width": 2048,
       "height": 2048
     },
@@ -301,6 +325,12 @@
       "width": 2048,
       "height": 2048
     },
+    "image/character_portrait/1221.png": {
+      "bytes": 3145148,
+      "sha256": "ccb5fbaa899d5a7b66c3ce242703f7ab95b49d4dc592244dceb28f8b3723ab76",
+      "width": 2048,
+      "height": 2048
+    },
     "image/character_portrait/1223.png": {
       "bytes": 2787720,
       "sha256": "310179ea69aef220266b1a70ff20393b1f301e7f3b7f61e22bbb6376c101167e",
@@ -313,9 +343,27 @@
       "width": 2048,
       "height": 2048
     },
+    "image/character_portrait/1302.png": {
+      "bytes": 2972018,
+      "sha256": "153d4bb97892036b41fe4508919fdb0bb97070a558730381d0beba6ca2554ebf",
+      "width": 2048,
+      "height": 2048
+    },
     "image/character_portrait/1312.png": {
       "bytes": 2425446,
       "sha256": "93fc2cc2df72976a62fde2589aabbd7618bc1f19d460d9e8915100750b74bbb0",
+      "width": 2048,
+      "height": 2048
+    },
+    "icon/path/Remembrance.png": {
+      "bytes": 45261,
+      "sha256": "6210d80959a11936bfbf548dc68293a4781c59591e7641ad9bda94069f9c9a60",
+      "width": 512,
+      "height": 512
+    },
+    "image/character_portrait/1409.png": {
+      "bytes": 4198165,
+      "sha256": "fa3ac55ade7068365657ddbdfa532ec6c1ff389270aca39707e7b4b4478d15a0",
       "width": 2048,
       "height": 2048
     },
@@ -328,6 +376,36 @@
     "image/character_portrait/1503.png": {
       "bytes": 2965888,
       "sha256": "0031f4e16c44783bfb48b27cf3dadf17782460595ea9201524c57fda67f2d4f8",
+      "width": 2048,
+      "height": 2048
+    },
+    "image/character_portrait/1504.png": {
+      "bytes": 4274611,
+      "sha256": "18a3b0f1a19d743b30da712c8db75df703009f3565377087c20a687a35d307b9",
+      "width": 2048,
+      "height": 2048
+    },
+    "image/character_portrait/1505.png": {
+      "bytes": 4030235,
+      "sha256": "4dc3b7cc91b128f6f5f94f51562717570b6793dd09b536f006e30755e15ecc79",
+      "width": 2048,
+      "height": 2048
+    },
+    "image/character_portrait/1507.png": {
+      "bytes": 4687780,
+      "sha256": "d615f21b37521a3accab9d89dd68f4542bf5a39428bbd65feec19e80261876ea",
+      "width": 2048,
+      "height": 2048
+    },
+    "image/character_portrait/1512.png": {
+      "bytes": 4373561,
+      "sha256": "f6923244d0404c7cfebd61386af9483eb1f8e12fec5be1b081bcd57a47c7e2d7",
+      "width": 2048,
+      "height": 2048
+    },
+    "image/character_portrait/1513.png": {
+      "bytes": 4910111,
+      "sha256": "035044e51631b590c9d094cdc48fa5cc779767f4e880623e5c5496200a833ac5",
       "width": 2048,
       "height": 2048
     },
@@ -456,12 +534,6 @@
       "sha256": "03e78b4bc42a4db24d8e023bb85997f98f92b8304fc124d8d82e667d89a29e99",
       "width": 902,
       "height": 1260
-    },
-    "icon/path/Remembrance.png": {
-      "bytes": 45261,
-      "sha256": "6210d80959a11936bfbf548dc68293a4781c59591e7641ad9bda94069f9c9a60",
-      "width": 512,
-      "height": 512
     },
     "image/light_cone_portrait/20021.png": {
       "bytes": 1616670,
@@ -673,6 +745,90 @@
       "width": 904,
       "height": 1260
     },
+    "image/light_cone_portrait/23000.png": {
+      "bytes": 1844736,
+      "sha256": "8687bd1e4be4f3f7a0b30edd1b7f5abc5b5ebe48b67ef0a5b0646a55efd6cc5e",
+      "width": 902,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23002.png": {
+      "bytes": 1810616,
+      "sha256": "14f1e05bd6df873507b906b79b291e6c47f884590bbce9b818dbce9770c54ac1",
+      "width": 902,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23003.png": {
+      "bytes": 1790990,
+      "sha256": "8dc45fc09dd6645819656f4429c20848aa68c08b641267cca4bf66312fccf26c",
+      "width": 902,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23004.png": {
+      "bytes": 1875497,
+      "sha256": "7c40ae3c210167334abfd3e63b4e3eabe319e11f6e5c61119c3953d2be90f9e0",
+      "width": 902,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23005.png": {
+      "bytes": 1851435,
+      "sha256": "e3cfedf906fa1288157553e2cea1b7c0fcaeb67f2c049d0e3abb82c9869ad93e",
+      "width": 902,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23012.png": {
+      "bytes": 1589274,
+      "sha256": "657db9298312fa0c0460ce907c9c1f91131e1122c19ec7847373786c7feccc99",
+      "width": 902,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23013.png": {
+      "bytes": 1730421,
+      "sha256": "ffd221a7dfb6217e3d541a1707d8b4664002f9b6b3358bbe0028dd86ee36bba0",
+      "width": 902,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23042.png": {
+      "bytes": 2114316,
+      "sha256": "b41e4b9fabf592f529365d11f86261f23f821f1bb48b50fdd00f6365ca44ae00",
+      "width": 904,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23055.png": {
+      "bytes": 2214562,
+      "sha256": "76a078de95a47495e35e872ee6a5d8bbf5bd097b45fa8b8cab38a3ac56b2ec6f",
+      "width": 904,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23056.png": {
+      "bytes": 2067639,
+      "sha256": "a1b7a09b61196aa740f4e0bcf7f2625a6428e529fafde3ce47de3089279f5d38",
+      "width": 904,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23058.png": {
+      "bytes": 1821246,
+      "sha256": "45fbef15658c8fb116ef925b88952e3101bf5b9a962c7331878dbbc5a297e98b",
+      "width": 904,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23059.png": {
+      "bytes": 2072116,
+      "sha256": "f7f2f3313d13b21f1796dcde9f701340a578ca95211501b3aca1c94cfc9ab5a8",
+      "width": 904,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23063.png": {
+      "bytes": 1997281,
+      "sha256": "9ddbf25dd63dd663564d733c637ffeae1f5e942b8d575aaa415c9044fd7ec929",
+      "width": 904,
+      "height": 1260
+    },
+    "image/light_cone_portrait/23064.png": {
+      "bytes": 2010296,
+      "sha256": "741a09bcb55685e1ee9505b7fba50677563d993dee1389f276950c7dad4155a2",
+      "width": 904,
+      "height": 1260
+    },
     "icon/deco/Star3.png": {
       "bytes": 29365,
       "sha256": "98bcdd05ff0620190273eea8a61faa02c25cdfe5fbf318ef5425c4ca79dc88f2",
@@ -847,6 +1003,30 @@
       "width": 768,
       "height": 768
     },
+    "public/game-assets/warp/cf51557949195b5c3a51c7477e3bc3a0842c277ab66a7de71e5ff09ca5963e39.webp": {
+      "bytes": 2814,
+      "sha256": "2be5e11b891e16f422a40095d14af6a377786ed4d85da152fddf1601218c10c0",
+      "width": 64,
+      "height": 64
+    },
+    "public/game-assets/character/1006.webp": {
+      "bytes": 33360,
+      "sha256": "44591483806c7dff30d401ba9fc8478f20c999e9fa1ed3dacd0f1cde50493e69",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/3539134e5de445a907880ab3cb9fbaf428cf4d102b678ab27257ae459d7d5324.webp": {
+      "bytes": 805204,
+      "sha256": "951be883923cb1f26927dcb1990bc36d2ebc655ecfedbfa2957c79d669b27da1",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/43275f5a1b6a9e0d9e09a803e5116e4e94c9ce40281f2a7c5f5c68ec6908a034.webp": {
+      "bytes": 193286,
+      "sha256": "966c5672502c643f037b9cfb4080c90c42e1a4b6f15549d893bdd0bb873c57f3",
+      "width": 768,
+      "height": 768
+    },
     "public/game-assets/warp/f4ac34b556d74f2a1b66ea9411e353f31fd24e40a6fd613ea406a2c86051e6e3.webp": {
       "bytes": 2286,
       "sha256": "012db428b75197259949a6c1099367bfab58aa0fac369dfcf772f24b47a3a7ce",
@@ -946,6 +1126,24 @@
     "public/game-assets/warp/b1648b8f9b69a6177029ac2426baccd4dec282cb841f349f4324d36d06c5bec4.webp": {
       "bytes": 173066,
       "sha256": "cce3e93b978fd6252f50ae291b91dd1fb4c9b8163170380f48ae9107782f5dd5",
+      "width": 768,
+      "height": 768
+    },
+    "public/game-assets/character/1102.webp": {
+      "bytes": 21940,
+      "sha256": "05deb5e8d883ae3066ce32a5b9e66dd5ba7d9cad72e5dfc7abe524f9bc94a491",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/ae72deee5affdf09515c1d34c36a5dc3abec1cb6a2230d74a61241b94d3435b0.webp": {
+      "bytes": 760926,
+      "sha256": "c44ab84a2b43d7608f14cd3d9ca80b89c31a1636dc3a3cd8b2e35628e2eddbf2",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/5491757d4db1cbe2b63c0121c2f5b0ddae5d0d82afad7c40dd8f7c152415ec22.webp": {
+      "bytes": 185460,
+      "sha256": "8a46d7425c687b8e01ffbe5969fc6f22ef0ef0a3836384bfe570ce49c112e076",
       "width": 768,
       "height": 768
     },
@@ -1093,12 +1291,6 @@
       "width": 768,
       "height": 768
     },
-    "public/game-assets/warp/cf51557949195b5c3a51c7477e3bc3a0842c277ab66a7de71e5ff09ca5963e39.webp": {
-      "bytes": 2814,
-      "sha256": "2be5e11b891e16f422a40095d14af6a377786ed4d85da152fddf1601218c10c0",
-      "width": 64,
-      "height": 64
-    },
     "public/game-assets/character/1110.webp": {
       "bytes": 25474,
       "sha256": "87d8babb2ea4af69bf41f549354219319974820823904147e00e5ed795b75f1b",
@@ -1171,6 +1363,24 @@
       "width": 768,
       "height": 768
     },
+    "public/game-assets/character/1205.webp": {
+      "bytes": 23158,
+      "sha256": "ab0bbc20acc26cee73c2f1c76ae3c40df889b38043faae4a4987a19269fb9635",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/63c797c9b31d1f74c6114fee2bd6606073cd70e575cecaf97a59b0e2afe275d4.webp": {
+      "bytes": 660536,
+      "sha256": "30beb3a7220b3a02523d8aa71ba45f3fbe55ce584f466b2ba3da20aab01a27d0",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/bc6175b6c8b58a83d672aa102696f9011ef3585d07e213d6aa2da13578650ff7.webp": {
+      "bytes": 153368,
+      "sha256": "3b131bdca1b1f0215573978d92cdb3ead6278366868d8806d6e67d1960fee411",
+      "width": 768,
+      "height": 768
+    },
     "public/game-assets/character/1206.webp": {
       "bytes": 28762,
       "sha256": "3a4344c2c29b8039ff4dc02eed9919c99f6c523ebf3e1138c21dd13108a7865a",
@@ -1204,6 +1414,24 @@
     "public/game-assets/warp/d1a6cf883ed961d333ebbb890c9f03999efd2f7209037fbba6b1f7b8087311c0.webp": {
       "bytes": 150444,
       "sha256": "198dab2bf462fd1d5b5bd2a3e56a415897c458bb0938411d3ca1bc5139c52a1b",
+      "width": 768,
+      "height": 768
+    },
+    "public/game-assets/character/1208.webp": {
+      "bytes": 33176,
+      "sha256": "55a42d1557feb060c82a94750569d69f653ebbdb5fefd3ca7f9c5cc456eddc75",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/c49b5e3e9c8e3248716f25b24525f1baad49112e7601b1fdd1455a8581772924.webp": {
+      "bytes": 626396,
+      "sha256": "71acb4c48f86c5d0cf059f7ab31f263f66d4fe65e3728f4c0966eb64cc95e6f3",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/ec98d5e0550b112f0cbc3a03404dd65282f9fe605405f7f7113c98424939db56.webp": {
+      "bytes": 155604,
+      "sha256": "eacad148c450510b79753b34cd270607d792a35f3b1335155fb485ef72f668c3",
       "width": 768,
       "height": 768
     },
@@ -1297,6 +1525,24 @@
       "width": 768,
       "height": 768
     },
+    "public/game-assets/character/1221.webp": {
+      "bytes": 33908,
+      "sha256": "4e0f24d082c318a0dd80ac14d91fcf98612872428dec4271d002097f2737ee55",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/eecca74bae443284c467264b97523283aa4cd43be5783c943784a25ff0c4312a.webp": {
+      "bytes": 556244,
+      "sha256": "8fe684855f9070191a217d1ffdc98077d1d8044f963ad07b87e935dc6b4c12bf",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/820b18100114d7339c9d945f2826c0d8f64602e5f475889b74da3444a828240f.webp": {
+      "bytes": 160684,
+      "sha256": "f422b3626b97b33ec8b3ef863b89c7984a7104c6243ff6038a397d3dd31701a0",
+      "width": 768,
+      "height": 768
+    },
     "public/game-assets/character/1223.webp": {
       "bytes": 26878,
       "sha256": "fa068e46f7467f67c49c738994dd88a1721882197a267900c9978fcf49fc9bd6",
@@ -1333,6 +1579,24 @@
       "width": 768,
       "height": 768
     },
+    "public/game-assets/character/1302.webp": {
+      "bytes": 26952,
+      "sha256": "64742d86e92785f3c035ef4a19d5d15748c1948035fdc0115eacda8e57ca4581",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/2f310e396c9adc39d61a7cc09b804c35e871a263d93844513b40f07a3f356673.webp": {
+      "bytes": 476702,
+      "sha256": "2fbc251287eb5f5df2eb79cceea75a81eba89937154d9500c411631d17a92d05",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/0b32e7648f08d92fc1d39485ef628d997918872facee529d7d8228e5c4a02f66.webp": {
+      "bytes": 123414,
+      "sha256": "f407004582755d070b8202273441f11cf23b4bbb897bd1a0905e17745c484b19",
+      "width": 768,
+      "height": 768
+    },
     "public/game-assets/character/1312.webp": {
       "bytes": 26450,
       "sha256": "55c1e0bd53904c9872a7b68705a9a62fc37e20c336c4937fb3b0494d373de3af",
@@ -1348,6 +1612,36 @@
     "public/game-assets/warp/9dc415db2ef3ab66e1f25848aaea006dc3b71d1b2ac19c433bf3500046f96b88.webp": {
       "bytes": 126116,
       "sha256": "fbdadd0c820db0b637c00d44062bbe712e3436f2310fa52345556cce372a5e6a",
+      "width": 768,
+      "height": 768
+    },
+    "public/game-assets/warp/db7af528a5a23561cd570de127cb7c4bbea7ed04ffb1d73719f4aa46f22f7d68.webp": {
+      "bytes": 2268,
+      "sha256": "57daf0f8379e0e1f384800fc2321a429e8e61b051f1bc0f27273cc32f139f5fb",
+      "width": 64,
+      "height": 64
+    },
+    "public/game-assets/warp/c4807f0bab10778eccedb47425d6075306f92a8c372133d0df83482c3974603b.webp": {
+      "bytes": 25146,
+      "sha256": "f4ede2c0681568413718548838d71a73d8c1dee48589a45bfc3a4fb5d54334be",
+      "width": 512,
+      "height": 512
+    },
+    "public/game-assets/character/1409.webp": {
+      "bytes": 36652,
+      "sha256": "4ed6de4cda3bcaf71ddd3463c0f7b0b00f37048303462560ded58c61004bb59e",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/d15ead0a25c451de31a7c2192d7ccdf72de944bdcc88a1ae57a00ed6fe00eade.webp": {
+      "bytes": 784890,
+      "sha256": "d5fa9f1a3eb723b1e269d6398cdb8c5b59992a3bb346f5d17a19d790f814f066",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/feabef3c6d8b896decaebbd71946cee13b2959cee2832b69bb5a209d17c6a907.webp": {
+      "bytes": 177510,
+      "sha256": "41ba8b1853abd85cc7b05439216e97ac888513311fc43533ddda65b5d08df5d3",
       "width": 768,
       "height": 768
     },
@@ -1378,6 +1672,96 @@
     "public/game-assets/warp/3b927b7c51bd3074acfa67279399439d12f3355e5bfc0638319c46724d75eaf0.webp": {
       "bytes": 178650,
       "sha256": "0411a173a191f38ac7d831f988051e82051dfcd78f88e9c07d7e3f2965a88ba5",
+      "width": 768,
+      "height": 768
+    },
+    "public/game-assets/character/1504.webp": {
+      "bytes": 28910,
+      "sha256": "956b331feb1b0a58d671bf061d0749e41e5d4b63f868f78457d817888991025f",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/988283ceb667b28a4b7079d98ceff71d894cdb2d18fe6334545132216386d316.webp": {
+      "bytes": 777238,
+      "sha256": "02c43117492fe3ffac470018301dd453d7aacecdd4f401323ec844cacc5f6916",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/abd25bb42e13280e56dd1836eef0e15aafb2282483bd47abb5637845fb4f984b.webp": {
+      "bytes": 165710,
+      "sha256": "8bafb9ce3ad50bc16de3661f6ba5d79a78980276f0a2baf7f248f8a5183be413",
+      "width": 768,
+      "height": 768
+    },
+    "public/game-assets/character/1505.webp": {
+      "bytes": 32902,
+      "sha256": "be8fca63147011681c9aadf4dc08ea2249eb4c237d82eb49d66a0f16b09a4da9",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/5e7dc8518d45aac63c07e4d2df48f7ec3e990bec559a8926c9ecbd2c5a226cb3.webp": {
+      "bytes": 671226,
+      "sha256": "14fa2cdc884573570914675f02d89b0df41c2b2ad0ab2b22ef3464be46a48fb0",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/f3d5d9f133201859911efe376f9274d4e9b24838e495c845387d58a8cc774443.webp": {
+      "bytes": 152660,
+      "sha256": "3c551d91e1a2d7eaba6755c969302aa180d0cc5fd826a5a078b1baa6e5398da5",
+      "width": 768,
+      "height": 768
+    },
+    "public/game-assets/character/1507.webp": {
+      "bytes": 31256,
+      "sha256": "7a8a7d4058cc0e79238e4fee416fb7b1fdb0040c2ac66fc8b95499e9318939f5",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/84164fd6675e569eb68be890c1cedc31f20f67d67024e00d22583886440c8c81.webp": {
+      "bytes": 935166,
+      "sha256": "23a7b4fa7ef1a34be6f2c3a8ad49122784216d459fd3f346ada676e429c3b6bd",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/cd6f8d1fbc6e99102fa980e9407fca2fd2cfe5c96a3409d0ff4d675c47f11775.webp": {
+      "bytes": 178012,
+      "sha256": "96e5802a4134a87e2b2a57af42ee7b44cfe6d987750342771fdf9e394f091f12",
+      "width": 768,
+      "height": 768
+    },
+    "public/game-assets/character/1512.webp": {
+      "bytes": 35384,
+      "sha256": "ba5e115fe3d167682a8fea95212ab872580b9f4adfbe7ab77e4965b20209a6ba",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/9397c0563a986b2da13689f276efcfcd6638c5fdba33924c71709fd9e0e2786f.webp": {
+      "bytes": 880568,
+      "sha256": "e316995fd361c5304af46c06cb4b5a08e9d30dcc52f9415510d15e61e299b7f8",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/d3ca5e46d6d28437e03420eda89194a8642c62d16efbca5cab6611ee8d7fc3a2.webp": {
+      "bytes": 193670,
+      "sha256": "6ca99b794bc8ca7c336aa5dd107d48cd7f7753770c4947ae74f3a15320306ddd",
+      "width": 768,
+      "height": 768
+    },
+    "public/game-assets/character/1513.webp": {
+      "bytes": 26344,
+      "sha256": "a9462c2116fc944239a2e261be2dfdf5f0e9025b931e9c26d5d92909e60a6e05",
+      "width": 256,
+      "height": 256
+    },
+    "public/game-assets/warp/b0036bbb38a6f5edbdf8eb5e06dac442931026787009ecb40fa08bebbe21d5bf.webp": {
+      "bytes": 773896,
+      "sha256": "1f4d51331b551faf2bdc29c59b5facee92c58fe9183c921442bd859cb29e2c94",
+      "width": 2048,
+      "height": 2048
+    },
+    "public/game-assets/warp/490687f552f3d7ee4432e60043240ca00f32a1418bd6acff7660d3f822419695.webp": {
+      "bytes": 177194,
+      "sha256": "6520e3a1e421926a7d6741b0bb612201692eb00131ec3834f5c98a237ea976e2",
       "width": 768,
       "height": 768
     },
@@ -1632,18 +2016,6 @@
       "sha256": "f485b2543ba72eb0668b10c7cd61ff6c1c077bd228c920dd7d5cc118d6a2b8af",
       "width": 458,
       "height": 640
-    },
-    "public/game-assets/warp/db7af528a5a23561cd570de127cb7c4bbea7ed04ffb1d73719f4aa46f22f7d68.webp": {
-      "bytes": 2268,
-      "sha256": "57daf0f8379e0e1f384800fc2321a429e8e61b051f1bc0f27273cc32f139f5fb",
-      "width": 64,
-      "height": 64
-    },
-    "public/game-assets/warp/c4807f0bab10778eccedb47425d6075306f92a8c372133d0df83482c3974603b.webp": {
-      "bytes": 25146,
-      "sha256": "f4ede2c0681568413718548838d71a73d8c1dee48589a45bfc3a4fb5d54334be",
-      "width": 512,
-      "height": 512
     },
     "public/game-assets/warp/64ce1945cff752186c143e6d7462f76d15ae4fd9b9b4c5c5a00811a2ba7959b1.webp": {
       "bytes": 258580,
@@ -2065,6 +2437,174 @@
       "width": 459,
       "height": 640
     },
+    "public/game-assets/warp/7070bd09fe5e1042a248efbfcf29ccf9114a670c299614a00aea03c3f56561c8.webp": {
+      "bytes": 167732,
+      "sha256": "00a062e16d7ea9fb0dd4e86a4bbd4ebe264a93b308286076642dc3a02718dcbb",
+      "width": 902,
+      "height": 1260
+    },
+    "public/game-assets/warp/fabb3d8c3ffafa710da0fc0ba84fb1b1955080f6b9713e775403f113a566d174.webp": {
+      "bytes": 49504,
+      "sha256": "4c2816c7a35656d437e3586935383e0946d771b250fa21c7f492723fe84a188c",
+      "width": 458,
+      "height": 640
+    },
+    "public/game-assets/warp/eb30a3221564c8ddcdff8d7e572292d3f233a70b01e1e15dbcba754c2d660417.webp": {
+      "bytes": 136042,
+      "sha256": "7bb9dbb6dadc776b702124ab26ed4d89153435c064a7a86829c01aa501485742",
+      "width": 902,
+      "height": 1260
+    },
+    "public/game-assets/warp/60977c1bea5f36d5453ad129502b26338913b6fea01c2091b2bd3c5584db72e1.webp": {
+      "bytes": 42872,
+      "sha256": "626e7e4ca13f61074790dd4a1670e4e087a230a6b74f40831636c9cf4cc5e495",
+      "width": 458,
+      "height": 640
+    },
+    "public/game-assets/warp/cc23318acb3ef935114533d510b152aa211a8fb10c07da643bf29e3bb08c2e17.webp": {
+      "bytes": 155212,
+      "sha256": "5f473dbf10f40fe3c2ac4515525be52452de281944bf662ce86c1606a1d45a8f",
+      "width": 902,
+      "height": 1260
+    },
+    "public/game-assets/warp/dd37fd67549b8c446fc7a790dc2b1a43098937fbc5bae11e47eb78862a603b07.webp": {
+      "bytes": 48602,
+      "sha256": "ce761558512018c6c03c625d401c7cfd33fd141c44ac49e4c7fcce6f48cf85d1",
+      "width": 458,
+      "height": 640
+    },
+    "public/game-assets/warp/b98ae4d94ecd393360f0156e90b2ed9aab2ab16ac0e63fa5e6db3a8694aa7e4b.webp": {
+      "bytes": 174594,
+      "sha256": "0a5ef8c2b16fbedd9c734a4641ff485d7290551bdd61dc10f23fe41e335bd5fd",
+      "width": 902,
+      "height": 1260
+    },
+    "public/game-assets/warp/3b481c24a931bcbd6990339239ee62826dd0c2d18295eb580414705c0eca24fc.webp": {
+      "bytes": 55214,
+      "sha256": "6a5204ff0cabe7717e7a62cf7f9a3be3b7955e6f79f9ef0736b50bba32803b21",
+      "width": 458,
+      "height": 640
+    },
+    "public/game-assets/warp/b126dcbc58e3ada219c5cd995e9b0f329d3a5ec9b0367d10b6984e06ba3eda69.webp": {
+      "bytes": 183216,
+      "sha256": "fefcf635a9e50d2ec4ed45655d3efd69e57d3d3adfa196b31f81e100f37ad5b9",
+      "width": 902,
+      "height": 1260
+    },
+    "public/game-assets/warp/e22016de22956a7bf15702a74a3c60ff2166265ebee0ed01cd35c1061e4d356c.webp": {
+      "bytes": 55088,
+      "sha256": "484fbef64e5911b64d36ef6d745bfb088edd41bd9e2526e717115a46afd25a45",
+      "width": 458,
+      "height": 640
+    },
+    "public/game-assets/warp/31f2802624630e32c5c9f874bd06d143f9b071ef4b75c8a840e885c00512c528.webp": {
+      "bytes": 130198,
+      "sha256": "b96ed307334600d26717021f82586c9f4a251c89f1da613e7fe6c880ca07ad2b",
+      "width": 902,
+      "height": 1260
+    },
+    "public/game-assets/warp/7126e1ba96758b031ed979e10cb7d10bc6cc141f4a839122f1af137f0cd84198.webp": {
+      "bytes": 40502,
+      "sha256": "2a523eb84dbeaa60d6fef832679a6cba924e120630e78d4decebd44db11119ba",
+      "width": 458,
+      "height": 640
+    },
+    "public/game-assets/warp/fe72a4527c07ee2ed14cb694192099fa7136603e64ba260477940d5942f93999.webp": {
+      "bytes": 153270,
+      "sha256": "2e2b012cd1b6555d8872fd595935e1ccf1df8325c7db83f6d4b3249532134547",
+      "width": 902,
+      "height": 1260
+    },
+    "public/game-assets/warp/7eb90b7d9f750ec92e5ec3b93a6b854c2b1d9b63759df5fd721cc12c283a72a0.webp": {
+      "bytes": 51926,
+      "sha256": "b48418a29bbd2f32b43b6adad6a04f0c4f533f2086762f7628421144ad779d16",
+      "width": 458,
+      "height": 640
+    },
+    "public/game-assets/warp/bf2dde3c850f22b97c4959b2342612d6003feb843c79f9aaa242a28e258c7cbb.webp": {
+      "bytes": 290876,
+      "sha256": "f199ccdd03e3d698767801c0f8cbd6b7e9950890cbef2b2b5d64dcd3b7a74c52",
+      "width": 904,
+      "height": 1260
+    },
+    "public/game-assets/warp/a6aecb426cf56a4db74c535af6c3b1184deeecc7e9f4ca30b8981958f429f722.webp": {
+      "bytes": 81564,
+      "sha256": "4cb2ce32e109f087c96e5d1a57ffb4952b85cb27dd9a0d66c47e4bb56fd256fe",
+      "width": 459,
+      "height": 640
+    },
+    "public/game-assets/warp/fe171ac4e2340ca3e82b9dee446cca11fd08d79ce48f88c8fba11866c746367e.webp": {
+      "bytes": 306060,
+      "sha256": "22be65f227cdc1784ea4915d42b604471ab65f0b0c0c07d85a29dbffaea3d83e",
+      "width": 904,
+      "height": 1260
+    },
+    "public/game-assets/warp/65a1430fcf0b8435a7b8342828e2e163034f2025d96023af65335240b5f1c117.webp": {
+      "bytes": 78256,
+      "sha256": "2c61ca41ff138b7ce4b7745e6f8315e2fd1b9ca197be215ab302dde023050428",
+      "width": 459,
+      "height": 640
+    },
+    "public/game-assets/warp/eb1897ef8680dca4ffd2f52c21c241396652b60d0a134d822ed2025537404b59.webp": {
+      "bytes": 263736,
+      "sha256": "7516c268fab6a239500846fc60bc80b8caf6dd22cfa5c849cb192777b77e42dd",
+      "width": 904,
+      "height": 1260
+    },
+    "public/game-assets/warp/8addde65cfd08f8abc73b447020872db67c782bcee560fecbf62fd37b59c7d01.webp": {
+      "bytes": 78134,
+      "sha256": "7c8b386aa937bef7b3c6f1c0bd65fecab12cc7ffbcccb0dd0dd09d7d17ddfab8",
+      "width": 459,
+      "height": 640
+    },
+    "public/game-assets/warp/2832c6db39237929ff19df292fb92f9f21691f8155d7c30ed7ac43b3e701ec35.webp": {
+      "bytes": 218844,
+      "sha256": "191f5b09f54c3b570eca74aa0aa37ab6729bdb0d6c4cb534732a37a6b87dae51",
+      "width": 904,
+      "height": 1260
+    },
+    "public/game-assets/warp/7dcbd3f592bf51caa9a9e2e9bb0e118275b1ffd3d6a5733f0cf57ea0dee9d62a.webp": {
+      "bytes": 71184,
+      "sha256": "79086d49dd84070561785f1c51531b0032bd1baf78562a9bfac29c2e0d1629a2",
+      "width": 459,
+      "height": 640
+    },
+    "public/game-assets/warp/8b1d9649af079622b36c20cfaf17843e6bd9795afb336a100ccda1de9f68a31d.webp": {
+      "bytes": 267192,
+      "sha256": "0b332f4589fb55443b264dec9c1ea2c18247797b185dbef72dca3a603991da38",
+      "width": 904,
+      "height": 1260
+    },
+    "public/game-assets/warp/073a4a0356e59661740685605388d2f1131e33634ab850b0ef2ad90f570f738c.webp": {
+      "bytes": 82192,
+      "sha256": "68918ab8e639a90314d110a66920422850193efcd9a712f2ef4f430a4d4c3dd9",
+      "width": 459,
+      "height": 640
+    },
+    "public/game-assets/warp/131f5860c3fe077abf58d26cef092067ce3cc0facbd3a77a1b860171f07e14a7.webp": {
+      "bytes": 254066,
+      "sha256": "1eb3444c630e437dc6610fecd71e4f9a6415321d73abc0c6ce34b0c456e14d09",
+      "width": 904,
+      "height": 1260
+    },
+    "public/game-assets/warp/475d8c9225c9133b8be0d61fa159f2b05df4a7052ec5faf8e82f17d33b23d2b6.webp": {
+      "bytes": 81804,
+      "sha256": "0ce781af8d13e4bca081c39c987913d7bac8303dbdba2d9168cca82c5b1b71b9",
+      "width": 459,
+      "height": 640
+    },
+    "public/game-assets/warp/ea893f6d5282eb81460a0247dcdd8f64e636d18c838ab6373add03499c3dec18.webp": {
+      "bytes": 273210,
+      "sha256": "7c3125469e4410142d9fea30c62d58690f0c21ad7644e27e3382f371ba035d45",
+      "width": 904,
+      "height": 1260
+    },
+    "public/game-assets/warp/a203779e0fe72d1fbc4b648175f0d6a975d0be05cfe74fba388b9ef908bb5c52.webp": {
+      "bytes": 81612,
+      "sha256": "5bc802b70096cf8d63ef1ec16d12b26b05889f88b15ae21ea6ef82f944eeac0d",
+      "width": 459,
+      "height": 640
+    },
     "public/game-assets/warp/66ee90ff687d9d22d18d2343c17ea5f639f41dc793f4e08f8d44326c71e8d351.webp": {
       "bytes": 2564,
       "sha256": "afdd754efd8637362589309c5cedeb7fee39db06f9b58521b996f6c2c2a104f7",
@@ -2108,8 +2648,8 @@
       "height": 68
     },
     "src/tools/warp-simulator/data/visuals/catalog.json": {
-      "bytes": 38861,
-      "sha256": "62cd7195338ec1b76dfa15878fe6c5ab01f6a8f6f4a902849228930b905cff57"
+      "bytes": 48980,
+      "sha256": "6415793288cf1f4d6715d4ef2aa138858a362bb92235783394e72785ba5d8ca4"
     }
   },
   "assets": [
@@ -2274,6 +2814,30 @@
       "transformKey": "b808f147668489c3edf4a680e84fdfa06d376e306bdcc2fd1c557c2fcaa75dca:768:82:100"
     },
     {
+      "id": "Quantum",
+      "slot": "icon",
+      "purpose": "icon",
+      "source": "icon/element/Quantum.png",
+      "output": "game-assets/warp/cf51557949195b5c3a51c7477e3bc3a0842c277ab66a7de71e5ff09ca5963e39.webp",
+      "transformKey": "4613e83123fd7bc0f784eb19593e8b82757992a2761c10430a67e556b518a43f:64:90:100"
+    },
+    {
+      "id": "avatar:1006",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1006.png",
+      "output": "game-assets/warp/3539134e5de445a907880ab3cb9fbaf428cf4d102b678ab27257ae459d7d5324.webp",
+      "transformKey": "e835099d486095b016b628bf26b89c0b92a474d3107f67178a354ac1b73cc756:2048:88:100"
+    },
+    {
+      "id": "avatar:1006",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1006.png",
+      "output": "game-assets/warp/43275f5a1b6a9e0d9e09a803e5116e4e94c9ce40281f2a7c5f5c68ec6908a034.webp",
+      "transformKey": "e835099d486095b016b628bf26b89c0b92a474d3107f67178a354ac1b73cc756:768:82:100"
+    },
+    {
       "id": "Warrior",
       "slot": "icon",
       "purpose": "icon",
@@ -2376,6 +2940,22 @@
       "source": "image/character_portrait/1101.png",
       "output": "game-assets/warp/b1648b8f9b69a6177029ac2426baccd4dec282cb841f349f4324d36d06c5bec4.webp",
       "transformKey": "42f335ae45d4ff36a29e5fbe09f6e1653b15f41f2ecb2a012c9b5247fd6b9f1b:768:82:100"
+    },
+    {
+      "id": "avatar:1102",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1102.png",
+      "output": "game-assets/warp/ae72deee5affdf09515c1d34c36a5dc3abec1cb6a2230d74a61241b94d3435b0.webp",
+      "transformKey": "d03a431b21e95ec6d9cbe3b02b8120821cc438cfe89e4697b44e7b02945c0e5f:2048:88:100"
+    },
+    {
+      "id": "avatar:1102",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1102.png",
+      "output": "game-assets/warp/5491757d4db1cbe2b63c0121c2f5b0ddae5d0d82afad7c40dd8f7c152415ec22.webp",
+      "transformKey": "d03a431b21e95ec6d9cbe3b02b8120821cc438cfe89e4697b44e7b02945c0e5f:768:82:100"
     },
     {
       "id": "avatar:1103",
@@ -2514,14 +3094,6 @@
       "transformKey": "a3528cec6e1f3d47783d5e72f872d0acc2756fd122aa84c67d06afcee5cc8339:768:82:100"
     },
     {
-      "id": "Quantum",
-      "slot": "icon",
-      "purpose": "icon",
-      "source": "icon/element/Quantum.png",
-      "output": "game-assets/warp/cf51557949195b5c3a51c7477e3bc3a0842c277ab66a7de71e5ff09ca5963e39.webp",
-      "transformKey": "4613e83123fd7bc0f784eb19593e8b82757992a2761c10430a67e556b518a43f:64:90:100"
-    },
-    {
       "id": "avatar:1110",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
@@ -2586,6 +3158,22 @@
       "transformKey": "692fb0ef643c71951048f4f9814daa5a9761705ed6e889036d11da4b79173410:768:82:100"
     },
     {
+      "id": "avatar:1205",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1205.png",
+      "output": "game-assets/warp/63c797c9b31d1f74c6114fee2bd6606073cd70e575cecaf97a59b0e2afe275d4.webp",
+      "transformKey": "08bcfc539e148c57b990427b530fd88545572ba361aa886940cc6b1bca181d4c:2048:88:100"
+    },
+    {
+      "id": "avatar:1205",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1205.png",
+      "output": "game-assets/warp/bc6175b6c8b58a83d672aa102696f9011ef3585d07e213d6aa2da13578650ff7.webp",
+      "transformKey": "08bcfc539e148c57b990427b530fd88545572ba361aa886940cc6b1bca181d4c:768:82:100"
+    },
+    {
       "id": "avatar:1206",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
@@ -2616,6 +3204,22 @@
       "source": "image/character_portrait/1207.png",
       "output": "game-assets/warp/d1a6cf883ed961d333ebbb890c9f03999efd2f7209037fbba6b1f7b8087311c0.webp",
       "transformKey": "94727a1486e02836c71d025e5704fa1199737a2837e71a5e9a2ffe9de145bd4a:768:82:100"
+    },
+    {
+      "id": "avatar:1208",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1208.png",
+      "output": "game-assets/warp/c49b5e3e9c8e3248716f25b24525f1baad49112e7601b1fdd1455a8581772924.webp",
+      "transformKey": "b134f60614a533d148afd7a7887913a834b50811623f75c36adff54f4630edc7:2048:88:100"
+    },
+    {
+      "id": "avatar:1208",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1208.png",
+      "output": "game-assets/warp/ec98d5e0550b112f0cbc3a03404dd65282f9fe605405f7f7113c98424939db56.webp",
+      "transformKey": "b134f60614a533d148afd7a7887913a834b50811623f75c36adff54f4630edc7:768:82:100"
     },
     {
       "id": "avatar:1209",
@@ -2698,6 +3302,22 @@
       "transformKey": "928c58207270618a30d36ecf7f018dd6c795697482e78155cff23db8a17fb68e:768:82:100"
     },
     {
+      "id": "avatar:1221",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1221.png",
+      "output": "game-assets/warp/eecca74bae443284c467264b97523283aa4cd43be5783c943784a25ff0c4312a.webp",
+      "transformKey": "ccb5fbaa899d5a7b66c3ce242703f7ab95b49d4dc592244dceb28f8b3723ab76:2048:88:100"
+    },
+    {
+      "id": "avatar:1221",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1221.png",
+      "output": "game-assets/warp/820b18100114d7339c9d945f2826c0d8f64602e5f475889b74da3444a828240f.webp",
+      "transformKey": "ccb5fbaa899d5a7b66c3ce242703f7ab95b49d4dc592244dceb28f8b3723ab76:768:82:100"
+    },
+    {
       "id": "avatar:1223",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
@@ -2730,6 +3350,22 @@
       "transformKey": "bf0107d2e1f6fd64c0df6d2eac3147358f1c6875b19275f9c2aebed7cb4e83d9:768:82:100"
     },
     {
+      "id": "avatar:1302",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1302.png",
+      "output": "game-assets/warp/2f310e396c9adc39d61a7cc09b804c35e871a263d93844513b40f07a3f356673.webp",
+      "transformKey": "153d4bb97892036b41fe4508919fdb0bb97070a558730381d0beba6ca2554ebf:2048:88:100"
+    },
+    {
+      "id": "avatar:1302",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1302.png",
+      "output": "game-assets/warp/0b32e7648f08d92fc1d39485ef628d997918872facee529d7d8228e5c4a02f66.webp",
+      "transformKey": "153d4bb97892036b41fe4508919fdb0bb97070a558730381d0beba6ca2554ebf:768:82:100"
+    },
+    {
       "id": "avatar:1312",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
@@ -2744,6 +3380,38 @@
       "source": "image/character_portrait/1312.png",
       "output": "game-assets/warp/9dc415db2ef3ab66e1f25848aaea006dc3b71d1b2ac19c433bf3500046f96b88.webp",
       "transformKey": "93fc2cc2df72976a62fde2589aabbd7618bc1f19d460d9e8915100750b74bbb0:768:82:100"
+    },
+    {
+      "id": "Memory",
+      "slot": "icon",
+      "purpose": "icon",
+      "source": "icon/path/Remembrance.png",
+      "output": "game-assets/warp/db7af528a5a23561cd570de127cb7c4bbea7ed04ffb1d73719f4aa46f22f7d68.webp",
+      "transformKey": "6210d80959a11936bfbf548dc68293a4781c59591e7641ad9bda94069f9c9a60:64:90:100"
+    },
+    {
+      "id": "Memory",
+      "slot": "reveal-icon",
+      "purpose": "reveal-icon",
+      "source": "icon/path/Remembrance.png",
+      "output": "game-assets/warp/c4807f0bab10778eccedb47425d6075306f92a8c372133d0df83482c3974603b.webp",
+      "transformKey": "6210d80959a11936bfbf548dc68293a4781c59591e7641ad9bda94069f9c9a60:512:90:100"
+    },
+    {
+      "id": "avatar:1409",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1409.png",
+      "output": "game-assets/warp/d15ead0a25c451de31a7c2192d7ccdf72de944bdcc88a1ae57a00ed6fe00eade.webp",
+      "transformKey": "fa3ac55ade7068365657ddbdfa532ec6c1ff389270aca39707e7b4b4478d15a0:2048:88:100"
+    },
+    {
+      "id": "avatar:1409",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1409.png",
+      "output": "game-assets/warp/feabef3c6d8b896decaebbd71946cee13b2959cee2832b69bb5a209d17c6a907.webp",
+      "transformKey": "fa3ac55ade7068365657ddbdfa532ec6c1ff389270aca39707e7b4b4478d15a0:768:82:100"
     },
     {
       "id": "Elation",
@@ -2776,6 +3444,86 @@
       "source": "image/character_portrait/1503.png",
       "output": "game-assets/warp/3b927b7c51bd3074acfa67279399439d12f3355e5bfc0638319c46724d75eaf0.webp",
       "transformKey": "0031f4e16c44783bfb48b27cf3dadf17782460595ea9201524c57fda67f2d4f8:768:82:100"
+    },
+    {
+      "id": "avatar:1504",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1504.png",
+      "output": "game-assets/warp/988283ceb667b28a4b7079d98ceff71d894cdb2d18fe6334545132216386d316.webp",
+      "transformKey": "18a3b0f1a19d743b30da712c8db75df703009f3565377087c20a687a35d307b9:2048:88:100"
+    },
+    {
+      "id": "avatar:1504",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1504.png",
+      "output": "game-assets/warp/abd25bb42e13280e56dd1836eef0e15aafb2282483bd47abb5637845fb4f984b.webp",
+      "transformKey": "18a3b0f1a19d743b30da712c8db75df703009f3565377087c20a687a35d307b9:768:82:100"
+    },
+    {
+      "id": "avatar:1505",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1505.png",
+      "output": "game-assets/warp/5e7dc8518d45aac63c07e4d2df48f7ec3e990bec559a8926c9ecbd2c5a226cb3.webp",
+      "transformKey": "4dc3b7cc91b128f6f5f94f51562717570b6793dd09b536f006e30755e15ecc79:2048:88:100"
+    },
+    {
+      "id": "avatar:1505",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1505.png",
+      "output": "game-assets/warp/f3d5d9f133201859911efe376f9274d4e9b24838e495c845387d58a8cc774443.webp",
+      "transformKey": "4dc3b7cc91b128f6f5f94f51562717570b6793dd09b536f006e30755e15ecc79:768:82:100"
+    },
+    {
+      "id": "avatar:1507",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1507.png",
+      "output": "game-assets/warp/84164fd6675e569eb68be890c1cedc31f20f67d67024e00d22583886440c8c81.webp",
+      "transformKey": "d615f21b37521a3accab9d89dd68f4542bf5a39428bbd65feec19e80261876ea:2048:88:100"
+    },
+    {
+      "id": "avatar:1507",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1507.png",
+      "output": "game-assets/warp/cd6f8d1fbc6e99102fa980e9407fca2fd2cfe5c96a3409d0ff4d675c47f11775.webp",
+      "transformKey": "d615f21b37521a3accab9d89dd68f4542bf5a39428bbd65feec19e80261876ea:768:82:100"
+    },
+    {
+      "id": "avatar:1512",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1512.png",
+      "output": "game-assets/warp/9397c0563a986b2da13689f276efcfcd6638c5fdba33924c71709fd9e0e2786f.webp",
+      "transformKey": "f6923244d0404c7cfebd61386af9483eb1f8e12fec5be1b081bcd57a47c7e2d7:2048:88:100"
+    },
+    {
+      "id": "avatar:1512",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1512.png",
+      "output": "game-assets/warp/d3ca5e46d6d28437e03420eda89194a8642c62d16efbca5cab6611ee8d7fc3a2.webp",
+      "transformKey": "f6923244d0404c7cfebd61386af9483eb1f8e12fec5be1b081bcd57a47c7e2d7:768:82:100"
+    },
+    {
+      "id": "avatar:1513",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1513.png",
+      "output": "game-assets/warp/b0036bbb38a6f5edbdf8eb5e06dac442931026787009ecb40fa08bebbe21d5bf.webp",
+      "transformKey": "035044e51631b590c9d094cdc48fa5cc779767f4e880623e5c5496200a833ac5:2048:88:100"
+    },
+    {
+      "id": "avatar:1513",
+      "slot": "artwork",
+      "purpose": "artwork-avatar",
+      "source": "image/character_portrait/1513.png",
+      "output": "game-assets/warp/490687f552f3d7ee4432e60043240ca00f32a1418bd6acff7660d3f822419695.webp",
+      "transformKey": "035044e51631b590c9d094cdc48fa5cc779767f4e880623e5c5496200a833ac5:768:82:100"
     },
     {
       "id": "light-cone:20000",
@@ -3112,22 +3860,6 @@
       "source": "image/light_cone_portrait/20020.png",
       "output": "game-assets/warp/2ba8d69b02167d629f6b0f1fd80dad5289478773732c4417ba5f62493c21c81a.webp",
       "transformKey": "03e78b4bc42a4db24d8e023bb85997f98f92b8304fc124d8d82e667d89a29e99:640:82:100"
-    },
-    {
-      "id": "Memory",
-      "slot": "icon",
-      "purpose": "icon",
-      "source": "icon/path/Remembrance.png",
-      "output": "game-assets/warp/db7af528a5a23561cd570de127cb7c4bbea7ed04ffb1d73719f4aa46f22f7d68.webp",
-      "transformKey": "6210d80959a11936bfbf548dc68293a4781c59591e7641ad9bda94069f9c9a60:64:90:100"
-    },
-    {
-      "id": "Memory",
-      "slot": "reveal-icon",
-      "purpose": "reveal-icon",
-      "source": "icon/path/Remembrance.png",
-      "output": "game-assets/warp/c4807f0bab10778eccedb47425d6075306f92a8c372133d0df83482c3974603b.webp",
-      "transformKey": "6210d80959a11936bfbf548dc68293a4781c59591e7641ad9bda94069f9c9a60:512:90:100"
     },
     {
       "id": "light-cone:20021",
@@ -3688,6 +4420,230 @@
       "source": "image/light_cone_portrait/21066.png",
       "output": "game-assets/warp/25d7548a83d9e3ef6256178b2f448e7efc2d46bbc4f6a8abc9e20c8fb5cf9b9a.webp",
       "transformKey": "bb0cec47ac61b7b812e378428f053dfb2847261c43bfc0581a20d80d786df687:640:82:100"
+    },
+    {
+      "id": "light-cone:23000",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23000.png",
+      "output": "game-assets/warp/7070bd09fe5e1042a248efbfcf29ccf9114a670c299614a00aea03c3f56561c8.webp",
+      "transformKey": "8687bd1e4be4f3f7a0b30edd1b7f5abc5b5ebe48b67ef0a5b0646a55efd6cc5e:2048:88:100"
+    },
+    {
+      "id": "light-cone:23000",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23000.png",
+      "output": "game-assets/warp/fabb3d8c3ffafa710da0fc0ba84fb1b1955080f6b9713e775403f113a566d174.webp",
+      "transformKey": "8687bd1e4be4f3f7a0b30edd1b7f5abc5b5ebe48b67ef0a5b0646a55efd6cc5e:640:82:100"
+    },
+    {
+      "id": "light-cone:23002",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23002.png",
+      "output": "game-assets/warp/eb30a3221564c8ddcdff8d7e572292d3f233a70b01e1e15dbcba754c2d660417.webp",
+      "transformKey": "14f1e05bd6df873507b906b79b291e6c47f884590bbce9b818dbce9770c54ac1:2048:88:100"
+    },
+    {
+      "id": "light-cone:23002",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23002.png",
+      "output": "game-assets/warp/60977c1bea5f36d5453ad129502b26338913b6fea01c2091b2bd3c5584db72e1.webp",
+      "transformKey": "14f1e05bd6df873507b906b79b291e6c47f884590bbce9b818dbce9770c54ac1:640:82:100"
+    },
+    {
+      "id": "light-cone:23003",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23003.png",
+      "output": "game-assets/warp/cc23318acb3ef935114533d510b152aa211a8fb10c07da643bf29e3bb08c2e17.webp",
+      "transformKey": "8dc45fc09dd6645819656f4429c20848aa68c08b641267cca4bf66312fccf26c:2048:88:100"
+    },
+    {
+      "id": "light-cone:23003",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23003.png",
+      "output": "game-assets/warp/dd37fd67549b8c446fc7a790dc2b1a43098937fbc5bae11e47eb78862a603b07.webp",
+      "transformKey": "8dc45fc09dd6645819656f4429c20848aa68c08b641267cca4bf66312fccf26c:640:82:100"
+    },
+    {
+      "id": "light-cone:23004",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23004.png",
+      "output": "game-assets/warp/b98ae4d94ecd393360f0156e90b2ed9aab2ab16ac0e63fa5e6db3a8694aa7e4b.webp",
+      "transformKey": "7c40ae3c210167334abfd3e63b4e3eabe319e11f6e5c61119c3953d2be90f9e0:2048:88:100"
+    },
+    {
+      "id": "light-cone:23004",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23004.png",
+      "output": "game-assets/warp/3b481c24a931bcbd6990339239ee62826dd0c2d18295eb580414705c0eca24fc.webp",
+      "transformKey": "7c40ae3c210167334abfd3e63b4e3eabe319e11f6e5c61119c3953d2be90f9e0:640:82:100"
+    },
+    {
+      "id": "light-cone:23005",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23005.png",
+      "output": "game-assets/warp/b126dcbc58e3ada219c5cd995e9b0f329d3a5ec9b0367d10b6984e06ba3eda69.webp",
+      "transformKey": "e3cfedf906fa1288157553e2cea1b7c0fcaeb67f2c049d0e3abb82c9869ad93e:2048:88:100"
+    },
+    {
+      "id": "light-cone:23005",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23005.png",
+      "output": "game-assets/warp/e22016de22956a7bf15702a74a3c60ff2166265ebee0ed01cd35c1061e4d356c.webp",
+      "transformKey": "e3cfedf906fa1288157553e2cea1b7c0fcaeb67f2c049d0e3abb82c9869ad93e:640:82:100"
+    },
+    {
+      "id": "light-cone:23012",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23012.png",
+      "output": "game-assets/warp/31f2802624630e32c5c9f874bd06d143f9b071ef4b75c8a840e885c00512c528.webp",
+      "transformKey": "657db9298312fa0c0460ce907c9c1f91131e1122c19ec7847373786c7feccc99:2048:88:100"
+    },
+    {
+      "id": "light-cone:23012",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23012.png",
+      "output": "game-assets/warp/7126e1ba96758b031ed979e10cb7d10bc6cc141f4a839122f1af137f0cd84198.webp",
+      "transformKey": "657db9298312fa0c0460ce907c9c1f91131e1122c19ec7847373786c7feccc99:640:82:100"
+    },
+    {
+      "id": "light-cone:23013",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23013.png",
+      "output": "game-assets/warp/fe72a4527c07ee2ed14cb694192099fa7136603e64ba260477940d5942f93999.webp",
+      "transformKey": "ffd221a7dfb6217e3d541a1707d8b4664002f9b6b3358bbe0028dd86ee36bba0:2048:88:100"
+    },
+    {
+      "id": "light-cone:23013",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23013.png",
+      "output": "game-assets/warp/7eb90b7d9f750ec92e5ec3b93a6b854c2b1d9b63759df5fd721cc12c283a72a0.webp",
+      "transformKey": "ffd221a7dfb6217e3d541a1707d8b4664002f9b6b3358bbe0028dd86ee36bba0:640:82:100"
+    },
+    {
+      "id": "light-cone:23042",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23042.png",
+      "output": "game-assets/warp/bf2dde3c850f22b97c4959b2342612d6003feb843c79f9aaa242a28e258c7cbb.webp",
+      "transformKey": "b41e4b9fabf592f529365d11f86261f23f821f1bb48b50fdd00f6365ca44ae00:2048:88:100"
+    },
+    {
+      "id": "light-cone:23042",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23042.png",
+      "output": "game-assets/warp/a6aecb426cf56a4db74c535af6c3b1184deeecc7e9f4ca30b8981958f429f722.webp",
+      "transformKey": "b41e4b9fabf592f529365d11f86261f23f821f1bb48b50fdd00f6365ca44ae00:640:82:100"
+    },
+    {
+      "id": "light-cone:23055",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23055.png",
+      "output": "game-assets/warp/fe171ac4e2340ca3e82b9dee446cca11fd08d79ce48f88c8fba11866c746367e.webp",
+      "transformKey": "76a078de95a47495e35e872ee6a5d8bbf5bd097b45fa8b8cab38a3ac56b2ec6f:2048:88:100"
+    },
+    {
+      "id": "light-cone:23055",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23055.png",
+      "output": "game-assets/warp/65a1430fcf0b8435a7b8342828e2e163034f2025d96023af65335240b5f1c117.webp",
+      "transformKey": "76a078de95a47495e35e872ee6a5d8bbf5bd097b45fa8b8cab38a3ac56b2ec6f:640:82:100"
+    },
+    {
+      "id": "light-cone:23056",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23056.png",
+      "output": "game-assets/warp/eb1897ef8680dca4ffd2f52c21c241396652b60d0a134d822ed2025537404b59.webp",
+      "transformKey": "a1b7a09b61196aa740f4e0bcf7f2625a6428e529fafde3ce47de3089279f5d38:2048:88:100"
+    },
+    {
+      "id": "light-cone:23056",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23056.png",
+      "output": "game-assets/warp/8addde65cfd08f8abc73b447020872db67c782bcee560fecbf62fd37b59c7d01.webp",
+      "transformKey": "a1b7a09b61196aa740f4e0bcf7f2625a6428e529fafde3ce47de3089279f5d38:640:82:100"
+    },
+    {
+      "id": "light-cone:23058",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23058.png",
+      "output": "game-assets/warp/2832c6db39237929ff19df292fb92f9f21691f8155d7c30ed7ac43b3e701ec35.webp",
+      "transformKey": "45fbef15658c8fb116ef925b88952e3101bf5b9a962c7331878dbbc5a297e98b:2048:88:100"
+    },
+    {
+      "id": "light-cone:23058",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23058.png",
+      "output": "game-assets/warp/7dcbd3f592bf51caa9a9e2e9bb0e118275b1ffd3d6a5733f0cf57ea0dee9d62a.webp",
+      "transformKey": "45fbef15658c8fb116ef925b88952e3101bf5b9a962c7331878dbbc5a297e98b:640:82:100"
+    },
+    {
+      "id": "light-cone:23059",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23059.png",
+      "output": "game-assets/warp/8b1d9649af079622b36c20cfaf17843e6bd9795afb336a100ccda1de9f68a31d.webp",
+      "transformKey": "f7f2f3313d13b21f1796dcde9f701340a578ca95211501b3aca1c94cfc9ab5a8:2048:88:100"
+    },
+    {
+      "id": "light-cone:23059",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23059.png",
+      "output": "game-assets/warp/073a4a0356e59661740685605388d2f1131e33634ab850b0ef2ad90f570f738c.webp",
+      "transformKey": "f7f2f3313d13b21f1796dcde9f701340a578ca95211501b3aca1c94cfc9ab5a8:640:82:100"
+    },
+    {
+      "id": "light-cone:23063",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23063.png",
+      "output": "game-assets/warp/131f5860c3fe077abf58d26cef092067ce3cc0facbd3a77a1b860171f07e14a7.webp",
+      "transformKey": "9ddbf25dd63dd663564d733c637ffeae1f5e942b8d575aaa415c9044fd7ec929:2048:88:100"
+    },
+    {
+      "id": "light-cone:23063",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23063.png",
+      "output": "game-assets/warp/475d8c9225c9133b8be0d61fa159f2b05df4a7052ec5faf8e82f17d33b23d2b6.webp",
+      "transformKey": "9ddbf25dd63dd663564d733c637ffeae1f5e942b8d575aaa415c9044fd7ec929:640:82:100"
+    },
+    {
+      "id": "light-cone:23064",
+      "slot": "reveal-artwork",
+      "purpose": "reveal-artwork",
+      "source": "image/light_cone_portrait/23064.png",
+      "output": "game-assets/warp/ea893f6d5282eb81460a0247dcdd8f64e636d18c838ab6373add03499c3dec18.webp",
+      "transformKey": "741a09bcb55685e1ee9505b7fba50677563d993dee1389f276950c7dad4155a2:2048:88:100"
+    },
+    {
+      "id": "light-cone:23064",
+      "slot": "artwork",
+      "purpose": "artwork-light-cone",
+      "source": "image/light_cone_portrait/23064.png",
+      "output": "game-assets/warp/a203779e0fe72d1fbc4b648175f0d6a975d0be05cfe74fba388b9ef908bb5c52.webp",
+      "transformKey": "741a09bcb55685e1ee9505b7fba50677563d993dee1389f276950c7dad4155a2:640:82:100"
     },
     {
       "id": "3",

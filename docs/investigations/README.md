@@ -54,6 +54,10 @@
 
 ## Warp Simulator
 
+- [Phase 1M 控制间距与资源同步](warp-simulator/phase-1m-control-panel-spacing-and-visual-refresh.md)：局部 Drawer 留白、透明 Tabs 背景、当前卡池全部视觉资源及数据驱动的集成校验。
+
+- [Phase 1L 控制面板与星缘持久化](warp-simulator/phase-1l-control-panel-and-affinity-persistence.md)：五类卡池导航、UP 缩略图、保底分组、共享星缘资格校验及浏览器存储。
+
 - [Phase 1K 全屏 Artwork 信息面板](warp-simulator/phase-1k-reveal-metadata-overlay.md)：三行本地化物品信息、舞台定位、同步淡入与无障碍描述及验收步骤。
 
 - [Phase 1J Metadata 排版精修](warp-simulator/phase-1j-metadata-layout-refinement.md)：卡片专用透明裁切星级、统一单颗星尺度、两行居中信息簇及验收清单。

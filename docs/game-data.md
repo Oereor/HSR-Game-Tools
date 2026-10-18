@@ -167,7 +167,7 @@ npm run validate:warp-visuals
 
 裁切星级 `card-stars` 使用 Sharp 零阈值透明检测，和原始 RGBA 非零 Alpha 边界交叉核对。只裁掉完全透明区域，验证每颗星的重复单元及三档源高度／内容一致，再等比缩至内容高 64px、四边各加 2px 透明安全边，quality 90、alphaQuality 100、不放大。输出为 196×68、260×68、324×68，统一内容缩放比例；裁切矩形之外不得存在有效 Alpha，空图、异常比例或重复单元不一致会阻止发布。原始仓库只读，不运行时裁图。Catalog 的可选 cardStars[3/4/5] 保存 path／width／height，供结果卡和最终 Artwork 信息面板选择；历史、详情和五星 identity 前置演出继续使用原星级。缺少裁切图时中性占位，不回退到带长空白的旧星级。源图变更需重新审阅这些边界和重复单元，不盲用历史裁切值。
 
-当前 86 件物品自有图片共 204 张、39,870,124 bytes：原轻量 105 张 8,106,256 bytes、演出 96 张 31,734,500 bytes、裁切星级 3 张 29,368 bytes；另复用 30 张共享头像。这是本次测量，不是固定 Schema 数量。Catalog schemaVersion 1 以可选变体扩展；运行时仅当前演出项按需请求高清图，加载失败依次回退轻量图与中性占位，按实际像素尺寸／DPR 限制显示范围。56 张光锥源分辨率限制逐项见 [Phase 1I 报告](investigations/warp-simulator/phase-1i-reveal-quality-fixes.md)。
+当前 104 件物品自有图片共 240 张、49,132,712 bytes：轻量 123 张 9,984,084 bytes、演出 114 张 39,119,260 bytes、裁切星级 3 张 29,368 bytes；另复用 38 张共享头像。这是当前快照的测量，不是固定 Schema 数量。Catalog schemaVersion 1 以可选变体扩展；运行时仅当前演出项按需请求高清图，加载失败依次回退轻量图与中性占位，按实际像素尺寸／DPR 限制显示范围。早期 56 张光锥源分辨率记录见 [Phase 1I 报告](investigations/warp-simulator/phase-1i-reveal-quality-fixes.md)，本次资源同步及保护结果见 [Phase 1M 报告](investigations/warp-simulator/phase-1m-control-panel-spacing-and-visual-refresh.md)。
 
 Manifest schemaVersion 3 记录源仓库及 Commit、八份索引和所用图片的来源文件／SHA-256／字节数／原始尺寸、每项转换用途及转换键、共享投影来源、业务快照哈希、生成时间、Sharp 与转换版本、输出路径／尺寸／哈希／字节数及缺失诊断。card-stars 另记实际裁切矩形，新键含源 SHA-256、配方标识、透明阈值、矩形、内容高度、安全边、quality 和 alphaQuality；其他用途保留旧键。validator 将每种用途与 Source Lock 参数对应，检查安全路径、裁切边界／比例／统一源高度、精确输出尺寸、不放大、映射尺寸、引用覆盖、来源及严格文件清单。普通 validator 不读源图，Alpha 完整性由显式生成及合成测试核对。命途和属性名称来自双语索引，物品名称仍来自 Warp Snapshot。属性保留原始六位颜色；对比度修正仅在展示 Adapter 中完成，光锥不生成属性。
 

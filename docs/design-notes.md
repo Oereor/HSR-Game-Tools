@@ -110,9 +110,15 @@ Tooltip 使用转义文本并保留 Escape 关闭，效果含文字和符号，�
 
 `/warp-simulator` 使用现有 Header、语言切换及黑金主题。顶部展示标题、当前卡池摘要和控制／历史入口；中央以结果展示为主。左右 PrimeVue Drawer 默认收起、互斥展开，宽度分别为 25rem／49rem 且不超过视口。单抽、十连、选择状态及星缘入口位于结果下方的 sticky 操作栏，收起控制仍可抽取，底部考虑 safe-area。
 
-控制抽屉依次为 Banner Select、当前 UP、固定四行保底、适用时的星缘入口及两类重置。保底标记与 9+ 语义不变。抽屉状态独立于业务会话；从抽屉进入 Dialog 时先完成抽屉退出，再打开 Dialog，关闭后恢复原抽屉及触发项焦点。普通抽屉关闭返回顶部入口；直接打开星缘则返回常驻操作栏入口。
+控制抽屉依次为可横向滚动的 PrimeVue 类型 Tabs、当前类型的 Banner Select、UP 展示、两组保底、适用时的星缘入口及两类重置。只显示有有效 Banner 的类别，各类别在本页记住上次选择；类别和名称使用既有双语身份，不硬编码真实 Banner 数量。没有额外的“跃迁配置”等重复标题。五星 UP 使用 88px 图片、名称和简短标识；四星 UP 使用横向三个 52px 图片区域及紧凑名称，完整名称保留 Tooltip 和键盘可读标签，光锥保持 contain。Fate 没有四星 UP，Ordinary 只显示简短常驻说明；缺图沿用中性占位。
 
-星缘 Dialog 使用可搜索的双列头像 Checkbox 网格，≤480px 单列；支持中英文名和 ID，显示已选数量，七名确认、取消丢弃草稿。重置 Dialog 解释当前组／全部的实际范围，默认焦点落在取消。抽屉使用 PrimeVue 的 Escape、焦点陷阱、遮罩及滚动锁，真实键盘交互由维护者验收。
+控制 Drawer 通过局部 PassThrough 统一标题、内容和内容底部留白，使用同一 `clamp(16px, 4vw, 20px)` 变量。Tabs 的局部 Design Tokens 将 TabList／TabPanels 背景设为透明、Panel padding 设为零，导航按钮沿用 Drawer 背景；外侧留白由 Drawer 单独提供。重置操作区不使用负水平 margin，所有分组处于同一内容轴内。这些设置仅作用于控制 Drawer，不修改历史 Drawer、全站主题或其他工具。
+
+保底按五星／四星分成两行，每行并列计数与保证状态。计数为 30px 等宽数字，使用已有五星金／四星紫 Token；标签 12px 弱化，保证沿用 Tag＋Check，普通灰色、大保底绿色，无 UP 为“不适用”。四星 9 显示 9+ 和待兑现说明，不改变引擎饱和值。抽屉状态独立于业务会话；从抽屉进入 Dialog 时先完成抽屉退出，再打开 Dialog，关闭后恢复原抽屉及触发项焦点。普通抽屉关闭返回顶部入口；直接打开星缘则返回常驻操作栏入口。
+
+星缘区域只保留标题、数量 Badge、已选小头像及选择／修改按钮，抽取不可用时保留必要错误。Dialog 标题旁的数量 Badge 未满七人为 secondary、恰好七人为 success；搜索标签仅对读屏保留，删除重复计数和成功说明。继续使用可搜索的双列头像 Checkbox 网格，≤480px 单列，支持中英文名和 ID；七名合法才可确认、取消丢弃草稿。不兼容的已选角色另列移除按钮，不能作为候选重新勾选。所有角色 Event／Fate 共用已确认选择，浏览器只保存该名单，保底和历史仍只属于页面会话；读写失败的简短提示不阻断内存选择。资格和存储契约见跃迁架构。
+
+重置 Dialog 解释当前组／全部的实际范围，默认焦点落在取消；两种重置均保留共享星缘选择。抽屉使用 PrimeVue 的 Escape、焦点陷阱、遮罩及滚动锁，Tabs 保留键盘导航和真实 TabPanel 关联；真实键盘交互由维护者验收。
 
 单抽和十连通过纯展示组件 `WarpResults` 共用横向卡片，约 2.1:1 外框。右侧 Metadata 区为 30%、最小 80px，横向 Padding 6px、纵向 8px，分隔线为稀有度色 14% 混色。内部是水平、垂直居中的紧凑两行信息簇：上行命途与角色属性，图标间距 8px；下行卡片专用裁切星级。光锥只渲染命途、自然居中，不保留空属性槽。十连图标目标 32px、两行间距 14px；单抽 40px／20px；行距不随卡片高度增长。UP 保持独立左上角叠层、11px，不参与布局。
 
@@ -134,7 +140,7 @@ Warp 专属稀有度 Token 集中于 preset，结果卡与历史名称共用：�
 
 结果卡 Tooltip 使用转义文本的三行信息：名称（命途·角色属性）、稀有度、类别；只连接实际存在的元数据，光锥不显示属性。使用 PrimeVue Tooltip 的 text Pass Through 设置 white-space: pre-line，不插入 HTML；ARIA 及点击详情保留完整信息。
 
-本地开发可打开 `/tests/manual/warp-results/index.html`，切换全三星、四星／五星混排、十连单五星、各类单抽和图片异常的固定场景，点击演出按钮复现同一正式状态机，并可模拟 Reduced Motion、检查同批历史。该独立入口复用正式结果组件、主题、双语与详情 Dialog，不注册正式路由、不进入生产构建入口、不调用引擎或保存会话。人工展示记录不能视为合法卡池结果；正式 Snapshot 暂无五星光锥，夹具以明确标识的合成身份复用四星封面检查该样式，不修改正式数据。正式会话仍只消费真实引擎事件。Metadata 人工比较步骤见 [Phase 1J 报告](investigations/warp-simulator/phase-1j-metadata-layout-refinement.md)，高清演出见 [Phase 1I](investigations/warp-simulator/phase-1i-reveal-quality-fixes.md)。
+本地开发可打开 `/tests/manual/warp-results/index.html`，切换全三星、四星／五星混排、十连单五星、各类单抽和图片异常的固定场景，点击演出按钮复现同一正式状态机，并可模拟 Reduced Motion、检查同批历史。该独立入口复用正式结果组件、主题、双语与详情 Dialog，不注册正式路由、不进入生产构建入口、不调用引擎或保存会话。人工展示记录不能视为合法卡池结果；夹具继续以明确标识的合成身份复用封面检查样式，不修改正式数据。正式 Snapshot 已包含五星光锥，其展示由正式视觉目录提供；正式会话仍只消费真实引擎事件。Metadata 人工比较步骤见 [Phase 1J 报告](investigations/warp-simulator/phase-1j-metadata-layout-refinement.md)，高清演出见 [Phase 1I](investigations/warp-simulator/phase-1i-reveal-quality-fixes.md)。
 
 历史使用五列语义表格，顺序为名称、类别、原生星级图、命途 Icon＋名称、属性 Icon＋名称。正文 14px、行高 1.6、单元格 Padding 12px／10px，名称按稀有度着色、弹性截断并提供完整 Tooltip；Hover 使用下划线，Focus 保留同色清晰轮廓。其余列宽稳定，表格最小宽 720px，光锥属性留空。属性文字保留来源色，必要时最小幅度混白，确保在 `#22252b` Surface 上至少 4.5:1。历史容器自身横向滚动，不拆成纵向标签；顺序、每页 25 条和最近 1000 条限制保持不变。
 

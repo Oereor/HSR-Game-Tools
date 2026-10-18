@@ -154,12 +154,12 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
   })
   it('keeps overlays, language, image failures and presentation reads outside RNG and session updates', async () => {
     const rng = seeded(1984),
-      simulator = useWarpSimulator({ rng }),
+      simulator = useWarpSimulator({ rng, storage: () => undefined }),
       overlay = useWarpOverlay()
     simulator.openSelection()
-    simulator.setSelectionDraft([...warpSnapshot.sharedPools[0]!.fiveStar])
-    simulator.confirmSelection()
-    await simulator.draw(10)
+    simulator.setSelectionDraft(simulator.activeBanner.value!.eligibleAvatarIds.slice(0, 7))
+    expect(simulator.confirmSelection()).toBe(true)
+    expect(await simulator.draw(10)).toBe(true)
     const session = simulator.session.value,
       consumed = rng.consumed
     expect(overlay.panel.value).toBeUndefined()

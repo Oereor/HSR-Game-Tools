@@ -4,6 +4,8 @@ import { execFileSync } from 'node:child_process'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import runtimeSnapshot from '../../../src/tools/warp-simulator/data/runtime/snapshot.json'
+import runtimeManifest from '../../../src/tools/warp-simulator/data/runtime/manifest.json'
 import {
   assertLock,
   assertSchema,
@@ -441,13 +443,16 @@ describe('JSONC, schema and manual Banner rules', () => {
 
 describe('Warp file pipeline and failure recovery', () => {
   it('validates the real committed artifacts entirely inside this repository', async () => {
-    expect((await loadCatalog(projectRoot)).catalog.items).toHaveLength(268)
+    const state = await loadCatalog(projectRoot)
+    expect(state.catalog.items.map((item) => item.id).sort()).toEqual(
+      state.manifest.origins.map((origin) => origin.id).sort(),
+    )
     expect(await validateData(projectRoot)).toEqual({
-      status: 'incomplete',
-      items: 86,
-      sharedPools: 1,
-      readyBanners: 1,
-      pending: 5,
+      status: runtimeManifest.configurationStatus,
+      items: runtimeSnapshot.items.length,
+      sharedPools: runtimeSnapshot.sharedPools.length,
+      readyBanners: runtimeSnapshot.banners.length,
+      pending: runtimeManifest.counts.pending,
     })
   })
   it('builds, validates, detects stale schema/config/checksums and preserves previous output', async () => {

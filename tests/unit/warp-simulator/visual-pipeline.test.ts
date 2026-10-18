@@ -18,6 +18,8 @@ import { metadata } from '../../../scripts/warp-data/files'
 import { validateGameFiles } from '../../../scripts/game-data/files'
 import { fileURLToPath } from 'node:url'
 import type { WarpSnapshot } from '../../../src/tools/warp-simulator/data/schema'
+import runtimeSnapshot from '../../../src/tools/warp-simulator/data/runtime/snapshot.json'
+import visualManifest from '../../../src/tools/warp-simulator/data/visuals/manifest.json'
 import { starFixture } from '../../fixtures/warp-simulator/stars'
 
 const temps: string[] = []
@@ -124,9 +126,13 @@ describe('explicit Warp visual updater', () => {
   it('validates committed assets offline, separately from the unchanged planner inventory', async () => {
     const root = fileURLToPath(new URL('../../../', import.meta.url))
     expect(await validateVisuals(root)).toMatchObject({
-      items: 86,
-      newAssets: 204,
-      reusedAssets: 30,
+      items: runtimeSnapshot.items.length,
+      newAssets: Object.keys(visualManifest.files).filter((file) =>
+        file.startsWith(assetDirectory + '/'),
+      ).length,
+      reusedAssets: Object.keys(visualManifest.files).filter(
+        (file) => file.startsWith('public/game-assets/') && !file.startsWith(assetDirectory + '/'),
+      ).length,
       missing: 0,
     })
     expect(await validateGameFiles(root)).toMatchObject({ assets: 101, missing: 0 })
