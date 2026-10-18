@@ -2,6 +2,8 @@
 import type { ItemPresentation } from '../model/presentation'
 import {
   IDENTITY_EMBLEM,
+  IDENTITY_PATH_MAX_SIZE,
+  IDENTITY_PATH_FRACTION,
   IDENTITY_STARS,
   useWarpIdentityReady,
 } from '../composables/useWarpIdentityReady'
@@ -27,7 +29,9 @@ const partReady = useWarpIdentityReady(
     <span
       class="warp-identity-canvas"
       :class="{ 'warp-identity-started': started }"
-      :style="{ '--identity-path-native-size': `${item.revealPathIcon?.width ?? 256}px` }"
+      :style="{
+        '--identity-canvas-max-width': `${IDENTITY_PATH_MAX_SIZE / IDENTITY_PATH_FRACTION}px`,
+      }"
     >
       <WarpRevealImage
         class="warp-identity-path"
@@ -82,7 +86,7 @@ const partReady = useWarpIdentityReady(
 }
 .warp-identity-canvas {
   position: relative;
-  width: min(100cqw, calc(100cqh * 807 / 594), calc(var(--identity-path-native-size) / 0.57));
+  width: min(100cqw, calc(100cqh * 807 / 594), var(--identity-canvas-max-width));
   aspect-ratio: 807 / 594;
 }
 .warp-identity-canvas .warp-identity-path,
@@ -100,7 +104,7 @@ const partReady = useWarpIdentityReady(
   transform: translate(-50%, -50%);
 }
 .warp-identity-star {
-  top: 49.5%;
+  top: 52%;
   transform: translate(-50%, -50%) scale(0.6);
   will-change: opacity, transform, filter;
 }

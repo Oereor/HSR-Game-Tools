@@ -54,6 +54,8 @@
 
 ## Warp Simulator
 
+- [Phase 1M Identity 尺寸修复](warp-simulator/phase-1m-identity-size-correction.md)：固定 160px 命途显示上限、星星整体缩放与 Node 真实组件挂载回归。
+
 - [Phase 1M 五星 V3 动画](warp-simulator/phase-1m-five-star-reveal-animation.md)：实际命途映射、StarBig 资源管线、六图就绪门控、固定比例构图与演出回归验证。
 
 - [Phase 1M 控制间距与资源同步](warp-simulator/phase-1m-control-panel-spacing-and-visual-refresh.md)：局部 Drawer 留白、透明 Tabs 背景、当前卡池全部视觉资源及数据驱动的集成校验。

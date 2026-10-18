@@ -1,5 +1,9 @@
 import { onScopeDispose, watch } from 'vue'
 
+// CSS presentation size, independent of source pixels and device pixel ratio.
+export const IDENTITY_PATH_MAX_SIZE = 160
+export const IDENTITY_PATH_FRACTION = 0.57
+
 // V3's default playback rate is 2: these are the actual on-screen milliseconds.
 export const IDENTITY_EMBLEM = { delay: 25, duration: 287.5 } as const
 export const IDENTITY_STARS = [

@@ -229,8 +229,10 @@ describe('V3 five-star Identity', () => {
       expect(binding(image, 'limit-to-source-pixels')).toMatchObject({ exp: { content: 'false' } })
     expect(text).toContain('aspect-ratio: 807 / 594')
     expect(text).toContain('container-type: size')
-    expect(text).toContain('calc(var(--identity-path-native-size) / 0.57)')
-    expect(text).toContain('item.revealPathIcon?.width ?? 256')
+    expect(text).toContain(
+      'min(100cqw, calc(100cqh * 807 / 594), var(--identity-canvas-max-width))',
+    )
+    expect(text).not.toContain('identity-path-native-size')
     expect(text).not.toMatch(/\d(?:vw|vh)|Joy\.png|setTimeout|requestAnimationFrame|Math\.random/)
     const overlay = read('WarpRevealOverlay')
     expect(overlay).toContain(':started="identityReady"') // retains the started pose during leaving
