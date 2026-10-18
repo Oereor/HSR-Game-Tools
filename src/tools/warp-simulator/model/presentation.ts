@@ -56,6 +56,7 @@ export interface ItemPresentation {
   readonly revealArtwork?: ImagePresentation
   readonly revealPathIcon?: ImagePresentation
   readonly revealStars?: ImagePresentation
+  readonly revealStarBig?: ImagePresentation
   readonly cardStars?: ImagePresentation
   readonly cardStarsReferenceAspectRatio?: number
 }
@@ -120,6 +121,8 @@ export function createPresentation(
       revealArtwork: source ? revealImage(visual?.revealArtwork, base) : undefined,
       revealPathIcon: revealImage(pathDefinition?.revealIcon, base),
       revealStars: source ? revealImage(definitions.revealStars?.[source.rarity], base) : undefined,
+      revealStarBig:
+        source?.rarity === 5 ? revealImage(definitions.revealStarBig, base) : undefined,
       cardStars: source ? revealImage(definitions.cardStars?.[source.rarity], base) : undefined,
       cardStarsReferenceAspectRatio,
     }

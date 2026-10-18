@@ -7,6 +7,7 @@ import type { HistoryEntry } from '../composables/useWarpSimulator'
 import { REVEAL_TIMING, type RevealPhase } from '../composables/useWarpReveal'
 import type { ItemPresentation } from '../model/presentation'
 import WarpRevealImage from './WarpRevealImage.vue'
+import WarpRevealIdentity from './WarpRevealIdentity.vue'
 import WarpRevealMetadata from './WarpRevealMetadata.vue'
 import { showRevealMetadata } from './reveal-metadata'
 import { useWarpPixelRatio } from '../composables/useWarpPixelRatio'
@@ -28,17 +29,6 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const pixelRatio = useWarpPixelRatio()
-const identityParts = new Set<string>()
-watch(
-  () => `${props.entry?.batchId}:${props.entry?.id}`,
-  () => identityParts.clear(),
-  { flush: 'sync' },
-)
-function identityPartReady(part: string, batchId: number, entryId: number) {
-  if (props.entry?.batchId !== batchId || props.entry.id !== entryId) return
-  identityParts.add(part)
-  if (identityParts.size === 2) emit('identity-ready', batchId, entryId)
-}
 const screen = ref<{ $el: HTMLButtonElement }>()
 // Keep the outgoing stage mounted during its exit, without replaying entrance CSS.
 const leavingStage = ref<RevealPhase>('artwork')
@@ -106,7 +96,6 @@ function keydown(event: KeyboardEvent) {
         :class="{ 'warp-reveal-leaving': phase === 'leaving' }"
         :style="{
           '--reveal-fade': `${REVEAL_TIMING.fade}ms`,
-          '--reveal-exit-delay': `${REVEAL_TIMING.fade + REVEAL_TIMING.hold}ms`,
         }"
         :aria-label="
           t('warp.reveal.action', { name: item?.name ?? t('warp.visual.unknown'), action: hint })
@@ -116,34 +105,16 @@ function keydown(event: KeyboardEvent) {
         @keydown="keydown"
       >
         <span v-if="entry && item" :key="`${entry.batchId}:${entry.id}`" class="warp-reveal-stage">
-          <span
+          <WarpRevealIdentity
             v-if="stage === 'identity'"
-            class="warp-reveal-identity"
-            :class="{ 'warp-reveal-identity-enter': phase === 'identity' && identityReady }"
-          >
-            <span class="warp-reveal-path">
-              <WarpRevealImage
-                :preferred="item.revealPathIcon"
-                :fallback-url="item.pathIconUrl"
-                :label="item.pathName ?? t('warp.visual.unknown')"
-                :pixel-ratio="pixelRatio"
-                :batch-id="entry.batchId"
-                :entry-id="entry.id"
-                @ready="(batchId, entryId) => identityPartReady('path', batchId, entryId)"
-              />
-            </span>
-            <span class="warp-reveal-stars">
-              <WarpRevealImage
-                :preferred="item.revealStars"
-                :fallback-url="item.starsUrl"
-                :label="t('warp.visual.rarity', { count: entry.event.rarity })"
-                :pixel-ratio="pixelRatio"
-                :batch-id="entry.batchId"
-                :entry-id="entry.id"
-                @ready="(batchId, entryId) => identityPartReady('stars', batchId, entryId)"
-              />
-            </span>
-          </span>
+            :item="item"
+            :batch-id="entry.batchId"
+            :entry-id="entry.id"
+            :started="identityReady"
+            :path-label="item.pathName ?? t('warp.visual.unknown')"
+            :rarity-label="t('warp.visual.rarity', { count: entry.event.rarity })"
+            @ready="(batchId, entryId) => emit('identity-ready', batchId, entryId)"
+          />
           <span
             v-show="stage === 'artwork' || stage === 'waiting'"
             class="warp-reveal-artwork"
@@ -219,26 +190,6 @@ function keydown(event: KeyboardEvent) {
   min-width: 0;
   min-height: 0;
 }
-.warp-reveal-identity {
-  display: grid;
-  justify-items: center;
-  gap: 24px;
-  width: min(100%, 320px);
-  opacity: 0;
-}
-.warp-reveal-identity-enter {
-  animation:
-    warp-reveal-in var(--reveal-fade) ease-out both,
-    warp-reveal-out var(--reveal-fade) ease-in var(--reveal-exit-delay) forwards;
-}
-.warp-reveal-path {
-  width: min(160px, 30vh, 45vw);
-  height: min(160px, 30vh, 45vw);
-}
-.warp-reveal-stars {
-  width: 100%;
-  aspect-ratio: 5 / 1;
-}
 .warp-reveal-artwork {
   position: absolute;
   inset: 0;
@@ -278,7 +229,6 @@ function keydown(event: KeyboardEvent) {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .warp-reveal-identity-enter,
   .warp-reveal-artwork-enter,
   .warp-reveal-leaving .warp-reveal-stage {
     animation: none;

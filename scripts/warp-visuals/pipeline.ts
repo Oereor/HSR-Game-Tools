@@ -57,6 +57,7 @@ type ConversionPurpose =
   | 'reveal-artwork'
   | 'reveal-icon'
   | 'reveal-stars'
+  | 'reveal-star-big'
   | 'card-stars'
 function profile(purpose: ConversionPurpose, lock: SourceLock): [number, number] {
   const t = lock.transform
@@ -75,6 +76,8 @@ function profile(purpose: ConversionPurpose, lock: SourceLock): [number, number]
       return [t.revealIconSize, t.iconQuality]
     case 'reveal-stars':
       return [t.revealStarSize, t.iconQuality]
+    case 'reveal-star-big':
+      return [t.revealStarBigSize, t.iconQuality]
     default:
       throw new Error('Invalid visual conversion purpose')
   }
@@ -200,6 +203,8 @@ export async function validateVisuals(
     if (
       !source ||
       asset.crop !== undefined ||
+      (asset.purpose === 'reveal-star-big' &&
+        (asset.source !== 'icon/deco/StarBig.png' || asset.slot !== 'reveal-star-big')) ||
       /[\\:?#%]/.test(asset.source) ||
       asset.source.split('/').some((part) => !part || part === '.' || part === '..') ||
       source.sha256 !== hash ||
@@ -287,6 +292,13 @@ export async function validateVisuals(
     catalog.revealStars?.[5]?.path,
     'reveal-stars',
     catalog.revealStars?.[5],
+  )
+  reference(
+    '5',
+    'reveal-star-big',
+    catalog.revealStarBig?.path,
+    'reveal-star-big',
+    catalog.revealStarBig,
   )
   if (referenced.size !== manifest.assets.length) throw new Error('Unreferenced visual conversion')
   const expectedInputs = [
@@ -525,7 +537,7 @@ export async function generateVisuals(
   }
   async function revealAsset(
     id: string,
-    purpose: 'reveal-artwork' | 'reveal-icon' | 'reveal-stars',
+    purpose: 'reveal-artwork' | 'reveal-icon' | 'reveal-stars' | 'reveal-star-big',
     sourcePath: string | undefined,
   ): Promise<VisualImage | undefined> {
     const [size, quality] = profile(purpose, lock)
@@ -637,6 +649,7 @@ export async function generateVisuals(
   }
   const revealFiveStars = await revealAsset('5', 'reveal-stars', 'icon/deco/Star5.png')
   if (revealFiveStars) revealStars[5] = revealFiveStars
+  const revealStarBig = await revealAsset('5', 'reveal-star-big', 'icon/deco/StarBig.png')
   for (const rarity of [3, 4, 5] as const) {
     const file = await asset(
       String(rarity),
@@ -658,6 +671,7 @@ export async function generateVisuals(
     elements,
     stars,
     revealStars,
+    revealStarBig,
     cardStars,
   }
   assertVisualCatalog(catalog, snapshot)

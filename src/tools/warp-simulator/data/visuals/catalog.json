@@ -1274,6 +1274,11 @@
       "height": 128
     }
   },
+  "revealStarBig": {
+    "path": "game-assets/warp/3a5329b94d8adabdf7679cfe44bc87f761c8bcac3b32f3b956c144fc476c1b44.webp",
+    "width": 279,
+    "height": 279
+  },
   "cardStars": {
     "3": {
       "path": "game-assets/warp/0d354ddfa4fb8352c9b6950cd41d4bd8e97327b1552b28ea0bc3affb32b94b57.webp",

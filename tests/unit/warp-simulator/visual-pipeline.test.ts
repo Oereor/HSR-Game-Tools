@@ -120,6 +120,12 @@ async function fixture() {
   ])
     inputs[file] = image
   for (const rarity of [3, 4, 5]) inputs[`icon/deco/Star${rarity}.png`] = await starFixture(rarity)
+  inputs['icon/deco/StarBig.png'] = await sharp({
+    create: { width: 279, height: 279, channels: 4, background: '#00000000' },
+  })
+    .composite([{ input: image, gravity: 'centre' }])
+    .png()
+    .toBuffer()
   return { root, stage, inputs, source: { read: (file: string) => inputs[file] } }
 }
 describe('explicit Warp visual updater', () => {
@@ -159,23 +165,72 @@ describe('explicit Warp visual updater', () => {
     )
     expect(catalog.paths.Warrior.revealIcon).toMatchObject({ width: 16, height: 24 })
     expect(catalog.revealStars['5']).toMatchObject({ width: 640, height: 128 })
+    expect(catalog.revealStarBig).toMatchObject({ width: 279, height: 279 })
+    expect(manifest.assets.find((asset) => asset.purpose === 'reveal-star-big')).toMatchObject({
+      id: '5',
+      slot: 'reveal-star-big',
+      source: 'icon/deco/StarBig.png',
+      output: catalog.revealStarBig.path,
+      transformKey: `${metadata(f.inputs['icon/deco/StarBig.png']!).sha256}:279:90:100`,
+    })
     expect(catalog.cardStars['3']).toMatchObject({ width: 196, height: 68 })
     expect(manifest.inputs['image/character_portrait/1.png']).toMatchObject({
       width: 16,
       height: 24,
     })
-    expect(new Set(manifest.assets.map((asset) => asset.purpose)).size).toBe(8)
-    expect((await readdir(path.join(f.stage, assetDirectory))).length).toBe(12)
+    expect(new Set(manifest.assets.map((asset) => asset.purpose)).size).toBe(9)
+    expect((await readdir(path.join(f.stage, assetDirectory))).length).toBe(13)
     expect(manifest.inputs['index_new/cn/characters.json']).toEqual(
       metadata(f.inputs['index_new/cn/characters.json']!),
     )
     await publishVisuals(f.root, f.stage, 'fixture')
     expect(await validateVisuals(f.root)).toMatchObject({
       items: 2,
-      newAssets: 12,
+      newAssets: 13,
       reusedAssets: 1,
     })
     expect(await readFile(path.join(f.root, 'public/game-assets/character/1.webp'))).toEqual(before)
+  })
+  it.each(['source', 'crop', 'dimensions', 'mapping', 'checksum'])(
+    'rejects Identity star corruption: %s',
+    async (mutation) => {
+      const f = await fixture()
+      const manifest = await generateVisuals(f.root, f.stage, f.source)
+      await publishVisuals(f.root, f.stage, 'identity-corrupt')
+      const asset = manifest.assets.find((asset) => asset.purpose === 'reveal-star-big')!
+      if (mutation === 'source') asset.source = 'icon/deco/Star5.png'
+      if (mutation === 'crop') asset.crop = { left: 0, top: 0, width: 200, height: 200 }
+      if (mutation === 'dimensions') manifest.files['public/' + asset.output]!.width = 200
+      if (mutation === 'mapping') {
+        const file = visualDirectory + '/catalog.json'
+        const catalog = JSON.parse(await readFile(path.join(f.root, file), 'utf8'))
+        delete catalog.revealStarBig
+        await write(f.root, file, JSON.stringify(catalog))
+      }
+      if (mutation === 'checksum') await write(f.root, 'public/' + asset.output, 'corrupt')
+      await write(f.root, visualDirectory + '/manifest.json', JSON.stringify(manifest))
+      await expect(validateVisuals(f.root)).rejects.toThrow(/provenance|mapping|checksum/)
+    },
+  )
+  it('records a missing Identity star without substituting a strip or changing shared assets', async () => {
+    const f = await fixture()
+    delete f.inputs['icon/deco/StarBig.png']
+    const manifest = await generateVisuals(f.root, f.stage, f.source)
+    expect(manifest.missingAssets).toEqual([
+      {
+        id: '5',
+        slot: 'reveal-star-big',
+        sourcePath: 'icon/deco/StarBig.png',
+        reason: 'missing-source-file',
+      },
+    ])
+    await publishVisuals(f.root, f.stage, 'identity-missing')
+    expect(await validateVisuals(f.root)).toMatchObject({ missing: 1 })
+    const catalog = JSON.parse(
+      await readFile(path.join(f.root, visualDirectory, 'catalog.json'), 'utf8'),
+    )
+    expect(catalog.revealStarBig).toBeUndefined()
+    expect(catalog.revealStars['5']).toBeDefined()
   })
   it('reuses verified bytes and repairs a missing or corrupt cached output', async () => {
     const f = await fixture()

@@ -24,6 +24,7 @@ export interface VisualDefinitions {
   readonly elements: Readonly<Record<string, VisualDefinition & { readonly color: string }>>
   readonly stars: Readonly<Partial<Record<3 | 4 | 5, string>>>
   readonly revealStars?: Readonly<Partial<Record<3 | 4 | 5, VisualImage>>>
+  readonly revealStarBig?: VisualImage
   readonly cardStars?: Readonly<Partial<Record<3 | 4 | 5, VisualImage>>>
 }
 export interface WarpVisualCatalog extends VisualDefinitions {
@@ -53,6 +54,7 @@ export function visualAssetPaths(catalog: WarpVisualCatalog): string[] {
         ...Object.values(catalog.elements).map((row) => row.iconPath),
         ...Object.values(catalog.stars),
         ...Object.values(catalog.revealStars ?? {}).map((row) => row?.path),
+        catalog.revealStarBig?.path,
         ...Object.values(catalog.cardStars ?? {}).map((row) => row?.path),
       ].filter((value): value is string => value !== undefined),
     ),
@@ -152,4 +154,5 @@ export function assertVisualCatalog(
       assertImage(image, 'card star')
     }
   }
+  if (value.revealStarBig !== undefined) assertImage(value.revealStarBig, 'identity star')
 }

@@ -4,15 +4,19 @@ import { BookOpen, UserRound } from '@lucide/vue'
 import type { ImagePresentation } from '../model/presentation'
 import { useWarpRevealSource, revealPixelLimit } from '../composables/useWarpRevealSource'
 
-const props = defineProps<{
-  preferred?: ImagePresentation
-  fallbackUrl?: string
-  label: string
-  pixelRatio: number
-  kind?: 'avatar' | 'light-cone'
-  batchId: number
-  entryId: number
-}>()
+const props = withDefaults(
+  defineProps<{
+    preferred?: ImagePresentation
+    fallbackUrl?: string
+    label: string
+    pixelRatio: number
+    limitToSourcePixels?: boolean
+    kind?: 'avatar' | 'light-cone'
+    batchId: number
+    entryId: number
+  }>(),
+  { limitToSourcePixels: true },
+)
 const emit = defineEmits<{ ready: [batchId: number, entryId: number] }>()
 const image = useWarpRevealSource(
   () => props.preferred,
@@ -20,7 +24,7 @@ const image = useWarpRevealSource(
 )
 const { source, dimensions, ready } = image
 const limit = computed(() =>
-  dimensions.value
+  props.limitToSourcePixels && dimensions.value
     ? revealPixelLimit(dimensions.value.width, dimensions.value.height, props.pixelRatio)
     : {},
 )

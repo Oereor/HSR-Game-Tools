@@ -248,7 +248,7 @@ describe('Committed batch reveal state machine', () => {
     expect(JSON.stringify(committed)).toBe(before)
     expect(rng.consumed).toBe(consumed)
   })
-  it('waits for both identity images and then artwork readiness before enabling confirmation', () => {
+  it('waits for aggregated identity readiness and then artwork before enabling confirmation', () => {
     const { reveal } = setup(false, false)
     const batch = entries('single-avatar-5')
     reveal.beginBatch(batch[0]!.batchId, batch)

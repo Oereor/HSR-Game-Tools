@@ -4,7 +4,7 @@
     "repository": "https://github.com/Mar-7th/StarRailRes.git",
     "commit": "dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487"
   },
-  "generatedAt": "2026-10-18T14:39:38.191Z",
+  "generatedAt": "2026-10-18T15:29:51.974Z",
   "transform": {
     "version": 3,
     "avatarSize": 768,
@@ -17,6 +17,7 @@
     "revealArtworkSize": 2048,
     "revealIconSize": 512,
     "revealStarSize": 640,
+    "revealStarBigSize": 279,
     "revealQuality": 88,
     "cardStars": {
       "method": "alpha-trim",
@@ -846,6 +847,12 @@
       "sha256": "2da28ebcdb934a447c35dedf704af883838fa5eaee00d75c96d84b86e224ed9a",
       "width": 640,
       "height": 128
+    },
+    "icon/deco/StarBig.png": {
+      "bytes": 68999,
+      "sha256": "5aec11dd2a292e740b4fb2bb4ffc3a88e320c9d6ee81555339167ad1f9829e52",
+      "width": 279,
+      "height": 279
     }
   },
   "localInputs": {
@@ -2629,6 +2636,12 @@
       "width": 640,
       "height": 128
     },
+    "public/game-assets/warp/3a5329b94d8adabdf7679cfe44bc87f761c8bcac3b32f3b956c144fc476c1b44.webp": {
+      "bytes": 28812,
+      "sha256": "05d8a2422d4a3b8126516e1cb8b0f9985bcce422213662647eb213993c366053",
+      "width": 279,
+      "height": 279
+    },
     "public/game-assets/warp/0d354ddfa4fb8352c9b6950cd41d4bd8e97327b1552b28ea0bc3affb32b94b57.webp": {
       "bytes": 7860,
       "sha256": "1acf4386d4b1d1a7189326295974b4b8f763c93305705bdf6e7b8684d377beae",
@@ -2648,8 +2661,8 @@
       "height": 68
     },
     "src/tools/warp-simulator/data/visuals/catalog.json": {
-      "bytes": 48980,
-      "sha256": "6415793288cf1f4d6715d4ef2aa138858a362bb92235783394e72785ba5d8ca4"
+      "bytes": 49144,
+      "sha256": "7537ad218dfcb6cd67e8c0eb977809058c173d00523572f4cedfcc60750d80c9"
     }
   },
   "assets": [
@@ -4676,6 +4689,14 @@
       "source": "icon/deco/Star5.png",
       "output": "game-assets/warp/3c6b9614b3914604c832f93f8c04c13a5ce077769f95bfde2504a370d1e5ae04.webp",
       "transformKey": "2da28ebcdb934a447c35dedf704af883838fa5eaee00d75c96d84b86e224ed9a:640:90:100"
+    },
+    {
+      "id": "5",
+      "slot": "reveal-star-big",
+      "purpose": "reveal-star-big",
+      "source": "icon/deco/StarBig.png",
+      "output": "game-assets/warp/3a5329b94d8adabdf7679cfe44bc87f761c8bcac3b32f3b956c144fc476c1b44.webp",
+      "transformKey": "5aec11dd2a292e740b4fb2bb4ffc3a88e320c9d6ee81555339167ad1f9829e52:279:90:100"
     },
     {
       "id": "3",

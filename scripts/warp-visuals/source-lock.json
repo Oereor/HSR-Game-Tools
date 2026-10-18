@@ -13,6 +13,7 @@
     "revealArtworkSize": 2048,
     "revealIconSize": 512,
     "revealStarSize": 640,
+    "revealStarBigSize": 279,
     "revealQuality": 88,
     "cardStars": {
       "method": "alpha-trim",
