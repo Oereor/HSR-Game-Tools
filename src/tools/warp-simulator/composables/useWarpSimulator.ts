@@ -1,11 +1,16 @@
 import { computed, nextTick, ref, shallowReadonly, shallowRef } from 'vue'
 import { warpSnapshot } from '../data/adapters/warp-data'
-import type { WarpSnapshot } from '../data/schema'
+import type { WarpBannerKind, WarpSnapshot } from '../data/schema'
 import { pullOnce, pullTen } from '../engine/gacha'
 import { resolvePool } from '../engine/resolver'
 import { createSessionState } from '../engine/state'
 import type { PullEvent, Rng, SessionState, WarpDiagnostic } from '../engine/types'
 import { availableBanners } from '../model/catalog'
+import {
+  createAffinityPersistence,
+  type AffinityStorageSource,
+  type AffinityStorageNotice,
+} from '../model/affinity-persistence'
 
 export const HISTORY_LIMIT = 1000
 export const HISTORY_PAGE_SIZE = 25
@@ -19,12 +24,25 @@ export interface WarpPageSession {
   readonly history: readonly HistoryEntry[]
   readonly latestBatchId?: number
 }
-export function useWarpSimulator(options: { snapshot?: WarpSnapshot; rng?: Rng } = {}) {
+export function useWarpSimulator(
+  options: { snapshot?: WarpSnapshot; rng?: Rng; storage?: AffinityStorageSource } = {},
+) {
   const snapshot = options.snapshot ?? warpSnapshot
   const rng = options.rng ?? { next: () => Math.random() }
   const catalog = availableBanners(snapshot)
-  const selectedBannerId = ref(catalog.banners[0]?.banner.id)
-  const selections = shallowRef<Readonly<Record<string, readonly string[]>>>({})
+  const selectedBannerId = ref(catalog.groups[0]?.banners[0]?.banner.id)
+  const rememberedBanners = new Map<WarpBannerKind, string>()
+  const persistence = createAffinityPersistence(
+    (ids) =>
+      catalog.banners.some(
+        ({ banner, requiresSelection }) =>
+          requiresSelection && resolvePool(snapshot, banner.id, { selectedAvatarIds: ids }).ok,
+      ),
+    options.storage,
+  )
+  const restored = persistence.restore()
+  const sharedSelection = shallowRef(restored.selectedAvatarIds)
+  const storageNotice = shallowRef<AffinityStorageNotice | undefined>(restored.notice)
   const session = shallowRef<WarpPageSession>(
     Object.freeze({ engine: createSessionState(), history: Object.freeze([]) }),
   )
@@ -40,9 +58,11 @@ export function useWarpSimulator(options: { snapshot?: WarpSnapshot; rng?: Rng }
   const activeBanner = computed(() =>
     catalog.banners.find((entry) => entry.banner.id === selectedBannerId.value),
   )
-  const selectedAvatarIds = computed(
-    () => selections.value[selectedBannerId.value ?? ''] ?? Object.freeze([]),
+  const activeKind = computed(() => activeBanner.value?.banner.kind)
+  const kindBanners = computed(
+    () => catalog.groups.find((group) => group.kind === activeKind.value)?.banners ?? [],
   )
+  const selectedAvatarIds = computed(() => sharedSelection.value)
   const resolve = (ids: readonly string[]) =>
     resolvePool(
       snapshot,
@@ -52,6 +72,10 @@ export function useWarpSimulator(options: { snapshot?: WarpSnapshot; rng?: Rng }
   const resolvedPool = computed(() =>
     activeBanner.value ? resolve(selectedAvatarIds.value) : undefined,
   )
+  const selectionIssue = computed(() => {
+    if (!activeBanner.value?.requiresSelection || resolvedPool.value?.ok) return undefined
+    return selectedAvatarIds.value.length === 7 ? 'incompatible' : 'required'
+  })
   const draftResolution = computed(() =>
     activeBanner.value?.requiresSelection ? resolve(selectionDraft.value) : undefined,
   )
@@ -84,8 +108,18 @@ export function useWarpSimulator(options: { snapshot?: WarpSnapshot; rng?: Rng }
     )
       return false
     selectedBannerId.value = id
+    rememberedBanners.set(activeBanner.value!.banner.kind, id)
     diagnostic.value = undefined
     return true
+  }
+  function selectKind(kind: WarpBannerKind) {
+    const group = catalog.groups.find((entry) => entry.kind === kind)
+    if (!group) return false
+    const remembered = rememberedBanners.get(kind)
+    return selectBanner(
+      group.banners.find((entry) => entry.banner.id === remembered)?.banner.id ??
+        group.banners[0]!.banner.id,
+    )
   }
   function openSelection() {
     if (
@@ -113,10 +147,8 @@ export function useWarpSimulator(options: { snapshot?: WarpSnapshot; rng?: Rng }
   function confirmSelection() {
     if (busy.value || !selectionOpen.value || !selectionValid.value || !selectedBannerId.value)
       return false
-    selections.value = Object.freeze({
-      ...selections.value,
-      [selectedBannerId.value]: Object.freeze([...selectionDraft.value]),
-    })
+    sharedSelection.value = Object.freeze([...selectionDraft.value])
+    storageNotice.value = persistence.save(sharedSelection.value)
     diagnostic.value = undefined
     cancelSelection()
     return true
@@ -202,11 +234,16 @@ export function useWarpSimulator(options: { snapshot?: WarpSnapshot; rng?: Rng }
   }
   return {
     banners: catalog.banners,
+    bannerGroups: catalog.groups,
+    activeKind,
+    kindBanners,
     configurationDiagnostics: catalog.diagnostics,
     session: shallowReadonly(session),
     selectedBannerId: shallowReadonly(selectedBannerId),
     activeBanner,
     selectedAvatarIds,
+    selectionIssue,
+    storageNotice: shallowReadonly(storageNotice),
     selectionDraft: shallowReadonly(selectionDraft),
     selectionOpen: shallowReadonly(selectionOpen),
     selectionValid,
@@ -222,6 +259,7 @@ export function useWarpSimulator(options: { snapshot?: WarpSnapshot; rng?: Rng }
     announcement: shallowReadonly(announcement),
     canPull,
     selectBanner,
+    selectKind,
     openSelection,
     setSelectionDraft,
     cancelSelection,

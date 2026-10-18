@@ -65,6 +65,64 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
         expect(item[field]).toBeUndefined()
     }
   })
+  it('resolves independent HD variants while preserving lightweight card URLs', () => {
+    for (const source of warpSnapshot.items) {
+      const item = adapter.item(source.id, 'en')
+      const row = warpVisuals[source.id]!
+      expect(item.artworkUrl).toBe('/sub/' + row.artworkPath)
+      expect(item.revealArtwork).toEqual({
+        url: '/sub/' + row.revealArtwork!.path,
+        width: row.revealArtwork!.width,
+        height: row.revealArtwork!.height,
+      })
+      expect(item.revealArtwork!.url).not.toBe(item.artworkUrl)
+      expect(item.revealPathIcon?.url).toBe(
+        '/sub/' + warpVisualDefinitions.paths[item.path!]!.revealIcon!.path,
+      )
+      expect(!!item.revealStars).toBe(source.rarity === 5)
+    }
+    const fallback = createPresentation(warpSnapshot, {
+      'avatar:1503': { artworkPath: 'game-assets/card.webp' },
+    })
+    expect(fallback.item('avatar:1503', 'en')).toMatchObject({
+      artworkUrl: '/game-assets/card.webp',
+      revealArtwork: undefined,
+    })
+    for (const revealArtwork of [
+      { path: 'game-assets/../bad.webp', width: 2048, height: 2048 },
+      { path: 'game-assets/good.webp', width: 0, height: 2048 },
+    ]) {
+      const bad = createPresentation(warpSnapshot, { 'avatar:1503': { revealArtwork } })
+      expect(bad.item('avatar:1503', 'en').revealArtwork).toBeUndefined()
+      const invalid = structuredClone(catalog)
+      invalid.items['avatar:1503'].revealArtwork = revealArtwork
+      expect(() => assertVisualCatalog(invalid, warpSnapshot)).toThrow(/reveal/)
+    }
+  })
+  it('preserves legacy star images and bounds only the card variant with a shared height', () => {
+    for (const rarity of [3, 4, 5] as const) {
+      const file =
+        manifest.files[
+          ('public/' + warpVisualDefinitions.stars[rarity]) as keyof typeof manifest.files
+        ]
+      expect(file).toMatchObject({ width: 160, height: 32 })
+    }
+    const read = (name: string) =>
+      readFileSync(
+        new URL('../../../src/tools/warp-simulator/components/' + name + '.vue', import.meta.url),
+        'utf8',
+      )
+    // Structural regression guards only; real pixel sizing is manually accepted.
+    expect(read('WarpVisualIcon')).toContain('width: min(var(--warp-stars-width, 80px), 100%)')
+    expect(read('WarpVisualIcon')).toContain('aspect-ratio: 5 / 1')
+    expect(read('WarpVisualIcon')).toContain('calc(100cqi / var(--warp-stars-reference-aspect))')
+    expect(read('WarpResultCard')).toContain('grid-template-columns: minmax(0, 1fr)')
+    expect(read('WarpResultCard')).not.toContain('warp-icon-slot')
+    expect(read('WarpResultCard')).toContain(':image="item.cardStars"')
+    expect(read('WarpResultCard')).not.toContain(':deep(.warp-icon)')
+    expect(read('WarpResultCard')).not.toContain('revealArtwork')
+    expect(read('WarpItemVisual')).not.toContain('revealArtwork')
+  })
   it('preserves source colors and minimally brightens only low-contrast element text', () => {
     for (const definition of Object.values(warpVisualDefinitions.elements)) {
       expect(definition.color).toMatch(/^#[\da-f]{6}$/i)
@@ -96,12 +154,12 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
   })
   it('keeps overlays, language, image failures and presentation reads outside RNG and session updates', async () => {
     const rng = seeded(1984),
-      simulator = useWarpSimulator({ rng }),
+      simulator = useWarpSimulator({ rng, storage: () => undefined }),
       overlay = useWarpOverlay()
     simulator.openSelection()
-    simulator.setSelectionDraft([...warpSnapshot.sharedPools[0]!.fiveStar])
-    simulator.confirmSelection()
-    await simulator.draw(10)
+    simulator.setSelectionDraft(simulator.activeBanner.value!.eligibleAvatarIds.slice(0, 7))
+    expect(simulator.confirmSelection()).toBe(true)
+    expect(await simulator.draw(10)).toBe(true)
     const session = simulator.session.value,
       consumed = rng.consumed
     expect(overlay.panel.value).toBeUndefined()
@@ -150,9 +208,13 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
       new URL('../../../src/tools/warp-simulator/components/WarpResultCard.vue', import.meta.url),
       'utf8',
     )
-    expect(page).toContain(':key="`${entry.batchId}:${entry.id}`"')
+    const results = readFileSync(
+      new URL('../../../src/tools/warp-simulator/components/WarpResults.vue', import.meta.url),
+      'utf8',
+    )
+    expect(results).toContain(':key="`${entry.batchId}:${entry.id}`"')
     expect(card).toContain('prefers-reduced-motion: reduce')
     expect(card).not.toMatch(/Math\.random|draw\(/)
-    expect(page.indexOf('</section>')).toBeLessThan(page.indexOf('<Drawer'))
+    expect(page.indexOf('<WarpResults')).toBeLessThan(page.indexOf('<Drawer'))
   })
 })

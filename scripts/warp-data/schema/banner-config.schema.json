@@ -1546,8 +1546,9 @@
                 "const": "pity:event-light-cone"
               },
               "sharedPool": {
-                "markdownDescription": "尚无兼容条目；请先维护共享候选池并重新生成 Schema。",
-                "not": {},
+                "enum": [
+                  "event-light-cone-default"
+                ],
                 "type": "string"
               },
               "up4": {
@@ -1681,8 +1682,9 @@
                 "const": "pity:fate-light-cone"
               },
               "sharedPool": {
-                "markdownDescription": "尚无兼容条目；请先维护共享候选池并重新生成 Schema。",
-                "not": {},
+                "enum": [
+                  "event-light-cone-default"
+                ],
                 "type": "string"
               },
               "up5": {
@@ -1739,8 +1741,9 @@
                 "const": "pity:ordinary"
               },
               "sharedPool": {
-                "markdownDescription": "尚无兼容条目；请先维护共享候选池并重新生成 Schema。",
-                "not": {},
+                "enum": [
+                  "ordinary-default"
+                ],
                 "type": "string"
               }
             },

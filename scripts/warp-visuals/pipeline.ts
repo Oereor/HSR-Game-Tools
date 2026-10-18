@@ -3,6 +3,13 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
+import {
+  inspectStarCrop,
+  validStarCrop,
+  cardStarDimensions,
+  cardStarKey,
+  type StarCrop,
+} from './card-stars'
 import sourceLock from './source-lock.json'
 import { digest, metadata, inside, exists, readBytes } from '../warp-data/files'
 import type { WarpSnapshot } from '../../src/tools/warp-simulator/data/schema'
@@ -12,6 +19,7 @@ import {
   type WarpVisualCatalog,
   type VisualMetadata,
   type VisualDefinition,
+  type VisualImage,
 } from '../../src/tools/warp-simulator/model/visual-catalog'
 
 export const visualDirectory = 'src/tools/warp-simulator/data/visuals'
@@ -22,16 +30,57 @@ const plannerManifestFile = 'src/tools/action-planner/data/game/manifest.json'
 type SourceLock = typeof sourceLock
 type FileMeta = ReturnType<typeof metadata>
 export interface VisualManifest {
-  schemaVersion: 1
+  schemaVersion: 3
   source: { repository: string; commit: string }
   generatedAt: string
   transform: SourceLock['transform'] & { sharpVersion: string }
   snapshotSha256: string
-  inputs: Record<string, FileMeta>
+  inputs: Record<string, FileMeta & { width?: number; height?: number }>
   localInputs: Record<string, FileMeta>
   files: Record<string, FileMeta & { width?: number; height?: number }>
-  assets: { source: string; output: string; transformKey: string }[]
+  assets: {
+    id: string
+    slot: string
+    purpose: ConversionPurpose
+    source: string
+    output: string
+    transformKey: string
+    crop?: StarCrop
+  }[]
   missingAssets: { id: string; slot: string; sourcePath?: string; reason: string }[]
+}
+type ConversionPurpose =
+  | 'artwork-avatar'
+  | 'artwork-light-cone'
+  | 'icon'
+  | 'stars'
+  | 'reveal-artwork'
+  | 'reveal-icon'
+  | 'reveal-stars'
+  | 'reveal-star-big'
+  | 'card-stars'
+function profile(purpose: ConversionPurpose, lock: SourceLock): [number, number] {
+  const t = lock.transform
+  switch (purpose) {
+    case 'artwork-avatar':
+      return [t.avatarSize, t.quality]
+    case 'artwork-light-cone':
+      return [t.lightConeSize, t.quality]
+    case 'icon':
+      return [t.iconSize, t.iconQuality]
+    case 'stars':
+      return [t.starSize, t.iconQuality]
+    case 'reveal-artwork':
+      return [t.revealArtworkSize, t.revealQuality]
+    case 'reveal-icon':
+      return [t.revealIconSize, t.iconQuality]
+    case 'reveal-stars':
+      return [t.revealStarSize, t.iconQuality]
+    case 'reveal-star-big':
+      return [t.revealStarBigSize, t.iconQuality]
+    default:
+      throw new Error('Invalid visual conversion purpose')
+  }
 }
 export interface SourceReader {
   read: (file: string) => Buffer | undefined
@@ -94,7 +143,7 @@ export async function validateVisuals(
   assertVisualCatalog(catalog, snapshot)
   const manifest = await json<VisualManifest>(root, visualDirectory + '/manifest.json')
   if (
-    manifest.schemaVersion !== 1 ||
+    manifest.schemaVersion !== 3 ||
     manifest.source.repository !== lock.repository ||
     manifest.source.commit !== lock.commit ||
     JSON.stringify(manifest.transform) !==
@@ -111,29 +160,159 @@ export async function validateVisuals(
     for (const name of ['characters', 'light_cones', 'paths', 'elements'])
       if (!manifest.inputs[`index_new/${locale}/${name}.json`])
         throw new Error('Missing visual index provenance')
+  let starSourceHeight: number | undefined
   for (const asset of manifest.assets) {
     const source = manifest.inputs[asset.source]
-    const [hash, size, quality, alpha] = asset.transformKey.split(':')
+    if (asset.purpose === 'card-stars') {
+      const settings = lock.transform.cardStars
+      const crop = asset.crop
+      const output = manifest.files['public/' + asset.output]
+      if (
+        !source ||
+        !Number.isSafeInteger(source.width) ||
+        !Number.isSafeInteger(source.height) ||
+        !validStarCrop(crop, Number(source.width), Number(source.height), Number(asset.id)) ||
+        settings.method !== 'alpha-trim' ||
+        settings.threshold !== 0 ||
+        !Number.isSafeInteger(settings.contentHeight) ||
+        settings.contentHeight <= 0 ||
+        !Number.isSafeInteger(settings.padding) ||
+        settings.padding < 0 ||
+        asset.slot !== 'card-stars' ||
+        asset.source !== `icon/deco/Star${asset.id}.png` ||
+        asset.transformKey !==
+          cardStarKey(source.sha256, crop, settings, lock.transform.alphaQuality) ||
+        asset.output !== `game-assets/warp/${digest(asset.transformKey)}.webp` ||
+        (starSourceHeight !== undefined && crop.height !== starSourceHeight)
+      )
+        throw new Error('Invalid card star crop/provenance')
+      const dimensions = cardStarDimensions(crop, settings)
+      if (output?.width !== dimensions.width || output?.height !== dimensions.height)
+        throw new Error('Invalid card star dimensions')
+      starSourceHeight = crop.height
+      continue
+    }
+    const [hash, size, quality, alpha, extra] = asset.transformKey.split(':')
+    const [expectedSize, expectedQuality] = profile(asset.purpose, lock)
     const output = manifest.files['public/' + asset.output]
+    const scale = Math.min(
+      1,
+      expectedSize / Number(source?.width),
+      expectedSize / Number(source?.height),
+    )
     if (
       !source ||
+      asset.crop !== undefined ||
+      (asset.purpose === 'reveal-star-big' &&
+        (asset.source !== 'icon/deco/StarBig.png' || asset.slot !== 'reveal-star-big')) ||
+      /[\\:?#%]/.test(asset.source) ||
+      asset.source.split('/').some((part) => !part || part === '.' || part === '..') ||
       source.sha256 !== hash ||
-      ![
-        lock.transform.avatarSize,
-        lock.transform.lightConeSize,
-        lock.transform.iconSize,
-        lock.transform.starSize,
-      ].includes(Number(size)) ||
-      ![lock.transform.quality, lock.transform.iconQuality].includes(Number(quality)) ||
+      extra !== undefined ||
+      !Number.isSafeInteger(source.width) ||
+      !Number.isSafeInteger(source.height) ||
+      Number(source.width) <= 0 ||
+      Number(source.height) <= 0 ||
+      Number(size) !== expectedSize ||
+      Number(quality) !== expectedQuality ||
       Number(alpha) !== lock.transform.alphaQuality ||
       asset.output !== `game-assets/warp/${digest(asset.transformKey)}.webp` ||
-      !output?.width ||
-      !output.height ||
-      output.width > Number(size) ||
-      output.height > Number(size)
+      output?.width !== Math.round(Number(source.width) * scale) ||
+      output?.height !== Math.round(Number(source.height) * scale)
     )
       throw new Error('Invalid visual conversion provenance')
   }
+  const referenced = new Set<VisualManifest['assets'][number]>()
+  function reference(
+    id: string,
+    slot: string,
+    file: string | undefined,
+    purpose: ConversionPurpose,
+    image?: VisualImage,
+  ) {
+    if (!file) {
+      if (!manifest.missingAssets.some((missing) => missing.id === id && missing.slot === slot))
+        throw new Error('Missing visual mapping diagnostic: ' + id + '/' + slot)
+      return
+    }
+    const asset = manifest.assets.find(
+      (row) => row.id === id && row.slot === slot && row.purpose === purpose && row.output === file,
+    )
+    const output = manifest.files['public/' + file]
+    if (!asset || (image && (image.width !== output?.width || image.height !== output?.height)))
+      throw new Error('Visual mapping conversion mismatch: ' + id + '/' + slot)
+    referenced.add(asset)
+  }
+  for (const item of snapshot.items) {
+    const row = catalog.items[item.id]!
+    if (
+      manifest.missingAssets.some(
+        (missing) => missing.id === item.id && missing.slot === 'metadata',
+      )
+    ) {
+      if (Object.keys(row).length) throw new Error('Unexpected mapping for absent metadata')
+      continue
+    }
+    reference(
+      item.id,
+      'artwork',
+      row.artworkPath,
+      item.kind === 'avatar' ? 'artwork-avatar' : 'artwork-light-cone',
+    )
+    reference(
+      item.id,
+      'reveal-artwork',
+      row.revealArtwork?.path,
+      'reveal-artwork',
+      row.revealArtwork,
+    )
+  }
+  for (const [group, definitions] of [
+    ['paths', catalog.paths],
+    ['elements', catalog.elements],
+  ] as const)
+    for (const [id, row] of Object.entries(definitions)) {
+      reference(id, 'icon', row.iconPath, 'icon')
+      if (group === 'paths')
+        reference(id, 'reveal-icon', row.revealIcon?.path, 'reveal-icon', row.revealIcon)
+    }
+  for (const rarity of [3, 4, 5] as const)
+    reference(String(rarity), 'stars', catalog.stars[rarity], 'stars')
+  for (const rarity of [3, 4, 5] as const)
+    reference(
+      String(rarity),
+      'card-stars',
+      catalog.cardStars?.[rarity]?.path,
+      'card-stars',
+      catalog.cardStars?.[rarity],
+    )
+  reference(
+    '5',
+    'reveal-stars',
+    catalog.revealStars?.[5]?.path,
+    'reveal-stars',
+    catalog.revealStars?.[5],
+  )
+  reference(
+    '5',
+    'reveal-star-big',
+    catalog.revealStarBig?.path,
+    'reveal-star-big',
+    catalog.revealStarBig,
+  )
+  if (referenced.size !== manifest.assets.length) throw new Error('Unreferenced visual conversion')
+  const expectedInputs = [
+    ...new Set([
+      ...['cn', 'en'].flatMap((locale) =>
+        ['characters', 'light_cones', 'paths', 'elements'].map(
+          (name) => `index_new/${locale}/${name}.json`,
+        ),
+      ),
+      ...manifest.assets.map((asset) => asset.source),
+    ]),
+  ].sort()
+  if (JSON.stringify(expectedInputs) !== JSON.stringify(Object.keys(manifest.inputs).sort()))
+    throw new Error('Unexpected visual source inventory')
   for (const [relative, meta] of Object.entries(manifest.localInputs))
     if (JSON.stringify(metadata(await readBytes(sharedRoot, relative))) !== JSON.stringify(meta))
       throw new Error('Shared source changed: ' + relative)
@@ -195,7 +374,7 @@ export async function generateVisuals(
   const snapshotBytes = await readBytes(root, snapshotFile)
   const snapshot = JSON.parse(snapshotBytes.toString()) as WarpSnapshot
   const manifest: VisualManifest = {
-    schemaVersion: 1,
+    schemaVersion: 3,
     source: { repository: lock.repository, commit: lock.commit },
     generatedAt: new Date().toISOString(),
     transform: { ...lock.transform, sharpVersion: sharp.versions.sharp },
@@ -234,14 +413,35 @@ export async function generateVisuals(
   const items: Record<string, VisualMetadata> = {},
     paths: Record<string, VisualDefinition> = {},
     elements: Record<string, VisualDefinition & { color: string }> = {},
-    stars: Partial<Record<3 | 4 | 5, string>> = {}
+    stars: Partial<Record<3 | 4 | 5, string>> = {},
+    revealStars: Partial<Record<3 | 4 | 5, VisualImage>> = {},
+    cardStars: Partial<Record<3 | 4 | 5, VisualImage>> = {}
+  let starSample: { height: number; hash: string } | undefined
   const converted = new Map<string, string>()
+  // Reuse only checksum-verified outputs of the same locked source and exact
+  // conversion key. Re-encoding an unchanged lossy image need not be byte stable.
+  const previous = (await exists(await inside(root, visualDirectory + '/manifest.json')))
+    ? await json<VisualManifest>(root, visualDirectory + '/manifest.json')
+    : undefined
+  const reusable =
+    previous?.source.commit === lock.commit &&
+    previous.source.repository === lock.repository &&
+    previous.transform.sharpVersion === sharp.versions.sharp
+      ? previous
+      : undefined
   async function asset(
     id: string,
     slot: string,
     sourcePath: string | undefined,
     size: number,
     quality: number,
+    purpose: ConversionPurpose = slot === 'artwork'
+      ? id.startsWith('avatar:')
+        ? 'artwork-avatar'
+        : 'artwork-light-cone'
+      : slot === 'icon'
+        ? 'icon'
+        : 'stars',
   ): Promise<string | undefined> {
     if (
       !sourcePath ||
@@ -256,14 +456,66 @@ export async function generateVisuals(
       manifest.missingAssets.push({ id, slot, sourcePath, reason: 'missing-source-file' })
       return undefined
     }
-    const transformKey = `${digest(bytes)}:${size}:${quality}:${lock.transform.alphaQuality}`
+    const original = await sharp(bytes).metadata()
+    if (!original.width || !original.height) throw new Error('Missing source image dimensions')
+    manifest.inputs[sourcePath] = {
+      ...metadata(bytes),
+      width: original.width,
+      height: original.height,
+    }
+    let crop: StarCrop | undefined
+    if (purpose === 'card-stars') {
+      const inspected = await inspectStarCrop(bytes, Number(id))
+      crop = inspected.crop
+      if (
+        starSample &&
+        (starSample.height !== crop.height || starSample.hash !== inspected.starHash)
+      )
+        throw new Error('Inconsistent star scale/content across rarities')
+      starSample = { height: crop.height, hash: inspected.starHash }
+    }
+    const settings = lock.transform.cardStars
+    const transformKey = crop
+      ? cardStarKey(digest(bytes), crop, settings, lock.transform.alphaQuality)
+      : `${digest(bytes)}:${size}:${quality}:${lock.transform.alphaQuality}`
     let output = converted.get(transformKey)
     if (!output) {
       output = `game-assets/warp/${digest(transformKey)}.webp`
-      const result = await sharp(bytes)
-        .resize({ width: size, height: size, fit: 'inside', withoutEnlargement: true })
-        .webp({ quality, alphaQuality: lock.transform.alphaQuality })
-        .toBuffer({ resolveWithObject: true })
+      const old = reusable?.files['public/' + output]
+      const cached =
+        old &&
+        reusable?.assets.some(
+          (asset) =>
+            asset.transformKey === transformKey &&
+            asset.output === output &&
+            asset.source === sourcePath,
+        ) &&
+        (await exists(await inside(root, 'public/' + output)))
+          ? await readBytes(root, 'public/' + output)
+          : undefined
+      const conversion = crop
+        ? sharp(bytes)
+            .extract(crop)
+            .resize({ height: settings.contentHeight, withoutEnlargement: true })
+            .extend({
+              top: settings.padding,
+              bottom: settings.padding,
+              left: settings.padding,
+              right: settings.padding,
+              background: { r: 0, g: 0, b: 0, alpha: 0 },
+            })
+        : sharp(bytes).resize({
+            width: size,
+            height: size,
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+      const result =
+        cached && digest(cached) === old?.sha256 && cached.length === old.bytes
+          ? { data: cached, info: await sharp(cached).metadata() }
+          : await conversion
+              .webp({ quality, alphaQuality: lock.transform.alphaQuality })
+              .toBuffer({ resolveWithObject: true })
       await write(stage, 'public/' + output, result.data)
       manifest.files['public/' + output] = {
         ...metadata(result.data),
@@ -272,8 +524,27 @@ export async function generateVisuals(
       }
       converted.set(transformKey, output)
     }
-    manifest.assets.push({ source: sourcePath, output, transformKey })
+    manifest.assets.push({
+      id,
+      slot,
+      purpose,
+      source: sourcePath,
+      output,
+      transformKey,
+      ...(crop ? { crop } : {}),
+    })
     return output
+  }
+  async function revealAsset(
+    id: string,
+    purpose: 'reveal-artwork' | 'reveal-icon' | 'reveal-stars' | 'reveal-star-big',
+    sourcePath: string | undefined,
+  ): Promise<VisualImage | undefined> {
+    const [size, quality] = profile(purpose, lock)
+    const file = await asset(id, purpose, sourcePath, size, quality, purpose)
+    if (!file) return undefined
+    const meta = manifest.files['public/' + file]!
+    return { path: file, width: meta.width!, height: meta.height! }
   }
   async function definition(
     group: 'paths' | 'elements',
@@ -301,7 +572,9 @@ export async function generateVisuals(
         lock.transform.iconSize,
         lock.transform.iconQuality,
       ),
-      ...(group === 'elements' ? { color: cn.color } : {}),
+      ...(group === 'paths'
+        ? { revealIcon: await revealAsset(id, 'reveal-icon', cn.icon) }
+        : { color: cn.color }),
     }
   }
   for (const item of snapshot.items) {
@@ -354,6 +627,7 @@ export async function generateVisuals(
       path: cn.path,
       ...(item.kind === 'avatar' ? { element: cn.element } : {}),
       portraitPath,
+      revealArtwork: await revealAsset(item.id, 'reveal-artwork', cn.portrait),
       artworkPath: await asset(
         item.id,
         'artwork',
@@ -363,15 +637,43 @@ export async function generateVisuals(
       ),
     }
   }
-  for (const rarity of [3, 4, 5] as const)
-    stars[rarity] = await asset(
+  for (const rarity of [3, 4, 5] as const) {
+    const file = await asset(
       String(rarity),
       'stars',
       `icon/deco/Star${rarity}.png`,
       lock.transform.starSize,
       lock.transform.iconQuality,
     )
-  const catalog: WarpVisualCatalog = { schemaVersion: 1, items, paths, elements, stars }
+    if (file) stars[rarity] = file
+  }
+  const revealFiveStars = await revealAsset('5', 'reveal-stars', 'icon/deco/Star5.png')
+  if (revealFiveStars) revealStars[5] = revealFiveStars
+  const revealStarBig = await revealAsset('5', 'reveal-star-big', 'icon/deco/StarBig.png')
+  for (const rarity of [3, 4, 5] as const) {
+    const file = await asset(
+      String(rarity),
+      'card-stars',
+      `icon/deco/Star${rarity}.png`,
+      lock.transform.cardStars.contentHeight,
+      lock.transform.cardStars.quality,
+      'card-stars',
+    )
+    if (file) {
+      const meta = manifest.files['public/' + file]!
+      cardStars[rarity] = { path: file, width: meta.width!, height: meta.height! }
+    }
+  }
+  const catalog: WarpVisualCatalog = {
+    schemaVersion: 1,
+    items,
+    paths,
+    elements,
+    stars,
+    revealStars,
+    revealStarBig,
+    cardStars,
+  }
   assertVisualCatalog(catalog, snapshot)
   const catalogBytes = serialize(catalog)
   manifest.files[visualDirectory + '/catalog.json'] = metadata(catalogBytes)

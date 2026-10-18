@@ -1,6 +1,65 @@
 {
   "banners": [
     {
+      "gachaId": "1001",
+      "id": "gacha:1001",
+      "kind": "ordinary",
+      "pityGroup": "pity:ordinary",
+      "sharedPool": "ordinary-default"
+    },
+    {
+      "gachaId": "2135",
+      "id": "gacha:2135",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up4": [
+        "avatar:1002",
+        "avatar:1201",
+        "avatar:1301"
+      ],
+      "up5": "avatar:1512"
+    },
+    {
+      "gachaId": "2136",
+      "id": "gacha:2136",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up4": [
+        "avatar:1002",
+        "avatar:1201",
+        "avatar:1301"
+      ],
+      "up5": "avatar:1409"
+    },
+    {
+      "gachaId": "2137",
+      "id": "gacha:2137",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up4": [
+        "avatar:1108",
+        "avatar:1109",
+        "avatar:1210"
+      ],
+      "up5": "avatar:1513"
+    },
+    {
+      "gachaId": "2138",
+      "id": "gacha:2138",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up4": [
+        "avatar:1108",
+        "avatar:1109",
+        "avatar:1210"
+      ],
+      "up5": "avatar:1504"
+    },
+    {
       "gachaId": "2139",
       "id": "gacha:2139",
       "kind": "event-avatar",
@@ -12,6 +71,123 @@
         "avatar:1312"
       ],
       "up5": "avatar:1503"
+    },
+    {
+      "gachaId": "2140",
+      "id": "gacha:2140",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up4": [
+        "avatar:1201",
+        "avatar:1214",
+        "avatar:1312"
+      ],
+      "up5": "avatar:1505"
+    },
+    {
+      "gachaId": "2141",
+      "id": "gacha:2141",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up4": [
+        "avatar:1201",
+        "avatar:1214",
+        "avatar:1312"
+      ],
+      "up5": "avatar:1507"
+    },
+    {
+      "gachaId": "3135",
+      "id": "gacha:3135",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up4": [
+        "light-cone:21048",
+        "light-cone:21051",
+        "light-cone:21066"
+      ],
+      "up5": "light-cone:23063"
+    },
+    {
+      "gachaId": "3136",
+      "id": "gacha:3136",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up4": [
+        "light-cone:21048",
+        "light-cone:21051",
+        "light-cone:21066"
+      ],
+      "up5": "light-cone:23042"
+    },
+    {
+      "gachaId": "3137",
+      "id": "gacha:3137",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up4": [
+        "light-cone:21003",
+        "light-cone:21014",
+        "light-cone:21054"
+      ],
+      "up5": "light-cone:23064"
+    },
+    {
+      "gachaId": "3138",
+      "id": "gacha:3138",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up4": [
+        "light-cone:21003",
+        "light-cone:21014",
+        "light-cone:21054"
+      ],
+      "up5": "light-cone:23056"
+    },
+    {
+      "gachaId": "3139",
+      "id": "gacha:3139",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up4": [
+        "light-cone:21000",
+        "light-cone:21011",
+        "light-cone:21044"
+      ],
+      "up5": "light-cone:23055"
+    },
+    {
+      "gachaId": "3140",
+      "id": "gacha:3140",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up4": [
+        "light-cone:21000",
+        "light-cone:21011",
+        "light-cone:21044"
+      ],
+      "up5": "light-cone:23058"
+    },
+    {
+      "gachaId": "3141",
+      "id": "gacha:3141",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up4": [
+        "light-cone:21000",
+        "light-cone:21011",
+        "light-cone:21044"
+      ],
+      "up5": "light-cone:23059"
     }
   ],
   "items": [
@@ -52,6 +228,15 @@
       "rarity": 5
     },
     {
+      "id": "avatar:1006",
+      "kind": "avatar",
+      "names": {
+        "en": "Silver Wolf",
+        "zh-CN": "银狼"
+      },
+      "rarity": 5
+    },
+    {
       "id": "avatar:1008",
       "kind": "avatar",
       "names": {
@@ -84,6 +269,15 @@
       "names": {
         "en": "Bronya",
         "zh-CN": "布洛妮娅"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1102",
+      "kind": "avatar",
+      "names": {
+        "en": "Seele",
+        "zh-CN": "希儿"
       },
       "rarity": 5
     },
@@ -187,6 +381,15 @@
       "rarity": 4
     },
     {
+      "id": "avatar:1205",
+      "kind": "avatar",
+      "names": {
+        "en": "Blade",
+        "zh-CN": "刃"
+      },
+      "rarity": 5
+    },
+    {
       "id": "avatar:1206",
       "kind": "avatar",
       "names": {
@@ -203,6 +406,15 @@
         "zh-CN": "驭空"
       },
       "rarity": 4
+    },
+    {
+      "id": "avatar:1208",
+      "kind": "avatar",
+      "names": {
+        "en": "Fu Xuan",
+        "zh-CN": "符玄"
+      },
+      "rarity": 5
     },
     {
       "id": "avatar:1209",
@@ -250,6 +462,15 @@
       "rarity": 4
     },
     {
+      "id": "avatar:1221",
+      "kind": "avatar",
+      "names": {
+        "en": "Yunli",
+        "zh-CN": "云璃"
+      },
+      "rarity": 5
+    },
+    {
       "id": "avatar:1223",
       "kind": "avatar",
       "names": {
@@ -268,6 +489,15 @@
       "rarity": 4
     },
     {
+      "id": "avatar:1302",
+      "kind": "avatar",
+      "names": {
+        "en": "Argenti",
+        "zh-CN": "银枝"
+      },
+      "rarity": 5
+    },
+    {
       "id": "avatar:1312",
       "kind": "avatar",
       "names": {
@@ -277,11 +507,65 @@
       "rarity": 4
     },
     {
+      "id": "avatar:1409",
+      "kind": "avatar",
+      "names": {
+        "en": "Hyacine",
+        "zh-CN": "风堇"
+      },
+      "rarity": 5
+    },
+    {
       "id": "avatar:1503",
       "kind": "avatar",
       "names": {
         "en": "Pearl",
         "zh-CN": "真珠"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1504",
+      "kind": "avatar",
+      "names": {
+        "en": "Ashveil",
+        "zh-CN": "不死途"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1505",
+      "kind": "avatar",
+      "names": {
+        "en": "Evanescia",
+        "zh-CN": "绯英"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1507",
+      "kind": "avatar",
+      "names": {
+        "en": "Mortenax Blade",
+        "zh-CN": "千冶•刃"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1512",
+      "kind": "avatar",
+      "names": {
+        "en": "Robin • Summeretto",
+        "zh-CN": "知更鸟•晴歌"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1513",
+      "kind": "avatar",
+      "names": {
+        "en": "Aventurine • Waveflair",
+        "zh-CN": "砂金•戏浪"
       },
       "rarity": 5
     },
@@ -788,6 +1072,132 @@
         "zh-CN": "放个短假"
       },
       "rarity": 4
+    },
+    {
+      "id": "light-cone:23000",
+      "kind": "light-cone",
+      "names": {
+        "en": "Night on the Milky Way",
+        "zh-CN": "银河铁道之夜"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23002",
+      "kind": "light-cone",
+      "names": {
+        "en": "Something Irreplaceable",
+        "zh-CN": "无可取代的东西"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23003",
+      "kind": "light-cone",
+      "names": {
+        "en": "But the Battle Isn't Over",
+        "zh-CN": "但战斗还未结束"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23004",
+      "kind": "light-cone",
+      "names": {
+        "en": "In the Name of the World",
+        "zh-CN": "以世界之名"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23005",
+      "kind": "light-cone",
+      "names": {
+        "en": "Moment of Victory",
+        "zh-CN": "制胜的瞬间"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23012",
+      "kind": "light-cone",
+      "names": {
+        "en": "Sleep Like the Dead",
+        "zh-CN": "如泥酣眠"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23013",
+      "kind": "light-cone",
+      "names": {
+        "en": "Time Waits for No One",
+        "zh-CN": "时节不居"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23042",
+      "kind": "light-cone",
+      "names": {
+        "en": "Long May Rainbows Adorn the Sky",
+        "zh-CN": "愿虹光永驻天空"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23055",
+      "kind": "light-cone",
+      "names": {
+        "en": "Colors for Tomorrow",
+        "zh-CN": "献给明日的色彩"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23056",
+      "kind": "light-cone",
+      "names": {
+        "en": "The Finale of a Lie",
+        "zh-CN": "一场谎言的终幕"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23058",
+      "kind": "light-cone",
+      "names": {
+        "en": "Until the Flowers Bloom Again",
+        "zh-CN": "邂逅于下一个花季"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23059",
+      "kind": "light-cone",
+      "names": {
+        "en": "Reforged in Hellfire",
+        "zh-CN": "灼尽炼狱的新骸"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23063",
+      "kind": "light-cone",
+      "names": {
+        "en": "Rise and Sing",
+        "zh-CN": "你将起身歌唱"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23064",
+      "kind": "light-cone",
+      "names": {
+        "en": "Summer Rides the Surf",
+        "zh-CN": "向浪花掷下盛夏"
+      },
+      "rarity": 5
     }
   ],
   "schemaVersion": 1,
@@ -796,11 +1206,17 @@
       "fiveStar": [
         "avatar:1003",
         "avatar:1004",
+        "avatar:1006",
         "avatar:1101",
+        "avatar:1102",
         "avatar:1104",
         "avatar:1107",
+        "avatar:1205",
+        "avatar:1208",
         "avatar:1209",
-        "avatar:1211"
+        "avatar:1211",
+        "avatar:1221",
+        "avatar:1302"
       ],
       "fiveStarType": "avatar",
       "fourStar": [
@@ -859,6 +1275,203 @@
         "light-cone:21066"
       ],
       "id": "event-avatar-default",
+      "threeStar": [
+        "light-cone:20000",
+        "light-cone:20001",
+        "light-cone:20002",
+        "light-cone:20003",
+        "light-cone:20004",
+        "light-cone:20005",
+        "light-cone:20006",
+        "light-cone:20007",
+        "light-cone:20008",
+        "light-cone:20009",
+        "light-cone:20010",
+        "light-cone:20011",
+        "light-cone:20012",
+        "light-cone:20013",
+        "light-cone:20014",
+        "light-cone:20015",
+        "light-cone:20016",
+        "light-cone:20017",
+        "light-cone:20018",
+        "light-cone:20019",
+        "light-cone:20020",
+        "light-cone:20021",
+        "light-cone:20022",
+        "light-cone:20023",
+        "light-cone:20024"
+      ]
+    },
+    {
+      "fiveStar": [
+        "light-cone:23000",
+        "light-cone:23002",
+        "light-cone:23003",
+        "light-cone:23004",
+        "light-cone:23005",
+        "light-cone:23012",
+        "light-cone:23013"
+      ],
+      "fiveStarType": "light-cone",
+      "fourStar": [
+        "avatar:1001",
+        "avatar:1002",
+        "avatar:1008",
+        "avatar:1009",
+        "avatar:1013",
+        "avatar:1103",
+        "avatar:1105",
+        "avatar:1106",
+        "avatar:1108",
+        "avatar:1109",
+        "avatar:1110",
+        "avatar:1111",
+        "avatar:1201",
+        "avatar:1202",
+        "avatar:1206",
+        "avatar:1207",
+        "avatar:1210",
+        "avatar:1214",
+        "avatar:1215",
+        "avatar:1223",
+        "avatar:1301",
+        "avatar:1312",
+        "light-cone:21000",
+        "light-cone:21001",
+        "light-cone:21002",
+        "light-cone:21003",
+        "light-cone:21004",
+        "light-cone:21005",
+        "light-cone:21006",
+        "light-cone:21007",
+        "light-cone:21008",
+        "light-cone:21009",
+        "light-cone:21010",
+        "light-cone:21011",
+        "light-cone:21012",
+        "light-cone:21013",
+        "light-cone:21014",
+        "light-cone:21015",
+        "light-cone:21016",
+        "light-cone:21017",
+        "light-cone:21018",
+        "light-cone:21019",
+        "light-cone:21020",
+        "light-cone:21042",
+        "light-cone:21043",
+        "light-cone:21044",
+        "light-cone:21045",
+        "light-cone:21046",
+        "light-cone:21047",
+        "light-cone:21048",
+        "light-cone:21051",
+        "light-cone:21054",
+        "light-cone:21066"
+      ],
+      "id": "event-light-cone-default",
+      "threeStar": [
+        "light-cone:20000",
+        "light-cone:20001",
+        "light-cone:20002",
+        "light-cone:20003",
+        "light-cone:20004",
+        "light-cone:20005",
+        "light-cone:20006",
+        "light-cone:20007",
+        "light-cone:20008",
+        "light-cone:20009",
+        "light-cone:20010",
+        "light-cone:20011",
+        "light-cone:20012",
+        "light-cone:20013",
+        "light-cone:20014",
+        "light-cone:20015",
+        "light-cone:20016",
+        "light-cone:20017",
+        "light-cone:20018",
+        "light-cone:20019",
+        "light-cone:20020",
+        "light-cone:20021",
+        "light-cone:20022",
+        "light-cone:20023",
+        "light-cone:20024"
+      ]
+    },
+    {
+      "fiveStar": [
+        "avatar:1003",
+        "avatar:1004",
+        "avatar:1101",
+        "avatar:1104",
+        "avatar:1107",
+        "avatar:1209",
+        "avatar:1211",
+        "light-cone:23000",
+        "light-cone:23002",
+        "light-cone:23003",
+        "light-cone:23004",
+        "light-cone:23005",
+        "light-cone:23012",
+        "light-cone:23013"
+      ],
+      "fiveStarType": "mixed",
+      "fourStar": [
+        "avatar:1001",
+        "avatar:1002",
+        "avatar:1008",
+        "avatar:1009",
+        "avatar:1013",
+        "avatar:1103",
+        "avatar:1105",
+        "avatar:1106",
+        "avatar:1108",
+        "avatar:1109",
+        "avatar:1110",
+        "avatar:1111",
+        "avatar:1201",
+        "avatar:1202",
+        "avatar:1206",
+        "avatar:1207",
+        "avatar:1210",
+        "avatar:1214",
+        "avatar:1215",
+        "avatar:1223",
+        "avatar:1301",
+        "avatar:1312",
+        "light-cone:21000",
+        "light-cone:21001",
+        "light-cone:21002",
+        "light-cone:21003",
+        "light-cone:21004",
+        "light-cone:21005",
+        "light-cone:21006",
+        "light-cone:21007",
+        "light-cone:21008",
+        "light-cone:21009",
+        "light-cone:21010",
+        "light-cone:21011",
+        "light-cone:21012",
+        "light-cone:21013",
+        "light-cone:21014",
+        "light-cone:21015",
+        "light-cone:21016",
+        "light-cone:21017",
+        "light-cone:21018",
+        "light-cone:21019",
+        "light-cone:21020",
+        "light-cone:21042",
+        "light-cone:21043",
+        "light-cone:21044",
+        "light-cone:21045",
+        "light-cone:21046",
+        "light-cone:21047",
+        "light-cone:21048",
+        "light-cone:21051",
+        "light-cone:21054",
+        "light-cone:21066"
+      ],
+      "id": "ordinary-default",
       "threeStar": [
         "light-cone:20000",
         "light-cone:20001",

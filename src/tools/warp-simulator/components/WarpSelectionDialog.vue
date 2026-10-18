@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
-import { Check, Search } from '@lucide/vue'
+import Badge from 'primevue/badge'
+import { Check, X } from '@lucide/vue'
 import type { ToolLocale } from '../../../locales/types'
 import type { createPresentation } from '../model/presentation'
 import WarpItemVisual from './WarpItemVisual.vue'
@@ -35,6 +36,18 @@ const candidates = computed(() =>
     .search(props.eligibleIds, query.value)
     .map((id) => props.presentation.item(id, locale.value as ToolLocale)),
 )
+const unavailableChoices = computed(() =>
+  props.draft
+    .filter((id) => !props.eligibleIds.includes(id))
+    .map((id) => props.presentation.item(id, locale.value as ToolLocale)),
+)
+function removeUnavailable(id: string) {
+  emit(
+    'update:draft',
+    props.draft.filter((selected) => selected !== id),
+  )
+  void nextTick(() => document.getElementById('warp-character-search')?.focus())
+}
 </script>
 
 <template>
@@ -43,7 +56,7 @@ const candidates = computed(() =>
     @after-hide="emit('after-hide')"
     modal
     :draggable="false"
-    :header="t('warp.selection.title')"
+    aria-labelledby="warp-selection-title"
     :style="{ width: '42rem', maxWidth: 'calc(100vw - 32px)' }"
     :close-button-props="{ 'aria-label': t('warp.cancel') }"
     @update:visible="
@@ -52,22 +65,49 @@ const candidates = computed(() =>
       }
     "
   >
+    <template #header>
+      <div class="warp-selection-heading">
+        <span id="warp-selection-title" class="warp-dialog-title">{{
+          t('warp.selection.title')
+        }}</span>
+        <span id="warp-selection-count" aria-live="polite" aria-atomic="true">
+          <Badge
+            :value="t('warp.selection.count', { count: draft.length })"
+            :severity="draft.length === 7 ? 'success' : 'secondary'"
+          />
+        </span>
+      </div>
+    </template>
     <div class="warp-selection">
-      <label for="warp-character-search" class="warp-search-label"
-        ><Search :size="16" aria-hidden="true" />{{ t('warp.selection.search') }}</label
-      >
+      <label for="warp-character-search" class="warp-sr-only">{{
+        t('warp.selection.search')
+      }}</label>
       <InputText
         id="warp-character-search"
         v-model="query"
         class="warp-search"
         :placeholder="t('warp.selection.searchPlaceholder')"
-        aria-describedby="warp-selection-hint"
+        aria-describedby="warp-selection-count warp-selection-error"
         autofocus
       />
-      <p id="warp-selection-hint" class="warp-selection-hint">{{ t('warp.selection.hint') }}</p>
-      <p id="warp-selection-count" class="warp-selection-count" aria-live="polite">
-        {{ t('warp.selection.count', { count: draft.length }) }}
-      </p>
+      <ul
+        v-if="unavailableChoices.length"
+        class="warp-unavailable-choices"
+        :aria-label="t('warp.selection.unavailable')"
+      >
+        <li v-for="item in unavailableChoices" :key="item.id">
+          <span>{{ item.name }}</span>
+          <Button
+            size="small"
+            severity="secondary"
+            text
+            :aria-label="t('warp.selection.remove', { name: item.name })"
+            @click="removeUnavailable(item.id)"
+          >
+            <template #icon><X :size="16" aria-hidden="true" /></template>
+          </Button>
+        </li>
+      </ul>
       <fieldset
         class="warp-character-grid"
         aria-describedby="warp-selection-count warp-selection-error"
@@ -97,8 +137,16 @@ const candidates = computed(() =>
       <p v-if="!candidates.length" class="warp-selection-hint">
         {{ t('warp.selection.noMatches') }}
       </p>
-      <p id="warp-selection-error" class="warp-selection-hint">
-        {{ !valid ? t('warp.selection.required') : t('warp.selection.ready') }}
+      <p id="warp-selection-error" class="warp-selection-hint" aria-live="polite">
+        {{
+          !valid
+            ? t(
+                unavailableChoices.length
+                  ? 'warp.selection.incompatible'
+                  : 'warp.selection.required',
+              )
+            : ''
+        }}
       </p>
     </div>
     <template #footer>
@@ -114,24 +162,35 @@ const candidates = computed(() =>
 .warp-selection {
   min-width: 0;
 }
-.warp-search-label {
+.warp-selection-heading {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 13px;
+  gap: 12px;
+}
+.warp-dialog-title {
+  font-size: 20px;
+  font-weight: 600;
 }
 .warp-search {
   width: 100%;
+  margin-bottom: 16px;
 }
 .warp-selection-hint {
   font-size: 12px;
   color: var(--color-muted);
   line-height: 1.6;
 }
-.warp-selection-count {
+.warp-unavailable-choices {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+.warp-unavailable-choices li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 13px;
-  font-variant-numeric: tabular-nums;
 }
 .warp-character-grid {
   display: grid;

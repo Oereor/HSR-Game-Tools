@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import WarpVisualIcon from './WarpVisualIcon.vue'
+import { rarityColorVariable } from './result-presentation'
 import { ChevronLeft, ChevronRight, History } from '@lucide/vue'
 import type { ToolLocale } from '../../../locales/types'
 import type { HistoryEntry } from '../composables/useWarpSimulator'
@@ -59,6 +60,7 @@ const rows = computed(() =>
                 v-tooltip="item.name"
                 unstyled
                 class="warp-history-name"
+                :style="{ color: rarityColorVariable(entry.event.rarity) }"
                 :aria-label="t('warp.details.open', { summary: item.name })"
                 aria-haspopup="dialog"
                 @click="emit('details', entry)"
@@ -158,16 +160,17 @@ const rows = computed(() =>
 }
 .warp-history-table {
   width: 100%;
-  min-width: 660px;
+  min-width: 720px;
   table-layout: fixed;
   border-collapse: collapse;
   text-align: left;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 1.6;
   background: var(--color-surface);
 }
 th,
 td {
-  padding: 10px 8px;
+  padding: 12px 10px;
   vertical-align: middle;
   white-space: nowrap;
   border-bottom: 1px solid var(--color-line);
@@ -180,16 +183,16 @@ th:first-child {
   width: auto;
 }
 th:nth-child(2) {
-  width: 78px;
+  width: 104px;
 }
 th:nth-child(3) {
-  width: 88px;
+  width: 100px;
 }
 th:nth-child(4) {
-  width: 128px;
+  width: 148px;
 }
 th:nth-child(5) {
-  width: 110px;
+  width: 128px;
 }
 .warp-history-name {
   display: block;
@@ -198,15 +201,20 @@ th:nth-child(5) {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: left;
-  color: var(--color-ink);
   padding: 4px 0;
   background: transparent;
   border: 0;
   font: inherit;
   border-radius: 3px;
 }
-.warp-history-name:hover {
-  color: var(--color-accent);
+.warp-history-name:hover,
+.warp-history-name:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.warp-history-name:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
 }
 .warp-history-meta {
   display: inline-flex;

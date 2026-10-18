@@ -1,29 +1,37 @@
 <script setup lang="ts">
-import { computed, nextTick, shallowRef } from 'vue'
+import { computed, nextTick, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Drawer from 'primevue/drawer'
 import Select from 'primevue/select'
-import Tag from 'primevue/tag'
+import Badge from 'primevue/badge'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
+import TabPanels from 'primevue/tabpanels'
+import TabPanel from 'primevue/tabpanel'
 import {
   Ticket,
   Tickets as TicketsIcon,
   UsersRound,
   RotateCcw,
-  Sparkles,
   SlidersHorizontal,
   History,
 } from '@lucide/vue'
 import type { ToolLocale } from '../../locales/types'
+import type { WarpBannerKind } from './data/schema'
 import { warpSnapshot, warpVisuals, warpVisualDefinitions } from './data/adapters/warp-data'
 import { useWarpSimulator, type HistoryEntry } from './composables/useWarpSimulator'
 import { useWarpOverlay } from './composables/useWarpOverlay'
+import { useWarpReveal } from './composables/useWarpReveal'
+import { useWarpReducedMotion } from './composables/useWarpReducedMotion'
+import WarpRevealOverlay from './components/WarpRevealOverlay.vue'
 import { createPresentation } from './model/presentation'
 import WarpPityPanel from './components/WarpPityPanel.vue'
 import WarpItemVisual from './components/WarpItemVisual.vue'
 import WarpSelectionDialog from './components/WarpSelectionDialog.vue'
-import WarpResultCard from './components/WarpResultCard.vue'
+import WarpResults from './components/WarpResults.vue'
 import WarpHistory from './components/WarpHistory.vue'
 import WarpItemDetails from './components/WarpItemDetails.vue'
 
@@ -34,6 +42,9 @@ const {
   selectedBannerId,
   activeBanner,
   selectedAvatarIds,
+  activeKind,
+  selectionIssue,
+  storageNotice,
   selectionDraft,
   selectionOpen,
   selectionValid,
@@ -50,6 +61,33 @@ const {
 const overlay = useWarpOverlay()
 const { panel } = overlay
 const details = shallowRef<HistoryEntry>()
+const reveal = useWarpReveal(useWarpReducedMotion())
+const {
+  visible: revealVisible,
+  locked: revealLocked,
+  phase: revealPhase,
+  artworkReady,
+  identityReady,
+  current: revealEntry,
+  displayedEntries,
+} = reveal
+let revealTrigger: string | undefined
+watch(
+  () => session.value.latestBatchId,
+  (batchId) => {
+    if (batchId === undefined) reveal.reset()
+    else reveal.beginBatch(batchId, latestResults.value)
+  },
+  { flush: 'sync' },
+)
+function draw(count: 1 | 10) {
+  if (revealLocked.value) return
+  revealTrigger = count === 1 ? 'warp-pull-one' : 'warp-pull-ten'
+  void simulator.draw(count)
+}
+function afterRevealHide() {
+  if (reveal.afterHide()) focus(revealTrigger)
+}
 const presentation = createPresentation(
   warpSnapshot,
   warpVisuals,
@@ -66,14 +104,16 @@ function sourceLabel(bannerId: string) {
     : bannerId
 }
 const bannerOptions = computed(() =>
-  simulator.banners.map(({ banner }) => ({ id: banner.id, label: sourceLabel(banner.id) })),
+  simulator.kindBanners.value.map(({ banner }) => ({
+    id: banner.id,
+    label: banner.up5 ? item(banner.up5).name : t(`warp.kind.${banner.kind}`),
+  })),
 )
 const upItem = computed(() =>
   activeBanner.value?.banner.up5 ? item(activeBanner.value.banner.up5) : undefined,
 )
-const controlsLocked = computed(() => busy.value || selectionOpen.value || !!resetScope.value)
-const needsSelection = computed(
-  () => activeBanner.value?.requiresSelection && selectedAvatarIds.value.length !== 7,
+const controlsLocked = computed(
+  () => busy.value || revealLocked.value || selectionOpen.value || !!resetScope.value,
 )
 function focus(id: string | undefined) {
   if (id) void nextTick(() => document.getElementById(id)?.focus())
@@ -105,7 +145,7 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 </script>
 
 <template>
-  <div class="warp-page">
+  <div class="warp-page" :inert="revealLocked">
     <header class="warp-page-heading">
       <div class="warp-page-title">
         <Ticket :size="24" :stroke-width="1.75" aria-hidden="true" />
@@ -137,51 +177,20 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
         ></Button>
       </div>
     </header>
-    <section aria-labelledby="warp-results-title" class="warp-results">
-      <div class="warp-results-heading">
-        <h2 id="warp-results-title">
-          <Sparkles :size="18" aria-hidden="true" />{{ t('warp.results.title') }}
-        </h2>
-        <span v-if="latestResults.length">{{
-          t('warp.results.count', { count: latestResults.length })
-        }}</span>
-      </div>
-      <p v-if="latestResults.length" class="warp-result-source">
-        {{ sourceLabel(latestResults[0].event.bannerId) }}
-      </p>
-      <div v-if="!latestResults.length" class="warp-results-empty">
-        <Ticket :size="36" :stroke-width="1.25" aria-hidden="true" />
-        <p>{{ t('warp.results.empty') }}</p>
-      </div>
-      <div
-        v-else
-        class="warp-result-grid"
-        :class="{
-          'warp-ten-grid': latestResults.length === 10,
-          'warp-single-grid': latestResults.length === 1,
-        }"
-      >
-        <WarpResultCard
-          v-for="(entry, index) in latestResults"
-          :key="`${entry.batchId}:${entry.id}`"
-          :entry="entry"
-          :item="item(entry.event.itemId)"
-          :index="index"
-          :single="latestResults.length === 1"
-          @details="showDetails($event, 'result')"
-        />
-      </div>
-    </section>
+    <WarpResults
+      :entries="displayedEntries"
+      :presentation="presentation"
+      :source-label="displayedEntries.length ? sourceLabel(displayedEntries[0].event.bannerId) : ''"
+      @details="showDetails($event, 'result')"
+    />
     <div class="warp-actionbar">
       <p id="warp-choice-status" class="warp-action-status">
         {{
           !activeBanner
             ? t('warp.noBanners')
-            : needsSelection
-              ? t('warp.selection.required')
-              : activeBanner.requiresSelection
-                ? t('warp.selection.ready')
-                : t('warp.panels.ready')
+            : selectionIssue
+              ? t(`warp.selection.${selectionIssue}`)
+              : ''
         }}
       </p>
       <Button
@@ -197,24 +206,29 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       ></Button>
       <div class="warp-actions" :aria-busy="busy">
         <Button
+          id="warp-pull-one"
           :label="t('warp.pullOne')"
           severity="secondary"
           outlined
-          :disabled="!canPull"
+          :disabled="!canPull || revealLocked"
           :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
-          @click="simulator.draw(1)"
+          @click="draw(1)"
           ><template #icon><Ticket :size="17" aria-hidden="true" /></template
         ></Button>
         <Button
+          id="warp-pull-ten"
           :label="t('warp.pullTen')"
-          :disabled="!canPull"
+          :disabled="!canPull || revealLocked"
           :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
-          @click="simulator.draw(10)"
+          @click="draw(10)"
           ><template #icon><TicketsIcon :size="17" aria-hidden="true" /></template
         ></Button>
       </div>
       <p v-if="diagnostic" id="warp-draw-error" class="warp-error" role="alert">
         {{ t(`warp.error.${diagnostic.code}`) }}
+      </p>
+      <p v-if="storageNotice" class="warp-storage-notice" role="status">
+        {{ t(`warp.storage.${storageNotice}`) }}
       </p>
     </div>
     <Drawer
@@ -223,7 +237,15 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       :visible="panel === 'controls'"
       position="left"
       :header="t('warp.panels.controls')"
-      :style="{ width: '25rem', maxWidth: '100vw' }"
+      :style="{
+        width: '25rem',
+        maxWidth: '100vw',
+        '--warp-controls-inset': 'clamp(16px, 4vw, 20px)',
+      }"
+      :pt="{
+        header: { style: { padding: 'var(--warp-controls-inset)' } },
+        content: { style: { padding: '0 var(--warp-controls-inset) var(--warp-controls-inset)' } },
+      }"
       :close-button-props="{ 'aria-label': t('warp.panels.closeControls') }"
       @update:visible="
         (value) => {
@@ -233,84 +255,127 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       @after-hide="afterPanelHide"
       @after-show="afterPanelShow"
     >
-      <section class="warp-controls" aria-labelledby="warp-banner-heading">
-        <h2 id="warp-banner-heading">{{ t('warp.bannerTitle') }}</h2>
-        <label id="warp-banner-label" for="warp-banner" class="warp-field-label">{{
-          t('warp.bannerSelect')
-        }}</label>
-        <Select
-          input-id="warp-banner"
-          aria-labelledby="warp-banner-label"
-          :model-value="selectedBannerId"
-          :options="bannerOptions"
-          option-label="label"
-          option-value="id"
-          :disabled="controlsLocked || !bannerOptions.length"
-          :placeholder="t('warp.noBanners')"
-          :empty-message="t('warp.noBanners')"
-          :selection-message="t('warp.bannerSelected')"
-          :empty-selection-message="t('warp.bannerNoneSelected')"
-          class="warp-banner-select"
-          @update:model-value="simulator.selectBanner($event)"
-        />
-        <p v-if="!activeBanner" class="warp-muted">{{ t('warp.noBanners') }}</p>
-        <template v-else>
-          <div v-if="upItem" class="warp-banner-featured">
-            <span class="warp-banner-portrait"><WarpItemVisual :item="upItem" /></span>
-            <div class="warp-banner-identity">
-              <Tag :value="t(`warp.kind.${activeBanner.banner.kind}`)" severity="secondary" />
-              <h3>{{ upItem.name }}</h3>
-              <span class="warp-featured-label">{{ t('warp.fiveUp') }}</span>
-            </div>
-          </div>
-          <p v-if="activeBanner.banner.up4?.length" class="warp-four-up">
-            {{
-              t('warp.fourUp', {
-                names: activeBanner.banner.up4.map((id) => item(id).name).join(' · '),
-              })
-            }}
-          </p>
-          <WarpPityPanel
-            v-if="pity"
-            :pity="pity"
-            :has-up5="!!activeBanner.banner.up5"
-            :has-up4="!!activeBanner.banner.up4?.length"
-          />
-          <div v-if="activeBanner.requiresSelection" class="warp-affinity">
-            <div class="warp-section-heading">
-              <h3>{{ t('warp.selection.title') }}</h3>
-              <span>{{ t('warp.selection.count', { count: selectedAvatarIds.length }) }}</span>
-            </div>
-            <ul
-              v-if="selectedAvatarIds.length"
-              class="warp-selected-avatars"
-              :aria-label="t('warp.selection.chosen')"
-            >
-              <li v-for="id in selectedAvatarIds" :key="id" :title="item(id).name">
-                <WarpItemVisual :item="item(id)" />
-              </li>
-            </ul>
-            <Button
-              :label="t(selectedAvatarIds.length ? 'warp.selection.edit' : 'warp.selection.choose')"
-              severity="secondary"
-              outlined
+      <section class="warp-controls" :aria-label="t('warp.panels.controls')">
+        <Tabs
+          v-if="simulator.bannerGroups.length"
+          :value="activeKind ?? ''"
+          scrollable
+          :dt="{
+            tablist: { background: 'transparent' },
+            tabpanel: { background: 'transparent', padding: '0' },
+            navButton: { background: 'var(--p-drawer-background)' },
+          }"
+          @update:value="simulator.selectKind($event as WarpBannerKind)"
+        >
+          <TabList
+            :pt="{
+              tabList: { 'aria-label': t('warp.bannerKind') },
+              prevButton: { 'aria-label': t('warp.previousKinds') },
+              nextButton: { 'aria-label': t('warp.nextKinds') },
+            }"
+          >
+            <Tab
+              v-for="group in simulator.bannerGroups"
+              :key="group.kind"
+              :value="group.kind"
               :disabled="controlsLocked"
-              aria-describedby="warp-choice-status"
-              id="warp-selection-trigger"
-              @click="openSelection('warp-selection-trigger')"
-              ><template #icon><UsersRound :size="16" aria-hidden="true" /></template
-            ></Button>
-            <p id="warp-control-choice-status" class="warp-muted">
-              {{
-                t(
-                  selectedAvatarIds.length === 7
-                    ? 'warp.selection.ready'
-                    : 'warp.selection.required',
-                )
-              }}
-            </p>
-          </div>
-        </template>
+            >
+              {{ t(`warp.kind.${group.kind}`) }}
+            </Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel v-for="group in simulator.bannerGroups" :key="group.kind" :value="group.kind">
+              <template v-if="activeBanner && group.kind === activeKind">
+                <Select
+                  input-id="warp-banner"
+                  :aria-label="t('warp.bannerSelect')"
+                  :model-value="selectedBannerId"
+                  :options="bannerOptions"
+                  option-label="label"
+                  option-value="id"
+                  :disabled="controlsLocked || !bannerOptions.length"
+                  :placeholder="t('warp.noBanners')"
+                  :empty-message="t('warp.noBanners')"
+                  :selection-message="t('warp.bannerSelected')"
+                  :empty-selection-message="t('warp.bannerNoneSelected')"
+                  class="warp-banner-select"
+                  @update:model-value="simulator.selectBanner($event)"
+                />
+                <div v-if="upItem" class="warp-banner-featured">
+                  <span class="warp-banner-portrait"><WarpItemVisual :item="upItem" /></span>
+                  <div class="warp-banner-identity">
+                    <h3>{{ upItem.name }}</h3>
+                    <span class="warp-featured-label">{{ t('warp.fiveUp') }}</span>
+                  </div>
+                </div>
+                <p v-else class="warp-ordinary-info">{{ t('warp.ordinaryInfo') }}</p>
+                <p v-if="activeBanner.banner.up4?.length" class="warp-featured-label">
+                  {{ t('warp.fourUpTitle') }}
+                </p>
+                <ul
+                  v-if="activeBanner.banner.up4?.length"
+                  class="warp-four-up"
+                  :aria-label="t('warp.fourUpTitle')"
+                >
+                  <li v-for="id in activeBanner.banner.up4" :key="id">
+                    <span
+                      v-tooltip.top="item(id).name"
+                      role="img"
+                      tabindex="0"
+                      class="warp-four-up-item"
+                      :aria-label="t('warp.upItem', { name: item(id).name })"
+                    >
+                      <span class="warp-four-up-portrait" aria-hidden="true"
+                        ><WarpItemVisual :item="item(id)"
+                      /></span>
+                      <span class="warp-four-up-name" aria-hidden="true">{{ item(id).name }}</span>
+                    </span>
+                  </li>
+                </ul>
+                <WarpPityPanel
+                  v-if="pity"
+                  :pity="pity"
+                  :has-up5="!!activeBanner.banner.up5"
+                  :has-up4="!!activeBanner.banner.up4?.length"
+                />
+                <div v-if="activeBanner.requiresSelection" class="warp-affinity">
+                  <div class="warp-section-heading">
+                    <h3>{{ t('warp.selection.title') }}</h3>
+                    <Badge
+                      :value="t('warp.selection.count', { count: selectedAvatarIds.length })"
+                      :severity="selectedAvatarIds.length === 7 ? 'success' : 'secondary'"
+                    />
+                  </div>
+                  <ul
+                    v-if="selectedAvatarIds.length"
+                    class="warp-selected-avatars"
+                    :aria-label="t('warp.selection.chosen')"
+                  >
+                    <li v-for="id in selectedAvatarIds" :key="id" :title="item(id).name">
+                      <WarpItemVisual :item="item(id)" />
+                    </li>
+                  </ul>
+                  <Button
+                    :label="
+                      t(selectedAvatarIds.length ? 'warp.selection.edit' : 'warp.selection.choose')
+                    "
+                    severity="secondary"
+                    outlined
+                    :disabled="controlsLocked"
+                    aria-describedby="warp-choice-status"
+                    id="warp-selection-trigger"
+                    @click="openSelection('warp-selection-trigger')"
+                    ><template #icon><UsersRound :size="16" aria-hidden="true" /></template
+                  ></Button>
+                  <p v-if="selectionIssue" class="warp-muted">
+                    {{ t(`warp.selection.${selectionIssue}`) }}
+                  </p>
+                </div>
+              </template>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+        <p v-else class="warp-muted">{{ t('warp.noBanners') }}</p>
         <div class="warp-reset-actions">
           <Button
             :label="t('warp.reset.group')"
@@ -365,6 +430,19 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
         t(announcement.key, { count: announcement.count ?? 0 })
       }}</span>
     </div>
+    <WarpRevealOverlay
+      :visible="revealVisible"
+      :entry="revealEntry"
+      :item="revealEntry ? item(revealEntry.event.itemId) : undefined"
+      :phase="revealPhase"
+      :artwork-ready="artworkReady"
+      :identity-ready="identityReady"
+      @artwork-ready="reveal.markArtworkReady"
+      @identity-ready="reveal.markIdentityReady"
+      @activate="reveal.activate"
+      @escape="reveal.escape"
+      @after-hide="afterRevealHide"
+    />
     <WarpSelectionDialog
       :visible="selectionOpen"
       :draft="selectionDraft"
@@ -415,15 +493,10 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 </template>
 
 <style scoped>
-.warp-field-label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 12px;
-  color: var(--color-muted);
-}
 .warp-banner-select {
   width: 100%;
   min-width: 0;
+  margin-top: 12px;
 }
 .warp-banner-featured {
   display: flex;
@@ -444,15 +517,60 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   font-size: 22px;
   overflow-wrap: anywhere;
 }
-.warp-featured-label,
-.warp-four-up {
+.warp-featured-label {
   font-size: 12px;
   color: var(--color-muted);
 }
 .warp-four-up {
+  display: flex;
+  gap: 16px;
+  list-style: none;
+  padding: 0;
   margin: 0 0 18px;
-  line-height: 1.8;
-  overflow-wrap: anywhere;
+}
+.warp-four-up li {
+  min-width: 0;
+  width: 72px;
+}
+.warp-four-up-item {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  border-radius: 6px;
+}
+.warp-four-up-item:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.warp-four-up-portrait {
+  width: 52px;
+  height: 52px;
+}
+.warp-four-up-name {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 11px;
+  color: var(--color-muted);
+}
+.warp-ordinary-info {
+  margin: 20px 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.warp-storage-notice {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 12px;
+}
+.warp-controls :deep(.p-tab) {
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 12px;
 }
 .warp-affinity {
   padding-top: 20px;
@@ -467,10 +585,6 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 .warp-section-heading h3 {
   margin: 0;
   font-size: 14px;
-}
-.warp-section-heading > span {
-  font-size: 12px;
-  color: var(--color-muted);
 }
 .warp-selected-avatars {
   display: flex;
@@ -494,7 +608,7 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin: 16px -8px 0;
+  margin: 16px 0 0;
 }
 .warp-memory-note {
   font-size: 11px;
@@ -542,72 +656,6 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   flex-wrap: wrap;
   gap: 8px;
 }
-.warp-results {
-  min-height: max(380px, calc(100dvh - 330px));
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 12px 8px 28px;
-}
-.warp-results-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.warp-results-heading h2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px;
-  margin: 0;
-}
-.warp-results-heading > span,
-.warp-result-source {
-  font-size: 12px;
-  color: var(--color-muted);
-}
-.warp-result-source {
-  margin: 0 0 20px;
-  overflow-wrap: anywhere;
-}
-.warp-results-empty {
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 12px;
-  flex: 1;
-  min-height: 280px;
-  border: 1px dashed var(--color-line);
-  border-radius: 8px;
-  padding: 24px;
-  color: var(--color-muted);
-  text-align: center;
-  font-size: 13px;
-}
-.warp-result-grid {
-  display: grid;
-  gap: clamp(12px, 1.7vw, 22px);
-  align-content: center;
-  flex: 1;
-}
-.warp-single-grid {
-  justify-items: center;
-}
-.warp-ten-grid {
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-}
-.warp-ten-grid > * {
-  grid-column: span 2;
-}
-.warp-ten-grid > :nth-child(1),
-.warp-ten-grid > :nth-child(8) {
-  grid-column: 2 / span 2;
-}
-.warp-ten-grid > :nth-child(4) {
-  grid-column: 1 / span 2;
-}
 .warp-actionbar {
   position: sticky;
   bottom: 0;
@@ -639,10 +687,6 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 .warp-controls {
   min-width: 0;
 }
-.warp-controls h2 {
-  margin: 0 0 20px;
-  font-size: 16px;
-}
 .warp-sr-only {
   position: absolute;
   width: 1px;
@@ -658,15 +702,6 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   line-height: 1.8;
 }
 @media (max-width: 1039px) {
-  .warp-ten-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .warp-ten-grid > *,
-  .warp-ten-grid > :nth-child(1),
-  .warp-ten-grid > :nth-child(4),
-  .warp-ten-grid > :nth-child(8) {
-    grid-column: auto;
-  }
   .warp-page-heading {
     margin-bottom: 16px;
   }
@@ -675,9 +710,6 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   }
 }
 @media (max-width: 400px) {
-  .warp-ten-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .warp-actions {
     width: 100%;
   }

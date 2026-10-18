@@ -1,4 +1,4 @@
-import type { WarpBanner, WarpSnapshot } from '../data/schema'
+import type { WarpBanner, WarpBannerKind, WarpSnapshot } from '../data/schema'
 import { resolvePool } from '../engine/resolver'
 import type { PityGroup, WarpDiagnostic } from '../engine/types'
 
@@ -8,6 +8,13 @@ export interface AvailableBanner {
   readonly eligibleAvatarIds: readonly string[]
   readonly requiresSelection: boolean
 }
+export const BANNER_KIND_ORDER: readonly WarpBannerKind[] = Object.freeze([
+  'event-avatar',
+  'event-light-cone',
+  'ordinary',
+  'fate-avatar',
+  'fate-light-cone',
+])
 export function availableBanners(snapshot: WarpSnapshot) {
   const banners: AvailableBanner[] = []
   const diagnostics: { bannerId: string; diagnostic: WarpDiagnostic }[] = []
@@ -33,5 +40,15 @@ export function availableBanners(snapshot: WarpSnapshot) {
       )
     else diagnostics.push({ bannerId: banner.id, diagnostic: result.diagnostic })
   }
-  return { banners: Object.freeze(banners), diagnostics: Object.freeze(diagnostics) }
+  const groups = BANNER_KIND_ORDER.map((kind) =>
+    Object.freeze({
+      kind,
+      banners: Object.freeze(banners.filter((entry) => entry.banner.kind === kind)),
+    }),
+  ).filter((group) => group.banners.length > 0)
+  return {
+    banners: Object.freeze(banners),
+    groups: Object.freeze(groups),
+    diagnostics: Object.freeze(diagnostics),
+  }
 }

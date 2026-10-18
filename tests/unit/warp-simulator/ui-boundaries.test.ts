@@ -16,7 +16,7 @@ describe('Warp UI feature and route boundaries', () => {
     )
     expect(router).toContain("meta: { title: 'warp.title' }")
   })
-  it('does not import planner internals, raw sources, persistence or another business store', () => {
+  it('isolates affinity storage and does not import planner internals, raw sources or another business store', () => {
     const root = fileURLToPath(new URL('../../../src/tools/warp-simulator/', import.meta.url))
     for (const file of readdirSync(root, { recursive: true }).filter(
       (v) => typeof v === 'string' && /\.(?:ts|vue)$/.test(v),
@@ -25,7 +25,9 @@ describe('Warp UI feature and route boundaries', () => {
       expect(source).not.toMatch(
         /(?:from\s*|import\s*\()['"][^'"]*(?:action-planner|TurnBasedGameData|StarRailRes|pinia|node:)/,
       )
-      expect(source).not.toMatch(/\b(?:localStorage|sessionStorage|indexedDB|fetch)\b/)
+      expect(source).not.toMatch(/\b(?:sessionStorage|indexedDB|fetch)\b/)
+      if (file.toString().replaceAll('\\', '/') !== 'model/affinity-persistence.ts')
+        expect(source).not.toMatch(/\blocalStorage\b/)
     }
   })
 })

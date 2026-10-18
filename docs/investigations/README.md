@@ -54,6 +54,20 @@
 
 ## Warp Simulator
 
+- [Phase 1M Identity 尺寸修复](warp-simulator/phase-1m-identity-size-correction.md)：固定 160px 命途显示上限、星星整体缩放与 Node 真实组件挂载回归。
+
+- [Phase 1M 五星 V3 动画](warp-simulator/phase-1m-five-star-reveal-animation.md)：实际命途映射、StarBig 资源管线、六图就绪门控、固定比例构图与演出回归验证。
+
+- [Phase 1M 控制间距与资源同步](warp-simulator/phase-1m-control-panel-spacing-and-visual-refresh.md)：局部 Drawer 留白、透明 Tabs 背景、当前卡池全部视觉资源及数据驱动的集成校验。
+
+- [Phase 1L 控制面板与星缘持久化](warp-simulator/phase-1l-control-panel-and-affinity-persistence.md)：五类卡池导航、UP 缩略图、保底分组、共享星缘资格校验及浏览器存储。
+
+- [Phase 1K 全屏 Artwork 信息面板](warp-simulator/phase-1k-reveal-metadata-overlay.md)：三行本地化物品信息、舞台定位、同步淡入与无障碍描述及验收步骤。
+
+- [Phase 1J Metadata 排版精修](warp-simulator/phase-1j-metadata-layout-refinement.md)：卡片专用透明裁切星级、统一单颗星尺度、两行居中信息簇及验收清单。
+
+- [Phase 1I 演出与资源修复](warp-simulator/phase-1i-reveal-quality-fixes.md)：五星同步组合、独立高清资源与 DPR 限制、星级溢出修复及人工验收清单。
+
 - [Phase 1F 视觉资源与 UI](warp-simulator/phase-1f-visual-refinement.md)：离线图片提取、横向结果卡、双侧抽屉、五列历史与验证证据。
 
 - [Phase 1E 可交互 UI](warp-simulator/phase-1e-ui-implementation.md)：页面内会话、星缘选择、结果／历史、资源复用及人工验收清单。

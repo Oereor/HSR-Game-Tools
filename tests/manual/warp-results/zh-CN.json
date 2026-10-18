@@ -1,0 +1,29 @@
+{
+  "title": "跃迁结果展示验收",
+  "notice": "人工展示记录，不是真实抽卡结果。此页不使用抽卡引擎、不保存会话；UP、来源与保底仅用于检查展示。正式 Snapshot 暂无五星光锥，合成五星光锥复用现有四星封面。",
+  "syntheticCone": "合成五星光锥（复用四星封面，仅验收样式）",
+  "syntheticLongName": "合成超长角色名称：用于检查全屏物品信息面板在窄屏中的完整换行与边界（仅验收样式）",
+  "scenario": "固定场景",
+  "replay": "重播入场动画",
+  "order": "当前顺序（记录编号 → 物品 ID）",
+  "scenarios": {
+    "all-three": "全三星十连",
+    "four-mixed": "四星角色／光锥、UP／非 UP 混排",
+    "five-mixed": "三种稀有度、五星角色／光锥、UP／非 UP 混排",
+    "ten-one-five": "十连单五星",
+    "single-light-cone-3": "三星光锥单抽",
+    "single-avatar-4": "四星角色单抽",
+    "single-light-cone-4": "四星光锥单抽",
+    "single-avatar-5": "五星角色单抽",
+    "single-light-cone-5": "合成五星光锥单抽（仅验收样式）",
+    "image-fallbacks": "缺图／请求失败／极端宽高比",
+    "missing-artwork": "单抽缺图及图标",
+    "failed-artwork": "单抽高清与轻量图片均请求失败",
+    "hd-fallback": "五星高清失败后回退轻量图片及图标",
+    "reveal-official-long-name": "正式英文最长名称光锥单抽",
+    "reveal-long-name": "合成超长名称角色单抽",
+    "reveal-metadata-missing": "命途与属性 Metadata 缺失"
+  },
+  "play": "播放当前场景演出",
+  "reducedMotion": "模拟减少动态效果（系统偏好仍优先）"
+}

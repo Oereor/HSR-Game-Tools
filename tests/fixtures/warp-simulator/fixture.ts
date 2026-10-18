@@ -70,6 +70,15 @@ export function unwrap<T>(result: WarpResult<T>): T {
   if (!result.ok) throw new Error(JSON.stringify(result.diagnostic))
   return result.value
 }
+/** Multiple Banners without changing maintained data or the original single-Banner fixtures. */
+export function multiBannerFixture(): WarpSnapshot {
+  const snapshot = fixture()
+  snapshot.banners.push(
+    { ...snapshot.banners[0]!, id: 'gacha:200', gachaId: '200', up5: 'avatar:8' },
+    { ...snapshot.banners[1]!, id: 'gacha:201', gachaId: '201' },
+  )
+  return snapshot
+}
 export function poolFor(kind: WarpBannerKind = 'event-avatar') {
   return unwrap(
     resolvePool(

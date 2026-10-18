@@ -229,17 +229,32 @@ describe('strict normalized pool resolution', () => {
     for (const id of ['gacha:101', 'gacha:103', 'gacha:104'])
       expect(resolvePool(fixture(), id, { selectedAvatarIds }).ok).toBe(false)
   })
-  it('resolves maintained 2139 only with explicit choices, preserving real data', () => {
+  it('resolves every maintained Banner with explicit avatar choices, preserving real data', () => {
     const data = snapshot as WarpSnapshot,
       before = structuredClone(data)
-    expect(resolvePool(data, 'gacha:2139')).toMatchObject({
-      ok: false,
-      diagnostic: { code: 'invalid-selection' },
-    })
-    const chosen = data.sharedPools.find((p) => p.id === 'event-avatar-default')!.fiveStar
-    const pool = unwrap(resolvePool(data, 'gacha:2139', { selectedAvatarIds: [...chosen] }))
-    expect(pool.up5?.id).toBe('avatar:1503')
-    expect([pool.threeStar.length, pool.fourStar.length, pool.fiveStar.length]).toEqual([25, 53, 8])
+    for (const banner of data.banners) {
+      const shared = data.sharedPools.find((pool) => pool.id === banner.sharedPool)!
+      const requiresSelection = banner.kind.endsWith('avatar')
+      if (requiresSelection)
+        expect(resolvePool(data, banner.id)).toMatchObject({
+          ok: false,
+          diagnostic: { code: 'invalid-selection' },
+        })
+      // A test-only witness, separate from the full maintained eligibility list.
+      const chosen = shared.fiveStar.slice(0, 7)
+      const pool = unwrap(
+        resolvePool(data, banner.id, requiresSelection ? { selectedAvatarIds: chosen } : {}),
+      )
+      expect(pool.up5?.id).toBe(banner.up5)
+      expect(pool.threeStar.map((item) => item.id)).toEqual(shared.threeStar)
+      expect(pool.fourStar.map((item) => item.id)).toEqual(shared.fourStar)
+      expect(pool.up4.map((item) => item.id)).toEqual(banner.up4 ?? [])
+      expect(pool.fiveStar.map((item) => item.id)).toEqual(
+        banner.kind === 'ordinary'
+          ? shared.fiveStar
+          : [banner.up5, ...(requiresSelection ? chosen : shared.fiveStar)],
+      )
+    }
     expect(data).toEqual(before)
   })
 })
