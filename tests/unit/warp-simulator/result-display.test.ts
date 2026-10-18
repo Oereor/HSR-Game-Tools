@@ -84,7 +84,7 @@ describe('Result display review fixtures', () => {
       'single-light-cone-5',
     ])
     expect(singles.every(({ entries }) => entries.length === 1)).toBe(true)
-    for (const fixture of scenarios.filter(({ id }) => id !== 'image-fallbacks')) {
+    for (const fixture of scenarios.filter(({ overrides }) => !Object.keys(overrides).length)) {
       expect(Object.keys(fixture.overrides)).toHaveLength(0)
       for (const { event } of fixture.entries) {
         const source = item(event.itemId)
@@ -113,7 +113,7 @@ describe('Result display review fixtures', () => {
     expect(decodeURIComponent(tall!.artworkUrl!)).toContain('viewBox="0 0 80 800"')
     expect(
       scenarios
-        .filter(({ id }) => id !== 'image-fallbacks')
+        .filter(({ id }) => !['image-fallbacks', 'missing-artwork', 'failed-artwork'].includes(id))
         .every(({ overrides }) => !Object.keys(overrides).length),
     ).toBe(true)
   })

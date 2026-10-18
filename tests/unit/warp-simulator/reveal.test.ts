@@ -1,0 +1,239 @@
+import { effectScope, nextTick, ref, watch } from 'vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  useWarpReveal,
+  REVEAL_TIMING,
+} from '../../../src/tools/warp-simulator/composables/useWarpReveal'
+import { useWarpSimulator } from '../../../src/tools/warp-simulator/composables/useWarpSimulator'
+import type { HistoryEntry } from '../../../src/tools/warp-simulator/composables/useWarpSimulator'
+import { resultDisplayScenarios } from '../../fixtures/warp-simulator/result-display'
+import { fixture, selectedAvatarIds } from '../../fixtures/warp-simulator/fixture'
+
+const fixtures = resultDisplayScenarios()
+const entries = (id: string) => fixtures.find((scenario) => scenario.id === id)!.entries
+const scopes: ReturnType<typeof effectScope>[] = []
+function setup(reduced = false) {
+  const motion = ref(reduced)
+  const scope = effectScope()
+  scopes.push(scope)
+  return { motion, scope, reveal: scope.run(() => useWarpReveal(motion))! }
+}
+function begin(reveal: ReturnType<typeof useWarpReveal>, batch: readonly HistoryEntry[]) {
+  expect(reveal.beginBatch(batch[0]!.batchId, batch)).toBe(true)
+}
+function endCurrent(reveal: ReturnType<typeof useWarpReveal>) {
+  reveal.escape()
+  vi.advanceTimersByTime(REVEAL_TIMING.fade)
+}
+beforeEach(() => vi.useFakeTimers())
+afterEach(() => {
+  scopes.splice(0).forEach((scope) => scope.stop())
+  expect(vi.getTimerCount()).toBe(0)
+  vi.useRealTimers()
+})
+
+describe('Committed batch reveal state machine', () => {
+  it.each(['single-light-cone-3', 'single-avatar-4', 'single-light-cone-4'])(
+    'reveals %s and waits for confirmation',
+    (id) => {
+      const { reveal } = setup()
+      begin(reveal, entries(id))
+      expect(reveal.visible.value).toBe(true)
+      expect(reveal.phase.value).toBe('artwork')
+      expect(reveal.displayedEntries.value).toEqual([])
+      reveal.activate()
+      expect(reveal.phase.value).toBe('artwork')
+      vi.advanceTimersByTime(400)
+      expect(reveal.phase.value).toBe('waiting')
+      vi.advanceTimersByTime(60_000)
+      expect(reveal.phase.value).toBe('waiting')
+      reveal.activate()
+      expect(reveal.phase.value).toBe('leaving')
+      vi.advanceTimersByTime(400)
+      expect(reveal.visible.value).toBe(false)
+      expect(reveal.locked.value).toBe(true)
+      expect(reveal.afterHide()).toBe(true)
+      expect(reveal.displayedEntries.value).toEqual(entries(id))
+      expect(reveal.locked.value).toBe(false)
+    },
+  )
+
+  it('plays the five-star path, stars and artwork in order without auto-dismissal', () => {
+    const { reveal } = setup()
+    begin(reveal, entries('single-avatar-5'))
+    expect(reveal.phase.value).toBe('intro')
+    vi.advanceTimersByTime(1099)
+    expect(reveal.phase.value).toBe('intro')
+    vi.advanceTimersByTime(1)
+    expect(reveal.phase.value).toBe('stars')
+    vi.advanceTimersByTime(1100)
+    expect(reveal.phase.value).toBe('artwork')
+    vi.advanceTimersByTime(400)
+    expect(reveal.phase.value).toBe('waiting')
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it.each(['all-three', 'four-mixed'])(
+    'publishes %s directly without an overlay or timer',
+    (id) => {
+      const { reveal } = setup()
+      begin(reveal, entries(id))
+      expect(reveal.visible.value).toBe(false)
+      expect(reveal.locked.value).toBe(false)
+      expect(reveal.displayedEntries.value).toEqual(entries(id))
+      expect(vi.getTimerCount()).toBe(0)
+    },
+  )
+
+  it.each(['ten-one-five', 'five-mixed'])(
+    'reveals %s in original order before publishing the complete batch',
+    (id) => {
+      const { reveal } = setup()
+      const previous = entries('all-three')
+      begin(reveal, previous)
+      const batch = entries(id)
+      begin(reveal, batch)
+      const expected = batch.filter((entry) => entry.event.rarity === 5)
+      const seen: number[] = []
+      for (const current of expected) {
+        expect(reveal.current.value).toBe(current)
+        expect(reveal.displayedEntries.value).toEqual(previous)
+        seen.push(reveal.current.value!.id)
+        vi.advanceTimersByTime(2600)
+        reveal.activate()
+        reveal.activate()
+        vi.advanceTimersByTime(400)
+      }
+      expect(seen).toEqual(expected.map((entry) => entry.id))
+      expect(reveal.visible.value).toBe(false)
+      expect(reveal.displayedEntries.value).toEqual(previous)
+      reveal.afterHide()
+      expect(reveal.displayedEntries.value).toEqual(batch)
+    },
+  )
+
+  it.each([0, 1100])('clicking a prelude at %ims skips only to the current artwork', (delay) => {
+    const { reveal } = setup()
+    begin(reveal, entries('five-mixed'))
+    const first = reveal.current.value
+    vi.advanceTimersByTime(delay)
+    reveal.activate()
+    reveal.activate()
+    expect(reveal.phase.value).toBe('artwork')
+    expect(reveal.current.value).toBe(first)
+    vi.advanceTimersByTime(399)
+    reveal.activate()
+    expect(reveal.current.value).toBe(first)
+    vi.advanceTimersByTime(1)
+    expect(reveal.phase.value).toBe('waiting')
+    vi.advanceTimersByTime(10_000)
+    expect(reveal.current.value).toBe(first)
+  })
+
+  it.each([0, 1100, 2200, 2600])(
+    'Escape ends the current item at %ims, not the whole queue',
+    (delay) => {
+      const { reveal } = setup()
+      begin(reveal, entries('five-mixed'))
+      const expected = entries('five-mixed').filter((entry) => entry.event.rarity === 5)
+      vi.advanceTimersByTime(delay)
+      reveal.escape()
+      reveal.escape()
+      vi.advanceTimersByTime(400)
+      expect(reveal.current.value).toBe(expected[1])
+      expect(reveal.phase.value).toBe('intro')
+      expect(reveal.visible.value).toBe(true)
+    },
+  )
+
+  it('uses no animation timers with reduced motion, including runtime changes and leaving', () => {
+    const { reveal, motion } = setup(true)
+    begin(reveal, entries('five-mixed'))
+    expect(reveal.phase.value).toBe('waiting')
+    expect(vi.getTimerCount()).toBe(0)
+    reveal.activate()
+    expect(reveal.phase.value).toBe('waiting')
+    motion.value = false
+    reveal.escape()
+    expect(reveal.phase.value).toBe('leaving')
+    motion.value = true
+    expect(reveal.phase.value).toBe('waiting')
+    expect(vi.getTimerCount()).toBe(0)
+    motion.value = false
+    endCurrent(reveal)
+    expect(reveal.phase.value).toBe('intro')
+    motion.value = true
+    expect(reveal.phase.value).toBe('waiting')
+  })
+
+  it('ignores duplicate/older batches and stale hide hooks after a replacement', () => {
+    const { reveal } = setup()
+    begin(reveal, entries('five-mixed'))
+    expect(reveal.beginBatch(entries('five-mixed')[0]!.batchId, entries('five-mixed'))).toBe(false)
+    expect(reveal.beginBatch(entries('all-three')[0]!.batchId, entries('all-three'))).toBe(false)
+    endCurrent(reveal)
+    begin(reveal, entries('single-avatar-5'))
+    expect(reveal.afterHide()).toBe(false)
+    vi.advanceTimersByTime(1100)
+    expect(reveal.phase.value).toBe('stars')
+    expect(reveal.current.value).toBe(entries('single-avatar-5')[0])
+  })
+
+  it('clears timers and pending state on reset/disposal and rejects work after disposal', () => {
+    const { reveal, scope } = setup()
+    begin(reveal, entries('five-mixed'))
+    reveal.reset()
+    vi.advanceTimersByTime(20_000)
+    expect(reveal.phase.value).toBe('idle')
+    expect(reveal.locked.value).toBe(false)
+    begin(reveal, entries('single-avatar-5'))
+    scope.stop()
+    vi.advanceTimersByTime(20_000)
+    expect(reveal.visible.value).toBe(false)
+    expect(reveal.current.value).toBeUndefined()
+    expect(reveal.beginBatch(999, entries('single-avatar-5'))).toBe(false)
+  })
+
+  it('runs only after the atomic draw commit and never changes RNG, history or pity', async () => {
+    const scope = effectScope()
+    scopes.push(scope)
+    const rng = {
+      consumed: 0,
+      next() {
+        this.consumed++
+        return 0
+      },
+    }
+    const { simulator, reveal } = scope.run(() => {
+      const simulator = useWarpSimulator({ snapshot: fixture(), rng })
+      const reveal = useWarpReveal(ref(false))
+      watch(
+        () => simulator.session.value.latestBatchId,
+        (id) => {
+          if (id !== undefined) {
+            expect(simulator.session.value.history).toHaveLength(10)
+            reveal.beginBatch(id, simulator.latestResults.value)
+          }
+        },
+        { flush: 'sync' },
+      )
+      return { simulator, reveal }
+    })!
+    simulator.openSelection()
+    simulator.setSelectionDraft(selectedAvatarIds)
+    simulator.confirmSelection()
+    expect(await simulator.draw(10)).toBe(true)
+    const committed = simulator.session.value
+    expect(reveal.current.value).toBeDefined()
+    const before = JSON.stringify(committed)
+    const consumed = rng.consumed
+    while (reveal.visible.value) endCurrent(reveal)
+    reveal.afterHide()
+    reveal.activate()
+    await nextTick()
+    expect(reveal.displayedEntries.value).toEqual(simulator.latestResults.value)
+    expect(simulator.session.value).toBe(committed)
+    expect(JSON.stringify(committed)).toBe(before)
+    expect(rng.consumed).toBe(consumed)
+  })
+})

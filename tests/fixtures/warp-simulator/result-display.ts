@@ -107,6 +107,11 @@ export function resultDisplayScenarios(
     [avatar5, cone3(), cone5, avatar4, cone4, avatar5, cone5, cone3(1), cone3(2), cone3(3)],
     [0, 2, 3],
   )
+  add(
+    'ten-one-five',
+    [cone3(), avatar4, cone3(1), cone4, avatar5, cone3(2), cone3(3), cone3(4), cone3(5), cone3(6)],
+    [4],
+  )
   for (const item of [cone3(), avatar4, cone4, avatar5, cone5]) {
     add(`single-${item.kind}-${item.rarity}`, [item], item.rarity > 3 ? [0] : [])
   }
@@ -123,6 +128,12 @@ export function resultDisplayScenarios(
     },
     [avatar5.id]: { artworkUrl: svg(800, 80) },
     [cone5.id]: { artworkUrl: svg(80, 800) },
+  })
+  add('missing-artwork', [avatar5], [], {
+    [avatar5.id]: { artworkUrl: undefined, pathIconUrl: undefined, starsUrl: undefined },
+  })
+  add('failed-artwork', [cone4], [], {
+    [cone4.id]: { artworkUrl: '/tests/manual/warp-results/missing-fixture.webp' },
   })
   return Object.freeze(scenarios)
 }

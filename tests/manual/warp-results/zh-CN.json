@@ -9,11 +9,16 @@
     "all-three": "全三星十连",
     "four-mixed": "四星角色／光锥、UP／非 UP 混排",
     "five-mixed": "三种稀有度、五星角色／光锥、UP／非 UP 混排",
+    "ten-one-five": "十连单五星",
     "single-light-cone-3": "三星光锥单抽",
     "single-avatar-4": "四星角色单抽",
     "single-light-cone-4": "四星光锥单抽",
     "single-avatar-5": "五星角色单抽",
     "single-light-cone-5": "合成五星光锥单抽（仅验收样式）",
-    "image-fallbacks": "缺图／请求失败／极端宽高比"
-  }
+    "image-fallbacks": "缺图／请求失败／极端宽高比",
+    "missing-artwork": "单抽缺图及图标",
+    "failed-artwork": "单抽图片请求失败"
+  },
+  "play": "播放当前场景演出",
+  "reducedMotion": "模拟减少动态效果（系统偏好仍优先）"
 }

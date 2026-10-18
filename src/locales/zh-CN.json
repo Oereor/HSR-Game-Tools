@@ -452,6 +452,18 @@
       "light-cone": "光锥",
       "unknown": "未知类别"
     },
+    "resultTooltip": {
+      "name": "{name}（{metadata}）",
+      "separator": "·",
+      "rarity": "稀有度：{count} 星",
+      "kind": "类别：{kind}"
+    },
+    "reveal": {
+      "title": "跃迁结果：{name}",
+      "action": "{name}。{action}。Escape 结束当前展示。",
+      "skip": "点击直接查看物品图片",
+      "continue": "点击继续"
+    },
     "details": {
       "title": "物品详情",
       "open": "查看详情：{summary}",

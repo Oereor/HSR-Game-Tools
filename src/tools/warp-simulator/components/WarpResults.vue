@@ -95,8 +95,8 @@ const { t, locale } = useI18n()
   display: grid;
   grid-auto-rows: max-content;
   align-items: start;
-  gap: 28px;
-  padding: 16px;
+  gap: 36px;
+  padding: 24px;
   min-width: 0;
   overflow: visible;
 }

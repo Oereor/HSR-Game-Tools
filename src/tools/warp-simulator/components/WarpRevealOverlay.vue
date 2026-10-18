@@ -1,0 +1,222 @@
+<script setup lang="ts">
+import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import type { HistoryEntry } from '../composables/useWarpSimulator'
+import { REVEAL_TIMING, type RevealPhase } from '../composables/useWarpReveal'
+import type { ItemPresentation } from '../model/presentation'
+import WarpItemVisual from './WarpItemVisual.vue'
+import WarpVisualIcon from './WarpVisualIcon.vue'
+
+const props = defineProps<{
+  visible: boolean
+  entry?: HistoryEntry
+  item?: ItemPresentation
+  phase: RevealPhase
+}>()
+const emit = defineEmits<{ activate: []; escape: []; 'after-hide': [] }>()
+const { t } = useI18n()
+const screen = ref<{ $el: HTMLButtonElement }>()
+// Keep the outgoing stage mounted during its exit, without replaying entrance CSS.
+const leavingStage = ref<RevealPhase>('artwork')
+watch(
+  () => props.phase,
+  (next, previous) => {
+    if (next === 'leaving') leavingStage.value = previous
+  },
+  { flush: 'sync' },
+)
+const stage = computed(() => (props.phase === 'leaving' ? leavingStage.value : props.phase))
+const hint = computed(() =>
+  t(props.phase === 'waiting' ? 'warp.reveal.continue' : 'warp.reveal.skip'),
+)
+function focusScreen() {
+  void nextTick(() => screen.value?.$el.focus({ preventScroll: true }))
+}
+function keydown(event: KeyboardEvent) {
+  if (event.repeat && ['Escape', 'Enter', ' '].includes(event.key)) event.preventDefault()
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    if (!event.repeat) emit('escape')
+  }
+}
+</script>
+
+<template>
+  <Dialog
+    unstyled
+    modal
+    block-scroll
+    append-to="body"
+    :visible="visible"
+    :draggable="false"
+    :closable="false"
+    :close-on-escape="false"
+    :dismissable-mask="false"
+    :show-header="false"
+    :aria-label="t('warp.reveal.title', { name: item?.name ?? t('warp.visual.unknown') })"
+    :pt="{
+      mask: { class: 'warp-reveal-mask' },
+      root: { class: 'warp-reveal-dialog', 'aria-labelledby': undefined },
+      transition: { css: false },
+    }"
+    @show="focusScreen"
+    @after-hide="emit('after-hide')"
+  >
+    <template #container>
+      <Button
+        ref="screen"
+        unstyled
+        type="button"
+        class="warp-reveal-screen"
+        :class="{ 'warp-reveal-leaving': phase === 'leaving' }"
+        :style="{
+          '--reveal-fade': `${REVEAL_TIMING.fade}ms`,
+          '--reveal-exit-delay': `${REVEAL_TIMING.fade + REVEAL_TIMING.hold}ms`,
+        }"
+        :aria-label="
+          t('warp.reveal.action', { name: item?.name ?? t('warp.visual.unknown'), action: hint })
+        "
+        @click="emit('activate')"
+        @keydown="keydown"
+      >
+        <span v-if="entry && item" :key="`${entry.batchId}:${entry.id}`" class="warp-reveal-stage">
+          <span v-if="stage === 'intro'" key="intro" class="warp-reveal-prelude">
+            <WarpVisualIcon
+              :url="item.pathIconUrl"
+              :label="item.pathName ?? t('warp.visual.unknown')"
+            />
+          </span>
+          <span
+            v-else-if="stage === 'stars'"
+            key="stars"
+            class="warp-reveal-prelude warp-reveal-stars"
+          >
+            <WarpVisualIcon
+              :url="item.starsUrl"
+              :label="t('warp.visual.rarity', { count: entry.event.rarity })"
+              stars
+            />
+          </span>
+          <span
+            v-else
+            class="warp-reveal-artwork"
+            :class="{ 'warp-reveal-artwork-enter': phase === 'artwork' }"
+          >
+            <WarpItemVisual :item="item" artwork />
+          </span>
+        </span>
+        <span class="warp-reveal-hint" aria-hidden="true">{{ hint }}</span>
+      </Button>
+    </template>
+  </Dialog>
+</template>
+
+<!-- Teleported Dialog wrappers have no scope attribute: target only these owned classes. -->
+<style>
+.warp-reveal-mask,
+.warp-reveal-dialog {
+  background: #000000;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.warp-reveal-dialog {
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+}
+</style>
+
+<style scoped>
+.warp-reveal-screen {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+    max(64px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  border: 0;
+  border-radius: 0;
+  background: #000000;
+  color: var(--color-ink);
+}
+.warp-reveal-screen:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -4px;
+}
+.warp-reveal-stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.warp-reveal-prelude {
+  display: grid;
+  place-items: center;
+  animation:
+    warp-reveal-in var(--reveal-fade) ease-out both,
+    warp-reveal-out var(--reveal-fade) ease-in var(--reveal-exit-delay) forwards;
+}
+.warp-reveal-prelude :deep(.warp-icon) {
+  width: clamp(96px, 18vw, 160px);
+  height: clamp(96px, 18vw, 160px);
+}
+.warp-reveal-stars :deep(.warp-stars-icon) {
+  width: clamp(180px, 35vw, 320px);
+  height: 64px;
+}
+.warp-reveal-artwork {
+  width: min(100%, 1200px);
+  height: 100%;
+  min-height: 0;
+}
+.warp-reveal-artwork-enter {
+  animation: warp-reveal-in var(--reveal-fade) ease-out both;
+}
+.warp-reveal-artwork :deep(.warp-visual-fallback) {
+  background: transparent;
+}
+.warp-reveal-leaving .warp-reveal-stage {
+  animation: warp-reveal-out var(--reveal-fade) ease-in both;
+}
+.warp-reveal-hint {
+  position: absolute;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  inset-inline: 24px;
+  color: var(--color-muted);
+  font-size: 13px;
+  text-align: center;
+}
+@keyframes warp-reveal-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes warp-reveal-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .warp-reveal-prelude,
+  .warp-reveal-artwork-enter,
+  .warp-reveal-leaving .warp-reveal-stage {
+    animation: none;
+  }
+}
+</style>

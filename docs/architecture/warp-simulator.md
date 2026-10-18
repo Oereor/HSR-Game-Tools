@@ -1,6 +1,6 @@
 # 跃迁模拟器
 
-本指南描述 Phase 1D 纯引擎、Phase 1E 会话与 Phase 1F 展示当前实现。模型由维护者确定，标识为 `hsr-warp`，版本为 `v0.3`；它是**本项目的标准模型，不代表已经取得或验证游戏服务器源码**。历史调查不能覆盖本指南中的既定规则。
+本指南描述 Phase 1D 纯引擎、Phase 1E 会话与 Phase 1G 展示与 Phase 1H 演出当前实现。模型由维护者确定，标识为 `hsr-warp`，版本为 `v0.3`；它是**本项目的标准模型，不代表已经取得或验证游戏服务器源码**。历史调查不能覆盖本指南中的既定规则。
 
 数据维护见[游戏数据指南](../game-data.md#warp-数据基础设施)，实施证据见 [Phase 1D 报告](../investigations/warp-simulator/phase-1d-engine-implementation.md)、[Phase 1E 报告](../investigations/warp-simulator/phase-1e-ui-implementation.md)和 [Phase 1F 报告](../investigations/warp-simulator/phase-1f-visual-refinement.md)。`/warp-simulator` 提供单抽、十连、星缘选择及页面内历史，没有用户存档、导入导出或统计面板。
 
@@ -137,6 +137,20 @@ node --import tsx tests/experiments/warp-simulator.ts
 - 全部重置清空五组引擎状态、历史及最新批次，保留当前 Banner 和各 Banner 的星缘选择。
 - 页面内条目／批次身份不因重置复用。刷新或离开页面会销毁本页会话，包括选择；没有全局业务单例或浏览器存储。
 
+## 全屏结果演出
+
+`useWarpSimulator` 的 draw、原子提交、RNG 消费与保底转移不因演出改变。页面以同步 watcher 监听已提交的 latestBatchId，把同一最新批次的只读 HistoryEntry 交给 `useWarpReveal`；没有在演出阶段补抽或推迟提交。历史和引擎状态在 Overlay 打开之前已经更新。
+
+`useWarpReveal(reducedMotion)` 只保存 UI 状态：待展示批次、过滤后的演出队列、游标、阶段、Dialog 可见性及上一批已展示记录引用。单抽队列包含唯一结果；十连只过滤五星，不改变相对顺序。无队列立即发布普通结果；有队列保留上一批普通结果，在最后一项确认并收到 after-hide 后才发布完整新批次，防止提前闪现或在黑幕下播完卡片入场动画。展示引用不是另一份可编辑业务会话。
+
+阶段为 idle／intro／stars／artwork／waiting／leaving。五星 intro 与 stars 各使用 400ms 淡入、300ms 停留、400ms 淡出；其余单抽直接 artwork。图片淡入 400ms 后 waiting，无自动关闭。前置阶段激活只跳到当前 artwork；artwork 阶段激活不推进，waiting 才进入 400ms leaving，再进入下一项或关闭。Escape 可在任意可见阶段结束当前项，不退出整队列；leaving 的重复输入不产生额外推进。
+
+每次批次／阶段变化清除旧计时器并递增版本标识。重复／更旧 Batch ID 不重播，替换批次和作用域销毁取消旧状态；旧 Dialog 隐藏回调不能释放仍可见的新批次。全部重置清除展示引用，不复用业务批次身份。Reduced Motion 初始直接 waiting，运行中启用时取消阶段计时，若正在离场则直接完成当前项离场。媒体查询监听器和计时器随作用域销毁。
+
+`WarpRevealOverlay` 只接收 visible、entry、item、phase，发送 activate／escape／after-hide，不创建会话或队列。PrimeVue Dialog 提供模态、滚动锁和焦点陷阱，内部原生按钮覆盖全屏、支持点击和键盘；纯黑背景与资源 contain 适配不使用概率或物品 ID 特判。页面在演出及隐藏完成前保持 inert 和抽取锁，after-hide 释放门控后恢复原抽取按钮焦点。原 `useWarpOverlay` 继续仅负责 Drawer／详情等原有交互，不承担演出状态。
+
+确定性机制验证与人工清单见 [Phase 1H 报告](../investigations/warp-simulator/phase-1h-reveal-animation-and-ui-polish.md)。正式 Snapshot 无五星光锥，测试图中的合成身份和复用封面不进入生产候选池或资源快照。
+
 ## 展示资源与降级
 
 [visuals](../../src/tools/warp-simulator/data/visuals/)为独立的规范化展示快照，来源锁定和显式离线维护见[游戏数据指南](../game-data.md#warp-展示资源)。它不表达抽取资格，不修改引擎输入，不在普通构建中生成。共享头像的复用仅发生于维护阶段；运行时无排轴业务导入或原始来源依赖。
@@ -147,6 +161,6 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 结果卡为图像与 Icon 构成的可激活横向卡；Tooltip、ARIA 和共用 `WarpItemDetails` 提供完整文字及既有事件详情。历史共用同一 Presentation Adapter，五列语义表格保持最新优先；最新批次仍保持实际抽取顺序。星缘选择、抽取、分页、重置和历史容量仍使用原有会话实现。
 
-双语 UI 文案集中于 `warp.*`，官方命途／属性名称来自展示快照。语言、动画与资源加载不改变身份、UP 或 RNG。结果卡稳定 key 与 reduced-motion 规则保持不变，稀有度 Token 仅作用于结果卡。真实视觉、键盘／触屏、焦点及响应式由维护者人工验收。
+双语 UI 文案集中于 `warp.*`，官方命途／属性名称来自展示快照。语言、动画与资源加载不改变身份、UP 或 RNG。结果卡稳定 key 与 reduced-motion 规则保持不变，稀有度 Token 共用于结果卡和历史名称；历史正文 14px，名称 Hover／Focus 保留稀有度颜色。真实视觉、键盘／触屏、焦点及响应式由维护者人工验收。
 
-持久化、导入导出、统计图表和复杂演出仍未实现；真实 Banner 的后续维护需单独审阅，不自动进入下一阶段。
+持久化、导入导出、统计图表及粒子／镜头等复杂演出仍未实现；真实 Banner 的后续维护需单独审阅，不自动进入下一阶段。

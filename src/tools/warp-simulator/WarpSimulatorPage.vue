@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, shallowRef } from 'vue'
+import { computed, nextTick, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -18,6 +18,9 @@ import type { ToolLocale } from '../../locales/types'
 import { warpSnapshot, warpVisuals, warpVisualDefinitions } from './data/adapters/warp-data'
 import { useWarpSimulator, type HistoryEntry } from './composables/useWarpSimulator'
 import { useWarpOverlay } from './composables/useWarpOverlay'
+import { useWarpReveal } from './composables/useWarpReveal'
+import { useWarpReducedMotion } from './composables/useWarpReducedMotion'
+import WarpRevealOverlay from './components/WarpRevealOverlay.vue'
 import { createPresentation } from './model/presentation'
 import WarpPityPanel from './components/WarpPityPanel.vue'
 import WarpItemVisual from './components/WarpItemVisual.vue'
@@ -49,6 +52,31 @@ const {
 const overlay = useWarpOverlay()
 const { panel } = overlay
 const details = shallowRef<HistoryEntry>()
+const reveal = useWarpReveal(useWarpReducedMotion())
+const {
+  visible: revealVisible,
+  locked: revealLocked,
+  phase: revealPhase,
+  current: revealEntry,
+  displayedEntries,
+} = reveal
+let revealTrigger: string | undefined
+watch(
+  () => session.value.latestBatchId,
+  (batchId) => {
+    if (batchId === undefined) reveal.reset()
+    else reveal.beginBatch(batchId, latestResults.value)
+  },
+  { flush: 'sync' },
+)
+function draw(count: 1 | 10) {
+  if (revealLocked.value) return
+  revealTrigger = count === 1 ? 'warp-pull-one' : 'warp-pull-ten'
+  void simulator.draw(count)
+}
+function afterRevealHide() {
+  if (reveal.afterHide()) focus(revealTrigger)
+}
 const presentation = createPresentation(
   warpSnapshot,
   warpVisuals,
@@ -70,7 +98,9 @@ const bannerOptions = computed(() =>
 const upItem = computed(() =>
   activeBanner.value?.banner.up5 ? item(activeBanner.value.banner.up5) : undefined,
 )
-const controlsLocked = computed(() => busy.value || selectionOpen.value || !!resetScope.value)
+const controlsLocked = computed(
+  () => busy.value || revealLocked.value || selectionOpen.value || !!resetScope.value,
+)
 const needsSelection = computed(
   () => activeBanner.value?.requiresSelection && selectedAvatarIds.value.length !== 7,
 )
@@ -104,7 +134,7 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 </script>
 
 <template>
-  <div class="warp-page">
+  <div class="warp-page" :inert="revealLocked">
     <header class="warp-page-heading">
       <div class="warp-page-title">
         <Ticket :size="24" :stroke-width="1.75" aria-hidden="true" />
@@ -137,9 +167,9 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       </div>
     </header>
     <WarpResults
-      :entries="latestResults"
+      :entries="displayedEntries"
       :presentation="presentation"
-      :source-label="latestResults.length ? sourceLabel(latestResults[0].event.bannerId) : ''"
+      :source-label="displayedEntries.length ? sourceLabel(displayedEntries[0].event.bannerId) : ''"
       @details="showDetails($event, 'result')"
     />
     <div class="warp-actionbar">
@@ -167,19 +197,21 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       ></Button>
       <div class="warp-actions" :aria-busy="busy">
         <Button
+          id="warp-pull-one"
           :label="t('warp.pullOne')"
           severity="secondary"
           outlined
-          :disabled="!canPull"
+          :disabled="!canPull || revealLocked"
           :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
-          @click="simulator.draw(1)"
+          @click="draw(1)"
           ><template #icon><Ticket :size="17" aria-hidden="true" /></template
         ></Button>
         <Button
+          id="warp-pull-ten"
           :label="t('warp.pullTen')"
-          :disabled="!canPull"
+          :disabled="!canPull || revealLocked"
           :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
-          @click="simulator.draw(10)"
+          @click="draw(10)"
           ><template #icon><TicketsIcon :size="17" aria-hidden="true" /></template
         ></Button>
       </div>
@@ -335,6 +367,15 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
         t(announcement.key, { count: announcement.count ?? 0 })
       }}</span>
     </div>
+    <WarpRevealOverlay
+      :visible="revealVisible"
+      :entry="revealEntry"
+      :item="revealEntry ? item(revealEntry.event.itemId) : undefined"
+      :phase="revealPhase"
+      @activate="reveal.activate"
+      @escape="reveal.escape"
+      @after-hide="afterRevealHide"
+    />
     <WarpSelectionDialog
       :visible="selectionOpen"
       :draft="selectionDraft"

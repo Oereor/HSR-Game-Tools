@@ -2,7 +2,7 @@ import { definePreset } from '@primeuix/themes'
 import Aura from '@primeuix/themes/aura'
 export const warpVisualTokens = {
   surface: '#22252b',
-  rarity3: '#6489B4',
+  rarity3: '#6A8EB7',
   rarity4: '#CE8FFF',
   rarity5: '#FFD17A',
 } as const

@@ -452,6 +452,18 @@
       "light-cone": "Light Cone",
       "unknown": "Unknown type"
     },
+    "resultTooltip": {
+      "name": "{name} ({metadata})",
+      "separator": " · ",
+      "rarity": "Rarity: {count} stars",
+      "kind": "Type: {kind}"
+    },
+    "reveal": {
+      "title": "Warp result: {name}",
+      "action": "{name}. {action}. Escape ends the current reveal.",
+      "skip": "Click to view the item artwork",
+      "continue": "Click to continue"
+    },
     "details": {
       "title": "Item details",
       "open": "View details: {summary}",
