@@ -158,7 +158,7 @@ export function validateRequest(
   )
   requireValue(Number.isSafeInteger(3 * request.slots + 1), 'Slots exceed safe model bounds')
   if (publicMode) {
-    requireValue([11, 12, 13].includes(request.slots), 'User slots must be 11, 12 or 13')
+    requireValue(request.slots <= 13, 'User slots must be between 1 and 13')
     requireValue(request.emblemBudget >= 12, 'User emblem budget must be at least 12')
   }
   parseTasks(request.tasks, snapshot)

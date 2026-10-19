@@ -12,6 +12,7 @@ export default defineConfigWithVueTs(
     'dist/**',
     'dist-subpath/**',
     'node_modules/**',
+    'vendor/astral-ui/**',
   ]),
   ...pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,

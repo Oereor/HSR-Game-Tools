@@ -1,7 +1,6 @@
 import { computed, isProxy } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { createCurrencyWarsSession } from '../../../src/tools/currency-wars/ui/session'
-import { createTaskSelection } from '../../../src/tools/currency-wars/ui/task-selection'
 import { resultSummary } from '../../../src/tools/currency-wars/ui/result-summary'
 import { loadPageData } from '../../../src/tools/currency-wars/ui/data'
 import type {
@@ -172,7 +171,7 @@ describe('currency-wars page session', () => {
       completed: 1,
       tasks: 1,
       emblems: 0,
-      budget: 12,
+      budget: 18,
     })
     session.selectSolution(3)
     session.selectSolution(-1)
@@ -194,44 +193,16 @@ describe('currency-wars page session', () => {
     session.start()
     workers[0]!.emit(good())
     const displayed = () => resultSummary(session.lastValid.value!, session.selectedSolution.value!)
-    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
+    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 18 })
     session.form.taskIds = [tasks[0]!.id]
     session.form.emblemBudget = 20
     expect(session.stale.value).toBe(true)
     session.start()
     session.cancel()
-    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
+    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 18 })
     session.start()
     workers[2]!.emit({ ...good(), status: 'no-result', solutions: [], totalElapsedSeconds: 0.1 })
-    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 12 })
-    session.dispose()
-  })
-
-  it('removes and reselects tasks independently when one trait has multiple thresholds', () => {
-    const sameTrait = [task(2007, 1, 'low'), task(2007, 2, 'high')]
-    const session = createCurrencyWarsSession(snapshot, sameTrait, () => new FakeWorker())
-    const selection = createTaskSelection(
-      sameTrait,
-      () => session.form.taskIds,
-      (ids) => {
-        session.form.taskIds = ids
-      },
-    )
-    selection.remove('low')
-    expect(session.form.taskIds).toEqual(['high'])
-    selection.open()
-    expect(selection.taskIds.value).toEqual(['high'])
-    selection.selectAll()
-    selection.cancel()
-    expect(session.form.taskIds).toEqual(['high'])
-    selection.open()
-    selection.selectAll()
-    selection.confirm()
-    expect(session.form.taskIds).toEqual(['low', 'high'])
-    selection.remove('high')
-    selection.remove('low')
-    expect(session.errors.value).toContain('taskIds')
-    expect(session.start()).toBe(false)
+    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 18 })
     session.dispose()
   })
 
@@ -249,8 +220,7 @@ describe('currency-wars page session', () => {
     const { session } = setup()
     expect(session.form).toMatchObject({
       slots: 13,
-      emblemBudget: 12,
-      timeLimitSeconds: 30,
+      emblemBudget: 18,
       includeExperts: false,
       taskIds: tasks.map((t) => t.id),
     })
@@ -262,124 +232,58 @@ describe('currency-wars page session', () => {
     session.dispose()
   })
 
-  it('edits all 25 formal tasks in a detached draft and discards cancelled or closed changes', () => {
+  it('keeps all 25 task IDs selected and immediately reflects direct selection changes', () => {
     const data = loadPageData()
     const session = createCurrencyWarsSession(data.snapshot, data.tasks, () => new FakeWorker())
-    const selection = createTaskSelection(
-      data.tasks,
-      () => session.form.taskIds,
-      (ids) => {
-        session.form.taskIds = ids
-      },
-    )
-    const original = [...session.form.taskIds]
-    selection.open()
-    expect(selection.taskIds.value).toEqual(original)
-    expect(selection.taskIds.value).not.toBe(session.form.taskIds)
-    selection.taskIds.value.splice(0, 1)
-    expect(session.form.taskIds).toEqual(original)
-    selection.clear()
-    expect(selection.taskIds.value).toEqual([])
-    selection.selectAll()
-    expect(selection.taskIds.value).toEqual(data.tasks.map((task) => task.id))
-    expect(selection.taskIds.value).toHaveLength(25)
-    selection.clear()
-    selection.cancel()
-    expect(selection.visible.value).toBe(false)
-    expect(session.form.taskIds).toEqual(original)
-    selection.open()
-    expect(selection.taskIds.value).toEqual(original)
-    selection.cancel()
-    session.dispose()
-  })
-
-  it('keeps the current result fresh until a changed task draft is confirmed, then submits the confirmed tasks', () => {
-    const { session, workers, good } = setup()
-    const selection = createTaskSelection(
-      tasks,
-      () => session.form.taskIds,
-      (ids) => {
-        session.form.taskIds = ids
-      },
-    )
-    session.start()
-    workers[0]!.emit(good())
-    const previous = session.lastValid.value
-    selection.open()
-    selection.clear()
-    expect(session.stale.value).toBe(false)
+    expect(session.form.taskIds).toEqual(data.tasks.map((task) => task.id))
+    expect(session.form.taskIds).toHaveLength(25)
+    session.form.taskIds = session.form.taskIds.filter((id) => id !== data.tasks[0]!.id)
+    expect(session.form.taskIds).toHaveLength(24)
     expect(session.errors.value).toEqual([])
-    selection.cancel()
-    expect(session.lastValid.value).toBe(previous)
-    expect(session.stale.value).toBe(false)
-    selection.open()
-    selection.taskIds.value.reverse()
-    selection.confirm()
-    expect(session.stale.value).toBe(false)
-    selection.open()
-    selection.taskIds.value = [tasks[1]!.id]
-    const draft = selection.taskIds.value
-    selection.confirm()
-    expect(selection.visible.value).toBe(false)
-    expect(session.form.taskIds).toEqual([tasks[1]!.id])
-    selection.confirm()
-    expect(session.form.taskIds).toEqual([tasks[1]!.id])
-    expect(session.form.taskIds).not.toBe(draft)
-    expect(session.stale.value).toBe(true)
-    expect(session.lastValid.value).toBe(previous)
-    expect(previous!.request.tasks).toEqual(tasks)
-    expect(session.start()).toBe(true)
-    expect(workers[1]!.messages[0]!.request.tasks).toEqual([tasks[1]])
-    workers[1]!.emit(good())
-    expect(session.stale.value).toBe(false)
+    session.form.taskIds = []
+    expect(session.start()).toBe(false)
+    expect(session.errors.value).toContain('taskIds')
     session.dispose()
   })
 
-  it('rejects an empty confirmed selection without losing the valid result and can select all again', () => {
-    const { session, workers, good } = setup()
-    const selection = createTaskSelection(
-      tasks,
-      () => session.form.taskIds,
-      (ids) => {
-        session.form.taskIds = ids
-      },
-    )
-    session.start()
-    workers[0]!.emit(good())
-    const previous = session.lastValid.value
-    selection.open()
-    selection.clear()
-    selection.confirm()
-    expect(session.form.taskIds).toEqual([])
-    expect(session.stale.value).toBe(true)
-    expect(session.errors.value).toContain('taskIds')
-    expect(session.start()).toBe(false)
-    expect(workers).toHaveLength(1)
-    expect(session.lastValid.value).toBe(previous)
-    selection.open()
-    selection.selectAll()
-    selection.confirm()
-    expect(session.stale.value).toBe(false)
+  it.each(Array.from({ length: 13 }, (_, index) => index + 1))(
+    'submits %i slots with the fixed 60 second page budget',
+    (slots) => {
+      const { session, workers } = setup()
+      session.form.slots = slots
+      expect(session.start()).toBe(true)
+      expect(workers[0]!.messages[0]!.request).toMatchObject({
+        slots,
+        timeLimitSeconds: 60,
+        emblemBudget: 18,
+      })
+      expect('timeLimitSeconds' in session.form).toBe(false)
+      session.dispose()
+    },
+  )
+
+  it.each([12, 18, 39])('accepts page emblem budget %i', (emblemBudget) => {
+    const { session, workers } = setup()
+    session.form.emblemBudget = emblemBudget
     expect(session.start()).toBe(true)
-    expect(workers[1]!.messages[0]!.request.tasks).toEqual(tasks)
+    expect(workers[0]!.messages[0]!.request.emblemBudget).toBe(emblemBudget)
     session.dispose()
   })
 
   it('copies the exact request and snapshot into one Worker and prevents duplicate starts', () => {
     const { session, workers, good } = setup()
     session.form.slots = 11
-    session.form.emblemBudget = Number.MAX_SAFE_INTEGER
+    session.form.emblemBudget = 39
     session.form.includeExperts = true
-    session.form.timeLimitSeconds = 7
     expect(session.start()).toBe(true)
     expect(session.start()).toBe(false)
     expect(workers).toHaveLength(1)
     const sent = workers[0]!.messages[0]!
     expect(sent.request).toEqual({
       slots: 11,
-      emblemBudget: Number.MAX_SAFE_INTEGER,
+      emblemBudget: 39,
       includeExperts: true,
-      timeLimitSeconds: 7,
+      timeLimitSeconds: 60,
       tasks,
     })
     expect(sent.snapshot).toEqual(snapshot)
@@ -395,13 +299,12 @@ describe('currency-wars page session', () => {
   })
 
   it.each([
-    ['slots', null],
-    ['slots', 10],
-    ['emblemBudget', null],
+    ['slots', 0],
+    ['slots', 14],
+    ['emblemBudget', 40],
     ['emblemBudget', 11],
     ['emblemBudget', 12.5],
-    ['timeLimitSeconds', 0],
-    ['timeLimitSeconds', 1.5],
+    ['slots', 1.5],
   ] as const)('rejects invalid %s=%s before starting a Worker', (field, value) => {
     const { session, workers } = setup()
     session.form[field] = value
@@ -417,13 +320,13 @@ describe('currency-wars page session', () => {
     expect(session.stale.value).toBe(false)
     session.form.taskIds.reverse()
     expect(session.stale.value).toBe(false)
+    session.form.emblemBudget = 19
+    expect(session.stale.value).toBe(true)
     session.form.emblemBudget = 18
-    expect(session.stale.value).toBe(true)
-    session.form.emblemBudget = 12
     expect(session.stale.value).toBe(false)
-    session.form.emblemBudget = null
+    session.form.emblemBudget = NaN
     expect(session.stale.value).toBe(true)
-    expect(session.lastValid.value!.request.emblemBudget).toBe(12)
+    expect(session.lastValid.value!.request.emblemBudget).toBe(18)
   })
 
   it('cancels, releases and restarts while ignoring old and out-of-order responses', () => {

@@ -1,0 +1,41 @@
+/* Only Currency Wars panels and their explicitly marked teleported dialog. */
+.currency-theme {
+  --color-ink: var(--h-ink);
+  --color-muted: #68676f;
+  --color-line: var(--h-line);
+  --color-surface: var(--h-paper-light);
+  --color-ally: #41654e;
+  --color-accent: #826330;
+  --h-switch-font-size: 13px;
+  --h-choice-font-size: 13px;
+  font-size: 13px;
+}
+.currency-theme img[data-currency-kind='trait'] {
+  filter: brightness(0) opacity(0.78);
+}
+.currency-theme .currency-notice {
+  color: var(--color-muted);
+  margin: 0 0 16px;
+}
+.currency-theme .currency-notice--warning {
+  color: #7b571d;
+}
+.currency-theme .currency-notice--error,
+.currency-theme .currency-error {
+  color: #963f3b;
+}
+.currency-theme .currency-error {
+  margin-top: 10px;
+  font-size: 12px;
+}
+.currency-theme.currency-role-dialog {
+  --p-dialog-background: var(--h-paper-light);
+  --p-dialog-color: var(--h-ink);
+  --p-dialog-border-color: var(--h-line);
+  --p-dialog-border-radius: var(--h-radius);
+  --p-button-text-secondary-color: var(--h-ink);
+  --p-button-text-secondary-hover-color: var(--h-ink);
+  --p-button-text-secondary-hover-background: #3031390d;
+  --p-button-text-secondary-active-color: var(--h-ink);
+  --p-button-text-secondary-active-background: #3031391a;
+}

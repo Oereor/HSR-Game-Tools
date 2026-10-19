@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import Divider from 'primevue/divider'
 import CurrencyImage from './CurrencyImage.vue'
 import type { EmblemDemand } from '../ui/crafting'
 
@@ -9,10 +8,8 @@ const { t, n } = useI18n()
 </script>
 
 <template>
-  <details open class="currency-emblem-demand">
-    <summary>
-      <h2>{{ t('currencyWars.crafting.title') }}</h2>
-    </summary>
+  <section class="currency-emblem-demand" aria-labelledby="currency-emblems-heading">
+    <h2 id="currency-emblems-heading">{{ t('currencyWars.crafting.title') }}</h2>
     <p v-if="!demands.length" class="currency-demand-empty">
       {{ t('currencyWars.crafting.empty') }}
     </p>
@@ -40,9 +37,9 @@ const { t, n } = useI18n()
           >
             <span v-if="!demand.recipes.length" class="currency-demand-none">—</span>
             <template v-for="(recipe, index) in demand.recipes" :key="recipe.craftIds.join(',')">
-              <Divider v-if="index" class="currency-recipe-divider">{{
-                t('currencyWars.crafting.or')
-              }}</Divider>
+              <p v-if="index" class="currency-recipe-divider">
+                {{ t('currencyWars.crafting.or') }}
+              </p>
               <div class="currency-recipe">
                 <template
                   v-for="(material, materialIndex) in recipe.materials"
@@ -64,20 +61,16 @@ const { t, n } = useI18n()
         </li>
       </ul>
     </template>
-  </details>
+  </section>
 </template>
 
 <style scoped>
 .currency-emblem-demand {
   min-width: 0;
 }
-summary {
-  cursor: pointer;
-}
 h2 {
-  display: inline;
-  font-size: 20px;
-  margin: 0;
+  font-size: 15px;
+  margin: 0 0 12px;
 }
 .currency-demand-hint,
 .currency-demand-empty {
@@ -90,15 +83,13 @@ h2 {
   list-style: none;
   padding: 0;
   margin: 0;
-  border: 1px solid var(--color-line);
-  border-radius: 6px;
 }
 .currency-demand-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr);
   gap: 12px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--color-line);
   font-size: 13px;
 }

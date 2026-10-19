@@ -23,7 +23,7 @@ async function main() {
   if (values.help) {
     console.log(
       '货币战争羁绊优化器 V1\n' +
-        'npm run currency-wars -- [--slots 11|12|13] [--emblems 12] [--include-experts]\n' +
+        'npm run currency-wars -- [--slots 1..13] [--emblems 12] [--include-experts]\n' +
         '  [--tasks <JSON文件>] [--select all|编号,任务ID] [--time-limit 30] [--non-interactive]\n' +
         '默认 13 槽、12 星徽、排除专家、30 秒；非交互模式默认选择全部任务。',
     )
@@ -50,7 +50,7 @@ async function main() {
     const readline = createInterface({ input: process.stdin, output: process.stdout })
     try {
       if (values.slots === undefined)
-        request.slots = Number((await readline.question('上场槽位 11/12/13 [13]：')).trim() || '13')
+        request.slots = Number((await readline.question('上场槽位 1–13 [13]：')).trim() || '13')
       if (values.emblems === undefined)
         request.emblemBudget = Number(
           (await readline.question('星徽预算，至少 12 [12]：')).trim() || '12',

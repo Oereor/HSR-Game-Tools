@@ -8,8 +8,19 @@ export default defineConfig({
         test: {
           name: 'unit',
           include: ['tests/**/*.test.ts'],
-          exclude: ['tests/unit/warp-simulator/*-render.test.ts'],
+          exclude: [
+            'tests/unit/warp-simulator/*-render.test.ts',
+            'tests/unit/currency-wars/*-render.test.ts',
+          ],
           environment: 'node',
+        },
+      },
+      {
+        plugins: [vue()],
+        test: {
+          name: 'currency-render',
+          include: ['tests/unit/currency-wars/*-render.test.ts'],
+          environment: './tests/fixtures/warp-simulator/node-render-environment.ts',
         },
       },
       {

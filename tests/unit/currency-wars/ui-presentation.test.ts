@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { compileStyle } from 'vue/compiler-sfc'
 import { createI18n } from 'vue-i18n'
 import zhCN from '../../../src/locales/zh-CN.json'
 import en from '../../../src/locales/en.json'
@@ -135,6 +136,22 @@ describe('currency-wars UI data and visuals', () => {
     expect(target.slots.map((slot) => slot!.traitId)).toEqual([1001, 2010, 2012])
   })
 
+  it('keeps the vendored theme opt-in and every theme selector inside its explicit boundary', () => {
+    const library = new URL('../../../vendor/astral-ui/src/lib/', import.meta.url)
+    const entry = readFileSync(new URL('components.ts', library), 'utf8')
+    expect(entry).not.toContain("import './theme.css'")
+    const source = readFileSync(new URL('scoped-theme.css', library), 'utf8')
+    const result = compileStyle({ source, filename: 'scoped-theme.css', id: 'scope-check' })
+    expect(result.errors).toEqual([])
+    const selectors: string[] = []
+    result.rawResult!.root.walkRules((rule) => {
+      selectors.push(...rule.selectors)
+    })
+    expect(selectors.length).toBeGreaterThan(20)
+    expect(selectors.every((selector) => selector.includes(':where(.h-theme)'))).toBe(true)
+    expect(source).not.toContain('font.ttf')
+  })
+
   it('registers a lazy page, keeps image-error fallback, and never calls the solver from the page thread', () => {
     const source = (file: string) =>
       readFileSync(new URL('../../../' + file, import.meta.url), 'utf8')
@@ -149,7 +166,7 @@ describe('currency-wars UI data and visuals', () => {
     const image = source('src/tools/currency-wars/components/CurrencyImage.vue')
     expect(image).toContain('@error=')
     expect(image).toContain('v-else')
-    expect(source('src/tools/currency-wars/components/CurrencyResults.vue')).toContain(
+    expect(source('src/tools/currency-wars/components/CurrencyCandidateResults.vue')).toContain(
       'activeThreshold !== null',
     )
   })

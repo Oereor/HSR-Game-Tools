@@ -495,41 +495,20 @@
     "cancel": "取消求解",
     "running": "正在初始化并求解，页面仍可操作…",
     "cancelled": "本次求解已取消。",
-    "rules": "只优化羁绊人数。布洛妮娅平局时两侧均不计她的人数，并禁止其成为领航员目标；最优性仅针对当前模型。",
-    "type": {
-      "camp": "阵营羁绊",
-      "class": "流派羁绊",
-      "unique": "独立羁绊"
-    },
     "form": {
       "title": "求解配置",
       "slots": "上场槽位",
       "budget": "星徽预算",
-      "budgetHint": "至少 12 个；每名角色最多佩戴 3 个，不必用满预算。",
       "experts": "允许专家角色",
-      "expertsHint": "允许专家角色参与候选，不代表强制选择。",
-      "expertsAllowed": "允许专家",
-      "expertsExcluded": "排除专家",
-      "time": "总搜索预算（秒）",
       "tasks": "目标任务",
-      "editTasks": "编辑目标任务",
-      "advanced": "高级设置",
-      "confirmSelection": "确认",
-      "cancelSelection": "取消",
       "selection": "已选 {selected} / {total}",
-      "selectAll": "全选",
-      "clear": "清空",
-      "task": "{name} ≥ {count} 人",
-      "limits": "编队限制",
-      "required": "至少 {count} 人",
-      "requiredCompact": "≥ {count}",
-      "removeTask": "移除{name}（至少 {count} 人）",
-      "timeHint": "所有方案共用此预算，包含初始化；到时保留已验证的最佳候选。"
+      "settings": "设置",
+      "decrease": "减少{name}",
+      "increase": "增加{name}"
     },
     "validation": {
-      "slots": "请选择 11、12 或 13 个槽位。",
-      "emblemBudget": "请输入至少 12 的安全整数预算。",
-      "timeLimitSeconds": "请输入正整数秒数。",
+      "slots": "请选择 1～13 的整数槽位数。",
+      "emblemBudget": "请选择 12～39 的整数星徽预算。",
       "taskIds": "请至少选择一项任务。"
     },
     "status": {
@@ -545,23 +524,16 @@
       "data": "无法加载或验证本工具数据，请刷新页面后重试。",
       "unavailable": "无法启动求解 Worker，请检查浏览器支持或资源加载后重试。",
       "runtime": "求解 Worker 运行异常，请重新求解。",
-      "message": "无法读取求解 Worker 的有效结果，请重新求解。",
-      "details": "技术详情"
+      "message": "无法读取求解 Worker 的有效结果，请重新求解。"
     },
     "result": {
       "title": "求解结果",
       "stale": "配置已更改：下方方案对应上次求解条件，点击“开始求解”后才会更新。",
       "historical": "下方保留上次有效方案，不代表本次求解结果。",
-      "details": "求解详情",
-      "objectiveBound": "加权目标上界：{value}",
-      "gap": "最优间隙（Gap）：{value}",
-      "conditions": "方案条件：{slots} 槽 · 星徽预算 {budget} · {experts} · 时限 {time} 秒 · {tasks} 项任务",
-      "selectedTasks": "该方案所选任务：{names}",
-      "elapsed": "本批总耗时：{seconds} 秒",
       "bronyaWarning": "布洛妮娅两侧人数平局，游戏归属规则尚未确认；两侧均不计她的人数，本方案完成数为保守下界。",
       "genericWarning": "本方案存在模型规则警告，请结合当前规则检查。",
       "lineup": "推荐阵容",
-      "allActiveTraits": "查看全部激活羁绊（{count}）",
+      "allActiveTraits": "已激活羁绊（{count}）",
       "contributors": "提供者：{names}",
       "tasks": "目标任务",
       "taskCounts": "要求 {required} 人 · 实际 {actual} 人",
@@ -572,19 +544,10 @@
       "noTraits": "该方案没有已激活羁绊。",
       "completedSummary": "完成任务 {completed} / {total}",
       "emblemsSummary": "使用星徽 {used} / {budget}",
-      "taskGoal": "队伍中至少包含 {count} 名该羁绊角色。",
       "traitCounts": "{count} 人 · 已激活 {threshold} 人档",
       "mechanics": "特殊机制说明",
       "solution": "方案 {index}",
-      "chooseSolution": "选择推荐方案",
-      "proof": "原问题证明：最大任务完成数{count}；最少星徽消耗{emblems}。",
-      "proven": "已证明",
-      "unproven": "尚未证明",
-      "batchEnd": "本批搜索结束原因：{reason}",
-      "candidateElapsed": "本方案搜索 {seconds} 秒；请求开始后 {found} 秒完成验证。",
-      "subproblemStatus": "本方案所在子问题的求解状态：{status}（排除其他配置后的模型）",
-      "originalOptimal": "本方案达到原问题已证明的最优目标。",
-      "candidateOnly": "本方案是独立验证的合法候选；未标记为原问题全局最优。"
+      "chooseSolution": "选择推荐方案"
     },
     "crafting": {
       "title": "星徽需求",
@@ -615,13 +578,6 @@
       "extraTitle": "特殊机制新增羁绊",
       "navigatorTarget": "领航员目标：{name}",
       "trailblazerInheritance": "选择开拓者时，姬子始终同时获得能量与欢愉，不继承目标星徽新增的流派；开拓者自身固有羁绊仍由前后台形态决定，佩戴星徽的效果正常生效。"
-    },
-    "termination": {
-      "complete": "已取得所需方案",
-      "exhausted": "没有更多符合质量条件的配置",
-      "budget": "已用完共享时间预算",
-      "error": "求解或验证错误",
-      "empty": "未选择任务"
     }
   }
 }

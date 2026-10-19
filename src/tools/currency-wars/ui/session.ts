@@ -5,13 +5,12 @@ import type { WorkerFactory, WorkerFailure, WorkerPort } from '../browser/protoc
 import { validateRequest } from '../validation'
 
 export interface SolverForm {
-  slots: number | null
-  emblemBudget: number | null
-  timeLimitSeconds: number | null
+  slots: number
+  emblemBudget: number
   includeExperts: boolean
   taskIds: string[]
 }
-export type FormField = 'slots' | 'emblemBudget' | 'timeLimitSeconds' | 'taskIds'
+export type FormField = 'slots' | 'emblemBudget' | 'taskIds'
 export interface SolvedAttempt {
   requestId: number
   request: OptimizationRequest
@@ -19,19 +18,9 @@ export interface SolvedAttempt {
 }
 export function formErrors(form: SolverForm, tasks: Task[]): FormField[] {
   const errors: FormField[] = []
-  if (form.slots === null || ![11, 12, 13].includes(form.slots)) errors.push('slots')
-  if (
-    form.emblemBudget === null ||
-    !Number.isSafeInteger(form.emblemBudget) ||
-    form.emblemBudget < 12
-  )
+  if (!Number.isSafeInteger(form.slots) || form.slots < 1 || form.slots > 13) errors.push('slots')
+  if (!Number.isSafeInteger(form.emblemBudget) || form.emblemBudget < 12 || form.emblemBudget > 39)
     errors.push('emblemBudget')
-  if (
-    form.timeLimitSeconds === null ||
-    !Number.isSafeInteger(form.timeLimitSeconds) ||
-    form.timeLimitSeconds < 1
-  )
-    errors.push('timeLimitSeconds')
   if (
     !form.taskIds.length ||
     new Set(form.taskIds).size !== form.taskIds.length ||
@@ -60,8 +49,7 @@ export function createCurrencyWarsSession(
 ) {
   const form = reactive<SolverForm>({
     slots: 13,
-    emblemBudget: 12,
-    timeLimitSeconds: 30,
+    emblemBudget: 18,
     includeExperts: false,
     taskIds: tasks.map((t) => t.id),
   })
@@ -82,9 +70,9 @@ export function createCurrencyWarsSession(
   let worker: WorkerPort | undefined
   let disposed = false
   const request = (): OptimizationRequest => ({
-    slots: form.slots!,
-    emblemBudget: form.emblemBudget!,
-    timeLimitSeconds: form.timeLimitSeconds!,
+    slots: form.slots,
+    emblemBudget: form.emblemBudget,
+    timeLimitSeconds: 60,
     includeExperts: form.includeExperts,
     tasks: tasks.filter((t) => form.taskIds.includes(t.id)).map((t) => ({ ...t })),
   })
