@@ -89,6 +89,28 @@
       },
       "artworkPath": "game-assets/warp/d983190b128be36811af85ce6495b3d19f05004592fb2bc98ad6e85cddbdce58.webp"
     },
+    "avatar:1014": {
+      "path": "Warrior",
+      "element": "Wind",
+      "portraitPath": "game-assets/character/1014.webp",
+      "revealArtwork": {
+        "path": "game-assets/warp/225ff056d53e307d5bb9e4e9c52deed9483e704221f073f455457ddb5466217a.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "artworkPath": "game-assets/warp/fe57db53ed94a58f241b66426ad5062fedd744c8071847845c57007c59880052.webp"
+    },
+    "avatar:1015": {
+      "path": "Rogue",
+      "element": "Quantum",
+      "portraitPath": "game-assets/character/1015.webp",
+      "revealArtwork": {
+        "path": "game-assets/warp/f6a1a020fa512fba4cae0a1a93966975fb8c52c620d57d0275c7b9196aef2846.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "artworkPath": "game-assets/warp/f6d802b6ab5fe1e696c3be424eaf5aa755e2cce1d444a73be47a4ce9adb6e7ef.webp"
+    },
     "avatar:1101": {
       "path": "Shaman",
       "element": "Wind",
@@ -440,6 +462,28 @@
         "height": 2048
       },
       "artworkPath": "game-assets/warp/cd6f8d1fbc6e99102fa980e9407fca2fd2cfe5c96a3409d0ff4d675c47f11775.webp"
+    },
+    "avatar:1508": {
+      "path": "Mage",
+      "element": "Quantum",
+      "portraitPath": "game-assets/character/1508.webp",
+      "revealArtwork": {
+        "path": "game-assets/warp/00add9f05772a00d1edeca9d6da750060a9c9713cc509d46ca050494258cdeb7.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "artworkPath": "game-assets/warp/9ce2633237f5ad5106b1ab1927fbb97f402e6efcbd6d0cde7cdf427e89638f79.webp"
+    },
+    "avatar:1509": {
+      "path": "Warrior",
+      "element": "Thunder",
+      "portraitPath": "game-assets/character/1509.webp",
+      "revealArtwork": {
+        "path": "game-assets/warp/9c3e469b04632a4a9ba3cb68331604003ae34effab9d1612835febd1ce63cfcb.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "artworkPath": "game-assets/warp/9171b026eb20c03afc58ef030c9e4a60f1adae980f342ff0672656155c2cea6c.webp"
     },
     "avatar:1512": {
       "path": "Memory",
@@ -1039,6 +1083,24 @@
       },
       "artworkPath": "game-assets/warp/a6aecb426cf56a4db74c535af6c3b1184deeecc7e9f4ca30b8981958f429f722.webp"
     },
+    "light-cone:23045": {
+      "path": "Warrior",
+      "revealArtwork": {
+        "path": "game-assets/warp/23fb52843bdf27b074ea45f288126ae9f6929a5c93735ff45a9034992e5a6fcb.webp",
+        "width": 904,
+        "height": 1260
+      },
+      "artworkPath": "game-assets/warp/79b410aac4d82809a56d6c5a59c2ed2bca989f770f71ee06d1a54f4c888abce9.webp"
+    },
+    "light-cone:23046": {
+      "path": "Rogue",
+      "revealArtwork": {
+        "path": "game-assets/warp/36d1e7b4acbbc3083564b0d80ce38764f15be8b63d568125f5a68d9fca180d1a.webp",
+        "width": 904,
+        "height": 1260
+      },
+      "artworkPath": "game-assets/warp/1b11f6f4b886bb802b650c7d791f0d6fcb6d4e3ffc9967fb84e8b10506ad5f2d.webp"
+    },
     "light-cone:23055": {
       "path": "Elation",
       "revealArtwork": {
@@ -1074,6 +1136,24 @@
         "height": 1260
       },
       "artworkPath": "game-assets/warp/073a4a0356e59661740685605388d2f1131e33634ab850b0ef2ad90f570f738c.webp"
+    },
+    "light-cone:23061": {
+      "path": "Mage",
+      "revealArtwork": {
+        "path": "game-assets/warp/328fbae73628a235cd56dc4f98cfb6739201b8394879fb9f4388f21b099f2c17.webp",
+        "width": 904,
+        "height": 1260
+      },
+      "artworkPath": "game-assets/warp/44627f7928f408b92d1e6c9b724faab8c9ff90aa8adf5f816d6f74cf93a194a4.webp"
+    },
+    "light-cone:23062": {
+      "path": "Warrior",
+      "revealArtwork": {
+        "path": "game-assets/warp/0d7427c4c395f7f65f6391115ba340c33af524afa7641a0167029e6919bf8c93.webp",
+        "width": 904,
+        "height": 1260
+      },
+      "artworkPath": "game-assets/warp/15e4b91587fc0f192eb00f179629d65ac0c019a7acf2abab5bcd7f58bae6762e.webp"
     },
     "light-cone:23063": {
       "path": "Memory",
