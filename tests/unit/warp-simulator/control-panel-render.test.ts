@@ -1,9 +1,6 @@
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
-import { defineComponent, h, nextTick, ref, inject, watch, type App } from 'vue'
+import { defineComponent, h, nextTick, ref, watch, type App } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { compileStyle, parse } from 'vue/compiler-sfc'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import zh from '../../../src/locales/zh-CN.json'
 import en from '../../../src/locales/en.json'
 import WarpBannerList from '../../../src/tools/warp-simulator/components/WarpBannerList.vue'
@@ -20,15 +17,21 @@ import {
   node,
   descendants,
   type HostNode,
-} from '../../fixtures/warp-simulator/node-renderer'
+} from '../../fixtures/currency-wars/node-renderer'
 
 const { useWarpSimulator: makeSimulator } = await vi.importActual<
   typeof import('../../../src/tools/warp-simulator/composables/useWarpSimulator')
 >('../../../src/tools/warp-simulator/composables/useWarpSimulator')
 let simulator: ReturnType<typeof makeSimulator>
-vi.mock('../../../src/tools/warp-simulator/composables/useWarpSimulator', () => ({
-  useWarpSimulator: () => simulator,
-}))
+vi.mock(
+  '../../../src/tools/warp-simulator/composables/useWarpSimulator',
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import('../../../src/tools/warp-simulator/composables/useWarpSimulator')
+    >()),
+    useWarpSimulator: () => simulator,
+  }),
+)
 vi.mock('../../../src/tools/warp-simulator/data/adapters/warp-data', async () => {
   const { multiBannerFixture } = await import('../../fixtures/warp-simulator/fixture')
   return { warpSnapshot: multiBannerFixture(), warpVisuals: {}, warpVisualDefinitions: undefined }
@@ -40,28 +43,6 @@ vi.mock('primevue/button', () => ({
       (props, { attrs, slots }) =>
       () =>
         h('button', { type: 'button', ...attrs }, slots.default?.() ?? props.label),
-  }),
-}))
-vi.mock('primevue/tablist', () => ({
-  default: defineComponent({
-    setup:
-      (_, { slots }) =>
-      () =>
-        h('div', slots.default?.()),
-  }),
-}))
-vi.mock('primevue/tab', () => ({
-  default: defineComponent({
-    props: ['value', 'disabled'],
-    setup(props, { slots }) {
-      const tabs = inject<{ updateValue: (value: string) => void }>('$pcTabs')!
-      return () =>
-        h(
-          'button',
-          { role: 'tab', disabled: props.disabled, onClick: () => tabs.updateValue(props.value) },
-          slots.default?.(),
-        )
-    },
   }),
 }))
 vi.mock('primevue/drawer', () => ({
@@ -132,13 +113,42 @@ vi.mock('../../../src/tools/warp-simulator/components/WarpResults.vue', () => ({
   default: { render: () => null },
 }))
 vi.mock('../../../src/tools/warp-simulator/components/WarpItemDetails.vue', () => ({
-  default: { render: () => null },
+  default: defineComponent({
+    props: ['entry'],
+    emits: ['close', 'after-hide'],
+    setup(props, { emit }) {
+      watch(
+        () => props.entry,
+        async (entry) => {
+          if (!entry) {
+            await nextTick()
+            emit('after-hide')
+          }
+        },
+      )
+      return () =>
+        props.entry
+          ? h('section', { class: 'item-dialog' }, [
+              h('button', { id: 'test-close-details', onClick: () => emit('close') }),
+            ])
+          : null
+    },
+  }),
 }))
 vi.mock('../../../src/tools/warp-simulator/composables/useWarpReducedMotion', () => ({
   useWarpReducedMotion: () => ref(true),
 }))
 
 const apps: App[] = []
+beforeEach(() => {
+  vi.stubGlobal(
+    'ResizeObserver',
+    class {
+      observe() {}
+      disconnect() {}
+    },
+  )
+})
 afterEach(() => {
   apps.splice(0).forEach((app) => app.unmount())
   vi.unstubAllGlobals()
@@ -261,7 +271,23 @@ describe('Rendered banner list', () => {
 })
 
 describe('Control page integration (Node renderer; browser overlays are stubbed)', () => {
-  it('matches the compiled flex constraints to the real PrimeVue TabPanel with a long list', async () => {
+  it('closes history before details and restores the history row after Dialog hide', async () => {
+    const { root, focused } = mountPage()
+    choose()
+    await simulator.draw(10)
+    const session = simulator.session.value
+    await click(byId(root, 'warp-history-trigger'))
+    const row = byClass(root, 'warp-history-name')[0]!
+    const id = String(row.props.id)
+    await click(row)
+    expect(byId(root, 'warp-history-drawer')).toBeUndefined()
+    expect(byClass(root, 'item-dialog')).toHaveLength(1)
+    await click(byId(root, 'test-close-details'))
+    expect(byId(root, 'warp-history-drawer')).toBeDefined()
+    expect(focused.at(-1)).toBe(id)
+    expect(simulator.session.value).toBe(session)
+  })
+  it('keeps linked Astral tabs, a long banner list and the independent footer', async () => {
     const many = multiBannerFixture()
     const sourceBanner = many.banners.find((entry) => entry.kind === 'event-avatar')!
     many.banners.push(
@@ -274,40 +300,17 @@ describe('Control page integration (Node renderer; browser overlays are stubbed)
     const { root } = mountPage('zh-CN', many)
     await click(byId(root, 'warp-controls-trigger'))
     const controls = byClass(root, 'warp-controls')[0]!
-    const scope = Object.keys(controls.props).find((key) => key.startsWith('data-v-'))!
-    expect(scope).toBeDefined()
     const panels = byClass(root, 'warp-control-panel')
-    const activePanel = panels.find((entry) => entry.props['data-p-active'] === true)!
-    expect(activePanel.props['data-pc-name']).toBe('tabpanel')
-    // The regression: a fragment-root TabPanel does not receive the page's scope attribute.
-    expect(activePanel.props).not.toHaveProperty(scope)
-    expect(activePanel.parent).toBe(byClass(root, 'warp-control-panels')[0])
-    expect(activePanel.parent!.parent).toBe(byClass(root, 'warp-control-tabs')[0])
+    const activePanel = panels.find((entry) => entry.props.id === 'warp-kind-panel-event-avatar')!
+    expect(activePanel.props.role).toBe('tabpanel')
+    expect(activePanel.props['aria-labelledby']).toBe('warp-kind-tab-event-avatar')
     const footer = byClass(root, 'warp-control-footer')[0]!
     expect(footer.parent).toBe(controls)
     expect(byClass(root, 'warp-control-tabs')[0]!.parent).toBe(controls)
-    const page = readFileSync(resolve('src/tools/warp-simulator/WarpSimulatorPage.vue'), 'utf8')
-    const { descriptor } = parse(page)
-    const compiled = compileStyle({
-      source: descriptor.styles[0]!.content,
-      filename: 'WarpSimulatorPage.vue',
-      id: scope,
-      scoped: true,
-    })
-    expect(compiled.errors).toEqual([])
-    const rule = compiled.code.match(
-      new RegExp(String.raw`\.warp-controls\[${scope}\]\s+\.warp-control-panel\s*\{([^}]+)\}`),
-    )
-    expect(
-      rule,
-      'the panel selector must match through a scoped controls ancestor, not a scope attribute on the panel',
-    ).not.toBeNull()
-    expect(rule![1]).toContain('display: flex;')
-    expect(rule![1]).toContain('flex-direction: column;')
-    expect(rule![1]).toContain('flex: 1;')
-    expect(rule![1]).toContain('min-height: 0;')
-    expect(rule![1]).toContain('overflow: hidden;')
-    expect(rule![1]).not.toContain('height: 100%')
+    for (const tab of descendants(root).filter((entry) => entry.props.role === 'tab')) {
+      const panel = panels.find((entry) => entry.props.id === tab.props['aria-controls'])!
+      expect(panel.props['aria-labelledby']).toBe(tab.props.id)
+    }
     const rows = byClass(root, 'warp-banner-row')
     expect(rows).toHaveLength(20)
     const session = simulator.session.value

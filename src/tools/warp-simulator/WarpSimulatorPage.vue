@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, shallowRef, watch } from 'vue'
+import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Drawer from 'primevue/drawer'
+import { HButton, HTabs } from 'astral-ui/components'
+import 'astral-ui/scoped-theme.css'
+import './ui/controls.css'
 import Badge from 'primevue/badge'
-import Tabs from 'primevue/tabs'
-import TabList from 'primevue/tablist'
-import Tab from 'primevue/tab'
-import TabPanels from 'primevue/tabpanels'
-import TabPanel from 'primevue/tabpanel'
 import {
   Ticket,
   Tickets as TicketsIcon,
@@ -18,6 +16,8 @@ import {
   SlidersHorizontal,
   History,
   Plus,
+  ChevronLeft,
+  ChevronRight,
 } from '@lucide/vue'
 import type { ToolLocale } from '../../locales/types'
 import type { WarpBannerKind } from './data/schema'
@@ -107,6 +107,24 @@ function sourceLabel(bannerId: string) {
 const controlsLocked = computed(
   () => busy.value || revealLocked.value || selectionOpen.value || !!resetScope.value,
 )
+const kindTabs = computed(() =>
+  simulator.bannerGroups.map((group) => ({
+    value: group.kind,
+    label: t(`warp.kind.${group.kind}`),
+    disabled: controlsLocked.value,
+  })),
+)
+const kindViewport = ref<HTMLElement>()
+function scrollKinds(direction: -1 | 1) {
+  const viewport = kindViewport.value
+  if (!viewport) return
+  viewport.scrollBy({ left: direction * viewport.clientWidth * 0.75, behavior: 'auto' })
+}
+function revealKindTab(event: FocusEvent) {
+  const target = event.target as HTMLElement
+  if (target.getAttribute('role') === 'tab')
+    target.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' })
+}
 function focus(id: string | undefined) {
   if (!id) return
   void nextTick(() => {
@@ -155,26 +173,26 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
         {{ activeBanner ? sourceLabel(activeBanner.banner.id) : t('warp.noBanners') }}
       </p>
       <div class="warp-panel-actions">
-        <Button
+        <HButton
+          class="h-theme warp-astral-button"
+          variant="secondary"
           id="warp-controls-trigger"
-          :label="t('warp.panels.controls')"
-          severity="secondary"
-          outlined
           :aria-expanded="panel === 'controls'"
           aria-controls="warp-controls-drawer"
           @click="overlay.openPanel('controls')"
-          ><template #icon><SlidersHorizontal :size="16" aria-hidden="true" /></template
-        ></Button>
-        <Button
+          ><SlidersHorizontal :size="16" aria-hidden="true" />{{
+            t('warp.panels.controls')
+          }}</HButton
+        >
+        <HButton
+          class="h-theme warp-astral-button"
+          variant="secondary"
           id="warp-history-trigger"
-          :label="t('warp.history.title')"
-          severity="secondary"
-          outlined
           :aria-expanded="panel === 'history'"
           aria-controls="warp-history-drawer"
           @click="overlay.openPanel('history')"
-          ><template #icon><History :size="16" aria-hidden="true" /></template
-        ></Button>
+          ><History :size="16" aria-hidden="true" />{{ t('warp.history.title') }}</HButton
+        >
       </div>
     </header>
     <WarpResults
@@ -193,36 +211,39 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
               : ''
         }}
       </p>
-      <Button
+      <HButton
+        class="h-theme warp-astral-button"
+        variant="secondary"
         v-if="activeBanner?.requiresSelection"
         id="warp-action-selection"
-        :label="t(selectedAvatarIds.length ? 'warp.selection.edit' : 'warp.selection.choose')"
-        size="small"
-        severity="secondary"
-        outlined
+        size="sm"
         :disabled="controlsLocked"
         @click="openSelection('warp-action-selection')"
-        ><template #icon><UsersRound :size="16" aria-hidden="true" /></template
-      ></Button>
+        ><UsersRound :size="16" aria-hidden="true" />{{
+          t(selectedAvatarIds.length ? 'warp.selection.edit' : 'warp.selection.choose')
+        }}</HButton
+      >
       <div class="warp-actions" :aria-busy="busy">
-        <Button
+        <HButton
+          class="h-theme warp-astral-button"
+          variant="secondary"
           id="warp-pull-one"
-          :label="t('warp.pullOne')"
-          severity="secondary"
-          outlined
+          :loading="busy"
           :disabled="!canPull || revealLocked"
           :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
           @click="draw(1)"
-          ><template #icon><Ticket :size="17" aria-hidden="true" /></template
-        ></Button>
-        <Button
+          ><Ticket :size="17" aria-hidden="true" />{{ t('warp.pullOne') }}</HButton
+        >
+        <HButton
+          class="h-theme warp-astral-button"
+          variant="primary"
           id="warp-pull-ten"
-          :label="t('warp.pullTen')"
+          :loading="busy"
           :disabled="!canPull || revealLocked"
           :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
           @click="draw(10)"
-          ><template #icon><TicketsIcon :size="17" aria-hidden="true" /></template
-        ></Button>
+          ><TicketsIcon :size="17" aria-hidden="true" />{{ t('warp.pullTen') }}</HButton
+        >
       </div>
       <p v-if="diagnostic" id="warp-draw-error" class="warp-error" role="alert">
         {{ t(`warp.error.${diagnostic.code}`) }}
@@ -264,40 +285,49 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       @after-show="afterPanelShow"
     >
       <section class="warp-controls" :aria-label="t('warp.panels.controls')">
-        <Tabs
-          v-if="simulator.bannerGroups.length"
-          class="warp-control-tabs"
-          :value="activeKind ?? ''"
-          scrollable
-          :dt="{
-            tablist: { background: 'transparent' },
-            tabpanel: { background: 'transparent', padding: '0' },
-            navButton: { background: 'var(--p-drawer-background)' },
-          }"
-          @update:value="simulator.selectKind($event as WarpBannerKind)"
-        >
-          <TabList
-            class="warp-control-tablist"
-            :pt="{
-              tabList: { 'aria-label': t('warp.bannerKind') },
-              prevButton: { 'aria-label': t('warp.previousKinds') },
-              nextButton: { 'aria-label': t('warp.nextKinds') },
-            }"
-          >
-            <Tab
-              v-for="group in simulator.bannerGroups"
-              :key="group.kind"
-              :value="group.kind"
+        <div v-if="simulator.bannerGroups.length" class="warp-control-tabs">
+          <div class="warp-kind-navigation">
+            <HButton
+              size="sm"
+              variant="ghost"
+              class="h-theme warp-astral-button warp-kind-arrow"
               :disabled="controlsLocked"
+              :aria-label="t('warp.previousKinds')"
+              @click="scrollKinds(-1)"
             >
-              {{ t(`warp.kind.${group.kind}`) }}
-            </Tab>
-          </TabList>
-          <TabPanels class="warp-control-panels">
-            <TabPanel
+              <ChevronLeft :size="16" aria-hidden="true" />
+            </HButton>
+            <div ref="kindViewport" class="warp-kind-viewport" @focusin="revealKindTab">
+              <HTabs
+                class="h-theme warp-astral-tabs"
+                :model-value="activeKind ?? ''"
+                :items="kindTabs"
+                :label="t('warp.bannerKind')"
+                id-prefix="warp-kind"
+                variant="pill"
+                @update:model-value="simulator.selectKind($event as WarpBannerKind)"
+              />
+            </div>
+            <HButton
+              size="sm"
+              variant="ghost"
+              class="h-theme warp-astral-button warp-kind-arrow"
+              :disabled="controlsLocked"
+              :aria-label="t('warp.nextKinds')"
+              @click="scrollKinds(1)"
+            >
+              <ChevronRight :size="16" aria-hidden="true" />
+            </HButton>
+          </div>
+          <div class="warp-control-panels">
+            <section
               v-for="group in simulator.bannerGroups"
               :key="group.kind"
-              :value="group.kind"
+              v-show="group.kind === activeKind"
+              :id="`warp-kind-panel-${group.kind}`"
+              role="tabpanel"
+              :aria-labelledby="`warp-kind-tab-${group.kind}`"
+              tabindex="0"
               class="warp-control-panel"
             >
               <div v-if="group.kind === activeKind" class="warp-banner-scroll">
@@ -309,9 +339,9 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
                   @select="simulator.selectBanner"
                 />
               </div>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
+            </section>
+          </div>
+        </div>
         <p v-else class="warp-no-banners">{{ t('warp.noBanners') }}</p>
         <div class="warp-control-footer">
           <WarpPityPanel
@@ -367,25 +397,24 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
             </p>
           </div>
           <div class="warp-reset-actions">
-            <Button
-              :label="t('warp.reset.group')"
-              size="small"
-              severity="secondary"
-              text
+            <HButton
+              class="h-theme warp-astral-button"
+              variant="ghost"
+              size="sm"
               :disabled="controlsLocked || !activeBanner"
               id="warp-reset-group"
               @click="openReset('group')"
-              ><template #icon><RotateCcw :size="14" aria-hidden="true" /></template
-            ></Button>
-            <Button
-              :label="t('warp.reset.all')"
-              size="small"
-              severity="secondary"
-              text
+              ><RotateCcw :size="14" aria-hidden="true" />{{ t('warp.reset.group') }}</HButton
+            >
+            <HButton
+              class="h-theme warp-astral-button"
+              variant="ghost"
+              size="sm"
               :disabled="controlsLocked"
               id="warp-reset-all"
               @click="openReset('all')"
-            />
+              >{{ t('warp.reset.all') }}</HButton
+            >
           </div>
         </div>
       </section>
@@ -469,15 +498,19 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
         {{ t(resetScope === 'group' ? 'warp.reset.groupConfirm' : 'warp.reset.allConfirm') }}
       </p>
       <template #footer
-        ><Button
-          :label="t('warp.cancel')"
+        ><HButton
+          class="h-theme warp-astral-button"
+          variant="secondary"
           autofocus
-          severity="secondary"
-          outlined
-          @click="simulator.cancelReset" /><Button
-          :label="t('warp.reset.confirm')"
+          @click="simulator.cancelReset"
+          >{{ t('warp.cancel') }}</HButton
+        ><HButton
+          class="h-theme warp-astral-button"
+          variant="danger"
           @click="simulator.confirmReset"
-      /></template>
+          >{{ t('warp.reset.confirm') }}</HButton
+        ></template
+      >
     </Dialog>
   </div>
 </template>
@@ -489,10 +522,31 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   color: var(--color-muted);
   font-size: 12px;
 }
-.warp-controls :deep(.p-tab) {
-  white-space: nowrap;
-  font-size: 12px;
-  padding: 12px;
+.warp-kind-navigation {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 4px 0 10px;
+}
+.warp-kind-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 5px;
+  scroll-padding-inline: 5px;
+}
+.warp-kind-viewport :deep(.h-tabs) {
+  width: max-content;
+  min-width: 100%;
+}
+.warp-kind-viewport :deep([role='tab']) {
+  flex: 0 0 auto;
+}
+.warp-kind-arrow {
+  --h-button-padding: 5px;
+  flex-shrink: 0;
 }
 .warp-affinity {
   padding-top: 12px;
@@ -656,11 +710,7 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   min-height: 0;
   overflow: hidden;
 }
-.warp-control-tablist {
-  flex-shrink: 0;
-}
-/* TabPanel has a fragment root, so its DOM node does not inherit this SFC's scope ID. */
-.warp-controls :deep(.warp-control-panel) {
+.warp-control-panel {
   display: flex;
   flex-direction: column;
   flex: 1;

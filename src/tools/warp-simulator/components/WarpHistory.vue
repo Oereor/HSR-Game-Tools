@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
+import { HButton } from 'astral-ui/components'
+import 'astral-ui/scoped-theme.css'
+import '../ui/controls.css'
 import WarpVisualIcon from './WarpVisualIcon.vue'
 import { rarityColorVariable } from './result-presentation'
 import { ChevronLeft, ChevronRight, History } from '@lucide/vue'
@@ -103,27 +106,27 @@ const rows = computed(() =>
       class="warp-history-pagination"
       :aria-label="t('warp.history.pagination')"
     >
-      <Button
+      <HButton
+        class="h-theme warp-astral-button"
+        variant="ghost"
         v-tooltip="t('warp.history.previous')"
         :aria-label="t('warp.history.previous')"
-        severity="secondary"
-        text
         :disabled="page === 0"
         @click="emit('page', page - 1)"
-        ><template #icon><ChevronLeft :size="16" aria-hidden="true" /></template
-      ></Button>
+        ><ChevronLeft :size="16" aria-hidden="true"
+      /></HButton>
       <span>{{
         t('warp.history.page', { current: page + 1, total: Math.ceil(total / HISTORY_PAGE_SIZE) })
       }}</span>
-      <Button
+      <HButton
+        class="h-theme warp-astral-button"
+        variant="ghost"
         v-tooltip="t('warp.history.next')"
         :aria-label="t('warp.history.next')"
-        severity="secondary"
-        text
         :disabled="(page + 1) * HISTORY_PAGE_SIZE >= total"
         @click="emit('page', page + 1)"
-        ><template #icon><ChevronRight :size="16" aria-hidden="true" /></template
-      ></Button>
+        ><ChevronRight :size="16" aria-hidden="true"
+      /></HButton>
     </nav>
   </section>
 </template>

@@ -245,7 +245,22 @@ const condition = (node: TemplateNode) =>
   node.props?.find((prop) => prop.type === 7 && prop.name === 'if')?.exp?.content
 
 describe('control templates and accessible validation wiring', () => {
-  it('keeps the control Drawer inset local and tab surfaces transparent', () => {
+  it('opts into the Astral theme only on buttons and category tabs', () => {
+    for (const file of [
+      'WarpSimulatorPage.vue',
+      'components/WarpSelectionDialog.vue',
+      'components/WarpHistory.vue',
+    ]) {
+      const nodes = template(file)
+      for (const node of nodes) {
+        const classes =
+          node.props?.find((prop) => prop.name === 'class')?.value?.content.split(/\s+/) ?? []
+        if (classes.includes('h-theme')) expect(['HButton', 'HTabs']).toContain(node.tag)
+        if (node.tag === 'HButton' || node.tag === 'HTabs') expect(classes).toContain('h-theme')
+      }
+    }
+  })
+  it('keeps the control Drawer inset and scrolling local', () => {
     const nodes = template('WarpSimulatorPage.vue')
     const drawers = nodes.filter((node) => node.tag === 'Drawer')
     const controls = drawers.find((node) =>
@@ -267,18 +282,17 @@ describe('control templates and accessible validation wiring', () => {
     )
     expect(binding(history, 'pt')).toBeUndefined()
     expect(binding(history, 'style')).not.toContain('--warp-controls-inset')
-    const tabs = nodes.find((node) => node.tag === 'Tabs')!
-    expect(binding(tabs, 'dt')).toMatch(/tablist:\s*\{\s*background:\s*'transparent'/)
-    expect(binding(tabs, 'dt')).toMatch(
-      /tabpanel:\s*\{\s*background:\s*'transparent',\s*padding:\s*'0'/,
-    )
   })
   it('connects real tabs/panels and the full banner list, with a separate control footer', () => {
     const nodes = template('WarpSimulatorPage.vue')
+    expect(nodes.find((node) => node.tag === 'HTabs')).toBeDefined()
     expect(
-      nodes.find((node) => node.tag === 'Tabs')?.props?.some((prop) => prop.name === 'scrollable'),
+      nodes.some(
+        (node) =>
+          node.tag === 'section' &&
+          node.props?.some((prop) => prop.name === 'role' && prop.value?.content === 'tabpanel'),
+      ),
     ).toBe(true)
-    expect(nodes.find((node) => node.tag === 'TabPanels')).toBeDefined()
     expect(nodes.some((node) => node.tag === 'Select')).toBe(false)
     const list = nodes.find((node) => node.tag === 'WarpBannerList')!
     expect(binding(list, 'banners')).toBe('simulator.kindBanners.value')
@@ -294,7 +308,6 @@ describe('control templates and accessible validation wiring', () => {
       new URL('../../../src/tools/warp-simulator/WarpSimulatorPage.vue', import.meta.url),
       'utf8',
     )
-    expect(source.indexOf('class="warp-control-footer"')).toBeGreaterThan(source.indexOf('</Tabs>'))
     expect(source).toContain('max-height: 65%')
     expect(source).toContain('grid-template-columns: repeat(7, minmax(0, 1fr))')
     expect(source).not.toContain('warp.memoryOnly')
@@ -311,6 +324,7 @@ describe('control templates and accessible validation wiring', () => {
       'warp-selection-title',
     )
     expect(nodes.find((node) => node.tag === 'Badge')).toBeDefined()
+    expect(nodes.find((node) => node.tag === 'InputText')).toBeDefined()
     expect(
       nodes.some(
         (node) =>
@@ -322,7 +336,7 @@ describe('control templates and accessible validation wiring', () => {
     ).toBe(true)
     expect(nodes.some((node) => condition(node) === 'unavailableChoices.length')).toBe(true)
     expect(
-      nodes.some((node) => node.tag === 'Button' && binding(node, 'disabled') === '!valid'),
+      nodes.some((node) => node.tag === 'HButton' && binding(node, 'disabled') === '!valid'),
     ).toBe(true)
     expect(
       nodes.some(
