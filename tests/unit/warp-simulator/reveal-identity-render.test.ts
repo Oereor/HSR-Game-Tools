@@ -1,7 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { createRenderer, h, nextTick, ref, type App } from 'vue'
+import { h, nextTick, ref, type App } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  renderer,
+  node,
+  descendants,
+  type HostNode,
+} from '../../fixtures/warp-simulator/node-renderer'
 import WarpRevealIdentity from '../../../src/tools/warp-simulator/components/WarpRevealIdentity.vue'
 import {
   createPresentation,
@@ -14,67 +20,11 @@ import {
   warpVisualDefinitions,
 } from '../../../src/tools/warp-simulator/data/adapters/warp-data'
 
-// Vue mounts the actual SFCs in Node. This host records rendered attributes and
-// events; it intentionally does not pretend to perform browser CSS layout.
-interface HostNode {
-  type: string
-  props: Record<string, unknown>
-  children: HostNode[]
-  parent: HostNode | null
-  text: string
-}
-function node(type: string, text = ''): HostNode {
-  return { type, props: {}, children: [], parent: null, text }
-}
-function remove(child: HostNode) {
-  if (child.parent) child.parent.children.splice(child.parent.children.indexOf(child), 1)
-  child.parent = null
-}
-function insert(child: HostNode, parent: HostNode, anchor: HostNode | null = null) {
-  remove(child)
-  parent.children.splice(
-    anchor ? parent.children.indexOf(anchor) : parent.children.length,
-    0,
-    child,
-  )
-  child.parent = parent
-}
-const renderer = createRenderer<HostNode, HostNode>({
-  createElement: (type) => node(type),
-  createText: (text) => node('#text', text),
-  createComment: (text) => node('#comment', text),
-  setText: (target, text) => {
-    target.text = text
-  },
-  setElementText: (target, text) => {
-    target.children = []
-    target.text = text
-  },
-  patchProp: (target, key, _previous, value) => {
-    target.props[key] = value
-  },
-  insert,
-  remove,
-  parentNode: (target) => target.parent,
-  nextSibling: (target) =>
-    target.parent?.children[target.parent.children.indexOf(target) + 1] ?? null,
-  setScopeId: (target, id) => {
-    target.props[id] = ''
-  },
-  insertStaticContent: (content, parent, anchor) => {
-    const target = node('#static', content)
-    insert(target, parent, anchor)
-    return [target, target]
-  },
-})
 const apps: App[] = []
 afterEach(() => {
   apps.splice(0).forEach((app) => app.unmount())
   vi.unstubAllGlobals()
 })
-function descendants(root: HostNode): HostNode[] {
-  return [root, ...root.children.flatMap(descendants)]
-}
 function byClass(root: HostNode, name: string) {
   return descendants(root).filter((element) =>
     String(element.props.class ?? '')

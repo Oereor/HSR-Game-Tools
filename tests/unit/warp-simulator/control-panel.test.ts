@@ -263,7 +263,7 @@ describe('control templates and accessible validation wiring', () => {
       /header:[\s\S]*padding:\s*'var\(--warp-controls-inset\)'/,
     )
     expect(binding(controls, 'pt')).toMatch(
-      /content:[\s\S]*padding:\s*'0 var\(--warp-controls-inset\) var\(--warp-controls-inset\)'/,
+      /content:[\s\S]*padding:\s*'0 var\(--warp-controls-inset\)'/,
     )
     expect(binding(history, 'pt')).toBeUndefined()
     expect(binding(history, 'style')).not.toContain('--warp-controls-inset')
@@ -273,24 +273,35 @@ describe('control templates and accessible validation wiring', () => {
       /tabpanel:\s*\{\s*background:\s*'transparent',\s*padding:\s*'0'/,
     )
   })
-  it('connects real tabs/panels, filtered Select, UP thumbnails and conditional affinity', () => {
+  it('connects real tabs/panels and the full banner list, with a separate control footer', () => {
     const nodes = template('WarpSimulatorPage.vue')
     expect(
       nodes.find((node) => node.tag === 'Tabs')?.props?.some((prop) => prop.name === 'scrollable'),
     ).toBe(true)
     expect(nodes.find((node) => node.tag === 'TabPanels')).toBeDefined()
+    expect(nodes.some((node) => node.tag === 'Select')).toBe(false)
+    const list = nodes.find((node) => node.tag === 'WarpBannerList')!
+    expect(binding(list, 'banners')).toBe('simulator.kindBanners.value')
+    expect(binding(list, 'selected-banner-id')).toBe('selectedBannerId')
     expect(
       binding(
-        nodes.find((node) => node.tag === 'Select')!,
-        'options',
+        nodes.find((node) => node.tag === 'WarpPityPanel')!,
+        'pity',
       ),
-    ).toBe('bannerOptions')
-    const upList = nodes.find(
-      (node) => node.tag === 'ul' && binding(node, 'aria-label') === "t('warp.fourUpTitle')",
-    )!
-    expect(condition(upList)).toBe('activeBanner.banner.up4?.length')
-    expect(nodes.filter((node) => node.tag === 'WarpItemVisual').length).toBeGreaterThanOrEqual(3)
-    expect(nodes.some((node) => condition(node) === 'activeBanner.requiresSelection')).toBe(true)
+    ).toBe('pity')
+    expect(nodes.some((node) => condition(node) === 'activeBanner?.requiresSelection')).toBe(true)
+    const source = readFileSync(
+      new URL('../../../src/tools/warp-simulator/WarpSimulatorPage.vue', import.meta.url),
+      'utf8',
+    )
+    expect(source.indexOf('class="warp-control-footer"')).toBeGreaterThan(source.indexOf('</Tabs>'))
+    expect(source).toContain('max-height: 65%')
+    expect(source).toContain('grid-template-columns: repeat(7, minmax(0, 1fr))')
+    expect(source).not.toContain('warp.memoryOnly')
+    expect(source).not.toContain('warp-selection-trigger')
+    const controls = nodes.find((node) => node.tag === 'Drawer')!
+    expect(binding(controls, 'pt')).toContain("overflow: 'hidden'")
+    expect(binding(controls, 'pt')).toContain("minHeight: '0'")
   })
 
   it('keeps the Dialog named, counts live, input labelled, invalid choices removable and confirmation gated', () => {

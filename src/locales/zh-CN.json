@@ -351,20 +351,12 @@
     "bannerKind": "跃迁类型",
     "previousKinds": "向前滚动跃迁类型",
     "nextKinds": "向后滚动跃迁类型",
-    "ordinaryInfo": "常驻跃迁，无 UP 物品。",
-    "fourUpTitle": "四星 UP",
-    "upItem": "{name}，四星 UP",
-    "bannerSelected": "已选择卡池。",
-    "bannerNoneSelected": "尚未选择卡池。",
     "noBanners": "暂无可用卡池。",
     "bannerSource": "{name} · {type}",
-    "fiveUp": "五星 UP",
-    "fourUp": "四星 UP：{names}",
     "up": "UP",
     "cancel": "取消",
     "pullOne": "跃迁 1 次",
     "pullTen": "跃迁 10 次",
-    "memoryOnly": "保底与记录仅保留在本页会话；已确认的星缘选择保存在此浏览器中。",
     "storage": {
       "unavailable": "无法读取浏览器存储，本次星缘选择仍可在内存中使用。",
       "invalid": "保存的星缘选择无效或版本不兼容，请重新确认。",
@@ -409,7 +401,8 @@
       "ready": "七名星缘角色已就绪。",
       "confirm": "确认选择",
       "edit": "修改星缘角色",
-      "choose": "选择七名角色"
+      "choose": "选择七名角色",
+      "editCharacter": "修改星缘相邀：{name}"
     },
     "results": {
       "title": "最新跃迁结果",
@@ -491,7 +484,8 @@
       "eventUp": "当次抽取命中 UP",
       "pity": "当次五星保底抽数",
       "record": "记录编号"
-    }
+    },
+    "featuredItem": "{name}，{rarity}星 UP"
   },
   "currencyWars": {
     "title": "货币战争羁绊优化器",
