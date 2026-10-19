@@ -123,7 +123,9 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 `useWarpSimulator({ snapshot?, rng?, storage? })` 创建页面实例拥有的会话，默认使用仓库内规范化 Snapshot 与真实 `Math.random` Adapter；测试可注入合成 Snapshot、RNG 及 storage 获取函数。Manifest 的 pending／incomplete 不作为全局禁用条件。Banner 列表用现有 Resolver 验证完整配置；角色预检临时使用七项合法候选作为可解析性验证样本，该样本不保存为玩家选择、不用于抽取。真正抽取只使用玩家已明确确认的选择。
 
-控制面板按角色 Event、光锥 Event、Ordinary、Fate 角色、Fate 光锥排序，只显示至少有一个有效 Banner 的类别。初始选中首个有效类别的首个 Banner；每类上次选择仅在页面内存中保留。`bannerGroups`、`activeKind`、`kindBanners` 提供分类及当前 Select 选项，`selectKind` 经 `selectBanner` 的原操作锁选择该类上次的合法 Banner 或首项。切换不修改已提交会话或 latestBatchId，因此不清空历史、不重播演出；五个保底组保持独立。
+控制面板按角色 Event、光锥 Event、Ordinary、Fate 角色、Fate 光锥排序，只显示至少有一个有效 Banner 的类别。初始选中首个有效类别的首个 Banner；每类上次选择仅在页面内存中保留。`bannerGroups`、`activeKind`、`kindBanners` 提供分类及当前类别完整卡池列表，`selectKind` 经 `selectBanner` 的原操作锁选择该类上次的合法 Banner 或首项。切换不修改已提交会话或 latestBatchId，因此不清空历史、不重播演出；五个保底组保持独立。
+
+`WarpBannerList` 仅接收有效 Banner 列表、选中 ID、操作锁和既有 Presentation Adapter，发送 `select(id)` 交回 `selectBanner`，不拥有业务状态。卡池列表在 Drawer 中独立滚动；底部保底、星缘及重置不属于 TabPanel，始终绑定当前 Banner 的派生状态。矮屏底部控制区可以内部滚动，不改变保底投影或重置作用域。
 
 角色 Event 和 Fate 角色共用一份已确认的七人选择，不以 Banner ID 为键。角色资格来自当前共享池的 `fiveStar`，不是 Item Catalog 或已解析的八个回退槽位。每个当前角色池均重新通过 `resolvePool`；不兼容时保留名单、提示调整并禁用抽取，不扩充资格或替换成员。搜索头像网格 Dialog 的草稿与已确认名单分离，恰好七名不同且对当前 Banner 合法的角色才可确认；合法的当期 UP 可以包含在七人中。取消不提交；修改只影响未来结果。失效或当前池不接受的已选项另列为可移除项，移除后仍只能从当前合法候选中手动补选。光锥和 Ordinary 不显示星缘入口，也不向 Resolver 传入选择参数。
 
@@ -147,7 +149,7 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 仅用户成功确认选择后才同步替换内存名单并尝试写入；草稿、取消、抽取、两类重置、语言／类别切换和卸载均不写存储。存储获取／读取／写入异常只产生语义通知，确认后的内存名单仍可正常抽取；写入失败不回滚有效选择。不保存 Banner、引擎会话、历史、RNG 或草稿，不提供跨标签同步。接口 `AffinityStorage` 只需 `getItem`／`setItem`，测试通过 `storage: () => adapter` 或返回 undefined 模拟内存环境。
 
-控制与存储实现、验证及人工步骤见 [Phase 1L 报告](../investigations/warp-simulator/phase-1l-control-panel-and-affinity-persistence.md)。
+控制与存储实现、验证及人工步骤见 [Phase 1L 报告](../investigations/warp-simulator/phase-1l-control-panel-and-affinity-persistence.md)；头像列表与固定底部控制区见 [Drawer UI 重构报告](../investigations/warp-simulator/control-drawer-ui-refactor-2026-10-19.md)。
 
 ## 全屏结果演出
 
@@ -173,7 +175,7 @@ Catalog 的可选演出字段为 items[id].revealArtwork、paths[id].revealIcon�
 
 裁切星级 cardStars[3/4/5] 同样使用 path／width／height；Adapter 提供可选 cardStars 图片描述与 cardStarsReferenceAspectRatio，后者取裁切五星图宽高比，缺失时以 5 保守限制。卡片的两行 Metadata 信息簇和最终 Artwork 信息面板选择 cardStars，资源缺失／失败使用中性占位；历史、详情仍使用旧 starsUrl，V3 Identity 使用独立 StarBig。WarpVisualIcon 的 image／referenceAspectRatio 可选输入由结果卡和最终 Artwork 信息面板启用，按共同参考比约束三档高度；旧 url／stars 调用保留原行为。Manifest v3 保留裁切追溯，维护规则见[资源维护](../game-data.md#warp-展示资源)。这些元数据派生不调用 RNG 或修改会话。
 
-`useWarpOverlay` 只管理互斥 Drawer、Dialog 进入队列及恢复焦点 ID，不引用会话或 RNG。控制与历史默认收起，结果区域和常驻抽取栏保持挂载；打开／关闭面板不会重建 `useWarpSimulator` 或结果批次。Dialog 先等待 Drawer 的 after-hide，关闭后恢复来源面板／触发项；浮层关闭后的 DOM 焦点恢复只在页面层执行。星缘 Dialog 内手动移除失效角色后，在下一次 DOM 更新恢复搜索输入焦点，避免焦点留在已移除的按钮上。
+`useWarpOverlay` 只管理互斥 Drawer、Dialog 进入队列及恢复焦点 ID，不引用会话或 RNG。控制与历史默认收起，结果区域和常驻抽取栏保持挂载；打开／关闭面板不会重建 `useWarpSimulator` 或结果批次。Dialog 先等待 Drawer 的 after-hide，关闭后恢复来源面板／触发项；浮层关闭后的 DOM 焦点恢复只在页面层执行。星缘头像／空状态按钮沿用原队列；关闭后若原触发项已消失，页面将焦点回退到首个可用头像。星缘 Dialog 内手动移除失效角色后，在下一次 DOM 更新恢复搜索输入焦点，避免焦点留在已移除的按钮上。
 
 结果卡为图像与 Icon 构成的可激活横向卡；Tooltip、ARIA 和共用 `WarpItemDetails` 提供完整文字及既有事件详情。历史共用同一 Presentation Adapter，五列语义表格保持最新优先；最新批次仍保持实际抽取顺序。抽取、分页、重置和历史容量继续使用页面会话；共享星缘配置独立于会话重置。
 

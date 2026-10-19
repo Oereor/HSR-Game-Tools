@@ -1,15 +1,15 @@
 {
   "configurationStatus": "complete",
   "counts": {
-    "items": 120,
+    "items": 138,
     "pending": 0,
-    "readyBanners": 23,
+    "readyBanners": 41,
     "sharedPools": 3
   },
   "files": {
     "snapshot.json": {
-      "bytes": 34947,
-      "sha256": "a07b5725bb0be64a3ed175d16d423d9b17ebb3ed54e78db43a4bf59a09f7eb0e"
+      "bytes": 43861,
+      "sha256": "32f1f0b11d6a53efc12e07d29c6d116eacf8536019b10ee93eeafe4989cc98e7"
     }
   },
   "generatorVersion": 1,
@@ -19,8 +19,8 @@
       "sha256": "c9bb782a9d085cf80125b7ef7625c5189bb3532a753c2c2ece2c1f9d2dcec5ab"
     },
     "config": {
-      "bytes": 14463,
-      "sha256": "3923bad468b52855e388ebb0e1746c8a71246f4e76426134b6b93ef73f6c3efa"
+      "bytes": 20008,
+      "sha256": "c4ca02003f02d38aa6504db02aa912ebbf182a0e3f5c32bf9fdb095f3e1614c9"
     },
     "schema": {
       "bytes": 92809,

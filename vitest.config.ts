@@ -8,15 +8,15 @@ export default defineConfig({
         test: {
           name: 'unit',
           include: ['tests/**/*.test.ts'],
-          exclude: ['tests/unit/warp-simulator/reveal-identity-render.test.ts'],
+          exclude: ['tests/unit/warp-simulator/*-render.test.ts'],
           environment: 'node',
         },
       },
       {
         plugins: [vue()],
         test: {
-          name: 'identity-render',
-          include: ['tests/unit/warp-simulator/reveal-identity-render.test.ts'],
+          name: 'warp-render',
+          include: ['tests/unit/warp-simulator/*-render.test.ts'],
           environment: './tests/fixtures/warp-simulator/node-render-environment.ts',
         },
       },
