@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { evaluateLineup } from '../../../src/tools/currency-wars/evaluate'
 import { buildModel } from '../../../src/tools/currency-wars/model'
-import { solveCurrencyWars, solveCurrencyWarsBatch } from '../../../src/tools/currency-wars/solve'
+import { solveCurrencyWars } from '../../../src/tools/currency-wars/solve'
 import { loadPageData } from '../../../src/tools/currency-wars/ui/data'
 import { createVisuals, sortVisualMembers } from '../../../src/tools/currency-wars/ui/visuals'
 import { emblem, navigator, request, role, task, toy } from './helpers'
@@ -27,9 +27,9 @@ describe('Issue 4 special rules', () => {
       ...snapshot,
       roles: (snapshot as Snapshot).roles.filter((r) => ['1204', '12041', '12042'].includes(r.id)),
     }
-    const batch = await solveCurrencyWarsBatch(restricted, { ...input, emblemBudget: 0 })
-    expect(batch.solutions, batch.message).toHaveLength(1)
-    expect(batch.solutions[0]!.lineup.members.map((m) => m.formId)).toEqual(['1204'])
+    const result = await solveCurrencyWars(restricted, { ...input, emblemBudget: 0 })
+    expect(result.status, result.message).toBe('optimal')
+    expect(result.lineup!.members.map((m) => m.formId)).toEqual(['1204'])
   })
 
   it.each([
@@ -67,7 +67,11 @@ describe('Issue 4 special rules', () => {
         [navigator, role(id, [1001, own], { identityId: 8007 })],
         [own, other, 2007],
       )
-      const input = request([task(other, 2), task(2007, 2)], { slots: 2, emblemBudget: 2 })
+      const input = request([task(other, 2), task(2007, 2)], {
+        slots: 2,
+        emblemBudget: 2,
+        objective: 'min-emblems',
+      })
       const lineup = {
         members: [
           { formId: navigator.id, emblemIds: [], navigatorTarget: String(id) },
@@ -149,12 +153,10 @@ describe('Issue 4 special rules', () => {
       ],
     })
     expect(ordinary.members.find((m) => m.formId === navigator.id)!.extraTraits).toEqual([2007])
-    const batch = await solveCurrencyWarsBatch(snapshot, input)
+    const result = await solveCurrencyWars(snapshot, input)
     expect(
-      batch.solutions.every(
-        (s) => s.lineup.members.filter((m) => ['8007', '8009'].includes(m.formId)).length <= 1,
-      ),
-    ).toBe(true)
+      result.lineup!.members.filter((m) => ['8007', '8009'].includes(m.formId)).length,
+    ).toBeLessThanOrEqual(1)
   })
 
   it('maps both Trailblazer portraits to Stelle and sorts only a presentation copy', () => {

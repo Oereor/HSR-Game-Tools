@@ -45,7 +45,10 @@ export interface Task {
   requiredCount: number
 }
 
+export type OptimizationObjective = 'min-roles' | 'min-emblems'
+
 export interface OptimizationRequest {
+  objective: OptimizationObjective
   slots: number
   emblemBudget: number
   includeExperts: boolean
@@ -99,6 +102,7 @@ export type OptimizationStatus =
   'optimal' | 'feasible' | 'no-result' | 'infeasible' | 'error' | 'empty'
 
 export interface OptimizationResult {
+  request: OptimizationRequest
   status: OptimizationStatus
   solverStatus?: string
   elapsedSeconds: number
@@ -107,47 +111,4 @@ export interface OptimizationResult {
   evaluation?: Evaluation
   objectiveBound?: number
   gap?: number
-}
-
-export interface CandidateSolution {
-  id: string
-  signature: string
-  lineup: Lineup
-  evaluation: Evaluation
-  /** Status is scoped to this round's constrained model, not the original problem. */
-  solverStatus: string
-  subproblemOptimal: boolean
-  originalOptimal: boolean
-  elapsedSeconds: number
-  foundAtSeconds: number
-  objectiveBound?: number
-  gap?: number
-}
-
-export interface SearchStage {
-  index: number
-  allocatedSeconds: number
-  elapsedSeconds: number
-  solverStatus: string
-  completedCount?: number
-  emblemCount?: number
-  objectiveBound?: number
-  gap?: number
-}
-
-export type BatchTermination = 'complete' | 'exhausted' | 'budget' | 'error' | 'empty'
-
-export interface OptimizationBatch {
-  request: OptimizationRequest
-  status: OptimizationStatus
-  solutions: CandidateSolution[]
-  totalElapsedSeconds: number
-  firstCandidateSeconds?: number
-  termination: BatchTermination
-  /** Proofs concern the original problem, accounting for all excluded configurations. */
-  maximumCompletedProven: boolean
-  maximumCompleted?: number
-  minimumEmblemsProven: boolean
-  stages: SearchStage[]
-  message?: string
 }

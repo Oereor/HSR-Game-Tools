@@ -196,6 +196,23 @@ describe('console entrypoint', () => {
     expect(run('--unknown').status).toBe(2)
   })
 
+  it.each(['min-roles', 'min-emblems'] as const)('accepts CLI objective %s', (objective) => {
+    const result = run(
+      '--non-interactive',
+      '--select',
+      '1',
+      '--objective',
+      objective,
+      '--time-limit',
+      '5',
+    )
+    expect(result.status, result.stderr + result.stdout).toBe(0)
+    expect(result.stdout).toContain('[' + objective + ']')
+    expect(result.stdout).toContain('完成任务：1 / 1')
+    expect(run('--non-interactive', '--objective', 'max-roles').status).toBe(2)
+    expect(run('--help').stdout).toContain('--objective')
+  })
+
   it('runs a selected demo subset with every required output section and no upstream reads', () => {
     const result = run(
       '--non-interactive',
@@ -210,6 +227,7 @@ describe('console entrypoint', () => {
     for (const text of ['求解状态', '完成任务：2 / 2', '上场阵容', '已激活羁绊', '任务统计'])
       expect(result.stdout).toContain(text)
     expect(result.stdout).not.toContain('demo-debuff-6：')
+    expect(result.stdout).toContain('[min-roles]')
     const out = execFileSync(
       process.execPath,
       ['--import', 'tsx', 'scripts/currency-wars/data.ts', '--check'],

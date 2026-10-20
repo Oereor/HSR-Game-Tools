@@ -9,6 +9,8 @@ import {
   HSwitch,
   HSlider,
   HCheckbox,
+  HInput,
+  HRadio,
   HButton,
   HFadeContainer,
 } from 'astral-ui/components'
@@ -36,6 +38,17 @@ onUnmounted(() => state?.dispose())
 const visuals = data
   ? createVisuals(data.snapshot, data.visuals, import.meta.env.BASE_URL)
   : undefined
+const search = ref('')
+const visibleTasks = computed(() => {
+  const query = search.value.trim().toLocaleLowerCase()
+  return (
+    data?.tasks.filter((task) =>
+      [traitName(task.traitId), task.id, task.traitId, task.requiredCount].some((value) =>
+        String(value).toLocaleLowerCase().includes(query),
+      ),
+    ) ?? []
+  )
+})
 const configTab = ref('tasks')
 const configTabs = computed(() => [
   { value: 'tasks', label: t('currencyWars.form.tasks') },
@@ -101,6 +114,23 @@ const announcement = computed(() =>
           >
             <template #default="{ value }">
               <div v-if="value === 'tasks'" class="currency-task-config">
+                <HInput
+                  v-model="search"
+                  type="search"
+                  id="currency-task-search"
+                  :aria-label="t('currencyWars.form.search')"
+                  :placeholder="t('currencyWars.form.search')"
+                />
+                <div class="currency-task-actions">
+                  <HButton
+                    type="button"
+                    @click="state.form.taskIds = data.tasks.map((task) => task.id)"
+                    >{{ t('currencyWars.form.selectAll') }}</HButton
+                  >
+                  <HButton type="button" @click="state.form.taskIds = []">{{
+                    t('currencyWars.form.clear')
+                  }}</HButton>
+                </div>
                 <p class="currency-selection-count" aria-live="polite">
                   {{
                     t('currencyWars.form.selection', {
@@ -117,7 +147,7 @@ const announcement = computed(() =>
                   :aria-describedby="!state.form.taskIds.length ? 'currency-task-error' : undefined"
                 >
                   <ul class="currency-task-switches">
-                    <li v-for="task in data.tasks" :key="task.id">
+                    <li v-for="task in visibleTasks" :key="task.id">
                       <HSwitch
                         :model-value="state.form.taskIds.includes(task.id)"
                         :label="`${traitName(task.traitId)} ≥${task.requiredCount}`"
@@ -133,6 +163,9 @@ const announcement = computed(() =>
                       </HSwitch>
                     </li>
                   </ul>
+                  <p v-if="!visibleTasks.length" class="currency-empty">
+                    {{ t('currencyWars.form.noMatches') }}
+                  </p>
                 </HFadeContainer>
                 <p
                   v-if="!state.form.taskIds.length"
@@ -143,6 +176,24 @@ const announcement = computed(() =>
                 </p>
               </div>
               <div v-else class="currency-settings">
+                <fieldset class="currency-objective">
+                  <legend>{{ t('currencyWars.form.objective') }}</legend>
+                  <HRadio
+                    v-model="state.form.objective"
+                    name="currency-objective"
+                    value="min-roles"
+                    >{{ t('currencyWars.form.minRoles') }}</HRadio
+                  >
+                  <HRadio
+                    v-model="state.form.objective"
+                    name="currency-objective"
+                    value="min-emblems"
+                    >{{ t('currencyWars.form.minEmblems') }}</HRadio
+                  >
+                  <p v-if="invalid('objective')" class="currency-error">
+                    {{ t('currencyWars.validation.objective') }}
+                  </p>
+                </fieldset>
                 <HSlider
                   v-model="state.form.slots"
                   :label="t('currencyWars.form.slots')"
@@ -240,15 +291,13 @@ const announcement = computed(() =>
           {{ t(`currencyWars.status.${state.lastAttempt.result.status}`) }}
         </p>
         <CurrencyResults
-          v-if="state.lastValid && state.selectedSolution"
+          v-if="state.lastValid"
           :snapshot="data.snapshot"
           :catalog="data.visuals"
           :crafts="data.crafts"
           :attempt="state.lastValid"
-          :selected-index="state.selectedSolutionIndex"
           :stale="state.stale"
           :historical="state.historical"
-          @select="state.selectSolution"
         />
         <p
           v-else-if="!state.busy && !state.failure && !state.cancelled && !state.lastAttempt"
@@ -286,6 +335,24 @@ const announcement = computed(() =>
 }
 .currency-task-config {
   padding-top: 16px;
+}
+.currency-task-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 0;
+}
+.currency-objective {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  min-width: 0;
+}
+.currency-objective legend {
+  font-size: 12px;
+  margin-bottom: 12px;
 }
 .currency-selection-count {
   font-size: 12px;

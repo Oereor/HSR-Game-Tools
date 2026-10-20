@@ -185,7 +185,7 @@ describe('independent craft catalog', () => {
   })
 })
 
-describe('selected candidate emblem demand', () => {
+describe('single-lineup emblem demand', () => {
   it('counts all used IDs, including noncraftable emblems, with stable quantity/ID ordering and no mutations', () => {
     const { snapshot, input, icons } = fixture()
     const solution = {
@@ -231,7 +231,7 @@ describe('selected candidate emblem demand', () => {
     expect(solution).toEqual(before)
   })
 
-  it('keeps candidates independent, handles empty lineups and permits missing material icons', () => {
+  it('keeps input lineups independent, handles empty lineups and permits missing material icons', () => {
     const { snapshot, input } = fixture()
     const a = { lineup: { members: [{ formId: '1', emblemIds: [emblem(2012)] }] } }
     const b = { lineup: { members: [{ formId: '1', emblemIds: [] }] } }

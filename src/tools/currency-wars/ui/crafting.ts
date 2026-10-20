@@ -1,4 +1,4 @@
-import type { CandidateSolution, Snapshot } from '../types'
+import type { Lineup, Snapshot } from '../types'
 import { positiveInteger, record } from '../validation'
 import { assetUrl, type VisualCatalog } from './visuals'
 
@@ -79,8 +79,8 @@ export function assertCraftCatalog(
   requireValue(materials.size === usedMaterials.size, 'unused materials')
 }
 
-/** Count actual equipment in the selected candidate, without changing the lineup or session. */
-export function summarizeEmblemDemand(solution: Pick<CandidateSolution, 'lineup'>) {
+/** Count actual equipment in the single lineup, without changing the lineup or session. */
+export function summarizeEmblemDemand(solution: { lineup: Lineup }) {
   const counts = new Map<number, number>()
   for (const member of solution.lineup.members)
     for (const id of member.emblemIds) counts.set(id, (counts.get(id) ?? 0) + 1)
@@ -90,7 +90,7 @@ export function summarizeEmblemDemand(solution: Pick<CandidateSolution, 'lineup'
 }
 
 export function createEmblemDemand(
-  solution: Pick<CandidateSolution, 'lineup'>,
+  solution: { lineup: Lineup },
   snapshot: Snapshot,
   catalog: CurrencyWarsCraftCatalog,
   visuals: VisualCatalog,

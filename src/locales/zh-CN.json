@@ -504,12 +504,20 @@
       "selection": "已选 {selected} / {total}",
       "settings": "设置",
       "decrease": "减少{name}",
-      "increase": "增加{name}"
+      "increase": "增加{name}",
+      "search": "搜索目标任务",
+      "selectAll": "全选",
+      "clear": "清空",
+      "noMatches": "没有匹配的任务",
+      "objective": "优化目标",
+      "minRoles": "少人",
+      "minEmblems": "少星徽"
     },
     "validation": {
       "slots": "请选择 1～13 的整数槽位数。",
       "emblemBudget": "请选择 12～39 的整数星徽预算。",
-      "taskIds": "请至少选择一项任务。"
+      "taskIds": "请至少选择一项任务。",
+      "objective": "请选择有效的优化目标。"
     },
     "status": {
       "optimal": "已证明最优（本版模型）",
@@ -533,9 +541,7 @@
       "bronyaWarning": "布洛妮娅两侧人数平局，游戏归属规则尚未确认；两侧均不计她的人数，本方案完成数为保守下界。",
       "genericWarning": "本方案存在模型规则警告，请结合当前规则检查。",
       "lineup": "推荐阵容",
-      "allActiveTraits": "已激活羁绊（{count}）",
       "contributors": "提供者：{names}",
-      "tasks": "目标任务",
       "taskCounts": "要求 {required} 人 · 实际 {actual} 人",
       "completed": "完成",
       "incomplete": "未完成",
@@ -544,10 +550,10 @@
       "noTraits": "该方案没有已激活羁绊。",
       "completedSummary": "完成任务 {completed} / {total}",
       "emblemsSummary": "使用星徽 {used} / {budget}",
-      "traitCounts": "{count} 人 · 已激活 {threshold} 人档",
       "mechanics": "特殊机制说明",
-      "solution": "方案 {index}",
-      "chooseSolution": "选择推荐方案"
+      "traits": "羁绊详情",
+      "targetTask": "目标任务",
+      "inactiveTrait": "未激活羁绊"
     },
     "crafting": {
       "title": "星徽需求",

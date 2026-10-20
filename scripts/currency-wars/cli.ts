@@ -1,3 +1,4 @@
+import type { OptimizationRequest } from '../../src/tools/currency-wars/types'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createInterface } from 'node:readline/promises'
@@ -10,6 +11,7 @@ import { dataDirectory, loadSnapshot } from './data'
 async function main() {
   const { values } = parseArgs({
     options: {
+      objective: { type: 'string' },
       slots: { type: 'string' },
       emblems: { type: 'string' },
       'include-experts': { type: 'boolean' },
@@ -22,10 +24,10 @@ async function main() {
   })
   if (values.help) {
     console.log(
-      '货币战争羁绊优化器 V1\n' +
-        'npm run currency-wars -- [--slots 1..13] [--emblems 12] [--include-experts]\n' +
+      '货币战争羁绊优化器\n' +
+        'npm run currency-wars -- [--objective min-roles|min-emblems] [--slots 1..13] [--emblems 12] [--include-experts]\n' +
         '  [--tasks <JSON文件>] [--select all|编号,任务ID] [--time-limit 30] [--non-interactive]\n' +
-        '默认 13 槽、12 星徽、排除专家、30 秒；非交互模式默认选择全部任务。',
+        '默认少人（min-roles）、13 槽、12 星徽、排除专家、30 秒；非交互模式默认选择全部任务。',
     )
     return
   }
@@ -34,7 +36,8 @@ async function main() {
     ? path.resolve(values.tasks)
     : path.join(dataDirectory, 'tasks.json')
   const tasks = parseTasks(JSON.parse(await readFile(taskFile, 'utf8')) as unknown, snapshot)
-  const request = {
+  const request: OptimizationRequest = {
+    objective: (values.objective ?? 'min-roles') as OptimizationRequest['objective'],
     slots: Number(values.slots ?? 13),
     emblemBudget: Number(values.emblems ?? 12),
     includeExperts: values['include-experts'] ?? false,
@@ -49,6 +52,10 @@ async function main() {
   if (process.stdin.isTTY && !values['non-interactive']) {
     const readline = createInterface({ input: process.stdin, output: process.stdout })
     try {
+      if (values.objective === undefined)
+        request.objective = ((
+          await readline.question('优化目标 min-roles / min-emblems [min-roles]：')
+        ).trim() || 'min-roles') as OptimizationRequest['objective']
       if (values.slots === undefined)
         request.slots = Number((await readline.question('上场槽位 1–13 [13]：')).trim() || '13')
       if (values.emblems === undefined)

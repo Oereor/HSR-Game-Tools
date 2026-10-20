@@ -41,29 +41,33 @@ async function main() {
   )
   if (!entryName) throw new Error('Built solver Worker missing')
   const snapshot = await loadSnapshot()
-  const request: OptimizationRequest = {
-    slots: 13,
-    emblemBudget: 12,
-    includeExperts: false,
-    timeLimitSeconds: 5,
-    tasks: [{ id: 'browser-probe-xianzhou', traitId: 1007, requiredCount: 7 }],
-  }
-  const worker = new Worker(probeCode, {
-    eval: true,
-    execArgv: ['--experimental-vm-modules'],
-    workerData: {
-      directory,
-      entry: 'assets/' + entryName,
-      base,
-      message: { requestId: 1, snapshot, request },
-    },
-  })
-  let ticks = 0,
-    startTicks = 0
-  const heartbeat = setInterval(() => ticks++, 5)
-  try {
-    const { response, fetched } = await new Promise<{ response: ResultMessage; fetched: string[] }>(
-      (resolve, reject) => {
+  for (const objective of ['min-roles', 'min-emblems'] as const) {
+    const request: OptimizationRequest = {
+      objective,
+      slots: 13,
+      emblemBudget: 12,
+      includeExperts: false,
+      timeLimitSeconds: 5,
+      tasks: [{ id: 'browser-probe-xianzhou', traitId: 1007, requiredCount: 7 }],
+    }
+    const worker = new Worker(probeCode, {
+      eval: true,
+      execArgv: ['--experimental-vm-modules'],
+      workerData: {
+        directory,
+        entry: 'assets/' + entryName,
+        base,
+        message: { requestId: 1, snapshot, request },
+      },
+    })
+    let ticks = 0,
+      startTicks = 0
+    const heartbeat = setInterval(() => ticks++, 5)
+    try {
+      const { response, fetched } = await new Promise<{
+        response: ResultMessage
+        fetched: string[]
+      }>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Browser Worker probe timed out')), 20000)
         worker.once('error', (error) => {
           clearTimeout(timeout)
@@ -82,38 +86,42 @@ async function main() {
             reject(new Error('Worker exited: ' + code))
           }
         })
-      },
-    )
-    const result = response.result
-    if (
-      response.requestId !== 1 ||
-      result.status !== 'optimal' ||
-      !result.solutions.length ||
-      result.solutions.length > 3 ||
-      result.solutions.some(
-        (solution) =>
-          !evaluateLineup(snapshot, request, solution.lineup).valid ||
-          solution.evaluation.completedCount !== 1,
-      ) ||
-      !fetched.length ||
-      ticks <= startTicks
-    )
-      throw new Error('Browser Worker probe returned an invalid result or no main-thread heartbeat')
-    console.log(
-      JSON.stringify({
-        base,
-        status: result.status,
-        completed: result.solutions.map((s) => s.evaluation.completedCount),
-        emblems: result.solutions.map((s) => s.evaluation.emblemCount),
-        candidates: result.solutions.length,
-        wasm: fetched,
-        mainThreadTicks: ticks - startTicks,
-        note: 'Built browser code + real WASM in an isolated VM thread; not real-browser acceptance.',
-      }),
-    )
-  } finally {
-    clearInterval(heartbeat)
-    await worker.terminate()
+      })
+      const result = response.result
+      if (
+        response.requestId !== 1 ||
+        result.status !== 'optimal' ||
+        !result.lineup ||
+        !result.evaluation ||
+        'solutions' in result ||
+        result.request.objective !== objective ||
+        !evaluateLineup(snapshot, request, result.lineup).valid ||
+        evaluateLineup(snapshot, request, result.lineup).objective !==
+          result.evaluation.objective ||
+        result.evaluation.completedCount !== 1 ||
+        !fetched.length ||
+        ticks <= startTicks
+      )
+        throw new Error(
+          'Browser Worker probe returned an invalid result or no main-thread heartbeat',
+        )
+      console.log(
+        JSON.stringify({
+          base,
+          status: result.status,
+          objective,
+          completed: result.evaluation.completedCount,
+          roles: result.lineup.members.length,
+          emblems: result.evaluation.emblemCount,
+          wasm: fetched,
+          mainThreadTicks: ticks - startTicks,
+          note: 'Built browser code + real WASM in an isolated VM thread; not real-browser acceptance.',
+        }),
+      )
+    } finally {
+      clearInterval(heartbeat)
+      await worker.terminate()
+    }
   }
 }
 

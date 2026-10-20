@@ -1,3 +1,4 @@
+import { completionWeight } from './objective'
 import type { Evaluation, Lineup, MemberEvaluation, OptimizationRequest, Snapshot } from './types'
 import { validateRequest } from './validation'
 import { isEligibleRole, navigatorGrantedTraits } from './rules'
@@ -139,6 +140,8 @@ export function evaluateLineup(
     tasks,
     emblemCount,
     completedCount,
-    objective: (3 * request.slots + 1) * completedCount - emblemCount,
+    objective:
+      completionWeight(request) * completedCount -
+      (request.objective === 'min-roles' ? lineup.members.length : emblemCount),
   }
 }

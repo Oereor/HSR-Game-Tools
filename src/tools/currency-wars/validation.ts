@@ -146,6 +146,10 @@ export function validateRequest(
   publicMode = false,
 ) {
   assertSnapshot(snapshot)
+  requireValue(
+    request.objective === 'min-roles' || request.objective === 'min-emblems',
+    'Invalid optimization objective',
+  )
   requireValue(positiveInteger(request.slots), 'Slots must be a positive integer')
   requireValue(
     Number.isSafeInteger(request.emblemBudget) && request.emblemBudget >= 0,
@@ -162,4 +166,8 @@ export function validateRequest(
     requireValue(request.emblemBudget >= 12, 'User emblem budget must be at least 12')
   }
   parseTasks(request.tasks, snapshot)
+  requireValue(
+    Number.isSafeInteger((3 * request.slots + 1) * request.tasks.length),
+    'Objective exceeds safe model bounds',
+  )
 }

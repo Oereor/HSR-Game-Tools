@@ -504,12 +504,20 @@
       "selection": "Selected {selected} / {total}",
       "settings": "Settings",
       "decrease": "Decrease {name}",
-      "increase": "Increase {name}"
+      "increase": "Increase {name}",
+      "search": "Search target tasks",
+      "selectAll": "Select all",
+      "clear": "Clear",
+      "noMatches": "No matching tasks",
+      "objective": "Optimization objective",
+      "minRoles": "Fewer roles",
+      "minEmblems": "Fewer emblems"
     },
     "validation": {
       "slots": "Choose an integer from 1 to 13 slots.",
       "emblemBudget": "Choose an integer emblem budget from 12 to 39.",
-      "taskIds": "Select at least one task."
+      "taskIds": "Select at least one task.",
+      "objective": "Choose a valid optimization objective."
     },
     "status": {
       "optimal": "Proven optimal for this model",
@@ -533,9 +541,7 @@
       "bronyaWarning": "Bronya’s two trait counts are tied and the game’s tie rule is unconfirmed. She contributes to neither side; the completed count is a conservative lower bound.",
       "genericWarning": "This lineup has a model warning. Review the current rules.",
       "lineup": "Recommended lineup",
-      "allActiveTraits": "Active traits ({count})",
       "contributors": "Contributors: {names}",
-      "tasks": "Target tasks",
       "taskCounts": "Required {required} · Actual {actual}",
       "completed": "Completed",
       "incomplete": "Incomplete",
@@ -544,10 +550,10 @@
       "noTraits": "This lineup has no active traits.",
       "completedSummary": "Tasks completed {completed} / {total}",
       "emblemsSummary": "Emblems used {used} / {budget}",
-      "traitCounts": "{count} characters · Tier {threshold} active",
       "mechanics": "Special mechanics",
-      "solution": "Plan {index}",
-      "chooseSolution": "Choose a recommended plan"
+      "traits": "Trait details",
+      "targetTask": "Target task",
+      "inactiveTrait": "Inactive trait"
     },
     "crafting": {
       "title": "Emblem requirements",

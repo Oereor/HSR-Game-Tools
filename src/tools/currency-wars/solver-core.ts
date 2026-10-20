@@ -96,9 +96,10 @@ export async function solveOneModel(
   try {
     validateRequest(snapshot, request)
     if (!request.tasks.length)
-      return { status: 'empty', elapsedSeconds: elapsed(), message: 'No tasks selected' }
+      return { request, status: 'empty', elapsedSeconds: elapsed(), message: 'No tasks selected' }
     const result = await solver(built, timeLimitSeconds)
     const base = {
+      request,
       solverStatus: result.solverStatus,
       elapsedSeconds: elapsed(),
       objectiveBound: result.objectiveBound,
@@ -182,6 +183,7 @@ export async function solveOneModel(
     }
   } catch (error) {
     return {
+      request,
       status: 'error',
       elapsedSeconds: elapsed(),
       message: error instanceof Error ? error.message : String(error),

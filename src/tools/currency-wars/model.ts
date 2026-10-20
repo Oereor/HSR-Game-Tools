@@ -1,5 +1,6 @@
-import type { Lineup, OptimizationRequest, RoleForm, Snapshot } from './types'
+import type { OptimizationRequest, RoleForm, Snapshot } from './types'
 import { isEligibleRole, navigatorGrantedTraits } from './rules'
+import { completionWeight } from './objective'
 import { validateRequest } from './validation'
 
 type Expression = Map<string, number>
@@ -15,18 +16,8 @@ export interface BuiltModel {
   constraints: { expression: Expression; relation: '<=' | '>=' | '='; rhs: number }[]
 }
 
-export interface ModelSearch {
-  excluded?: Lineup[]
-  minimumCompleted?: number
-  exactCompleted?: number
-}
-
 /** Build CPLEX LP text using generated column names, never user-controlled identifiers. */
-export function buildModel(
-  snapshot: Snapshot,
-  request: OptimizationRequest,
-  search: ModelSearch = {},
-): BuiltModel {
+export function buildModel(snapshot: Snapshot, request: OptimizationRequest): BuiltModel {
   validateRequest(snapshot, request)
   const columns: string[] = []
   const rows: string[] = []
@@ -76,6 +67,8 @@ export function buildModel(
   const final = new Map<string, Map<number, Expression>>()
   const allEmblems: Expression[] = []
   const objectiveTerms: Expression[] = []
+  if (request.objective === 'min-roles')
+    objectiveTerms.push(...roles.map((role) => expression([roleColumns.get(role.id)!, -1])))
 
   constrain(sum(...roles.map(selected)), '<=', request.slots)
   for (const identity of new Set(roles.map((r) => r.identityId)))
@@ -99,7 +92,7 @@ export function buildModel(
       emblems.set(emblem.id, column)
       equipped.push(z)
       allEmblems.push(z)
-      objectiveTerms.push(expression([column, -1]))
+      if (request.objective === 'min-emblems') objectiveTerms.push(expression([column, -1]))
       presence.set(emblem.traitId, sum(presence.get(emblem.traitId)!, z))
     }
     constrain(sum(...equipped, [selected(role), -3]), '<=', 0)
@@ -177,7 +170,7 @@ export function buildModel(
     const name = variable()
     taskColumns.set(task.id, name)
     const y = expression([name, 1])
-    objectiveTerms.push(expression([name, 3 * request.slots + 1]))
+    objectiveTerms.push(expression([name, completionWeight(request)]))
     if (task.requiredCount > request.slots) {
       constrain(y, '=', 0)
       continue
@@ -189,29 +182,6 @@ export function buildModel(
       sum(count, [y, -(request.slots - task.requiredCount + 1)]),
       '<=',
       task.requiredCount - 1,
-    )
-  }
-  const completed = sum(...[...taskColumns.values()].map((v) => expression([v, 1])))
-  if (search.exactCompleted !== undefined) constrain(completed, '=', search.exactCompleted)
-  else if (search.minimumCompleted !== undefined)
-    constrain(completed, '>=', search.minimumCompleted)
-  // Exclude the complete binary player configuration, including its zero decisions.
-  // Each emblem variable is per role and kind, never per interchangeable display slot.
-  for (const lineup of search.excluded ?? []) {
-    const members = new Map(lineup.members.map((member) => [member.formId, member]))
-    const decisions: [string, boolean][] = []
-    for (const [id, column] of roleColumns) {
-      const member = members.get(id)
-      decisions.push([column, !!member])
-      for (const [emblemId, v] of emblemColumns.get(id)!)
-        decisions.push([v, member?.emblemIds.includes(emblemId) ?? false])
-      for (const [targetId, v] of targetColumns.get(id) ?? [])
-        decisions.push([v, member?.navigatorTarget === targetId])
-    }
-    constrain(
-      expression(...decisions.map(([v, on]): [string, number] => [v, on ? -1 : 1])),
-      '>=',
-      1 - decisions.filter(([, on]) => on).length,
     )
   }
   // An empty eligible roster still has task columns. The solver orchestrator skips empty task lists.

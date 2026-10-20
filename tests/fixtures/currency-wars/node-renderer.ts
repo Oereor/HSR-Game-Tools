@@ -3,6 +3,7 @@ import { createRenderer } from 'vue'
 // Vue mounts the actual SFCs in Node. This host records rendered attributes and
 // events; it intentionally does not pretend to perform browser CSS layout.
 export interface HostNode {
+  value?: unknown
   type: string
   props: Record<string, unknown>
   children: HostNode[]
@@ -74,6 +75,7 @@ export const renderer = createRenderer<HostNode, HostNode>({
   },
   patchProp: (target, key, _previous, value) => {
     target.props[key] = value
+    if (key === 'value') target.value = value
   },
   insert,
   remove,
