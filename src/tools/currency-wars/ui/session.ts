@@ -73,7 +73,7 @@ export function createCurrencyWarsSession(
     slots: 13,
     emblemBudget: 18,
     includeExperts: false,
-    taskIds: tasks.map((t) => t.id),
+    taskIds: [],
   })
   const busy = ref(false)
   const attempted = ref(false)

@@ -31,13 +31,14 @@ class FakeWorker implements WorkerPort {
 }
 const snapshot = toy([role(1, [2007]), role(2, [2008])])
 const tasks = [task(2007, 1), task(2008, 1)]
-function setup(testSnapshot = snapshot) {
+function setup(testSnapshot = snapshot, selectTasks = true) {
   const workers: FakeWorker[] = []
   const session = createCurrencyWarsSession(testSnapshot, tasks, () => {
     const worker = new FakeWorker()
     workers.push(worker)
     return worker
   })
+  if (selectTasks) session.form.taskIds = tasks.map((task) => task.id)
   const good = (index = workers.length - 1): OptimizationResult => {
     const request = workers[index]!.messages[0]!.request
     const lineup = {
@@ -110,13 +111,13 @@ describe('currency-wars page session', () => {
     session.start()
     workers[0]!.emit(good())
     const displayed = () => resultSummary(session.lastValid.value!)
-    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 18 })
+    expect(displayed()).toEqual({ completed: 2, tasks: 2 })
     session.form.taskIds = [tasks[0]!.id]
     session.form.emblemBudget = 20
     expect(session.stale.value).toBe(true)
     session.start()
     session.cancel()
-    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 18 })
+    expect(displayed()).toEqual({ completed: 2, tasks: 2 })
     session.start()
     workers[2]!.emit({
       ...good(),
@@ -125,7 +126,7 @@ describe('currency-wars page session', () => {
       evaluation: undefined,
       elapsedSeconds: 0.1,
     })
-    expect(displayed()).toEqual({ completed: 2, tasks: 2, emblems: 0, budget: 18 })
+    expect(displayed()).toEqual({ completed: 2, tasks: 2 })
     session.dispose()
   })
 
@@ -140,13 +141,13 @@ describe('currency-wars page session', () => {
     expect(workers).toHaveLength(1)
   })
   it('preserves the default parameters and stable task IDs', () => {
-    const { session } = setup()
+    const { session } = setup(snapshot, false)
     expect(session.form).toMatchObject({
       objective: 'min-roles',
       slots: 13,
       emblemBudget: 18,
       includeExperts: false,
-      taskIds: tasks.map((t) => t.id),
+      taskIds: [],
     })
     session.form.taskIds = []
     expect(session.start()).toBe(false)
@@ -156,10 +157,12 @@ describe('currency-wars page session', () => {
     session.dispose()
   })
 
-  it('keeps all 25 task IDs selected and immediately reflects direct selection changes', () => {
+  it('starts with no tasks selected and permits all/clear using the stable task IDs', () => {
     const data = loadPageData()
     const session = createCurrencyWarsSession(data.snapshot, data.tasks, () => new FakeWorker())
-    expect(session.form.taskIds).toEqual(data.tasks.map((task) => task.id))
+    expect(session.form.taskIds).toEqual([])
+    expect(session.start()).toBe(false)
+    session.form.taskIds = data.tasks.map((task) => task.id)
     expect(session.form.taskIds).toHaveLength(25)
     session.form.taskIds = session.form.taskIds.filter((id) => id !== data.tasks[0]!.id)
     expect(session.form.taskIds).toHaveLength(24)
@@ -297,6 +300,7 @@ describe('currency-wars page session', () => {
     const unavailable = createCurrencyWarsSession(snapshot, tasks, () => {
       throw new Error('unavailable')
     })
+    unavailable.form.taskIds = tasks.map((task) => task.id)
     expect(unavailable.start()).toBe(false)
     expect(unavailable.failure.value).toBe('unavailable')
     for (const kind of ['runtime', 'message', 'malformed'] as const) {

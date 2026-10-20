@@ -1,12 +1,14 @@
 import type { LineupMember, MemberEvaluation, RoleForm, Snapshot } from '../types'
 
 export type RoleCost = 1 | 2 | 3 | 4 | 5
+export type RolePosition = 'front' | 'back' | 'both'
 export interface VisualCatalog {
   schemaVersion: 1
   costs: Record<string, RoleCost>
   portraits: Record<string, string>
   emblems: Record<string, string>
   traits?: Record<string, string>
+  positions?: Record<string, RolePosition>
 }
 
 export type VisualMember = ReturnType<ReturnType<typeof createVisuals>['member']>
@@ -37,6 +39,7 @@ export function createVisuals(snapshot: Snapshot, catalog: VisualCatalog, base =
     return {
       role,
       cost: catalog.costs[role.id],
+      position: catalog.positions?.[role.id] ?? role.position,
       portraitUrl: assetUrl(catalog.portraits[String(role.avatarId)], base),
       // Always exactly three slots, regardless of the number of allocated emblems.
       slots: Array.from({ length: 3 }, (_, index) => {
@@ -50,6 +53,10 @@ export function createVisuals(snapshot: Snapshot, catalog: VisualCatalog, base =
           : undefined
       }),
       target: member.navigatorTarget ? roles.get(member.navigatorTarget) : undefined,
+      targetCost: member.navigatorTarget ? catalog.costs[member.navigatorTarget] : undefined,
+      finalTraits: [...new Set(evaluated.finalTraits)]
+        .sort((a, b) => a - b)
+        .map((id) => traits.get(id)!),
       innate: evaluated.innateTraits.map((id) => traits.get(id)!),
       extra: evaluated.extraTraits.map((id) => traits.get(id)!),
       bronyaTrait: typeof role.bronyaSide === 'number' ? traits.get(role.bronyaSide) : undefined,
@@ -80,6 +87,20 @@ export function assertVisualCatalog(
   for (const emblem of snapshot.emblems)
     if (!assetUrl(c.emblems[String(emblem.traitId)], '/'))
       throw new Error('Missing emblem visual: ' + emblem.id)
+  if (c.positions !== undefined) {
+    if (!c.positions || typeof c.positions !== 'object' || Array.isArray(c.positions))
+      throw new Error('Invalid role positions')
+    if (Object.keys(c.positions).length !== snapshot.roles.length)
+      throw new Error('Role position inventory mismatch')
+    for (const role of snapshot.roles) {
+      const position = c.positions[role.id]
+      if (
+        !['front', 'back', 'both'].includes(position!) ||
+        (role.position !== undefined && position !== role.position)
+      )
+        throw new Error('Missing or inconsistent role position: ' + role.id)
+    }
+  }
   if (c.traits !== undefined) {
     if (!c.traits || typeof c.traits !== 'object' || Array.isArray(c.traits))
       throw new Error('Invalid trait visuals')

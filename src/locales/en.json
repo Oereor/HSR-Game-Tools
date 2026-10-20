@@ -549,8 +549,6 @@
       "noRoles": "This lineup does not require any characters.",
       "noTraits": "This lineup has no active traits.",
       "completedSummary": "Tasks completed {completed} / {total}",
-      "emblemsSummary": "Emblems used {used} / {budget}",
-      "mechanics": "Special mechanics",
       "traits": "Trait details",
       "targetTask": "Target task",
       "inactiveTrait": "Inactive trait"
@@ -560,8 +558,7 @@
       "empty": "This lineup uses no emblems.",
       "quantity": "{name}: {count} required",
       "recipes": "Crafting recipes",
-      "or": "or",
-      "recipeHint": "Each recipe crafts one emblem. When multiple recipes are shown, choose any one."
+      "or": "or"
     },
     "visual": {
       "missing": "{name}: image unavailable",
@@ -571,19 +568,15 @@
       "expert": "Expert",
       "front": "Frontline",
       "back": "Backline",
-      "navigatorLink": "{name} → {target} (navigator target)",
-      "navigatorWithoutTarget": "{name}: no navigator target selected",
-      "bronyaAssignment": "{name}: joins {trait}",
-      "bronyaUnassigned": "{name}: tied, contributes to neither side",
       "openDetails": "View character details for {name}",
       "closeDetails": "Close character details",
-      "wornEmblems": "Equipped emblems",
       "emblemTrait": "{name} · {trait}",
-      "formId": "Form ID: {id}",
-      "innateTitle": "Innate traits",
-      "extraTitle": "Traits granted by mechanics",
       "navigatorTarget": "Navigator target: {name}",
-      "trailblazerInheritance": "Targeting Trailblazer always grants Himeko both Energy and Elation, without copying Classes added by the target’s emblems. Trailblazer’s own innate traits still depend on their front/back form, and their equipped emblems work as usual."
+      "cardTarget": "Target: {name}",
+      "cardNoTarget": "No target selected",
+      "cardUnassigned": "Unassigned",
+      "both": "Frontline / Backline",
+      "unknownPosition": "Unknown position"
     }
   }
 }

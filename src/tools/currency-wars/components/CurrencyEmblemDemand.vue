@@ -8,13 +8,11 @@ const { t, n } = useI18n()
 </script>
 
 <template>
-  <section class="currency-emblem-demand" aria-labelledby="currency-emblems-heading">
-    <h2 id="currency-emblems-heading">{{ t('currencyWars.crafting.title') }}</h2>
+  <section class="currency-emblem-demand" :aria-label="t('currencyWars.crafting.title')">
     <p v-if="!demands.length" class="currency-demand-empty">
       {{ t('currencyWars.crafting.empty') }}
     </p>
     <template v-else>
-      <p class="currency-demand-hint">{{ t('currencyWars.crafting.recipeHint') }}</p>
       <ul class="currency-demand-list">
         <li v-for="demand in demands" :key="demand.emblemId" class="currency-demand-row">
           <span class="currency-demand-emblem">
@@ -68,11 +66,6 @@ const { t, n } = useI18n()
 .currency-emblem-demand {
   min-width: 0;
 }
-h2 {
-  font-size: 15px;
-  margin: 0 0 12px;
-}
-.currency-demand-hint,
 .currency-demand-empty {
   color: var(--color-muted);
   font-size: 12px;

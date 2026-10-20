@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import HCloseButton from './HCloseButton.vue'
-defineProps<{ title: string; subtitle?: string }>()
+defineOptions({ inheritAttrs: false })
+defineProps<{ title: string; subtitle?: string; closeLabel?: string }>()
+const emit = defineEmits<{ 'after-leave': [] }>()
 const open = defineModel<boolean>({ default: false })
 const dialog = ref<HTMLElement>()
 let previousFocus: HTMLElement | null = null
 let previousOverflow = ''
+let locked = false
+let focusRevision = 0
+let leavingElement: Element | undefined
 let previousGutter: { value: string; priority: string } | null = null
 function onKey(event: KeyboardEvent) {
     if (event.key === 'Escape') open.value = false
@@ -30,6 +35,8 @@ function onKey(event: KeyboardEvent) {
     }
 }
 function release() {
+    if (!locked) return
+    locked = false
     document.body.style.overflow = previousOverflow
     if (previousGutter) {
         document.documentElement.style.setProperty(
@@ -40,42 +47,61 @@ function release() {
         previousGutter = null
     }
     document.removeEventListener('keydown', onKey)
-    previousFocus?.focus({ preventScroll: true })
+    if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true })
     previousFocus = null
+}
+function beforeLeave(element: Element) {
+    leavingElement = element
+}
+function afterLeave(element: Element) {
+    // An interrupted leave must never release a reopened modal's lock or selection.
+    if (open.value || element !== leavingElement) return
+    leavingElement = undefined
+    release()
+    emit('after-leave')
 }
 watch(
     open,
     async (value) => {
+        const revision = ++focusRevision
         if (value) {
-            previousFocus = document.activeElement as HTMLElement
-            previousOverflow = document.body.style.overflow
-            const root = document.documentElement
-            if (
-                window.innerWidth > root.clientWidth &&
-                getComputedStyle(root).scrollbarGutter === 'auto'
-            ) {
-                previousGutter = {
-                    value: root.style.getPropertyValue('scrollbar-gutter'),
-                    priority: root.style.getPropertyPriority('scrollbar-gutter'),
+            leavingElement = undefined
+            if (!locked) {
+                locked = true
+                previousFocus = document.activeElement as HTMLElement
+                previousOverflow = document.body.style.overflow
+                const root = document.documentElement
+                if (
+                    window.innerWidth > root.clientWidth &&
+                    getComputedStyle(root).scrollbarGutter === 'auto'
+                ) {
+                    previousGutter = {
+                        value: root.style.getPropertyValue('scrollbar-gutter'),
+                        priority: root.style.getPropertyPriority('scrollbar-gutter'),
+                    }
+                    root.style.setProperty('scrollbar-gutter', 'stable')
                 }
-                root.style.setProperty('scrollbar-gutter', 'stable')
+                document.body.style.overflow = 'hidden'
+                document.addEventListener('keydown', onKey)
             }
-            document.body.style.overflow = 'hidden'
-            document.addEventListener('keydown', onKey)
             await nextTick()
-            dialog.value?.querySelector<HTMLElement>('.h-close')?.focus({ preventScroll: true })
-        } else if (previousFocus) release()
+            // Allow an immediately queued owner close/unmount to propagate before initial focus.
+            await nextTick()
+            if (open.value && revision === focusRevision)
+                dialog.value?.querySelector<HTMLElement>('.h-close')?.focus({ preventScroll: true })
+        }
     },
     { immediate: true },
 )
 onBeforeUnmount(() => {
-    if (open.value) release()
+    focusRevision++
+    release()
 })
 </script>
 <template>
     <Teleport to="body">
-        <Transition name="h-modal">
-            <div v-if="open" class="h-modal-backdrop" @click.self="open = false">
+        <Transition name="h-modal" @before-leave="beforeLeave" @after-leave="afterLeave">
+            <div v-if="open" v-bind="$attrs" class="h-modal-backdrop" @click.self="open = false">
                 <div class="h-modal-shell">
                     <section
                         ref="dialog"
@@ -94,7 +120,7 @@ onBeforeUnmount(() => {
                             <header class="h-modal__header">
                                 <div class="h-modal__title-row">
                                     <h2>{{ title }}</h2>
-                                    <HCloseButton @click="open = false" />
+                                    <HCloseButton :label="closeLabel" @click="open = false" />
                                 </div>
                                 <p v-if="subtitle">{{ subtitle }}</p>
                             </header>

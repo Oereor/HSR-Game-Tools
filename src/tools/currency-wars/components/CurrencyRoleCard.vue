@@ -63,6 +63,16 @@ const { t } = useI18n()
     <p v-if="member.role.identityId === 8007">
       {{ t(`currencyWars.visual.${member.role.position}`) }}
     </p>
+    <p v-else-if="member.role.mechanic === 'navigator'">
+      {{
+        member.target
+          ? t('currencyWars.visual.cardTarget', { name: member.target.name })
+          : t('currencyWars.visual.cardNoTarget')
+      }}
+    </p>
+    <p v-else-if="member.role.mechanic === 'bronya'">
+      {{ member.bronyaTrait?.name ?? t('currencyWars.visual.cardUnassigned') }}
+    </p>
   </li>
 </template>
 

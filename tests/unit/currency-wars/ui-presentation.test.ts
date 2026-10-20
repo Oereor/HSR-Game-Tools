@@ -10,7 +10,7 @@ import {
   assertVisualCatalog,
   createVisuals,
 } from '../../../src/tools/currency-wars/ui/visuals'
-import { checkVisualData } from '../../../scripts/currency-wars/visual-data'
+import { checkVisualData, projectPosition } from '../../../scripts/currency-wars/visual-data'
 import { evaluateLineup } from '../../../src/tools/currency-wars/evaluate'
 import { request, task } from './helpers'
 
@@ -24,7 +24,7 @@ describe('currency-wars UI data and visuals', () => {
         fallbackLocale: false,
         messages: { 'zh-CN': zhCN, en },
       })
-      for (const name of ['title', 'empty', 'quantity', 'recipes', 'or', 'recipeHint']) {
+      for (const name of ['title', 'empty', 'quantity', 'recipes', 'or']) {
         const key = `currencyWars.crafting.${name}`
         expect(messages.te(key)).toBe(true)
         expect(messages.t(key, { name: 'Test emblem', count: 3 })).not.toBe(key)
@@ -102,6 +102,51 @@ describe('currency-wars UI data and visuals', () => {
     expect(assetUrl('game-assets/character/../1.webp', '/')).toBeUndefined()
   })
 
+  it('projects reviewed positions without guessing unknown fields or missing legacy metadata', () => {
+    const { snapshot, visuals } = loadPageData()
+    const view = createVisuals(snapshot, visuals)
+    const display = (id: string) =>
+      view.member(
+        { formId: id, emblemIds: [] },
+        { formId: id, innateTraits: [], emblemTraits: [], extraTraits: [], finalTraits: [] },
+      ).position
+    expect(display('8007')).toBe('front')
+    expect(display('8009')).toBe('back')
+    expect(display('1013')).toBe('both')
+    expect(display('1403')).toBe('both')
+    expect(display('11011:tie')).toBe(display('11011'))
+    expect(Object.values(visuals.positions).filter((p) => p === 'both')).toHaveLength(20)
+    for (const [ID, FrontBackType, position] of [
+      [8007, 'Front', 'front'],
+      [8009, 'Back', 'back'],
+      [1013, undefined, 'both'],
+    ] as const)
+      expect(projectPosition({ ID, FrontBackType })).toBe(position)
+    for (const entry of [
+      { ID: 99999 },
+      { ID: 8007, FrontBackType: 'Unknown' },
+      { ID: 1013, FrontBackType: 'Front' },
+      { ID: 1013, FrontBackType: null },
+    ])
+      expect(() => projectPosition(entry)).toThrow()
+    const legacy = createVisuals(snapshot, { ...visuals, positions: undefined })
+    const evaluated = {
+      formId: '1013',
+      innateTraits: [],
+      emblemTraits: [],
+      extraTraits: [],
+      finalTraits: [],
+    }
+    expect(legacy.member({ formId: '1013', emblemIds: [] }, evaluated).position).toBeUndefined()
+    expect(legacy.member({ formId: '8009', emblemIds: [] }, evaluated).position).toBe('back')
+    for (const positions of [
+      { ...visuals.positions, '8007': 'both' },
+      { ...visuals.positions, '1013': 'unknown' },
+      Object.fromEntries(Object.entries(visuals.positions).filter(([id]) => id !== '1013')),
+    ])
+      expect(() => assertVisualCatalog({ ...visuals, positions }, snapshot)).toThrow()
+  })
+
   it('uses actual navigator and Bronya metadata and calculator-supplied extra traits', () => {
     const { snapshot, visuals } = loadPageData()
     const lineup = {
@@ -122,6 +167,15 @@ describe('currency-wars UI data and visuals', () => {
     )
     expect(member.target!.name).toBe('椒丘')
     expect(member.extra.map((t) => t.id)).toEqual([2007, 2008])
+    expect(member.targetCost).toBe(visuals.costs['1218'])
+    expect(member.finalTraits.map((t) => t.id)).toEqual(
+      [...new Set(evaluated.members[0]!.finalTraits)].sort((a, b) => a - b),
+    )
+    const duplicated = createVisuals(snapshot, visuals).member(lineup.members[0]!, {
+      ...evaluated.members[0]!,
+      finalTraits: [...evaluated.members[0]!.finalTraits, 2008],
+    })
+    expect(duplicated.finalTraits).toEqual(member.finalTraits)
     expect(evaluated.tasks.map((t) => [t.actualCount, t.completed])).toEqual([
       [2, true],
       [1, false],

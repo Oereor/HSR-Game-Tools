@@ -549,8 +549,6 @@
       "noRoles": "该方案无需上场角色。",
       "noTraits": "该方案没有已激活羁绊。",
       "completedSummary": "完成任务 {completed} / {total}",
-      "emblemsSummary": "使用星徽 {used} / {budget}",
-      "mechanics": "特殊机制说明",
       "traits": "羁绊详情",
       "targetTask": "目标任务",
       "inactiveTrait": "未激活羁绊"
@@ -560,8 +558,7 @@
       "empty": "该方案未使用星徽。",
       "quantity": "{name}：需要 {count} 个",
       "recipes": "合成方式",
-      "or": "或",
-      "recipeHint": "每条配方可合成一个星徽；多条配方任选其一。"
+      "or": "或"
     },
     "visual": {
       "missing": "{name}：图片暂不可用",
@@ -571,19 +568,15 @@
       "expert": "专家",
       "front": "前台",
       "back": "后台",
-      "navigatorLink": "{name} → {target}（领航员目标）",
-      "navigatorWithoutTarget": "{name}：未选择领航员目标",
-      "bronyaAssignment": "{name}：加入{trait}",
-      "bronyaUnassigned": "{name}：平局，两侧均不计人数",
       "openDetails": "查看{name}的角色详情",
       "closeDetails": "关闭角色详情",
-      "wornEmblems": "佩戴星徽",
       "emblemTrait": "{name} · {trait}",
-      "formId": "形态 ID：{id}",
-      "innateTitle": "固有羁绊",
-      "extraTitle": "特殊机制新增羁绊",
       "navigatorTarget": "领航员目标：{name}",
-      "trailblazerInheritance": "选择开拓者时，姬子始终同时获得能量与欢愉，不继承目标星徽新增的流派；开拓者自身固有羁绊仍由前后台形态决定，佩戴星徽的效果正常生效。"
+      "cardTarget": "目标：{name}",
+      "cardNoTarget": "未选择目标",
+      "cardUnassigned": "未归属",
+      "both": "前后台",
+      "unknownPosition": "站位未知"
     }
   }
 }

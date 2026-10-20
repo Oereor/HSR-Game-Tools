@@ -6,7 +6,5 @@ export function resultSummary(attempt: SolvedAttempt) {
   return {
     completed: evaluation.completedCount,
     tasks: attempt.request.tasks.length,
-    emblems: evaluation.emblemCount,
-    budget: attempt.request.emblemBudget,
   }
 }

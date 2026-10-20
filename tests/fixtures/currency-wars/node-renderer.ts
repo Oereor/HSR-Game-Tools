@@ -63,6 +63,9 @@ function insert(child: HostNode, parent: HostNode, anchor: HostNode | null = nul
   child.parent = parent
 }
 export const renderer = createRenderer<HostNode, HostNode>({
+  // Teleport target lookup only; body can be a HostNode supplied by a lifecycle test.
+  querySelector: (selector) =>
+    selector === 'body' ? (document.body as unknown as HostNode) : null,
   createElement: (type) => node(type),
   createText: (text) => node('#text', text),
   createComment: (text) => node('#comment', text),

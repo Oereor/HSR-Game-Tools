@@ -28,14 +28,36 @@
   margin-top: 10px;
   font-size: 12px;
 }
-.currency-theme.currency-role-dialog {
-  --p-dialog-background: var(--h-paper-light);
-  --p-dialog-color: var(--h-ink);
-  --p-dialog-border-color: var(--h-line);
-  --p-dialog-border-radius: var(--h-radius);
-  --p-button-text-secondary-color: var(--h-ink);
-  --p-button-text-secondary-hover-color: var(--h-ink);
-  --p-button-text-secondary-hover-background: #3031390d;
-  --p-button-text-secondary-active-color: var(--h-ink);
-  --p-button-text-secondary-active-background: #3031391a;
+/* HModal teleports this explicitly themed backdrop to body. */
+.currency-role-dialog .h-modal-shell {
+  width: 800px;
+}
+.currency-role-dialog .h-modal__content--illustrated {
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+.currency-role-dialog .h-modal {
+  max-height: min(86dvh, calc(100dvh - 32px));
+}
+@media (max-width: 600px) {
+  .currency-role-dialog.h-modal-backdrop {
+    padding: 16px;
+  }
+  .currency-role-dialog .h-modal__content--illustrated {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .currency-role-dialog .h-modal__content--illustrated .h-modal__header {
+    grid-column: 1;
+    grid-row: 1;
+    padding-inline: 20px;
+  }
+  .currency-role-dialog .h-modal__illustration {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 24px 32px 16px;
+  }
+  .currency-role-dialog .h-modal__content--illustrated .h-modal__body {
+    grid-column: 1;
+    grid-row: 3;
+    padding: 16px 20px 24px;
+  }
 }
