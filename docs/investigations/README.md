@@ -78,6 +78,8 @@
 
 ## Currency Wars Optimizer
 
+- [Astral UI 第一版迁移](currency-wars-astral-ui-migration.md)：局部主题、源码包接入、配置与结果改版、两仓接口及自动验证和人工验收边界。
+
 - [Issue #7 星徽需求与合成配方](currency-wars-emblem-crafting-issue-7.md)：按选中候选汇总星徽，独立赛季配方目录与材料图片、全部替代配方、资源隔离及本地验收。
 
 - [Issue #6 领航员继承 Hotfix](currency-wars-navigator-inheritance-hotfix.md)：只继承固有流派与开拓者明确授予的流派，保留星徽目标资格，并记录回归及验证结果。

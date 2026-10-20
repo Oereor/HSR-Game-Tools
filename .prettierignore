@@ -21,3 +21,6 @@ tests/fixtures/action-planner/action-planner-expected.json
 docs/third-party/
 docs/investigations/phase-0-migration-architecture.md
 package-lock.json
+
+# Preserve the fork's own formatting; verified by its check command.
+vendor/astral-ui/

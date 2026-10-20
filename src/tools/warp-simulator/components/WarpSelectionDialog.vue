@@ -4,7 +4,9 @@ import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
-import Button from 'primevue/button'
+import { HButton } from 'astral-ui/components'
+import 'astral-ui/scoped-theme.css'
+import '../ui/controls.css'
 import Badge from 'primevue/badge'
 import { Check, X } from '@lucide/vue'
 import type { ToolLocale } from '../../../locales/types'
@@ -97,15 +99,15 @@ function removeUnavailable(id: string) {
       >
         <li v-for="item in unavailableChoices" :key="item.id">
           <span>{{ item.name }}</span>
-          <Button
-            size="small"
-            severity="secondary"
-            text
+          <HButton
+            class="h-theme warp-astral-button"
+            variant="ghost"
+            size="sm"
             :aria-label="t('warp.selection.remove', { name: item.name })"
             @click="removeUnavailable(item.id)"
           >
-            <template #icon><X :size="16" aria-hidden="true" /></template>
-          </Button>
+            <X :size="16" aria-hidden="true" />
+          </HButton>
         </li>
       </ul>
       <fieldset
@@ -150,10 +152,16 @@ function removeUnavailable(id: string) {
       </p>
     </div>
     <template #footer>
-      <Button :label="t('warp.cancel')" severity="secondary" outlined @click="emit('cancel')" />
-      <Button :label="t('warp.selection.confirm')" :disabled="!valid" @click="emit('confirm')"
-        ><template #icon><Check :size="16" aria-hidden="true" /></template
-      ></Button>
+      <HButton class="h-theme warp-astral-button" variant="secondary" @click="emit('cancel')">{{
+        t('warp.cancel')
+      }}</HButton>
+      <HButton
+        class="h-theme warp-astral-button"
+        variant="primary"
+        :disabled="!valid"
+        @click="emit('confirm')"
+        ><Check :size="16" aria-hidden="true" />{{ t('warp.selection.confirm') }}</HButton
+      >
     </template>
   </Dialog>
 </template>

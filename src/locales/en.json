@@ -495,42 +495,29 @@
     "cancel": "Cancel",
     "running": "Initializing and solving. You can still use the page…",
     "cancelled": "This solve was cancelled.",
-    "rules": "Optimizes trait headcounts only. Bronya contributes to neither side on a tie and cannot be a navigator target. Optimality applies only to this model.",
-    "type": {
-      "camp": "Camp traits",
-      "class": "Class traits",
-      "unique": "Unique traits"
-    },
     "form": {
       "title": "Solve configuration",
       "slots": "Lineup slots",
       "budget": "Emblem budget",
-      "budgetHint": "At least 12; each character can wear up to 3. The budget does not have to be exhausted.",
       "experts": "Allow expert characters",
-      "expertsHint": "Makes experts eligible; does not require selecting them.",
-      "expertsAllowed": "Experts allowed",
-      "expertsExcluded": "Experts excluded",
-      "time": "Total search budget (seconds)",
       "tasks": "Target tasks",
-      "editTasks": "Edit target tasks",
-      "advanced": "Advanced settings",
-      "confirmSelection": "Confirm",
-      "cancelSelection": "Cancel",
       "selection": "Selected {selected} / {total}",
+      "settings": "Settings",
+      "decrease": "Decrease {name}",
+      "increase": "Increase {name}",
+      "search": "Search target tasks",
       "selectAll": "Select all",
       "clear": "Clear",
-      "task": "{name} ≥ {count} members",
-      "limits": "Lineup constraints",
-      "required": "At least {count}",
-      "requiredCompact": "≥ {count}",
-      "removeTask": "Remove {name} (at least {count})",
-      "timeHint": "All plans share this budget, including initialization; verified best candidates are kept when time expires."
+      "noMatches": "No matching tasks",
+      "objective": "Optimization objective",
+      "minRoles": "Fewer roles",
+      "minEmblems": "Fewer emblems"
     },
     "validation": {
-      "slots": "Select 11, 12 or 13 slots.",
-      "emblemBudget": "Enter a safe integer budget of at least 12.",
-      "timeLimitSeconds": "Enter a positive integer number of seconds.",
-      "taskIds": "Select at least one task."
+      "slots": "Choose an integer from 1 to 13 slots.",
+      "emblemBudget": "Choose an integer emblem budget from 12 to 39.",
+      "taskIds": "Select at least one task.",
+      "objective": "Choose a valid optimization objective."
     },
     "status": {
       "optimal": "Proven optimal for this model",
@@ -545,25 +532,16 @@
       "data": "Unable to load or validate this tool’s data. Refresh the page and try again.",
       "unavailable": "Unable to start the solver Worker. Check browser support and asset loading, then try again.",
       "runtime": "The solver Worker encountered an error. Try solving again.",
-      "message": "Unable to read a valid result from the solver Worker. Try again.",
-      "details": "Technical details"
+      "message": "Unable to read a valid result from the solver Worker. Try again."
     },
     "result": {
       "title": "Solve result",
       "stale": "Configuration changed: the lineup below uses the previous solve conditions. Start a new solve to update it.",
       "historical": "The previous valid lineup is retained below. It is not the result of the current attempt.",
-      "details": "Solve details",
-      "objectiveBound": "Weighted objective bound: {value}",
-      "gap": "Optimality gap: {value}",
-      "conditions": "Lineup conditions: {slots} slots · Emblem budget {budget} · {experts} · Limit {time}s · {tasks} tasks",
-      "selectedTasks": "Tasks selected for this lineup: {names}",
-      "elapsed": "Total batch time: {seconds}s",
       "bronyaWarning": "Bronya’s two trait counts are tied and the game’s tie rule is unconfirmed. She contributes to neither side; the completed count is a conservative lower bound.",
       "genericWarning": "This lineup has a model warning. Review the current rules.",
       "lineup": "Recommended lineup",
-      "allActiveTraits": "View all active traits ({count})",
       "contributors": "Contributors: {names}",
-      "tasks": "Target tasks",
       "taskCounts": "Required {required} · Actual {actual}",
       "completed": "Completed",
       "incomplete": "Incomplete",
@@ -571,28 +549,16 @@
       "noRoles": "This lineup does not require any characters.",
       "noTraits": "This lineup has no active traits.",
       "completedSummary": "Tasks completed {completed} / {total}",
-      "emblemsSummary": "Emblems used {used} / {budget}",
-      "taskGoal": "Include at least {count} characters with this trait.",
-      "traitCounts": "{count} characters · Tier {threshold} active",
-      "mechanics": "Special mechanics",
-      "solution": "Plan {index}",
-      "chooseSolution": "Choose a recommended plan",
-      "proof": "Original problem: maximum completed tasks {count}; minimum emblem use {emblems}.",
-      "proven": "proven",
-      "unproven": "not proven",
-      "batchEnd": "Batch search ended: {reason}",
-      "candidateElapsed": "Candidate search: {seconds}s; verified {found}s after request start.",
-      "subproblemStatus": "This candidate’s constrained subproblem status: {status} (after configuration exclusions)",
-      "originalOptimal": "This candidate attains the proven optimum of the original problem.",
-      "candidateOnly": "This candidate is independently validated; it is not marked globally optimal for the original problem."
+      "traits": "Trait details",
+      "targetTask": "Target task",
+      "inactiveTrait": "Inactive trait"
     },
     "crafting": {
       "title": "Emblem requirements",
       "empty": "This lineup uses no emblems.",
       "quantity": "{name}: {count} required",
       "recipes": "Crafting recipes",
-      "or": "or",
-      "recipeHint": "Each recipe crafts one emblem. When multiple recipes are shown, choose any one."
+      "or": "or"
     },
     "visual": {
       "missing": "{name}: image unavailable",
@@ -602,26 +568,15 @@
       "expert": "Expert",
       "front": "Frontline",
       "back": "Backline",
-      "navigatorLink": "{name} → {target} (navigator target)",
-      "navigatorWithoutTarget": "{name}: no navigator target selected",
-      "bronyaAssignment": "{name}: joins {trait}",
-      "bronyaUnassigned": "{name}: tied, contributes to neither side",
       "openDetails": "View character details for {name}",
       "closeDetails": "Close character details",
-      "wornEmblems": "Equipped emblems",
       "emblemTrait": "{name} · {trait}",
-      "formId": "Form ID: {id}",
-      "innateTitle": "Innate traits",
-      "extraTitle": "Traits granted by mechanics",
       "navigatorTarget": "Navigator target: {name}",
-      "trailblazerInheritance": "Targeting Trailblazer always grants Himeko both Energy and Elation, without copying Classes added by the target’s emblems. Trailblazer’s own innate traits still depend on their front/back form, and their equipped emblems work as usual."
-    },
-    "termination": {
-      "complete": "Requested plans found",
-      "exhausted": "No further configurations meet the quality requirement",
-      "budget": "Shared time budget reached",
-      "error": "Solver or verification error",
-      "empty": "No tasks selected"
+      "cardTarget": "Target: {name}",
+      "cardNoTarget": "No target selected",
+      "cardUnassigned": "Unassigned",
+      "both": "Frontline / Backline",
+      "unknownPosition": "Unknown position"
     }
   }
 }

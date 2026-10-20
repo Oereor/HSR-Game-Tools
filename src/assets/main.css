@@ -1,6 +1,8 @@
 @layer theme, base, primevue, components, utilities;
 @import 'tailwindcss';
 @import 'tailwindcss-primeui';
+/* Vendored component sources have their own CSS, not Tailwind utilities. */
+@source not '../../vendor/astral-ui';
 @custom-variant dark (&:where(.app-dark, .app-dark *));
 
 @theme {

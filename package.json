@@ -35,7 +35,9 @@
     "validate:warp-data": "node --import tsx scripts/warp-data/cli.ts validate",
     "build:warp-data": "node --import tsx scripts/warp-data/cli.ts build",
     "update:warp-visuals": "node --import tsx scripts/warp-visuals/cli.ts",
-    "validate:warp-visuals": "node --import tsx scripts/warp-visuals/cli.ts --check"
+    "validate:warp-visuals": "node --import tsx scripts/warp-visuals/cli.ts --check",
+    "sync:astral-ui": "node --import tsx scripts/ui/sync-astral-ui.ts",
+    "validate:astral-ui": "node --import tsx scripts/ui/sync-astral-ui.ts --check"
   },
   "dependencies": {
     "@lucide/vue": "1.55.0",
@@ -46,7 +48,8 @@
     "tailwindcss-primeui": "0.6.1",
     "vue": "3.5.43",
     "vue-i18n": "11.4.14",
-    "vue-router": "4.6.4"
+    "vue-router": "4.6.4",
+    "astral-ui": "file:vendor/astral-ui"
   },
   "devDependencies": {
     "@intlify/message-compiler": "11.4.14",

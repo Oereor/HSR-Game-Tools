@@ -49,7 +49,14 @@ function oracle(snapshot: Snapshot, input: OptimizationRequest, ordinaryOnly = f
           const completed = input.tasks.filter(
             (t) => (counts.get(t.traitId) ?? 0) >= t.requiredCount,
           ).length
-          best = Math.max(best, (3 * input.slots + 1) * completed - used)
+          const bound =
+            input.objective === 'min-roles'
+              ? input.slots
+              : Math.min(input.emblemBudget, 3 * input.slots)
+          best = Math.max(
+            best,
+            (bound + 1) * completed - (input.objective === 'min-roles' ? selected.length : used),
+          )
         } else {
           const result = evaluateLineup(snapshot, input, lineup)
           if (result.valid) best = Math.max(best, result.objective)
@@ -99,15 +106,17 @@ describe('HiGHS integer optimization', () => {
       [role(1, [2007]), role(2, [2008]), role(3, [1008, 2007]), role(4, [1005])],
       [2007, 2008],
     )
-    for (const emblemBudget of [0, 1, 2, 3]) {
-      const input = request([task(2007, 2), task(2007, 3), task(2008, 2), task(1008, 2)], {
-        emblemBudget,
-      })
-      const result = await solveCurrencyWars(s, input)
-      expect(result.status, result.message).toBe('optimal')
-      expect(result.evaluation!.objective).toBe(oracle(s, input, true))
-      expect(result.evaluation!.valid).toBe(true)
-    }
+    for (const objective of ['min-roles', 'min-emblems'] as const)
+      for (const emblemBudget of [0, 1, 2, 3]) {
+        const input = request([task(2007, 2), task(2007, 3), task(2008, 2), task(1008, 2)], {
+          emblemBudget,
+          objective,
+        })
+        const result = await solveCurrencyWars(s, input)
+        expect(result.status, result.message).toBe('optimal')
+        expect(result.evaluation!.objective).toBe(oracle(s, input, true))
+        expect(result.evaluation!.valid).toBe(true)
+      }
   })
 
   it('uses a non-task train emblem to copy multiple Classes and matches exhaustive search', async () => {
@@ -127,12 +136,15 @@ describe('HiGHS integer optimization', () => {
 
   it('cannot complete an extra task by inheriting a target emblem Class', async () => {
     const s = toy([navigator, role(1, [1001, 2007])], [2007, 2008])
-    const input = request([task(2007, 2), task(2008, 2)], { emblemBudget: 1 })
+    const input = request([task(2007, 2), task(2008, 2)], {
+      emblemBudget: 1,
+      objective: 'min-emblems',
+    })
     const result = await solveCurrencyWars(s, input)
     expect(result.status, result.message).toBe('optimal')
     expect(result.evaluation!.completedCount).toBe(1)
     expect(result.evaluation!.emblemCount).toBe(0)
-    expect(result.evaluation!.objective).toBe(7)
+    expect(result.evaluation!.objective).toBe(2)
     expect(result.lineup!.members.find((m) => m.formId === '1510')!.emblemIds).toEqual([])
     expect(result.lineup!.members.find((m) => m.formId === '1510')!.navigatorTarget).toBe('1')
     expect(result.evaluation!.members.find((m) => m.formId === '1510')!.extraTraits).toEqual([2007])
@@ -158,7 +170,7 @@ describe('HiGHS integer optimization', () => {
     expect(result.evaluation!.completedCount).toBe(1)
   })
 
-  it('keeps exclusive forms and minimizes emblems before considering extra roles', async () => {
+  it('keeps exclusive forms and minimizes emblems with exclusive forms', async () => {
     const s = toy(
       [
         role(8007, [1001, 2004], { identityId: 8007 }),
@@ -168,7 +180,11 @@ describe('HiGHS integer optimization', () => {
       ],
       [2004, 2012],
     )
-    const input = request([task(2004, 2), task(2012, 2)], { slots: 3, emblemBudget: 1 })
+    const input = request([task(2004, 2), task(2012, 2)], {
+      slots: 3,
+      emblemBudget: 1,
+      objective: 'min-emblems',
+    })
     const result = await solveCurrencyWars(s, input)
     expect(result.status, result.message).toBe('optimal')
     expect(result.evaluation!.objective).toBe(oracle(s, input, true))

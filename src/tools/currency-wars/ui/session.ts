@@ -1,37 +1,28 @@
 import { computed, reactive, ref, shallowRef } from 'vue'
-import type { OptimizationRequest, OptimizationBatch, Snapshot, Task } from '../types'
-import { lineupSignature } from '../signature'
+import type { OptimizationRequest, OptimizationResult, Snapshot, Task } from '../types'
+import { evaluateLineup } from '../evaluate'
 import type { WorkerFactory, WorkerFailure, WorkerPort } from '../browser/protocol'
 import { validateRequest } from '../validation'
 
 export interface SolverForm {
-  slots: number | null
-  emblemBudget: number | null
-  timeLimitSeconds: number | null
+  objective: OptimizationRequest['objective']
+  slots: number
+  emblemBudget: number
   includeExperts: boolean
   taskIds: string[]
 }
-export type FormField = 'slots' | 'emblemBudget' | 'timeLimitSeconds' | 'taskIds'
+export type FormField = 'slots' | 'emblemBudget' | 'taskIds' | 'objective'
 export interface SolvedAttempt {
   requestId: number
   request: OptimizationRequest
-  result: OptimizationBatch
+  result: OptimizationResult
 }
 export function formErrors(form: SolverForm, tasks: Task[]): FormField[] {
   const errors: FormField[] = []
-  if (form.slots === null || ![11, 12, 13].includes(form.slots)) errors.push('slots')
-  if (
-    form.emblemBudget === null ||
-    !Number.isSafeInteger(form.emblemBudget) ||
-    form.emblemBudget < 12
-  )
+  if (!['min-roles', 'min-emblems'].includes(form.objective)) errors.push('objective')
+  if (!Number.isSafeInteger(form.slots) || form.slots < 1 || form.slots > 13) errors.push('slots')
+  if (!Number.isSafeInteger(form.emblemBudget) || form.emblemBudget < 12 || form.emblemBudget > 39)
     errors.push('emblemBudget')
-  if (
-    form.timeLimitSeconds === null ||
-    !Number.isSafeInteger(form.timeLimitSeconds) ||
-    form.timeLimitSeconds < 1
-  )
-    errors.push('timeLimitSeconds')
   if (
     !form.taskIds.length ||
     new Set(form.taskIds).size !== form.taskIds.length ||
@@ -42,6 +33,7 @@ export function formErrors(form: SolverForm, tasks: Task[]): FormField[] {
 }
 export function requestFingerprint(request: OptimizationRequest) {
   return JSON.stringify([
+    request.objective,
     request.slots,
     request.emblemBudget,
     request.timeLimitSeconds,
@@ -52,6 +44,24 @@ export function requestFingerprint(request: OptimizationRequest) {
   ])
 }
 
+// Compare wire data independent of object property order, without trusting a valid flag.
+function sameValue(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true
+  if (Array.isArray(a))
+    return Array.isArray(b) && a.length === b.length && a.every((v, i) => sameValue(v, b[i]))
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    const left = a as Record<string, unknown>
+    const right = b as Record<string, unknown>
+    return (
+      Object.keys(left).length === Object.keys(right).length &&
+      Object.keys(left).every(
+        (key) => Object.hasOwn(right, key) && sameValue(left[key], right[key]),
+      )
+    )
+  }
+  return false
+}
+
 /** Page-owned state; only a detached request and plain snapshot cross the Worker boundary. */
 export function createCurrencyWarsSession(
   snapshot: Snapshot,
@@ -59,11 +69,11 @@ export function createCurrencyWarsSession(
   createWorker: WorkerFactory,
 ) {
   const form = reactive<SolverForm>({
+    objective: 'min-roles',
     slots: 13,
-    emblemBudget: 12,
-    timeLimitSeconds: 30,
+    emblemBudget: 18,
     includeExperts: false,
-    taskIds: tasks.map((t) => t.id),
+    taskIds: [],
   })
   const busy = ref(false)
   const attempted = ref(false)
@@ -71,10 +81,6 @@ export function createCurrencyWarsSession(
   const failure = shallowRef<WorkerFailure | 'input' | 'data'>()
   const lastAttempt = shallowRef<SolvedAttempt>()
   const lastValid = shallowRef<SolvedAttempt>()
-  const selectedSolutionIndex = ref(0)
-  const selectedSolution = computed(
-    () => lastValid.value?.result.solutions[selectedSolutionIndex.value],
-  )
   const runningRequest = shallowRef<OptimizationRequest>()
   const errors = computed(() => formErrors(form, tasks))
   let sequence = 0
@@ -82,9 +88,10 @@ export function createCurrencyWarsSession(
   let worker: WorkerPort | undefined
   let disposed = false
   const request = (): OptimizationRequest => ({
-    slots: form.slots!,
-    emblemBudget: form.emblemBudget!,
-    timeLimitSeconds: form.timeLimitSeconds!,
+    objective: form.objective,
+    slots: form.slots,
+    emblemBudget: form.emblemBudget,
+    timeLimitSeconds: 60,
     includeExperts: form.includeExperts,
     tasks: tasks.filter((t) => form.taskIds.includes(t.id)).map((t) => ({ ...t })),
   })
@@ -144,30 +151,26 @@ export function createCurrencyWarsSession(
         if (disposed || activeId !== id || event.data?.requestId !== id) return
         const result = event.data.result
         try {
+          validateRequest(snapshot, result.request, true)
+          const solved = result.status === 'optimal' || result.status === 'feasible'
           if (
-            !result ||
             !['optimal', 'feasible', 'no-result', 'infeasible', 'error', 'empty'].includes(
               result.status,
             ) ||
-            !Number.isFinite(result.totalElapsedSeconds) ||
-            !Array.isArray(result.solutions) ||
-            result.solutions.length > 3 ||
+            !Number.isFinite(result.elapsedSeconds) ||
+            result.elapsedSeconds < 0 ||
+            'solutions' in result ||
             requestFingerprint(result.request) !== requestFingerprint(submitted) ||
-            (['optimal', 'feasible'].includes(result.status) &&
-              (!result.solutions.length ||
-                result.solutions.some(
-                  (solution) =>
-                    !solution.lineup ||
-                    solution.evaluation?.valid !== true ||
-                    solution.signature !== lineupSignature(solution.lineup),
-                ) ||
-                new Set(result.solutions.map((solution) => solution.signature)).size !==
-                  result.solutions.length ||
-                new Set(result.solutions.map((solution) => solution.evaluation.completedCount))
-                  .size !== 1))
-          ) {
-            fail(id, 'message')
-            return
+            (result.status === 'optimal' && result.solverStatus !== 'optimal') ||
+            (solved
+              ? !result.lineup || result.evaluation?.valid !== true
+              : result.lineup !== undefined || result.evaluation !== undefined)
+          )
+            throw new Error('Invalid result message')
+          if (solved) {
+            const verified = evaluateLineup(snapshot, submitted, result.lineup!)
+            if (!verified.valid || !sameValue(verified, result.evaluation))
+              throw new Error('Inconsistent result evaluation')
           }
         } catch {
           fail(id, 'message')
@@ -177,7 +180,6 @@ export function createCurrencyWarsSession(
         lastAttempt.value = attempt
         if (result.status === 'optimal' || result.status === 'feasible') {
           lastValid.value = attempt
-          selectedSolutionIndex.value = 0
         }
         release()
       }
@@ -214,16 +216,6 @@ export function createCurrencyWarsSession(
     cancelled,
     lastAttempt,
     lastValid,
-    selectedSolutionIndex,
-    selectedSolution,
-    selectSolution: (index: number) => {
-      if (
-        Number.isInteger(index) &&
-        index >= 0 &&
-        index < (lastValid.value?.result.solutions.length ?? 0)
-      )
-        selectedSolutionIndex.value = index
-    },
     runningRequest,
     stale,
     historical,

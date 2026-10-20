@@ -60,6 +60,7 @@ export const request = (
   tasks: Task[] = [],
   extra: Partial<OptimizationRequest> = {},
 ): OptimizationRequest => ({
+  objective: 'min-roles',
   slots: 2,
   emblemBudget: 2,
   includeExperts: false,

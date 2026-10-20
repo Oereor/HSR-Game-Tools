@@ -1,55 +1,47 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { createHighsSolver, solveCurrencyWarsBatch } from '../../src/tools/currency-wars/solve'
+import { createHighsSolver, solveCurrencyWars } from '../../src/tools/currency-wars/solve'
 import { loadSnapshot, dataDirectory, projectRoot } from './data'
-import { readFile } from 'node:fs/promises'
 import type { Task } from '../../src/tools/currency-wars/types'
 
-// Sequential runs: independent runtimes for single and multi, then reuse each for warm samples.
-// No performance assertions, networking, or raw upstream data reads.
+// Separate cold runtimes for each objective, reused for the warm samples; no hard thresholds.
 const snapshot = await loadSnapshot()
 const tasks = JSON.parse(await readFile(path.join(dataDirectory, 'tasks.json'), 'utf8')) as Task[]
 const records = []
-const output = path.join(projectRoot, '.cache/currency-wars-issue-4-benchmark.json')
+const output = path.join(projectRoot, '.cache/currency-wars-objective-benchmark.json')
 await mkdir(path.dirname(output), { recursive: true })
 for (const emblemBudget of [12, 20]) {
   for (const subset of ['all', 'first-five'] as const) {
-    const solvers = { single: createHighsSolver(), multi: createHighsSolver() }
+    const solvers = { 'min-roles': createHighsSolver(), 'min-emblems': createHighsSolver() }
     for (let repeat = 1; repeat <= 3; repeat++) {
-      for (const mode of (repeat % 2 ? ['single', 'multi'] : ['multi', 'single']) as (
-        'single' | 'multi'
-      )[]) {
-        const batch = await solveCurrencyWarsBatch(
+      for (const objective of ['min-roles', 'min-emblems'] as const) {
+        const result = await solveCurrencyWars(
           snapshot,
           {
+            objective,
             slots: 13,
             emblemBudget,
             includeExperts: false,
             timeLimitSeconds: 30,
             tasks: subset === 'all' ? tasks : tasks.slice(0, 5),
           },
-          solvers[mode],
-          { maxSolutions: mode === 'single' ? 1 : 3 },
+          solvers[objective],
         )
         const record = {
-          mode,
+          objective,
           emblemBudget,
           subset,
           repeat,
           initialization: repeat === 1 ? 'cold' : 'warm',
-          status: batch.status,
-          termination: batch.termination,
-          totalElapsedSeconds: batch.totalElapsedSeconds,
-          firstCandidateSeconds: batch.firstCandidateSeconds ?? null,
-          solutions: batch.solutions.map((s) => ({
-            completed: s.evaluation.completedCount,
-            emblems: s.evaluation.emblemCount,
-            subproblemOptimal: s.subproblemOptimal,
-          })),
-          maximumCompletedProven: batch.maximumCompletedProven,
-          minimumEmblemsProven: batch.minimumEmblemsProven,
-          stages: batch.stages,
-          message: batch.message,
+          status: result.status,
+          elapsedSeconds: result.elapsedSeconds,
+          completed: result.evaluation?.completedCount,
+          roles: result.lineup?.members.length,
+          emblems: result.evaluation?.emblemCount,
+          value: result.evaluation?.objective,
+          objectiveBound: result.objectiveBound,
+          gap: result.gap,
+          message: result.message,
         }
         records.push(record)
         await writeFile(

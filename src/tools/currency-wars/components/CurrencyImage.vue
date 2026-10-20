@@ -16,6 +16,7 @@ const { source: visibleSource, fail } = useImageSource(() => props.source)
     <img
       v-if="visibleSource"
       :src="visibleSource"
+      :data-currency-kind="kind"
       :alt="name"
       width="256"
       height="256"

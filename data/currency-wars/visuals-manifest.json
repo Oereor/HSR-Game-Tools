@@ -2,13 +2,13 @@
   "repository": "https://github.com/DimbreathBot/TurnBasedGameData",
   "commit": "312b4597691e0a29cf9828a15b592757dba86949",
   "gameVersion": "4.6.0",
-  "transformVersion": 3,
+  "transformVersion": 4,
   "inputSha256": {
     "ExcelOutput/GridFightRoleBasicInfo.json": "ab8698fd70d1f53a2c99602ffec38eaa233cb291f9baea692d7599fae03885ed",
     "ExcelOutput/GridFightShopPrice.json": "56029b58f6da8a2ca96ae62ffe831f0101138dce96515463f44407e51666d273"
   },
   "snapshotSha256": "35c713b3ac2cc65da06541a5668fdd8b4b322087bebd20993cea975437b36886",
-  "visualsSha256": "b936c862ff9a7d3c7fddb7efe96819f7ec43f67d8481c76cbc82dfbeb49acc79",
+  "visualsSha256": "628ba3f7ba3e60188bb8e651f6ddfed356566d95ba576f5ff758c0858ac7c9bd",
   "assetSha256": {
     "game-assets/character/1001.webp": "1ea5adad7002b9fe429a40f58d94c537d773e4befcd95221fde666ee32b46a2d",
     "game-assets/character/1003.webp": "133a0140dc0dcfffbd3e57e7c14dcf3561e2ebeaa2564456d813853e728810ff",
@@ -139,6 +139,8 @@
   "notes": [
     "Costs use source role Rarity, checked against GridFightShopPrice.BuyGoldStar1.",
     "Costs are keyed by form ID and never enter optimization.",
+    "Positions use FrontBackType: Front/front, Back/back, and the 20 reviewed missing-field role IDs in source-lock.json/both. Unknown values or unreviewed omissions are rejected. Synthetic forms retain their source role position; Trailblazer uses its selected front/back form.",
+    "Position evidence at the locked commit: TextMap/TextMapCHS.json keys 819603370658695851 and 13120044587005628083 explain all three positions; 11904329349261263864 explicitly identifies Herta and Tribbie as dual-position, corresponding to omitted FrontBackType in GridFightRoleBasicInfo.",
     "Portraits use avatarId, with 8007 and 8009 explicitly mapped to the visually verified local Stelle portrait 8008.webp; emblem images use traitId.",
     "Trait icons use stable traitId and user-provided local currency-war-traits files, not the upstream cost source. Missing icons are omitted and use a neutral UI fallback."
   ]

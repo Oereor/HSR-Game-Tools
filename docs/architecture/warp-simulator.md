@@ -165,6 +165,8 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 确定性机制验证与人工清单见 [Phase 1I 报告](../investigations/warp-simulator/phase-1i-reveal-quality-fixes.md)，初次演出实现记录见 [Phase 1H](../investigations/warp-simulator/phase-1h-reveal-animation-and-ui-polish.md)。正式 Snapshot 已包含五星光锥，展示目录随当前可达物品显式同步；测试图中的合成身份和复用封面仍不进入生产候选池或资源快照。
 
+普通界面保留原有深色布局、PrimeVue Drawer／Dialog 及原五列历史表格，仅通用操作按钮采用 Astral UI HButton、卡池类别采用 HTabs。局部主题只挂在按钮和页签本身，不包裹页面或浮层；原生 tabpanel 保留 ARIA 关联，类别切换继续调用原 selectKind。抽屉、弹窗及焦点队列、会话、存储、结果和演出逻辑不因控件替换改变。
+
 ## 展示资源与降级
 
 [visuals](../../src/tools/warp-simulator/data/visuals/)为独立的规范化展示快照，来源锁定和显式离线维护见[游戏数据指南](../game-data.md#warp-展示资源)。它不表达抽取资格，不修改引擎输入，不在普通构建中生成。共享头像的复用仅发生于维护阶段；运行时无排轴业务导入或原始来源依赖。
