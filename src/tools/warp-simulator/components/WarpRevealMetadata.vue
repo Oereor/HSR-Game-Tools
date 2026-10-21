@@ -49,17 +49,18 @@ const metadata = computed(() => revealMetadata(props.item, props.rarity, t))
   --warp-icon-align: start;
   --warp-icon-position: left center;
   position: absolute;
-  left: 16px;
-  bottom: 16px;
+  left: 0;
+  top: 46%;
+  transform: translateY(-50%);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   box-sizing: border-box;
-  width: min(360px, calc(100% - 32px));
+  width: min(420px, 38%);
   min-width: 0;
-  padding: 16px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.75);
+  padding: 18px 34px;
+  border-radius: 0;
+  background: linear-gradient(90deg, #000b 65%, #0000);
   color: var(--color-ink);
   font-size: 14px;
   line-height: 1.4;
@@ -69,7 +70,7 @@ const metadata = computed(() => revealMetadata(props.item, props.rarity, t))
   container-type: inline-size;
 }
 .warp-reveal-metadata-name {
-  font-size: 26px;
+  font-size: clamp(24px, 2.4vw, 38px);
   font-weight: 600;
   line-height: 1.25;
 }
@@ -110,9 +111,11 @@ const metadata = computed(() => revealMetadata(props.item, props.rarity, t))
   .warp-reveal-metadata {
     --warp-icon-size: 20px;
     --warp-stars-target-height: 18px;
-    left: 12px;
-    bottom: 12px;
-    width: min(320px, calc(100% - 24px));
+    left: 0;
+    top: auto;
+    bottom: 20px;
+    transform: none;
+    width: min(420px, 100%);
     padding: 12px;
     font-size: 13px;
   }

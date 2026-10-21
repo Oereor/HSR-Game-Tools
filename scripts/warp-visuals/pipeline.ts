@@ -59,6 +59,7 @@ type ConversionPurpose =
   | 'reveal-stars'
   | 'reveal-star-big'
   | 'card-stars'
+  | 'light-cone-preview'
 function profile(purpose: ConversionPurpose, lock: SourceLock): [number, number] {
   const t = lock.transform
   switch (purpose) {
@@ -72,6 +73,8 @@ function profile(purpose: ConversionPurpose, lock: SourceLock): [number, number]
       return [t.starSize, t.iconQuality]
     case 'reveal-artwork':
       return [t.revealArtworkSize, t.revealQuality]
+    case 'light-cone-preview':
+      return [t.lightConePreviewSize, t.revealQuality]
     case 'reveal-icon':
       return [t.revealIconSize, t.iconQuality]
     case 'reveal-stars':
@@ -205,6 +208,10 @@ export async function validateVisuals(
       asset.crop !== undefined ||
       (asset.purpose === 'reveal-star-big' &&
         (asset.source !== 'icon/deco/StarBig.png' || asset.slot !== 'reveal-star-big')) ||
+      (asset.purpose === 'light-cone-preview' &&
+        (asset.slot !== 'light-cone-preview' ||
+          !asset.id.startsWith('light-cone:') ||
+          asset.source !== `image/light_cone_preview/${asset.id.split(':')[1]}.png`)) ||
       /[\\:?#%]/.test(asset.source) ||
       asset.source.split('/').some((part) => !part || part === '.' || part === '..') ||
       source.sha256 !== hash ||
@@ -266,6 +273,14 @@ export async function validateVisuals(
       'reveal-artwork',
       row.revealArtwork,
     )
+    if (item.kind === 'light-cone')
+      reference(
+        item.id,
+        'light-cone-preview',
+        row.lightConePreview?.path,
+        'light-cone-preview',
+        row.lightConePreview,
+      )
   }
   for (const [group, definitions] of [
     ['paths', catalog.paths],
@@ -360,6 +375,7 @@ interface IndexRow {
   element?: string
   rarity?: number
   portrait?: string
+  preview?: string
   icon?: string
   name: string
   color?: string
@@ -537,7 +553,8 @@ export async function generateVisuals(
   }
   async function revealAsset(
     id: string,
-    purpose: 'reveal-artwork' | 'reveal-icon' | 'reveal-stars' | 'reveal-star-big',
+    purpose:
+      'reveal-artwork' | 'reveal-icon' | 'reveal-stars' | 'reveal-star-big' | 'light-cone-preview',
     sourcePath: string | undefined,
   ): Promise<VisualImage | undefined> {
     const [size, quality] = profile(purpose, lock)
@@ -594,7 +611,8 @@ export async function generateVisuals(
       en.rarity !== item.rarity ||
       cn.path !== en.path ||
       cn.element !== en.element ||
-      cn.portrait !== en.portrait
+      cn.portrait !== en.portrait ||
+      (item.kind === 'light-cone' && cn.preview !== en.preview)
     )
       throw new Error('Item identity or bilingual mismatch: ' + item.id)
     if (cn.path && !paths[cn.path]) paths[cn.path] = await definition('paths', cn.path)
@@ -628,6 +646,9 @@ export async function generateVisuals(
       ...(item.kind === 'avatar' ? { element: cn.element } : {}),
       portraitPath,
       revealArtwork: await revealAsset(item.id, 'reveal-artwork', cn.portrait),
+      ...(item.kind === 'light-cone'
+        ? { lightConePreview: await revealAsset(item.id, 'light-cone-preview', cn.preview) }
+        : {}),
       artworkPath: await asset(
         item.id,
         'artwork',

@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import type { HistoryEntry } from '../composables/useWarpSimulator'
 import type { ItemPresentation } from '../model/presentation'
-import WarpItemVisual from './WarpItemVisual.vue'
+import WarpResultArtwork from './WarpResultArtwork.vue'
+import type { PortraitFocus } from '../model/portrait-focus'
 import WarpVisualIcon from './WarpVisualIcon.vue'
 import { rarityColorVariable, resultTooltip } from './result-presentation'
 const props = defineProps<{
@@ -12,6 +13,8 @@ const props = defineProps<{
   item: ItemPresentation
   index: number
   single: boolean
+  focus?: PortraitFocus
+  idPrefix?: string
 }>()
 const emit = defineEmits<{ details: [entry: HistoryEntry] }>()
 const { t } = useI18n()
@@ -32,7 +35,7 @@ const summary = computed(() =>
 
 <template>
   <Button
-    :id="`warp-result-${entry.id}`"
+    :id="`${idPrefix ?? 'warp-result'}-${entry.id}`"
     v-tooltip="{
       value: tooltip,
       escape: true,
@@ -50,7 +53,7 @@ const summary = computed(() =>
     aria-haspopup="dialog"
     @click="emit('details', entry)"
   >
-    <span class="warp-card-visual"><WarpItemVisual :item="item" artwork crop /></span>
+    <span class="warp-card-visual"><WarpResultArtwork :item="item" :focus="focus" /></span>
     <span v-if="entry.event.isUp === true" class="warp-up">{{ t('warp.up') }}</span>
     <span class="warp-card-metadata">
       <span class="warp-metadata-cluster">
@@ -85,19 +88,23 @@ const summary = computed(() =>
   --warp-glow-spread: 0px;
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(80px, 30%);
+  grid-template-columns: minmax(0, 30%) minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
   align-items: stretch;
   width: 100%;
-  aspect-ratio: 2.1 / 1;
+  aspect-ratio: 2 / 1;
   min-width: 0;
   min-height: 0;
   padding: 0;
   overflow: visible;
-  color: var(--color-ink);
+  color: #f4f5fa;
   border: 2px solid var(--warp-rarity);
-  border-radius: 8px;
-  background: var(--color-surface);
+  border-radius: 1px;
+  background: linear-gradient(
+    135deg,
+    #080d17 8%,
+    color-mix(in srgb, var(--warp-rarity) 25%, #101629) 100%
+  );
   box-shadow:
     0 0 4px color-mix(in srgb, var(--warp-rarity) var(--warp-near-glow), transparent),
     0 0 var(--warp-glow-radius) var(--warp-glow-spread)
@@ -119,22 +126,26 @@ const summary = computed(() =>
   --warp-glow-spread: 2px;
 }
 .warp-result-card:hover {
-  background: color-mix(in srgb, var(--warp-rarity) 5%, var(--color-surface));
+  filter: brightness(1.12);
+}
+.warp-result-card:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 5px;
 }
 .warp-card-visual {
+  grid-column: 2;
+  grid-row: 1;
   position: relative;
   display: block;
   min-width: 0;
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  border-radius: 6px 0 0 6px;
-}
-.warp-card-visual > :deep(.warp-visual) {
-  position: absolute;
-  inset: 0;
+  border-radius: 0;
 }
 .warp-card-metadata {
+  grid-column: 1;
+  grid-row: 1;
   --warp-icon-size: min(32px, calc((100cqi - 8px) / 2));
   --warp-stars-target-height: 18px;
   --warp-metadata-gap: 14px;
@@ -145,7 +156,7 @@ const summary = computed(() =>
   min-width: 0;
   min-height: 0;
   padding: 8px 6px;
-  border-left: 1px solid color-mix(in srgb, var(--warp-rarity) 14%, transparent);
+  border-right: 1px solid color-mix(in srgb, var(--warp-rarity) 14%, transparent);
 }
 .warp-metadata-cluster {
   display: grid;
@@ -167,7 +178,7 @@ const summary = computed(() =>
 .warp-up {
   position: absolute;
   top: 8px;
-  left: 8px;
+  right: 8px;
   padding: 3px 6px;
   border: 1px solid color-mix(in srgb, var(--warp-rarity) 50%, transparent);
   border-radius: 4px;

@@ -8,8 +8,8 @@ import type { ItemPresentation } from '../../../src/tools/warp-simulator/model/p
 import reviewZhCN from '../../manual/warp-results/zh-CN.json'
 import reviewEn from '../../manual/warp-results/en.json'
 
-// The current runtime snapshot contains no five-star light cones. Keep this
-// synthetic identity and its reused four-star artwork entirely in the test graph.
+// Keep this deliberately synthetic identity and its reused four-star artwork
+// entirely in the test graph; production five-star cones use their own mappings.
 export const syntheticConeId = 'fixture:light-cone:5'
 export const syntheticLongNameId = 'fixture:avatar:long-name'
 const coneTemplate = warpSnapshot.items
@@ -138,13 +138,14 @@ export function resultDisplayScenarios(
       revealPathIcon: undefined,
     },
     [cone4.id]: {
+      lightConePreview: undefined,
       artworkUrl: '/tests/manual/warp-results/missing-fixture.webp',
       starsUrl: undefined,
       cardStars: undefined,
       revealArtwork: undefined,
     },
     [avatar5.id]: { artworkUrl: svg(800, 80), revealArtwork: undefined },
-    [cone5.id]: { artworkUrl: svg(80, 800), revealArtwork: undefined },
+    [cone5.id]: { artworkUrl: svg(80, 800), revealArtwork: undefined, lightConePreview: undefined },
   })
   add('missing-artwork', [avatar5], [], {
     [avatar5.id]: {
@@ -159,6 +160,11 @@ export function resultDisplayScenarios(
   })
   add('failed-artwork', [cone4], [], {
     [cone4.id]: {
+      lightConePreview: {
+        url: '/tests/manual/warp-results/missing-preview-fixture.webp',
+        width: 348,
+        height: 408,
+      },
       cardStars: {
         url: '/tests/manual/warp-results/missing-card-stars.webp',
         width: 260,

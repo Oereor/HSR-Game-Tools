@@ -1,7 +1,7 @@
 import { computed, onScopeDispose, readonly, ref, shallowRef, watch, type Ref } from 'vue'
 import type { HistoryEntry } from './useWarpSimulator'
 
-export type RevealPhase = 'idle' | 'identity' | 'artwork' | 'waiting' | 'leaving'
+export type RevealPhase = 'idle' | 'identity' | 'artwork' | 'waiting' | 'overview' | 'leaving'
 export const REVEAL_TIMING = { fade: 400, hold: 300, identity: 1100 } as const
 
 /** Presentation gate over committed records. Never owns or mutates an engine session. */
@@ -20,6 +20,7 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
   let revision = 0
   let lastBatchId = 0
   let disposed = false
+  let leavingOverview = false
 
   function clearTimer() {
     revision++
@@ -57,10 +58,14 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
     if (cursor.value + 1 < queue.value.length) {
       cursor.value++
       showCurrent()
+    } else if (pending.value?.entries.length === 10 && !leavingOverview) {
+      cursor.value = queue.value.length
+      enter('overview')
     } else visible.value = false
   }
   function advance() {
     if (!visible.value || phase.value === 'leaving') return
+    leavingOverview = phase.value === 'overview'
     enter('leaving')
     if (reducedMotion.value) finishLeaving()
     else later(finishLeaving, REVEAL_TIMING.fade)
@@ -108,6 +113,7 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
     cursor.value = 0
     phase.value = 'idle'
     displayedEntries.value = []
+    leavingOverview = false
   }
   function beginBatch(batchId: number, entries: readonly HistoryEntry[]) {
     if (
@@ -125,21 +131,22 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
         ? batchEntries
         : batchEntries.filter((entry) => entry.event.rarity === 5)
     cursor.value = 0
-    if (!queue.value.length) {
-      pending.value = undefined
-      visible.value = false
-      phase.value = 'idle'
-      displayedEntries.value = batchEntries
-    } else {
-      pending.value = { id: batchId, entries: batchEntries }
-      visible.value = true
-      showCurrent()
-    }
+    leavingOverview = false
+    pending.value = { id: batchId, entries: batchEntries }
+    visible.value = true
+    if (!queue.value.length) enter('overview')
+    else showCurrent()
     return true
   }
-  function afterHide() {
+  function afterHide(batchId = pending.value?.id) {
     // A stale Dialog leave hook must not release a replacement batch.
-    if (visible.value || phase.value !== 'leaving' || !pending.value) return false
+    if (
+      visible.value ||
+      phase.value !== 'leaving' ||
+      !pending.value ||
+      pending.value.id !== batchId
+    )
+      return false
     clearTimer()
     displayedEntries.value = pending.value.entries
     pending.value = undefined
@@ -152,7 +159,7 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
     (enabled) => {
       if (!enabled || !visible.value) return
       if (phase.value === 'leaving') finishLeaving()
-      else enter('artwork')
+      else if (phase.value !== 'overview') enter('artwork')
     },
     { flush: 'sync' },
   )
@@ -168,6 +175,7 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
     current,
     batchId: computed(() => pending.value?.id),
     displayedEntries: readonly(displayedEntries),
+    overviewEntries: computed(() => pending.value?.entries ?? []),
     identityReady: readonly(identityReady),
     markIdentityReady,
     artworkReady: readonly(artworkReady),

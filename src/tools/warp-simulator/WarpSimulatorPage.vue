@@ -86,8 +86,8 @@ function draw(count: 1 | 10) {
   revealTrigger = count === 1 ? 'warp-pull-one' : 'warp-pull-ten'
   void simulator.draw(count)
 }
-function afterRevealHide() {
-  if (reveal.afterHide()) focus(revealTrigger)
+function afterRevealHide(batchId?: number) {
+  if (reveal.afterHide(batchId)) focus(revealTrigger)
 }
 const presentation = createPresentation(
   warpSnapshot,
@@ -451,6 +451,14 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
     </div>
     <WarpRevealOverlay
       :visible="revealVisible"
+      :batch-id="reveal.batchId.value"
+      :entries="reveal.overviewEntries.value"
+      :presentation="presentation"
+      :source-label="
+        reveal.overviewEntries.value.length
+          ? sourceLabel(reveal.overviewEntries.value[0].event.bannerId)
+          : ''
+      "
       :entry="revealEntry"
       :item="revealEntry ? item(revealEntry.event.itemId) : undefined"
       :phase="revealPhase"

@@ -8,6 +8,13 @@ export const warpVisualTokens = {
 } as const
 export const ToolsPreset = definePreset(Aura, {
   primitive: {
+    warpResult: {
+      top: '#070a10',
+      upper: '#0c1428',
+      middle: '#252e50',
+      lower: '#7e89a5',
+      bottom: '#e0e8f0',
+    },
     warpRarity: {
       3: warpVisualTokens.rarity3,
       4: warpVisualTokens.rarity4,

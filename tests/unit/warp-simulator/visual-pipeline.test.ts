@@ -92,6 +92,7 @@ async function fixture() {
           rarity: 3,
           path: 'Warrior',
           portrait: 'image/light_cone_portrait/1.png',
+          preview: 'image/light_cone_preview/1.png',
         },
       },
       paths: {
@@ -115,6 +116,7 @@ async function fixture() {
   for (const file of [
     'image/character_portrait/1.png',
     'image/light_cone_portrait/1.png',
+    'image/light_cone_preview/1.png',
     'icon/path/Destruction.png',
     'icon/element/Quantum.png',
   ])
@@ -129,6 +131,45 @@ async function fixture() {
   return { root, stage, inputs, source: { read: (file: string) => inputs[file] } }
 }
 describe('explicit Warp visual updater', () => {
+  it('retains transparent preview pixels and records missing/bilingual preview sources explicitly', async () => {
+    const f = await fixture()
+    f.inputs['image/light_cone_preview/1.png'] = await sharp({
+      create: {
+        width: 64,
+        height: 80,
+        channels: 4,
+        background: '#00000000',
+      },
+    })
+      .composite([{ input: f.inputs['image/light_cone_portrait/1.png']!, left: 20, top: 20 }])
+      .png()
+      .toBuffer()
+    const manifest = await generateVisuals(f.root, f.stage, f.source)
+    const asset = manifest.assets.find((a) => a.purpose === 'light-cone-preview')!
+    const bytes = await readFile(path.join(f.stage, 'public/' + asset.output))
+    expect(await sharp(bytes).metadata()).toMatchObject({ width: 64, height: 80, hasAlpha: true })
+    const raw = await sharp(bytes).ensureAlpha().raw().toBuffer()
+    expect(raw[3]).toBe(0)
+    expect(raw[(30 * 64 + 30) * 4 + 3]).toBe(255)
+    await publishVisuals(f.root, f.stage, 'preview')
+    const cached = await generateVisuals(f.root, path.join(f.root, 'again'), f.source)
+    expect(cached.files).toEqual(manifest.files)
+    delete f.inputs['image/light_cone_preview/1.png']
+    const missing = await generateVisuals(f.root, path.join(f.root, 'missing'), f.source)
+    expect(missing.missingAssets).toContainEqual({
+      id: 'light-cone:1',
+      slot: 'light-cone-preview',
+      sourcePath: 'image/light_cone_preview/1.png',
+      reason: 'missing-source-file',
+    })
+    const enFile = 'index_new/en/light_cones.json'
+    const english = JSON.parse(f.inputs[enFile]!.toString())
+    english['1'].preview = 'image/light_cone_preview/2.png'
+    f.inputs[enFile] = Buffer.from(JSON.stringify(english))
+    await expect(generateVisuals(f.root, path.join(f.root, 'mismatch'), f.source)).rejects.toThrow(
+      /bilingual/,
+    )
+  })
   it('validates committed assets offline, separately from the unchanged planner inventory', async () => {
     const root = fileURLToPath(new URL('../../../', import.meta.url))
     expect(await validateVisuals(root)).toMatchObject({
@@ -178,15 +219,15 @@ describe('explicit Warp visual updater', () => {
       width: 16,
       height: 24,
     })
-    expect(new Set(manifest.assets.map((asset) => asset.purpose)).size).toBe(9)
-    expect((await readdir(path.join(f.stage, assetDirectory))).length).toBe(13)
+    expect(new Set(manifest.assets.map((asset) => asset.purpose)).size).toBe(10)
+    expect((await readdir(path.join(f.stage, assetDirectory))).length).toBe(14)
     expect(manifest.inputs['index_new/cn/characters.json']).toEqual(
       metadata(f.inputs['index_new/cn/characters.json']!),
     )
     await publishVisuals(f.root, f.stage, 'fixture')
     expect(await validateVisuals(f.root)).toMatchObject({
       items: 2,
-      newAssets: 13,
+      newAssets: 14,
       reusedAssets: 1,
     })
     expect(await readFile(path.join(f.root, 'public/game-assets/character/1.webp'))).toEqual(before)

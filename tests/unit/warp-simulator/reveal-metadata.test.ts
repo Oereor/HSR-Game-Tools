@@ -122,7 +122,14 @@ describe('Final artwork metadata presentation', () => {
     expect(supplied.groups[0]!.name).toBe('Supplied path')
   })
   it('shows only ready artwork/waiting, retaining final artwork but not identity during leaving', () => {
-    for (const stage of ['idle', 'identity', 'artwork', 'waiting', 'leaving'] as RevealPhase[]) {
+    for (const stage of [
+      'idle',
+      'identity',
+      'artwork',
+      'waiting',
+      'overview',
+      'leaving',
+    ] as RevealPhase[]) {
       expect(showRevealMetadata(stage, false)).toBe(false)
       expect(showRevealMetadata(stage, true)).toBe(stage === 'artwork' || stage === 'waiting')
     }
@@ -193,7 +200,7 @@ describe('Final artwork metadata presentation', () => {
     find(tree)
     expect(owners).toHaveLength(1)
     expect(owners[0]!.children.filter((child) => child.type === 1).map((node) => node.tag)).toEqual(
-      ['WarpRevealImage', 'WarpRevealMetadata'],
+      ['span', 'WarpRevealMetadata'],
     )
     expect(overlay).toContain('showRevealMetadata(stage.value, props.artworkReady)')
     expect(overlay).toContain(
@@ -227,7 +234,7 @@ describe('Final artwork metadata presentation', () => {
       reveal.beginBatch(committed.latestBatchId!, simulator.latestResults.value)
       expect(reveal.current.value).toBeDefined()
       const seen: number[] = []
-      while (reveal.visible.value) {
+      while (reveal.current.value) {
         const entry = reveal.current.value!
         seen.push(entry.id)
         reveal.markArtworkReady(entry.batchId, entry.id)
@@ -245,6 +252,9 @@ describe('Final artwork metadata presentation', () => {
         }
         reveal.activate()
       }
+      expect(reveal.phase.value).toBe('overview')
+      expect(reveal.overviewEntries.value).toHaveLength(10)
+      reveal.escape()
       reveal.afterHide()
       expect(seen).toEqual(
         simulator.latestResults.value

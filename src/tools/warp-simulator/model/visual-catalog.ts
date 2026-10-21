@@ -12,6 +12,7 @@ export interface VisualMetadata {
   readonly portraitPath?: string
   readonly artworkPath?: string
   readonly revealArtwork?: VisualImage
+  readonly lightConePreview?: VisualImage
 }
 export type VisualCatalog = Readonly<Record<string, VisualMetadata>>
 export interface VisualDefinition {
@@ -49,6 +50,7 @@ export function visualAssetPaths(catalog: WarpVisualCatalog): string[] {
           item.portraitPath,
           item.artworkPath,
           item.revealArtwork?.path,
+          item.lightConePreview?.path,
         ]),
         ...Object.values(catalog.paths).flatMap((row) => [row.iconPath, row.revealIcon?.path]),
         ...Object.values(catalog.elements).map((row) => row.iconPath),
@@ -136,6 +138,10 @@ export function assertVisualCatalog(
       if (row[field] !== undefined && !safeAssetPath(row[field]))
         throw new Error('Unsafe item image path')
     if (row.revealArtwork !== undefined) assertImage(row.revealArtwork)
+    if (row.lightConePreview !== undefined) {
+      if (item.kind !== 'light-cone') throw new Error('Unexpected avatar light cone preview')
+      assertImage(row.lightConePreview, 'light cone preview')
+    }
   }
   for (const [rarity, file] of Object.entries(value.stars))
     if (!['3', '4', '5'].includes(rarity) || !safeAssetPath(file))

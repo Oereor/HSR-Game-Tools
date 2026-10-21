@@ -613,6 +613,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/aca88cb5f99e4f06f425d3e1e17d31deb45d3f923cb2bdcd50d5d7104f94d2c0.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/774348f76201dfde0c8af1cd8fdb72ccc1bc4730b0086eafe7335cd2967a2f86.webp"
     },
     "light-cone:20001": {
@@ -621,6 +626,11 @@
         "path": "game-assets/warp/8c93c979b820860ae4c4c12b350812323155c4ecc1184c10600db70ddafd2ea2.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/5329c34bafd789d937b28e2b38563fd1bf0a8762ce1b05c18dcf0230865e47fb.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/b43ec8163827e185cc60ada561a15c182e42da31386399ca3ff1042e58df9971.webp"
     },
@@ -631,6 +641,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/d723436e553a6409a572f7a5d1ab991b72678294bb8df21afc3b3e4fc85f1736.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/ac0d08b04013edf897801f0fb6689ac0e7a45b37af4757c732f4bfb58d3c6e0c.webp"
     },
     "light-cone:20003": {
@@ -639,6 +654,11 @@
         "path": "game-assets/warp/fca41f2eca9b219e06ee602fc9a4d733a0bf4c1ddf9fe197fdba88c3edcbff24.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/f126222b3a61e60651399016bdc7f2f68b8e76303eb118271417fb50e1cee9a1.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/fb962d6c798504df913429b075d0ea5b3fa4fdfeae5db65cf5d2463595ad4ff7.webp"
     },
@@ -649,6 +669,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/0409cfbdb988817f6ed71137f7be4f6398ec755bad2d05ad31f6aacf8d633c69.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/61c191c0b66355724c3eb61313d49d73acc7286ed0ec23931954922c13d93351.webp"
     },
     "light-cone:20005": {
@@ -657,6 +682,11 @@
         "path": "game-assets/warp/d197b3691bd010f6b9794ccb7a2b958c48dfd18b70283c8a5e3471d460dbe1b9.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/0523c90df9c5233b896aec8936dfa15297dbfb264ed1752ab358177dd1053713.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/6f63f45ff1d624d9e57a91b308a34515076995da25849fd203847e18f35f1aff.webp"
     },
@@ -667,6 +697,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/1268ecf3d1141e876005be8c410c75b037f4e0eca8dd1ea30551cedecbf9a12c.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/0ac5f547d75a75bcfdfcc012962ce5fa8641bc302ff1305818c24cfce5aa2180.webp"
     },
     "light-cone:20007": {
@@ -675,6 +710,11 @@
         "path": "game-assets/warp/f75a1aa12444d8378e8fe5af90152fd29220fe31e21657f02f658a81099474e7.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/75f8f24d484022d57520c286bcefabc1023204503247aa26b50aa2e956d89ebc.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/9f25b0240238b29c11f0164e82cd606b2668964be4f35b640863cbac068f1453.webp"
     },
@@ -685,6 +725,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/e8652ebdbec5118ea7217e6d6e37e96ad8cb688fc7e8fabb837dda9812010be8.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/7729265999e68fd20a7ba36b7140404e41f3067a32910ef68cb7cd3e27dcc367.webp"
     },
     "light-cone:20009": {
@@ -693,6 +738,11 @@
         "path": "game-assets/warp/1b1246f00782745202cb2209876786f3609127f4f28aed312383739bcd2f17e5.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/b79deb96e9d1fdf3636a4a8f9e92f18e829e882b79d93300b1c07e2119bab1b5.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/8a9d2ee46939a71d9116951f1b37a5f7280c75b983c2c379c3d6ebd6da43a05d.webp"
     },
@@ -703,6 +753,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/7b494338fefed735d381c326476fef179cd6101276d1bfa94fd2b9b507473a11.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/3191d7ed033a5dcc57141c9544efc4c76c830a6baab77ab0ef8aaaa75929e429.webp"
     },
     "light-cone:20011": {
@@ -711,6 +766,11 @@
         "path": "game-assets/warp/6206ad106e747405b4cafbc1d4f144b3e43f1e83b14e473a6aac285f7945dfaa.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/a49721f936f94beb0d94d6ec56d9d04a80777088f906d2dea99f55ee3a1b60cc.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/48979982e109adfe34b8047957a5c642b4132a8b3ffbe54b370dec20d28aa49e.webp"
     },
@@ -721,6 +781,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/5b1eaf6b923f8fd97f232118624631ba2cc68532d1e6c5637549a4e9251a64d5.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/cfac934df3c3470559c77e06ea0a73b81209fcf10566a95219f00abb27a4ca9a.webp"
     },
     "light-cone:20013": {
@@ -729,6 +794,11 @@
         "path": "game-assets/warp/40d742c1d967b4f83fe5a0e832f4a8826d4a3798f488327c73e7f7558c95b740.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/50e1510cc777c44c4965c50ed90a14fbc76a9285170dcfce863fe5bfb29f0e47.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/62f6247b0566454c2e46b5039a92f0d2f20d63ce749c1ae4cfbc816b4b64c915.webp"
     },
@@ -739,6 +809,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/45974635961b51dcfb022d3b7894d999238789e4d262c6d8abfe1c2b9d697fb7.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/b66cadb51dfbd947a95bc7d521635e8e3cec84dde4860b0b13dbc885de0d2b41.webp"
     },
     "light-cone:20015": {
@@ -747,6 +822,11 @@
         "path": "game-assets/warp/f83a43a0246b7c3d719d3b84cb39671105b700c38c8c13d8cff17e75c1fab58a.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/b354af6fadf166ed722175eb287385a5c75a0749f68c28b3ef335edb7802e055.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/267336a535a1c474135fc96cb03e5663ebe038a5b50c21514dcebcac6a930e67.webp"
     },
@@ -757,6 +837,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/4e5eb4bfc280a03b83e4e497c774333f3eceac494acd6454dfed6b833a26683b.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/e6161e204fdda98acb7dbb56dcfc1abb51a8805849794a1ed4b62c8a5c678678.webp"
     },
     "light-cone:20017": {
@@ -765,6 +850,11 @@
         "path": "game-assets/warp/bd184379f8bd76f1edf15e17160334181b65e2a9f720ff224687eff312ec566f.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/7ec155cc35f905c3134c08172dccd9e62e1450cda9a64520d783d5901abce491.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/ac8d6e88ca80d7f47facd646a2924261c340961480720d789d2f0d4e1b9319d4.webp"
     },
@@ -775,6 +865,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/89c95cd0f8b56837c44fe49f360545eeb6e00a14988ad89095fe9d7a44140e5a.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/36503ed3b0b3a8fb61a1e19c6aa977b475cebdd83c52366a9c5acc840e4e530f.webp"
     },
     "light-cone:20019": {
@@ -783,6 +878,11 @@
         "path": "game-assets/warp/8adcdaf09cb8c5bb95e16fb4b033df9695536b3f6b05f24ebe15c0e4263d76e5.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/76271fe8dc546ac000846dd18e614281a6a61119bd57d0541aedf04478e7a81f.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/1a98c6d4f092c54ca917aae1c643314dba7cbd0ac15ce70de8addcc45c6c4946.webp"
     },
@@ -793,6 +893,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/cc90e54c643bfb49f3952cef58eb9136b175ba59a28b0ef0b48857967ee85c6b.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/2ba8d69b02167d629f6b0f1fd80dad5289478773732c4417ba5f62493c21c81a.webp"
     },
     "light-cone:20021": {
@@ -801,6 +906,11 @@
         "path": "game-assets/warp/64ce1945cff752186c143e6d7462f76d15ae4fd9b9b4c5c5a00811a2ba7959b1.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/98148dfe4cb16c53485000ab1deed33f9b51a5e119d1694207d1e902e4fc74e6.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/6e626462d1db36201d78accde3145de8f2cf1bb76bd28c28059dfb3134ae1880.webp"
     },
@@ -811,6 +921,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/fdf2bbf2fb450389e982b6334cf876ad602f7dbb54a2b16aec4703f28b9042bf.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/e6127a76ec012f53a5516bc685763e9d038d050175c404df6389213b53b7c102.webp"
     },
     "light-cone:20023": {
@@ -819,6 +934,11 @@
         "path": "game-assets/warp/0d10b9d7c9100bdeb16fb1f530fa10ea3f733b5b0d5aa1d962ae03bf14ce58fe.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/3113a9f2a8b8413746e8f903b2d9d03b61421baef86e1248f7b980bfc7265664.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/5ae7b860580b2eee9471932f5f3fd5d058775b60d9653d32654b924e86b7f030.webp"
     },
@@ -829,6 +949,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/d0a649687daadbc95bc45858f5e33da073b3a523fd2f5b2107c06100f8b98327.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/3947d41c0f730ba1ef236784c42cd4daa59b6056cec50840fd90175849321923.webp"
     },
     "light-cone:21000": {
@@ -837,6 +962,11 @@
         "path": "game-assets/warp/d79a50dce8a8a32014af7e319482bb3079514fada258b5852cf8bb83894bc64c.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/fd6ea9a3dfe87abe3afe38a723a5de593b09e43f6f0a880141876c61e0a89263.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/aaaf7af5d09b47854d09c9db623a7afc227dc1bc2f979cf0d8649817753ac759.webp"
     },
@@ -847,6 +977,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/5226b418d5536c05632e4713918bd1086f22a092df37d912f999c52b52e97281.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/6f21d7f189e3e1a35704a71bf3acdd71a2776ab5812986363a714e9e98344172.webp"
     },
     "light-cone:21002": {
@@ -855,6 +990,11 @@
         "path": "game-assets/warp/543b0550a84fdf80db514b1601b05f0fb92aa6fdc63e6646c08cb2aa8dee293a.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/be30aad1b299864091e9452d22d946be5e6f39db650b87c321387972957e82e8.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/10ad09f7ac7e96a68d977f89d056a98aae5967135554a8f6127e8cf32cecf39b.webp"
     },
@@ -865,6 +1005,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/506bb899c26f9eea00cce39438822927eaf191ec4dce31363ac2cffc12e773f2.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/4672cf023815e032a1941971aaa22584a21c90f39811c30a782a793dd528e427.webp"
     },
     "light-cone:21004": {
@@ -873,6 +1018,11 @@
         "path": "game-assets/warp/de7ff7c409071de0036d571b58d5a4b37bfcae56f142dc6e6dd8572f017efead.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/d8e3a88729d74de9a22aecb044a82a55234f60f1119fafa14673c4b673178a05.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/68d976c4edde5c0f61246e0603c2f526ba899613c6eb5420759fe9063f3ebc1e.webp"
     },
@@ -883,6 +1033,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/839e6235f8e990583e0901b90edc9826f16ad9c08c4de986ce0748e962d9407d.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/5f652892e6acabaf344a43ddf9d171083a35b3c469842dbbed709ab15c4c2924.webp"
     },
     "light-cone:21006": {
@@ -891,6 +1046,11 @@
         "path": "game-assets/warp/07b670e3c05386b97812fe23e808196b7b9d75f866f818fd0dbe821cf67010a0.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/093de55be6ddb9cad75e284ed586badec7872508d3b156904ba421e27ad336f9.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/e21c122974e846e0bb8b3a6dc3dcf388961c933e2227c357cefe05f312d70836.webp"
     },
@@ -901,6 +1061,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/31893df4a01c56a7d048ca789e30cf59e30ba81c094f23f3672da0528b2e08dc.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/59a2e9c9342b41f6536450f702f3d68d246a68e65ead95920f02ea56a55336a8.webp"
     },
     "light-cone:21008": {
@@ -909,6 +1074,11 @@
         "path": "game-assets/warp/8ba30575a978dc96f2df8f9af3b92a21ad7e5504f382c232ea8b02aeb6a4ebf3.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/a9950f12bb48c50a6501439ad9be51c36355453333a93a51ef037172e63318bd.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/89bab316413d6943e842fc9715fff8648f6ea8335f5cdb22bcbae2912b67e3c7.webp"
     },
@@ -919,6 +1089,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/e6f29cd6da0610ca8cb01e2ed928ce0031ba2039a3b48787af8e030c77ef0ea4.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/324fee5e3bcab531ace55970687aa47ad459193fe27c7571273065f91ba7da48.webp"
     },
     "light-cone:21010": {
@@ -927,6 +1102,11 @@
         "path": "game-assets/warp/6001e6836113e84077693a87a6ac1910eb90fc35383b38bb8f1b1ae43561bee4.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/ed3989e572aa0e12be25c92192f549940dcffc1a1d94b1bb531a47e1daf4ef3d.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/9461c949319f3f951f2b7a858b3937c6f7a8aebc3d86bb915ba6f313c244da0e.webp"
     },
@@ -937,6 +1117,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/96c9138a1ab604de6ec3b149af534fb6a9a0d137ad0c03a0ed403faebeb18db1.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/99d2bf2f588c62b1d1935af5158b4d909b83f6d78c4f5af820bc73d467101d0c.webp"
     },
     "light-cone:21012": {
@@ -945,6 +1130,11 @@
         "path": "game-assets/warp/caa7a8b5eb12ae0291391ad55f99dfd426bd40682bdb66b69e4b1a4bb3994768.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/9dddb7448640ffcb899d97bfb9fe3f035736de477e41a0893d0a249ec6ff5f76.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/87036cff94d9d6e6aae14c2edad93ff4e390fe4e5542b79aba9df2fa56ed1fd2.webp"
     },
@@ -955,6 +1145,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/044ed45f2fa183c6134f0be13c0a0c04a9bbc7e02e78e16edae47c08976cf002.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/cde2bed9d6de272d83f3af8dd2b9aec9952e68f8b1ea65a93ad8739002aa57dd.webp"
     },
     "light-cone:21014": {
@@ -963,6 +1158,11 @@
         "path": "game-assets/warp/2f5d62f4e624e5f4952de2e92fe5e1e7f5691323bdf866855292fff95b89de14.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/6c8e3b3b95bcca6e7da18a68777113342afe39d99cc468f40a054f7c4b5b6bb3.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/b036761958c03bf2bb57b838eaf826a1a7cab38ac2ed91bc6d59900bc9f5006f.webp"
     },
@@ -973,6 +1173,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/a1fa53b5d2df656f91192d01b2c20a725e62572e24f92fde1a3ed92ab2030874.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/ba1a98d8f9d514484dc6d38188b0dea90b8f9482d2ec73ee6a50d0adccf14182.webp"
     },
     "light-cone:21016": {
@@ -981,6 +1186,11 @@
         "path": "game-assets/warp/d5daee715ed1f209aa983270dbb8ff284e1544bc8f40e36e5ad5f7307531ce4c.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/35d2a9be55d29615dd8601b7dd71aa1982f9340dca53027bf604ce20a8f056b3.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/dc811580b18dc12bc34d59e1809ed281ceb68007da0a704810f50b8c8a5e2964.webp"
     },
@@ -991,6 +1201,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/81a4e54e799907808130ac140ca7702e1f5150af50593fe105b244b76dd1265c.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/77f5d19911bbedfbd9758ca20a08f292d1c917ce0d27fe1734a4ced08948bb49.webp"
     },
     "light-cone:21018": {
@@ -999,6 +1214,11 @@
         "path": "game-assets/warp/ffa71f15f65ece24f5b3f1c329bc9ff38e78e1e5dd12b04205e7e42381ebd184.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/b9654fa19500bdffc9b900680e1af9e6d42d38df998da12774dcb41579088a7a.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/087425039384a15a2cda15b544b6e44d59e978be0446dbfcac721638e8fd3566.webp"
     },
@@ -1009,6 +1229,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/f90fa8cf171db075e84235028d8c4fbdc4487d44484c69606d75ea295ea35184.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/2c55b5b5810e479c18d94b325e00206150c3431bfba300205c5ccacdc80f8a06.webp"
     },
     "light-cone:21020": {
@@ -1017,6 +1242,11 @@
         "path": "game-assets/warp/13c10dedd8c423135ee9c05fe0527fa89830af618b264adbb03a4af5c4689132.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/9ab321b3af59470f14d3efd2057d5d52bb6b8ab4b20640b3a3b423fb4052ab55.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/35a77cd62cbce8505592a5a8e6b0a5c061bac70a5bf67f45b4f381a19db9ea25.webp"
     },
@@ -1027,6 +1257,11 @@
         "width": 902,
         "height": 1258
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/dd1170e49fab80347a1088c9f792d69ba5bff68ee45849a6c8dd41261eaa9e7a.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/d8634009cf67dc433f6e53beafb485987980a24e2ee771803c00aae92493d228.webp"
     },
     "light-cone:21043": {
@@ -1035,6 +1270,11 @@
         "path": "game-assets/warp/db87d5a2813e54aa877df85742e27d9aaed8035f4ebce5e556ab7e6541b8daf9.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/99b707d0e59f50da40f89913f9c315bc50aaa6b8118dd517868c92c52080d89b.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/483035a1b4bff6a63f339d3b07c72bcda0e4a133c57b6f472a2fa3ba55ee48f2.webp"
     },
@@ -1045,6 +1285,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/c62c674fdc31f03a1b2a75fd83ae674c0653120bf7b71a7dd33d1e7b57fbbb65.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/3dd4717330283da4cde61b525a36c0c8a8ef87eb3a965866d597cfb899de45c0.webp"
     },
     "light-cone:21045": {
@@ -1053,6 +1298,11 @@
         "path": "game-assets/warp/79faf200f5768305f2a169b3dc57ad3304cc9a3a761b254ce4ecaac21c43efd9.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/814a521752505d37f204dc6a4564a2c3b35af85266b38ccfcebdda7e557a45a9.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/d40e84d2f2df6ab3d57aea6a3ef942b2513a062e62606f5f740141067f2b3710.webp"
     },
@@ -1063,6 +1313,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/eab023d9bad97e8b8b1e641d6064a737039a11b97461c6a7b8e0954b37dd5098.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/dfada6b194969e4e1d6dc431259e3530aa9a04874fefd0562ea52b55891dc8a7.webp"
     },
     "light-cone:21047": {
@@ -1071,6 +1326,11 @@
         "path": "game-assets/warp/22a183b4e9d0a3647894977820c0a9dcfaf5093184b0842cea64e13d0c01824d.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/5fa80b7e86fbb56a2749b4dc19412437fbc1b7a21825a9b104d9e8d98ce8d229.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/735582440e5862b18fa08d9f5ac0d6641429cdf8529de0f503a8a3a987295e60.webp"
     },
@@ -1081,6 +1341,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/8b75eddf094a5295358b0e7b32721e1cff02f7356228d5c6eef8a638dc237a19.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/52920c634cbcbf0add0f914ad5ddac44e99a48d90495bfd99f8bb674e382c5b3.webp"
     },
     "light-cone:21051": {
@@ -1089,6 +1354,11 @@
         "path": "game-assets/warp/f8aab22a5ca5feb894ad2692fb9ccbd1ea1fb518f3d69b68d871f2471a7b5132.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/dd2e7c3e1a7538482dbbcf1e1b15b7491b7b21a501f8ba41a99e8d0206fc1141.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/cf3a35ded568c92195e6748bac360a136c765aeb42dee6502ced9841a46142e6.webp"
     },
@@ -1099,6 +1369,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/d5dac0f850a5eac1c73886812c1485f1c68eda47bee277cc915256f7ca7ef73e.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/915a8ab506bda737935d43c467b793bb5d73b2863f1d2b56a25070ada9ad849e.webp"
     },
     "light-cone:21066": {
@@ -1107,6 +1382,11 @@
         "path": "game-assets/warp/6a5de31d5728799a238f0728d0e58bcd926655372cc1e270155304d62c2cf032.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/257d5484b29ecb0582566afdeb31340566faa241302e0e3bde6bdd5e7821dc15.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/25d7548a83d9e3ef6256178b2f448e7efc2d46bbc4f6a8abc9e20c8fb5cf9b9a.webp"
     },
@@ -1117,6 +1397,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/251335a66a4a324359fa1dad20227f44d31eae045ecaa054e94aa99ae31f0942.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/fabb3d8c3ffafa710da0fc0ba84fb1b1955080f6b9713e775403f113a566d174.webp"
     },
     "light-cone:23002": {
@@ -1125,6 +1410,11 @@
         "path": "game-assets/warp/eb30a3221564c8ddcdff8d7e572292d3f233a70b01e1e15dbcba754c2d660417.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/1cf635d399568f77183a57e1005971a343dee05af375654d32a63fa29e6c4c89.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/60977c1bea5f36d5453ad129502b26338913b6fea01c2091b2bd3c5584db72e1.webp"
     },
@@ -1135,6 +1425,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/1ac5f98fbec0fdbbe29124c53f27e7b5f90545c2b329a39f6ca212327f866a7c.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/dd37fd67549b8c446fc7a790dc2b1a43098937fbc5bae11e47eb78862a603b07.webp"
     },
     "light-cone:23004": {
@@ -1143,6 +1438,11 @@
         "path": "game-assets/warp/b98ae4d94ecd393360f0156e90b2ed9aab2ab16ac0e63fa5e6db3a8694aa7e4b.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/55d4383f4d827242cc87036262980919af7552dd23d7f3e5c006a8643bbb10c8.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/3b481c24a931bcbd6990339239ee62826dd0c2d18295eb580414705c0eca24fc.webp"
     },
@@ -1153,6 +1453,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/12660ed074334379298d84ef92096bea83d9610edf01b182b55d625141e6ae13.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/e22016de22956a7bf15702a74a3c60ff2166265ebee0ed01cd35c1061e4d356c.webp"
     },
     "light-cone:23012": {
@@ -1161,6 +1466,11 @@
         "path": "game-assets/warp/31f2802624630e32c5c9f874bd06d143f9b071ef4b75c8a840e885c00512c528.webp",
         "width": 902,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/13bf4ec9fa3071758a96e7c8c503491d8c86d6ca9f61aa35c6c3e99546b8d03c.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/7126e1ba96758b031ed979e10cb7d10bc6cc141f4a839122f1af137f0cd84198.webp"
     },
@@ -1171,6 +1481,11 @@
         "width": 902,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/e29261244ed03f48470c1f5c3a52ffc381932419e07a819fa9e2cf55ede3d9de.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/7eb90b7d9f750ec92e5ec3b93a6b854c2b1d9b63759df5fd721cc12c283a72a0.webp"
     },
     "light-cone:23023": {
@@ -1179,6 +1494,11 @@
         "path": "game-assets/warp/24387dbdb6c399ce29842dc902049ff7eab31bca4924f784a87534746c9e4564.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/87bcce7fba447e5179b87be46504151deff301de0ddebccd9a54bb09127aea95.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/139797e3523348975c1e011d18feeaf5143fa8bf7c1b6906ae674343663435fc.webp"
     },
@@ -1189,6 +1509,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/9e9e5851b66e4ae6c25643ef7b21d02e35889b07453cf649c9d7712b33c9b051.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/b63f8cbdf2b6fe0c16a8074f79cce850baca42331e7902e3d4a34ee3740a9d4e.webp"
     },
     "light-cone:23042": {
@@ -1197,6 +1522,11 @@
         "path": "game-assets/warp/bf2dde3c850f22b97c4959b2342612d6003feb843c79f9aaa242a28e258c7cbb.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/87fac8a99e9deb1ed9e722a8aaab7e04d89c5f0b6717d63aae40d948ca900f4a.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/a6aecb426cf56a4db74c535af6c3b1184deeecc7e9f4ca30b8981958f429f722.webp"
     },
@@ -1207,6 +1537,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/b8f8004155a96a50d270db21e6d18fb49fd88fb12b9358a05cdb29a6d8e46be4.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/269af13d6ef27700aa6d5973912230dd58d1a7b538f9fc499c8c24fcea51c7e2.webp"
     },
     "light-cone:23045": {
@@ -1215,6 +1550,11 @@
         "path": "game-assets/warp/23fb52843bdf27b074ea45f288126ae9f6929a5c93735ff45a9034992e5a6fcb.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/9475ee8ab6bf913034647285736e916ed3f903a823b02133dbcbbe659ec516a2.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/79b410aac4d82809a56d6c5a59c2ed2bca989f770f71ee06d1a54f4c888abce9.webp"
     },
@@ -1225,6 +1565,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/a8473e58a45f32745ac5ea1c11879b82acb5bd4394bfeb8b44ce1f71a9022344.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/1b11f6f4b886bb802b650c7d791f0d6fcb6d4e3ffc9967fb84e8b10506ad5f2d.webp"
     },
     "light-cone:23048": {
@@ -1233,6 +1578,11 @@
         "path": "game-assets/warp/1a4fac401295ca367b654200ae01a6b8b635939602bc13cfa9b9ae35a0eb570a.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/631f31674661b2ce41ec744fc65ee60bd59753ab586c60b261bae26102affbc5.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/7d2981dfeeae847119c59dcae6907befdd378561472d35c60182529929935ea1.webp"
     },
@@ -1243,6 +1593,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/df11ff9a7c320b0775e173ffe17f9dfafaeeb74fa161394fdad0ce36a4286a94.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/6a8930455fd65980004364b8b9a7377e312fabef9e72c8fdc511016af5d2b06b.webp"
     },
     "light-cone:23051": {
@@ -1251,6 +1606,11 @@
         "path": "game-assets/warp/39196b8cfd7e46a104ee80892be5f5f3507b6f97cd9ce1217b847b2e0209a4e5.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/b14aa2ceb093d3cd7b66b99b677eabd3f962d95bfed68b17b93f728093af1d9a.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/c8063d7d81e5f2a569a5dd2c383ac822a5c544b4fc981ea218bcc218d02002e7.webp"
     },
@@ -1261,6 +1621,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/bcdb9cc61a36e0f879f80ce899a554cf0ef521758415812564fdc0836c94281d.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/ee55bc26f7bbafa6e5721850afcb6647fc36e998d3921f4d80af9e2bb89f4a59.webp"
     },
     "light-cone:23053": {
@@ -1269,6 +1634,11 @@
         "path": "game-assets/warp/10c1743301a4deb69545d6bf8afbd7083cb5b784fcd1f8d6d346dd37b9d3b870.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/cbe8771130088f6e0139f26cd1409b569c4c652fa7b316cc591fa877b5057d7f.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/e460423b8fcca14d843b9ea3b589e0284c727abbb0720a64f81acad0b3624a34.webp"
     },
@@ -1279,6 +1649,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/f87da120a340f70eb690afae00403d515be00d41769d49ee5e719d1b706c11dd.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/65a1430fcf0b8435a7b8342828e2e163034f2025d96023af65335240b5f1c117.webp"
     },
     "light-cone:23056": {
@@ -1287,6 +1662,11 @@
         "path": "game-assets/warp/eb1897ef8680dca4ffd2f52c21c241396652b60d0a134d822ed2025537404b59.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/c0dd948403437d87a7d320b2d8c41bc4b6732324e16750496b9e9239f955608a.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/8addde65cfd08f8abc73b447020872db67c782bcee560fecbf62fd37b59c7d01.webp"
     },
@@ -1297,6 +1677,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/77a7a7103e1aa9e625dc19a24b0c361753568f1f882d96d1f0d9efde4926328a.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/7dcbd3f592bf51caa9a9e2e9bb0e118275b1ffd3d6a5733f0cf57ea0dee9d62a.webp"
     },
     "light-cone:23059": {
@@ -1305,6 +1690,11 @@
         "path": "game-assets/warp/8b1d9649af079622b36c20cfaf17843e6bd9795afb336a100ccda1de9f68a31d.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/6b223dd265d3671ee7858b5b328952a799bfe882a36bc322ebaa93dc8686d403.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/073a4a0356e59661740685605388d2f1131e33634ab850b0ef2ad90f570f738c.webp"
     },
@@ -1315,6 +1705,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/02e1f7c7effa19dbbc02b3aeb4707132e0794c9a25dd2a51ae2bec48f93f1a4a.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/a0d8c1f16a801bc2d37186f25ac8124d61adc5332dbffd64e36e6ee47b68240f.webp"
     },
     "light-cone:23061": {
@@ -1323,6 +1718,11 @@
         "path": "game-assets/warp/328fbae73628a235cd56dc4f98cfb6739201b8394879fb9f4388f21b099f2c17.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/5904f357dcb53bb036f2f499bc623e4261ebac8029f17c3582be8fe9dc7bf8dc.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/44627f7928f408b92d1e6c9b724faab8c9ff90aa8adf5f816d6f74cf93a194a4.webp"
     },
@@ -1333,6 +1733,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/6f65ccd3a14697624de00ba6ccd35409ecfff4ffe6e4dbf9ab4be87a2e271f7a.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/15e4b91587fc0f192eb00f179629d65ac0c019a7acf2abab5bcd7f58bae6762e.webp"
     },
     "light-cone:23063": {
@@ -1342,6 +1747,11 @@
         "width": 904,
         "height": 1260
       },
+      "lightConePreview": {
+        "path": "game-assets/warp/43cb56ac3e29f4c71c3f3f1f783294fa219cb0c25eb44c9af4a71d02e2c6197b.webp",
+        "width": 348,
+        "height": 408
+      },
       "artworkPath": "game-assets/warp/475d8c9225c9133b8be0d61fa159f2b05df4a7052ec5faf8e82f17d33b23d2b6.webp"
     },
     "light-cone:23064": {
@@ -1350,6 +1760,11 @@
         "path": "game-assets/warp/ea893f6d5282eb81460a0247dcdd8f64e636d18c838ab6373add03499c3dec18.webp",
         "width": 904,
         "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/91be6d06cbd4826c8d79ef386e171625bab77f178a7dc04360d509d6ca48ede6.webp",
+        "width": 348,
+        "height": 408
       },
       "artworkPath": "game-assets/warp/a203779e0fe72d1fbc4b648175f0d6a975d0be05cfe74fba388b9ef908bb5c52.webp"
     }

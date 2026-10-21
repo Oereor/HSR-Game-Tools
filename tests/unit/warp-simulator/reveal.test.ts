@@ -86,14 +86,21 @@ describe('Committed batch reveal state machine', () => {
   })
 
   it.each(['all-three', 'four-mixed'])(
-    'publishes %s directly without an overlay or timer',
+    'opens %s directly in a locked complete overview without a timer',
     (id) => {
       const { reveal } = setup()
       begin(reveal, entries(id))
-      expect(reveal.visible.value).toBe(false)
-      expect(reveal.locked.value).toBe(false)
-      expect(reveal.displayedEntries.value).toEqual(entries(id))
+      expect(reveal.visible.value).toBe(true)
+      expect(reveal.locked.value).toBe(true)
+      expect(reveal.phase.value).toBe('overview')
+      expect(reveal.overviewEntries.value).toEqual(entries(id))
+      expect(reveal.current.value).toBeUndefined()
+      reveal.activate()
+      expect(reveal.phase.value).toBe('overview')
       expect(vi.getTimerCount()).toBe(0)
+      endCurrent(reveal)
+      expect(reveal.afterHide()).toBe(true)
+      expect(reveal.displayedEntries.value).toEqual(entries(id))
     },
   )
 
@@ -103,6 +110,8 @@ describe('Committed batch reveal state machine', () => {
       const { reveal } = setup()
       const previous = entries('all-three')
       begin(reveal, previous)
+      endCurrent(reveal)
+      reveal.afterHide()
       const batch = entries(id)
       begin(reveal, batch)
       const expected = batch.filter((entry) => entry.event.rarity === 5)
@@ -117,6 +126,12 @@ describe('Committed batch reveal state machine', () => {
         vi.advanceTimersByTime(400)
       }
       expect(seen).toEqual(expected.map((entry) => entry.id))
+      expect(reveal.phase.value).toBe('overview')
+      expect(reveal.visible.value).toBe(true)
+      expect(reveal.overviewEntries.value).toEqual(batch)
+      expect(reveal.current.value).toBeUndefined()
+      expect(reveal.locked.value).toBe(true)
+      endCurrent(reveal)
       expect(reveal.visible.value).toBe(false)
       expect(reveal.displayedEntries.value).toEqual(previous)
       reveal.afterHide()
@@ -291,5 +306,35 @@ describe('Committed batch reveal state machine', () => {
     reveal.markArtworkReady(batch[0]!.batchId, batch[0]!.id)
     expect(reveal.phase.value).toBe('waiting')
     expect(vi.getTimerCount()).toBe(0)
+  })
+  it('never skips the overview when every five-star artwork is escaped before loading', () => {
+    const { reveal } = setup(false, false)
+    const batch = entries('five-mixed')
+    begin(reveal, batch)
+    for (const entry of batch.filter((e) => e.event.rarity === 5)) {
+      expect(reveal.current.value).toBe(entry)
+      endCurrent(reveal)
+    }
+    expect(reveal.phase.value).toBe('overview')
+    expect(reveal.overviewEntries.value).toEqual(batch)
+    expect(reveal.locked.value).toBe(true)
+    expect(reveal.afterHide(batch[0]!.batchId)).toBe(false)
+    reveal.activate()
+    expect(reveal.phase.value).toBe('overview')
+  })
+  it('retains an overview when reduced motion changes and rejects a stale hide even after the replacement closes', () => {
+    const { reveal, motion } = setup()
+    const old = entries('all-three')
+    begin(reveal, old)
+    motion.value = true
+    expect(reveal.phase.value).toBe('overview')
+    const next = entries('single-avatar-5')
+    begin(reveal, next)
+    reveal.escape()
+    expect(reveal.visible.value).toBe(false)
+    expect(reveal.afterHide(old[0]!.batchId)).toBe(false)
+    expect(reveal.locked.value).toBe(true)
+    expect(reveal.afterHide(next[0]!.batchId)).toBe(true)
+    expect(reveal.displayedEntries.value).toEqual(next)
   })
 })

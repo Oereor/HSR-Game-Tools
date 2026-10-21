@@ -1,6 +1,6 @@
 {
   "title": "Warp result display review",
-  "notice": "Synthetic display records, not real pulls. No gacha engine or saved session; UP, source and pity are for review only. The runtime snapshot has no five-star light cones, so the synthetic one reuses an existing four-star cover.",
+  "notice": "Synthetic display records, not real pulls. No gacha engine or saved session; UP, source and pity are for review only. Synthetic identities stay in display tests; official items use checked current artwork.",
   "syntheticCone": "Synthetic five-star light cone (four-star cover, display review only)",
   "syntheticLongName": "Synthetic character with an unusually long name to review full wrapping and boundaries of the reveal metadata panel on narrow screens (display review only)",
   "scenario": "Fixed scenario",
@@ -25,5 +25,11 @@
     "reveal-metadata-missing": "Missing path and element metadata"
   },
   "play": "Play current reveal",
-  "reducedMotion": "Simulate reduced motion (system preference still applies)"
+  "reducedMotion": "Simulate reduced motion (system preference still applies)",
+  "calibration": {
+    "title": "Portrait focus calibration (development only)",
+    "hint": "Click the head in the original canvas, adjust scale, then export overrides. This uses the production card. Changes stay in this page until added to the production configuration.",
+    "character": "Choose character",
+    "export": "Export JSON"
+  }
 }
