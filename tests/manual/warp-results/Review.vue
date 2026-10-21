@@ -175,6 +175,12 @@ watchEffect(() => {
 </template>
 
 <style scoped>
+/* The standalone review has no route shell to allocate the desktop result area. */
+@media (min-width: 1040px) and (min-height: 640px) {
+  :deep(.warp-results) {
+    height: min(720px, 75dvh);
+  }
+}
 .review-header {
   display: flex;
   flex-wrap: wrap;

@@ -54,6 +54,8 @@
 
 ## Warp Simulator
 
+- [结果展示纠正性重构](warp-simulator/result-display-correction-2026-10-21.md)：角色全幅高清卡片、JSON 头部校准器、单件 viewport 居中及验证记录。
+
 - [Phase 1M Identity 尺寸修复](warp-simulator/phase-1m-identity-size-correction.md)：固定 160px 命途显示上限、星星整体缩放与 Node 真实组件挂载回归。
 
 - [Phase 1M 五星 V3 动画](warp-simulator/phase-1m-five-star-reveal-animation.md)：实际命途映射、StarBig 资源管线、六图就绪门控、固定比例构图与演出回归验证。

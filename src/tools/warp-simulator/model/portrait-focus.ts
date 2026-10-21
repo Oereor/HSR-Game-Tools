@@ -1,36 +1,90 @@
+import configuration from '../data/portrait-focus.json'
+
 export interface PortraitFocus {
   readonly x: number
   readonly y: number
   readonly scale: number
 }
 
-export const defaultPortraitFocus: PortraitFocus = Object.freeze({ x: 0.5, y: 0.3, scale: 2 })
-// Coordinates refer to the complete StarRailRes character_portrait canvas, never alpha bounds.
-export const portraitFocusOverrides: Readonly<Record<string, PortraitFocus>> = Object.freeze({
-  'avatar:1001': { x: 0.49, y: 0.33, scale: 2.2 },
-  'avatar:1003': { x: 0.52, y: 0.49, scale: 3.3 },
-  'avatar:1415': { x: 0.52, y: 0.54, scale: 4.4 },
-  'avatar:1503': { x: 0.525, y: 0.4, scale: 3.2 },
-  'avatar:1101': { x: 0.475, y: 0.475, scale: 3.4 },
-  'avatar:1013': { x: 0.48, y: 0.245, scale: 2.6 },
-  'avatar:1201': { x: 0.485, y: 0.325, scale: 2.7 },
-  'avatar:1102': { x: 0.375, y: 0.55, scale: 3.3 },
-  'avatar:1107': { x: 0.425, y: 0.3125, scale: 2.9 },
-  'avatar:1312': { x: 0.5625, y: 0.4075, scale: 3.1 },
-})
-
-export function validPortraitFocus(value: PortraitFocus): boolean {
+export interface PortraitFocusConfig {
+  readonly default: PortraitFocus
+  readonly overrides: Readonly<Record<string, PortraitFocus>>
+  readonly overviewOverrides: Readonly<Record<string, Partial<PortraitFocus>>>
+}
+const record = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === 'object' && !Array.isArray(value)
+export function validPortraitFocus(value: unknown): value is PortraitFocus {
+  if (!record(value)) return false
   return (
     [value.x, value.y, value.scale].every(Number.isFinite) &&
-    value.x >= 0 &&
-    value.x <= 1 &&
-    value.y >= 0 &&
-    value.y <= 1 &&
-    value.scale > 0
+    Number(value.x) >= 0 &&
+    Number(value.x) <= 1 &&
+    Number(value.y) >= 0 &&
+    Number(value.y) <= 1 &&
+    Number(value.scale) >= 0.1 &&
+    Number(value.scale) <= 8
   )
 }
-export function portraitFocus(id: string): PortraitFocus {
-  return portraitFocusOverrides[id] ?? defaultPortraitFocus
+export function assertPortraitFocusConfig(value: unknown): asserts value is PortraitFocusConfig {
+  if (
+    !record(value) ||
+    !validPortraitFocus(value.default) ||
+    !record(value.overrides) ||
+    !record(value.overviewOverrides)
+  )
+    throw new Error('Invalid portrait focus configuration')
+  for (const [id, focus] of Object.entries(value.overrides))
+    if (!/^avatar:\d+$/.test(id) || !validPortraitFocus(focus))
+      throw new Error('Invalid portrait focus override: ' + id)
+  for (const [id, delta] of Object.entries(value.overviewOverrides)) {
+    if (
+      !/^avatar:\d+$/.test(id) ||
+      !record(delta) ||
+      Object.keys(delta).some((key) => !['x', 'y', 'scale'].includes(key)) ||
+      !validPortraitFocus({
+        ...((value.overrides[id] as PortraitFocus) ?? value.default),
+        ...delta,
+      })
+    )
+      throw new Error('Invalid portrait overview focus: ' + id)
+  }
+}
+/** Strict validation is also used by tests/export. Runtime keeps cards usable after bad manual edits. */
+export function readPortraitFocusConfig(
+  value: unknown,
+  report: (error: Error) => void = console.error,
+): PortraitFocusConfig {
+  try {
+    assertPortraitFocusConfig(value)
+    return value
+  } catch (error) {
+    report(error instanceof Error ? error : new Error('Invalid portrait focus configuration'))
+    return {
+      default:
+        record(value) && validPortraitFocus(value.default)
+          ? value.default
+          : { x: 0.5, y: 0.3, scale: 2 },
+      overrides: {},
+      overviewOverrides: {},
+    }
+  }
+}
+export const portraitFocusConfig = readPortraitFocusConfig(configuration)
+export const defaultPortraitFocus: PortraitFocus = Object.freeze(portraitFocusConfig.default)
+
+// Coordinates refer to the complete source canvas, never alpha bounds.
+export function resolvePortraitFocus(
+  config: PortraitFocusConfig,
+  id: string,
+  overview = false,
+): PortraitFocus {
+  const base = config.overrides[id] ?? config.default
+  const focus =
+    overview && config.overviewOverrides[id] ? { ...base, ...config.overviewOverrides[id] } : base
+  return validPortraitFocus(focus) ? focus : config.default
+}
+export function resultPortraitFocus(id: string): PortraitFocus {
+  return resolvePortraitFocus(portraitFocusConfig, id, true)
 }
 /** Unrotated image geometry. The card's outer transform never participates here. */
 export function portraitGeometry(

@@ -4,9 +4,11 @@
     "repository": "https://github.com/Mar-7th/StarRailRes.git",
     "commit": "dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487"
   },
-  "generatedAt": "2026-10-20T15:01:05.171Z",
+  "generatedAt": "2026-10-21T08:03:19.368Z",
   "transform": {
-    "version": 4,
+    "version": 5,
+    "resultPortraitSize": "source",
+    "resultPortraitQuality": 88,
     "lightConePreviewSize": 408,
     "avatarSize": 768,
     "lightConeSize": 640,
@@ -4204,8 +4206,8 @@
       "height": 68
     },
     "src/tools/warp-simulator/data/visuals/catalog.json": {
-      "bytes": 74845,
-      "sha256": "a16e1bf9cf8f1e8005b76b24ae0edb80925eefdfce0ade499b56b779e2430746"
+      "bytes": 85130,
+      "sha256": "acd3ef3b56cd774c1b9c26732b53170571c24e2a858b2f0e39c381ca2bf6bd8f"
     }
   },
   "assets": [
@@ -4237,6 +4239,14 @@
       "id": "avatar:1001",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1001.png",
+      "output": "game-assets/warp/27d30870b2610ee1c8be5e1417a157473847879cb853f709ed42c98820641b31.webp",
+      "transformKey": "faf16b576963b56c0da702c3a7974eddd38a833c7f717601e1fa17d7f95cb6fd:2048:88:100"
+    },
+    {
+      "id": "avatar:1001",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1001.png",
       "output": "game-assets/warp/27d30870b2610ee1c8be5e1417a157473847879cb853f709ed42c98820641b31.webp",
       "transformKey": "faf16b576963b56c0da702c3a7974eddd38a833c7f717601e1fa17d7f95cb6fd:2048:88:100"
@@ -4283,6 +4293,14 @@
     },
     {
       "id": "avatar:1002",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1002.png",
+      "output": "game-assets/warp/72f4fadd9155aa36fde442bd0e947830fe84fdbe832be202c06e0101c73f8534.webp",
+      "transformKey": "ecb49fbe2e4f1e0dfb85da2844243c7893df9407ccbb0deadfef6c1a9ba65ad4:2048:88:100"
+    },
+    {
+      "id": "avatar:1002",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1002.png",
@@ -4317,6 +4335,14 @@
       "id": "avatar:1003",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1003.png",
+      "output": "game-assets/warp/e644fb7bf32184c6acaace5131753b9710c5c6f9457b130d85166801cb939246.webp",
+      "transformKey": "3410bfcb78a516257b103c133738765f39296b6bb1178d36843304b56f8e8345:2048:88:100"
+    },
+    {
+      "id": "avatar:1003",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1003.png",
       "output": "game-assets/warp/e644fb7bf32184c6acaace5131753b9710c5c6f9457b130d85166801cb939246.webp",
       "transformKey": "3410bfcb78a516257b103c133738765f39296b6bb1178d36843304b56f8e8345:2048:88:100"
@@ -4363,6 +4389,14 @@
     },
     {
       "id": "avatar:1004",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1004.png",
+      "output": "game-assets/warp/b02f6a763f5aaac61ac01a97fea961e96279122694ad399f73f747da12d222dd.webp",
+      "transformKey": "b808f147668489c3edf4a680e84fdfa06d376e306bdcc2fd1c557c2fcaa75dca:2048:88:100"
+    },
+    {
+      "id": "avatar:1004",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1004.png",
@@ -4381,6 +4415,14 @@
       "id": "avatar:1006",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1006.png",
+      "output": "game-assets/warp/3539134e5de445a907880ab3cb9fbaf428cf4d102b678ab27257ae459d7d5324.webp",
+      "transformKey": "e835099d486095b016b628bf26b89c0b92a474d3107f67178a354ac1b73cc756:2048:88:100"
+    },
+    {
+      "id": "avatar:1006",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1006.png",
       "output": "game-assets/warp/3539134e5de445a907880ab3cb9fbaf428cf4d102b678ab27257ae459d7d5324.webp",
       "transformKey": "e835099d486095b016b628bf26b89c0b92a474d3107f67178a354ac1b73cc756:2048:88:100"
@@ -4427,6 +4469,14 @@
     },
     {
       "id": "avatar:1008",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1008.png",
+      "output": "game-assets/warp/3179d70faaf0da6c5f6dcaa1c073b7d17889bd67e7bcccf0b6a17dcd74628087.webp",
+      "transformKey": "d2692af09e29eca246c9a65b66e2c0948749c2cfeac71e91bdcea10d75f41400:2048:88:100"
+    },
+    {
+      "id": "avatar:1008",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1008.png",
@@ -4459,6 +4509,14 @@
     },
     {
       "id": "avatar:1009",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1009.png",
+      "output": "game-assets/warp/287a7926cdc294501ecb1663bc7989e775f5ef5167fa3ea8f645162785f1f9d2.webp",
+      "transformKey": "30bcc0f40a9c82968a71d79e438ac8a88e757e2441f31e82e70a899f0540d153:2048:88:100"
+    },
+    {
+      "id": "avatar:1009",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1009.png",
@@ -4469,6 +4527,14 @@
       "id": "avatar:1013",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1013.png",
+      "output": "game-assets/warp/4f216f760ddf11670dfba0510249250279deba9b9fe82f69ea51b67826c7388b.webp",
+      "transformKey": "27143d84feba5bdde6d65babe897e3a901e7f4c47224704baa6af700ef8f456c:2048:88:100"
+    },
+    {
+      "id": "avatar:1013",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1013.png",
       "output": "game-assets/warp/4f216f760ddf11670dfba0510249250279deba9b9fe82f69ea51b67826c7388b.webp",
       "transformKey": "27143d84feba5bdde6d65babe897e3a901e7f4c47224704baa6af700ef8f456c:2048:88:100"
@@ -4491,6 +4557,14 @@
     },
     {
       "id": "avatar:1014",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1014.png",
+      "output": "game-assets/warp/225ff056d53e307d5bb9e4e9c52deed9483e704221f073f455457ddb5466217a.webp",
+      "transformKey": "4dc4db1a7fbfc679e98a4426855b5d7152ef3b196be97d9803652ff4c58ea893:2048:88:100"
+    },
+    {
+      "id": "avatar:1014",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1014.png",
@@ -4501,6 +4575,14 @@
       "id": "avatar:1015",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1015.png",
+      "output": "game-assets/warp/f6a1a020fa512fba4cae0a1a93966975fb8c52c620d57d0275c7b9196aef2846.webp",
+      "transformKey": "c9509464cd6426244db5fd4baa89e2ed7873a4d1ee157a5ae2d9c9abe484897c:2048:88:100"
+    },
+    {
+      "id": "avatar:1015",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1015.png",
       "output": "game-assets/warp/f6a1a020fa512fba4cae0a1a93966975fb8c52c620d57d0275c7b9196aef2846.webp",
       "transformKey": "c9509464cd6426244db5fd4baa89e2ed7873a4d1ee157a5ae2d9c9abe484897c:2048:88:100"
@@ -4523,6 +4605,14 @@
     },
     {
       "id": "avatar:1101",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1101.png",
+      "output": "game-assets/warp/a530b1c56a9ff0a7b2bdd3cf1710ce25038c7b000b8a31e55d08c1483be96496.webp",
+      "transformKey": "42f335ae45d4ff36a29e5fbe09f6e1653b15f41f2ecb2a012c9b5247fd6b9f1b:2048:88:100"
+    },
+    {
+      "id": "avatar:1101",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1101.png",
@@ -4533,6 +4623,14 @@
       "id": "avatar:1102",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1102.png",
+      "output": "game-assets/warp/ae72deee5affdf09515c1d34c36a5dc3abec1cb6a2230d74a61241b94d3435b0.webp",
+      "transformKey": "d03a431b21e95ec6d9cbe3b02b8120821cc438cfe89e4697b44e7b02945c0e5f:2048:88:100"
+    },
+    {
+      "id": "avatar:1102",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1102.png",
       "output": "game-assets/warp/ae72deee5affdf09515c1d34c36a5dc3abec1cb6a2230d74a61241b94d3435b0.webp",
       "transformKey": "d03a431b21e95ec6d9cbe3b02b8120821cc438cfe89e4697b44e7b02945c0e5f:2048:88:100"
@@ -4555,6 +4653,14 @@
     },
     {
       "id": "avatar:1103",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1103.png",
+      "output": "game-assets/warp/4ef9841c331dc63c90493df59eb33cb27851b21e7f69702c54b53f68a074c373.webp",
+      "transformKey": "d5f792c06f24389b43be1384cafc719f3ad09c91947f439ae6eb7e29a403b680:2048:88:100"
+    },
+    {
+      "id": "avatar:1103",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1103.png",
@@ -4565,6 +4671,14 @@
       "id": "avatar:1104",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1104.png",
+      "output": "game-assets/warp/8fb92e15937047e3ff89e7fb9ac4e21c12f176504a43e11448f314fd56340258.webp",
+      "transformKey": "dd79db66fda2f53ac245fc644aa1c6525000899af47731c96f7735ae5492e032:2048:88:100"
+    },
+    {
+      "id": "avatar:1104",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1104.png",
       "output": "game-assets/warp/8fb92e15937047e3ff89e7fb9ac4e21c12f176504a43e11448f314fd56340258.webp",
       "transformKey": "dd79db66fda2f53ac245fc644aa1c6525000899af47731c96f7735ae5492e032:2048:88:100"
@@ -4611,6 +4725,14 @@
     },
     {
       "id": "avatar:1105",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1105.png",
+      "output": "game-assets/warp/188e95761f02455ada2572ad404047b8fe70ca65b54b7f0dea81da39240d80c2.webp",
+      "transformKey": "9d89cf19985a3bc9d693a4cbf754634c2c02c485b4fcc4a557d886496535c489:2048:88:100"
+    },
+    {
+      "id": "avatar:1105",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1105.png",
@@ -4621,6 +4743,14 @@
       "id": "avatar:1106",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1106.png",
+      "output": "game-assets/warp/d03e7a6d4e9180dd4d5f7ddd14770df60a8096a0e0988b9862d615fae24f480b.webp",
+      "transformKey": "fa32c0678b03af29ccc35e6f204ad3f6a23b7be3434e71dff9eac0726a67a181:2048:88:100"
+    },
+    {
+      "id": "avatar:1106",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1106.png",
       "output": "game-assets/warp/d03e7a6d4e9180dd4d5f7ddd14770df60a8096a0e0988b9862d615fae24f480b.webp",
       "transformKey": "fa32c0678b03af29ccc35e6f204ad3f6a23b7be3434e71dff9eac0726a67a181:2048:88:100"
@@ -4643,6 +4773,14 @@
     },
     {
       "id": "avatar:1107",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1107.png",
+      "output": "game-assets/warp/798c21cb7557203ae983742176e208cd4fef807cbb29c73fb5654946146ca059.webp",
+      "transformKey": "603b97a505d4eab757bd8e130151c56d0c9b8b97d6d53f9dd6f1f5cd920b8fec:2048:88:100"
+    },
+    {
+      "id": "avatar:1107",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1107.png",
@@ -4653,6 +4791,14 @@
       "id": "avatar:1108",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1108.png",
+      "output": "game-assets/warp/bc11b06b93d6620ad3f5736f7b3133e76b4d574b8c54a4ab7b3f423bd5183fa8.webp",
+      "transformKey": "c2f00c1affb4fb9af73a9420da019516268d7d5648b17d2021e12c095273b150:2048:88:100"
+    },
+    {
+      "id": "avatar:1108",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1108.png",
       "output": "game-assets/warp/bc11b06b93d6620ad3f5736f7b3133e76b4d574b8c54a4ab7b3f423bd5183fa8.webp",
       "transformKey": "c2f00c1affb4fb9af73a9420da019516268d7d5648b17d2021e12c095273b150:2048:88:100"
@@ -4675,6 +4821,14 @@
     },
     {
       "id": "avatar:1109",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1109.png",
+      "output": "game-assets/warp/9d12c29f27efbb5911d5efc7617d4c908cf616bbc778260c21644d37b1509351.webp",
+      "transformKey": "a3528cec6e1f3d47783d5e72f872d0acc2756fd122aa84c67d06afcee5cc8339:2048:88:100"
+    },
+    {
+      "id": "avatar:1109",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1109.png",
@@ -4685,6 +4839,14 @@
       "id": "avatar:1110",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1110.png",
+      "output": "game-assets/warp/2ee1e122247799baad6d5acea9da79935ff2d415df4d1bd48f2a828bd155b30e.webp",
+      "transformKey": "3e0bf41fad73156533ee8c47ed99cf2994616ea07b98d72e0fa421064e91c8a0:2048:88:100"
+    },
+    {
+      "id": "avatar:1110",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1110.png",
       "output": "game-assets/warp/2ee1e122247799baad6d5acea9da79935ff2d415df4d1bd48f2a828bd155b30e.webp",
       "transformKey": "3e0bf41fad73156533ee8c47ed99cf2994616ea07b98d72e0fa421064e91c8a0:2048:88:100"
@@ -4707,6 +4869,14 @@
     },
     {
       "id": "avatar:1111",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1111.png",
+      "output": "game-assets/warp/ae6c20a7e6a985763509347bf5a2697a24a67e3d021cddb525598409115edc64.webp",
+      "transformKey": "6ba71c287e1d8c3b11908abd92bad78691cf422f091c47e6b2bfc338773e0d01:2048:88:100"
+    },
+    {
+      "id": "avatar:1111",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1111.png",
@@ -4717,6 +4887,14 @@
       "id": "avatar:1201",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1201.png",
+      "output": "game-assets/warp/266da524aef703d9702df89516ae6f96b47d0a377ca3616c3a3e564ff40ef5bd.webp",
+      "transformKey": "488b207cafa447dc909f16d6b536893cc14a2df8a142a3b6e86a77b9a1c621fa:2048:88:100"
+    },
+    {
+      "id": "avatar:1201",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1201.png",
       "output": "game-assets/warp/266da524aef703d9702df89516ae6f96b47d0a377ca3616c3a3e564ff40ef5bd.webp",
       "transformKey": "488b207cafa447dc909f16d6b536893cc14a2df8a142a3b6e86a77b9a1c621fa:2048:88:100"
@@ -4739,6 +4917,14 @@
     },
     {
       "id": "avatar:1202",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1202.png",
+      "output": "game-assets/warp/bb74d6e22bc6ad4776c751d584aa8ff8bf442ff5cd9d5f819f5b6dd9578a3e11.webp",
+      "transformKey": "692fb0ef643c71951048f4f9814daa5a9761705ed6e889036d11da4b79173410:2048:88:100"
+    },
+    {
+      "id": "avatar:1202",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1202.png",
@@ -4749,6 +4935,14 @@
       "id": "avatar:1205",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1205.png",
+      "output": "game-assets/warp/63c797c9b31d1f74c6114fee2bd6606073cd70e575cecaf97a59b0e2afe275d4.webp",
+      "transformKey": "08bcfc539e148c57b990427b530fd88545572ba361aa886940cc6b1bca181d4c:2048:88:100"
+    },
+    {
+      "id": "avatar:1205",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1205.png",
       "output": "game-assets/warp/63c797c9b31d1f74c6114fee2bd6606073cd70e575cecaf97a59b0e2afe275d4.webp",
       "transformKey": "08bcfc539e148c57b990427b530fd88545572ba361aa886940cc6b1bca181d4c:2048:88:100"
@@ -4771,6 +4965,14 @@
     },
     {
       "id": "avatar:1206",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1206.png",
+      "output": "game-assets/warp/2d3aa7ad01de77625b5583d1359c96053af79209b51c2e24952fd077605a69b8.webp",
+      "transformKey": "39db7c580cfcb0f52cd5906570c2e9776fafadf5884d2be0bc440c03fd4091e4:2048:88:100"
+    },
+    {
+      "id": "avatar:1206",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1206.png",
@@ -4781,6 +4983,14 @@
       "id": "avatar:1207",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1207.png",
+      "output": "game-assets/warp/08fe50407b24de4dd9ab761b633665f5820beb518c6fb9100a8ce0d0c7eb4550.webp",
+      "transformKey": "94727a1486e02836c71d025e5704fa1199737a2837e71a5e9a2ffe9de145bd4a:2048:88:100"
+    },
+    {
+      "id": "avatar:1207",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1207.png",
       "output": "game-assets/warp/08fe50407b24de4dd9ab761b633665f5820beb518c6fb9100a8ce0d0c7eb4550.webp",
       "transformKey": "94727a1486e02836c71d025e5704fa1199737a2837e71a5e9a2ffe9de145bd4a:2048:88:100"
@@ -4803,6 +5013,14 @@
     },
     {
       "id": "avatar:1208",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1208.png",
+      "output": "game-assets/warp/c49b5e3e9c8e3248716f25b24525f1baad49112e7601b1fdd1455a8581772924.webp",
+      "transformKey": "b134f60614a533d148afd7a7887913a834b50811623f75c36adff54f4630edc7:2048:88:100"
+    },
+    {
+      "id": "avatar:1208",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1208.png",
@@ -4813,6 +5031,14 @@
       "id": "avatar:1209",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1209.png",
+      "output": "game-assets/warp/c928b412239b2f018c7f8ddf2fc3b993d7076c310a089d86dee483ee934f6bea.webp",
+      "transformKey": "12c984ab3bc480e6d0f966b656c0ba71bbdd23a8ebc7288d0c06b2c3db1963d6:2048:88:100"
+    },
+    {
+      "id": "avatar:1209",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1209.png",
       "output": "game-assets/warp/c928b412239b2f018c7f8ddf2fc3b993d7076c310a089d86dee483ee934f6bea.webp",
       "transformKey": "12c984ab3bc480e6d0f966b656c0ba71bbdd23a8ebc7288d0c06b2c3db1963d6:2048:88:100"
@@ -4835,6 +5061,14 @@
     },
     {
       "id": "avatar:1210",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1210.png",
+      "output": "game-assets/warp/9dd96f95857ece83eb54b1ac55ec9dfdbc7cc50fd2c1b7c695c4bb9c46acc43d.webp",
+      "transformKey": "97f4195e1cf08617cd6fbffb00801e8406bd710a61a945c4284fd38eead20651:2048:88:100"
+    },
+    {
+      "id": "avatar:1210",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1210.png",
@@ -4845,6 +5079,14 @@
       "id": "avatar:1211",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1211.png",
+      "output": "game-assets/warp/b5f5220ca873cd54e675a42ebb747531bbc95d83e7a8f9de5abaa026b36e87c3.webp",
+      "transformKey": "2fc71f2919ebeab68344f9f918af1a37fb9055a4da0531be201237c44560e441:2048:88:100"
+    },
+    {
+      "id": "avatar:1211",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1211.png",
       "output": "game-assets/warp/b5f5220ca873cd54e675a42ebb747531bbc95d83e7a8f9de5abaa026b36e87c3.webp",
       "transformKey": "2fc71f2919ebeab68344f9f918af1a37fb9055a4da0531be201237c44560e441:2048:88:100"
@@ -4867,6 +5109,14 @@
     },
     {
       "id": "avatar:1214",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1214.png",
+      "output": "game-assets/warp/b3d3cd9e9fdc1b0d14f772e21bce4fcfadb24cae18ac2be0a955e34376f34ff9.webp",
+      "transformKey": "11bfc46955ef2bd0e9b8b7fccde97bb276a4fafc8dac45ee636a5f060ecf70da:2048:88:100"
+    },
+    {
+      "id": "avatar:1214",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1214.png",
@@ -4877,6 +5127,14 @@
       "id": "avatar:1215",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1215.png",
+      "output": "game-assets/warp/dc59255ba25001ee67d35ec23de5455b1ce65cec87a298740a4e48c9b0ecc27c.webp",
+      "transformKey": "928c58207270618a30d36ecf7f018dd6c795697482e78155cff23db8a17fb68e:2048:88:100"
+    },
+    {
+      "id": "avatar:1215",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1215.png",
       "output": "game-assets/warp/dc59255ba25001ee67d35ec23de5455b1ce65cec87a298740a4e48c9b0ecc27c.webp",
       "transformKey": "928c58207270618a30d36ecf7f018dd6c795697482e78155cff23db8a17fb68e:2048:88:100"
@@ -4899,6 +5157,14 @@
     },
     {
       "id": "avatar:1221",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1221.png",
+      "output": "game-assets/warp/eecca74bae443284c467264b97523283aa4cd43be5783c943784a25ff0c4312a.webp",
+      "transformKey": "ccb5fbaa899d5a7b66c3ce242703f7ab95b49d4dc592244dceb28f8b3723ab76:2048:88:100"
+    },
+    {
+      "id": "avatar:1221",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1221.png",
@@ -4909,6 +5175,14 @@
       "id": "avatar:1223",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1223.png",
+      "output": "game-assets/warp/8b30412bbf9a920e3242bf58b5efd1efe12eed8c63ade5f12fb02fe632aed6df.webp",
+      "transformKey": "310179ea69aef220266b1a70ff20393b1f301e7f3b7f61e22bbb6376c101167e:2048:88:100"
+    },
+    {
+      "id": "avatar:1223",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1223.png",
       "output": "game-assets/warp/8b30412bbf9a920e3242bf58b5efd1efe12eed8c63ade5f12fb02fe632aed6df.webp",
       "transformKey": "310179ea69aef220266b1a70ff20393b1f301e7f3b7f61e22bbb6376c101167e:2048:88:100"
@@ -4931,6 +5205,14 @@
     },
     {
       "id": "avatar:1301",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1301.png",
+      "output": "game-assets/warp/e5d92e5cfcef6b058d7d2f7a4cf87547978854cd0f4bcb8ede3dd04f8293b567.webp",
+      "transformKey": "bf0107d2e1f6fd64c0df6d2eac3147358f1c6875b19275f9c2aebed7cb4e83d9:2048:88:100"
+    },
+    {
+      "id": "avatar:1301",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1301.png",
@@ -4941,6 +5223,14 @@
       "id": "avatar:1302",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1302.png",
+      "output": "game-assets/warp/2f310e396c9adc39d61a7cc09b804c35e871a263d93844513b40f07a3f356673.webp",
+      "transformKey": "153d4bb97892036b41fe4508919fdb0bb97070a558730381d0beba6ca2554ebf:2048:88:100"
+    },
+    {
+      "id": "avatar:1302",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1302.png",
       "output": "game-assets/warp/2f310e396c9adc39d61a7cc09b804c35e871a263d93844513b40f07a3f356673.webp",
       "transformKey": "153d4bb97892036b41fe4508919fdb0bb97070a558730381d0beba6ca2554ebf:2048:88:100"
@@ -4963,6 +5253,14 @@
     },
     {
       "id": "avatar:1304",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1304.png",
+      "output": "game-assets/warp/1f6bef0b823302dfa7260ab6f56a71cc13214cf60b8865bea43e624bf65d2bd0.webp",
+      "transformKey": "4d783ff5bb693bcd1887d0f92f302d989c657c303f0accc807e4ccad709b0629:2048:88:100"
+    },
+    {
+      "id": "avatar:1304",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1304.png",
@@ -4973,6 +5271,14 @@
       "id": "avatar:1312",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1312.png",
+      "output": "game-assets/warp/fd5eb51642da4714a1998368522b67d1232184a427b5beacf91ceb1f2e642d02.webp",
+      "transformKey": "93fc2cc2df72976a62fde2589aabbd7618bc1f19d460d9e8915100750b74bbb0:2048:88:100"
+    },
+    {
+      "id": "avatar:1312",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1312.png",
       "output": "game-assets/warp/fd5eb51642da4714a1998368522b67d1232184a427b5beacf91ceb1f2e642d02.webp",
       "transformKey": "93fc2cc2df72976a62fde2589aabbd7618bc1f19d460d9e8915100750b74bbb0:2048:88:100"
@@ -4995,6 +5301,14 @@
     },
     {
       "id": "avatar:1405",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1405.png",
+      "output": "game-assets/warp/2c1047bb1e788ef077470355a45192a4d6f16f67ac702a4cd3bb38afbb102c2b.webp",
+      "transformKey": "6956cabc15176b6253d134bc2ff155abf0a315b34e042f1a327e9ed7c4b3c66d:2048:88:100"
+    },
+    {
+      "id": "avatar:1405",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1405.png",
@@ -5005,6 +5319,14 @@
       "id": "avatar:1408",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1408.png",
+      "output": "game-assets/warp/5aff58be4482ed45494b9dc13a6d0f10b06e3a9fd6fa000a82e757964d303915.webp",
+      "transformKey": "fce29f2674748ac81fa4ee43a35b8ef92d3ec7006529fc114771c77231bbdba5:2048:88:100"
+    },
+    {
+      "id": "avatar:1408",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1408.png",
       "output": "game-assets/warp/5aff58be4482ed45494b9dc13a6d0f10b06e3a9fd6fa000a82e757964d303915.webp",
       "transformKey": "fce29f2674748ac81fa4ee43a35b8ef92d3ec7006529fc114771c77231bbdba5:2048:88:100"
@@ -5043,6 +5365,14 @@
     },
     {
       "id": "avatar:1409",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1409.png",
+      "output": "game-assets/warp/d15ead0a25c451de31a7c2192d7ccdf72de944bdcc88a1ae57a00ed6fe00eade.webp",
+      "transformKey": "fa3ac55ade7068365657ddbdfa532ec6c1ff389270aca39707e7b4b4478d15a0:2048:88:100"
+    },
+    {
+      "id": "avatar:1409",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1409.png",
@@ -5053,6 +5383,14 @@
       "id": "avatar:1412",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1412.png",
+      "output": "game-assets/warp/67fa8b86d180e66661eb8f50854af9be6ea6c9b53724bb74b6082c726cc64da4.webp",
+      "transformKey": "db9598728a93cbd7bf2ccd7f976001f2a526516940e427e60814538a2ebeb8e6:2048:88:100"
+    },
+    {
+      "id": "avatar:1412",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1412.png",
       "output": "game-assets/warp/67fa8b86d180e66661eb8f50854af9be6ea6c9b53724bb74b6082c726cc64da4.webp",
       "transformKey": "db9598728a93cbd7bf2ccd7f976001f2a526516940e427e60814538a2ebeb8e6:2048:88:100"
@@ -5075,6 +5413,14 @@
     },
     {
       "id": "avatar:1413",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1413.png",
+      "output": "game-assets/warp/62251df0fb992ec3350bd99b1af48e187ef68b320551227ca1d1a8b276c2089b.webp",
+      "transformKey": "77d8bbfd072ad8ca3b24ce294be203680cd912a25cc142b8354fbe84ad2a95ab:2048:88:100"
+    },
+    {
+      "id": "avatar:1413",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1413.png",
@@ -5091,6 +5437,14 @@
     },
     {
       "id": "avatar:1414",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1414.png",
+      "output": "game-assets/warp/6fd1abe7bcbb1f0f02b679bd9eeb593a5e5ee7f7e575771ef300f89c2de1c070.webp",
+      "transformKey": "4b90c986d15b1b6ea98a4c25f8405897a91e43729daecb7ab8ed78f138a3d9af:2048:88:100"
+    },
+    {
+      "id": "avatar:1414",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1414.png",
@@ -5101,6 +5455,14 @@
       "id": "avatar:1415",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1415.png",
+      "output": "game-assets/warp/8df8e5d0fd51002da6005c2deb1bd9c45de7a0e52503f4d1191754c4c5e97b26.webp",
+      "transformKey": "a69d42bcea54c6fca9489eeb255412456585ee33b4efb4dfda8978c041d26a85:2048:88:100"
+    },
+    {
+      "id": "avatar:1415",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1415.png",
       "output": "game-assets/warp/8df8e5d0fd51002da6005c2deb1bd9c45de7a0e52503f4d1191754c4c5e97b26.webp",
       "transformKey": "a69d42bcea54c6fca9489eeb255412456585ee33b4efb4dfda8978c041d26a85:2048:88:100"
@@ -5139,6 +5501,14 @@
     },
     {
       "id": "avatar:1501",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1501.png",
+      "output": "game-assets/warp/a3357e3ac7b1cb0c35496cccca3a86957a28aabd09f9e3cc5eec99948a683607.webp",
+      "transformKey": "1c01da9170c196f67fbb673f43570736a7487f3167158abe5ec2c646cdaf2562:2048:88:100"
+    },
+    {
+      "id": "avatar:1501",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1501.png",
@@ -5149,6 +5519,14 @@
       "id": "avatar:1503",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1503.png",
+      "output": "game-assets/warp/0fa7a64cf8ebda51efc6cb2346ebd89afb839c00a91eb002cd0869b3655f1557.webp",
+      "transformKey": "0031f4e16c44783bfb48b27cf3dadf17782460595ea9201524c57fda67f2d4f8:2048:88:100"
+    },
+    {
+      "id": "avatar:1503",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1503.png",
       "output": "game-assets/warp/0fa7a64cf8ebda51efc6cb2346ebd89afb839c00a91eb002cd0869b3655f1557.webp",
       "transformKey": "0031f4e16c44783bfb48b27cf3dadf17782460595ea9201524c57fda67f2d4f8:2048:88:100"
@@ -5171,6 +5549,14 @@
     },
     {
       "id": "avatar:1504",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1504.png",
+      "output": "game-assets/warp/988283ceb667b28a4b7079d98ceff71d894cdb2d18fe6334545132216386d316.webp",
+      "transformKey": "18a3b0f1a19d743b30da712c8db75df703009f3565377087c20a687a35d307b9:2048:88:100"
+    },
+    {
+      "id": "avatar:1504",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1504.png",
@@ -5181,6 +5567,14 @@
       "id": "avatar:1505",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1505.png",
+      "output": "game-assets/warp/5e7dc8518d45aac63c07e4d2df48f7ec3e990bec559a8926c9ecbd2c5a226cb3.webp",
+      "transformKey": "4dc3b7cc91b128f6f5f94f51562717570b6793dd09b536f006e30755e15ecc79:2048:88:100"
+    },
+    {
+      "id": "avatar:1505",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1505.png",
       "output": "game-assets/warp/5e7dc8518d45aac63c07e4d2df48f7ec3e990bec559a8926c9ecbd2c5a226cb3.webp",
       "transformKey": "4dc3b7cc91b128f6f5f94f51562717570b6793dd09b536f006e30755e15ecc79:2048:88:100"
@@ -5203,6 +5597,14 @@
     },
     {
       "id": "avatar:1507",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1507.png",
+      "output": "game-assets/warp/84164fd6675e569eb68be890c1cedc31f20f67d67024e00d22583886440c8c81.webp",
+      "transformKey": "d615f21b37521a3accab9d89dd68f4542bf5a39428bbd65feec19e80261876ea:2048:88:100"
+    },
+    {
+      "id": "avatar:1507",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1507.png",
@@ -5213,6 +5615,14 @@
       "id": "avatar:1508",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1508.png",
+      "output": "game-assets/warp/00add9f05772a00d1edeca9d6da750060a9c9713cc509d46ca050494258cdeb7.webp",
+      "transformKey": "f3225836b0b964a39a487d5c4bad638bedd9c87f33be50b4c39e812411273f88:2048:88:100"
+    },
+    {
+      "id": "avatar:1508",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1508.png",
       "output": "game-assets/warp/00add9f05772a00d1edeca9d6da750060a9c9713cc509d46ca050494258cdeb7.webp",
       "transformKey": "f3225836b0b964a39a487d5c4bad638bedd9c87f33be50b4c39e812411273f88:2048:88:100"
@@ -5235,6 +5645,14 @@
     },
     {
       "id": "avatar:1509",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1509.png",
+      "output": "game-assets/warp/9c3e469b04632a4a9ba3cb68331604003ae34effab9d1612835febd1ce63cfcb.webp",
+      "transformKey": "f67ae725a090c694c41ca832b021eb948c8a28c29de720ddc8e34ade931b5416:2048:88:100"
+    },
+    {
+      "id": "avatar:1509",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1509.png",
@@ -5245,6 +5663,14 @@
       "id": "avatar:1510",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1510.png",
+      "output": "game-assets/warp/cc386af846343f16072d56cbbb322c54fcbce7a183fbb372296389f894a9071c.webp",
+      "transformKey": "ddcf75983b1a6ec01a989e5af5faa0ffca4769e484f6776dcc24a319b95c32f0:2048:88:100"
+    },
+    {
+      "id": "avatar:1510",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1510.png",
       "output": "game-assets/warp/cc386af846343f16072d56cbbb322c54fcbce7a183fbb372296389f894a9071c.webp",
       "transformKey": "ddcf75983b1a6ec01a989e5af5faa0ffca4769e484f6776dcc24a319b95c32f0:2048:88:100"
@@ -5267,6 +5693,14 @@
     },
     {
       "id": "avatar:1512",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
+      "source": "image/character_portrait/1512.png",
+      "output": "game-assets/warp/9397c0563a986b2da13689f276efcfcd6638c5fdba33924c71709fd9e0e2786f.webp",
+      "transformKey": "f6923244d0404c7cfebd61386af9483eb1f8e12fec5be1b081bcd57a47c7e2d7:2048:88:100"
+    },
+    {
+      "id": "avatar:1512",
       "slot": "artwork",
       "purpose": "artwork-avatar",
       "source": "image/character_portrait/1512.png",
@@ -5277,6 +5711,14 @@
       "id": "avatar:1513",
       "slot": "reveal-artwork",
       "purpose": "reveal-artwork",
+      "source": "image/character_portrait/1513.png",
+      "output": "game-assets/warp/b0036bbb38a6f5edbdf8eb5e06dac442931026787009ecb40fa08bebbe21d5bf.webp",
+      "transformKey": "035044e51631b590c9d094cdc48fa5cc779767f4e880623e5c5496200a833ac5:2048:88:100"
+    },
+    {
+      "id": "avatar:1513",
+      "slot": "result-portrait",
+      "purpose": "result-portrait",
       "source": "image/character_portrait/1513.png",
       "output": "game-assets/warp/b0036bbb38a6f5edbdf8eb5e06dac442931026787009ecb40fa08bebbe21d5bf.webp",
       "transformKey": "035044e51631b590c9d094cdc48fa5cc779767f4e880623e5c5496200a833ac5:2048:88:100"

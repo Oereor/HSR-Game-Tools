@@ -22,14 +22,34 @@
     "hd-fallback": "Five-star HD failure with lightweight artwork and icon fallback",
     "reveal-official-long-name": "Light cone with the longest official English name",
     "reveal-long-name": "Synthetic character with a long name",
-    "reveal-metadata-missing": "Missing path and element metadata"
+    "reveal-metadata-missing": "Missing path and element metadata",
+    "reveal-cyrene": "Reference composition: Cyrene",
+    "reveal-battle-isnt-over": "Reference composition: But the Battle Isn't Over",
+    "reveal-march": "Character composition: March 7th",
+    "reveal-bronya": "Character composition: Bronya",
+    "reveal-clara": "Character composition: Clara",
+    "overview-reference": "Overview reference: Cyrene / Arlan and multiple five-stars"
   },
   "play": "Play current reveal",
   "reducedMotion": "Simulate reduced motion (system preference still applies)",
   "calibration": {
     "title": "Portrait focus calibration (development only)",
-    "hint": "Click the head in the original canvas, adjust scale, then export overrides. This uses the production card. Changes stay in this page until added to the production configuration.",
+    "hint": "Click or drag the head anchor on the complete source canvas, or edit X / Y / scale. The preview uses the production card. Switching characters keeps page drafts; reloading discards changes that have not been exported.",
     "character": "Choose character",
-    "export": "Export JSON"
+    "export": "Export JSON",
+    "install": "Export includes all configuration. Replace src/tools/warp-simulator/data/portrait-focus.json with the downloaded portrait-focus.json, then run npm run type-check and npm test -- tests/unit/warp-simulator/portrait-calibration.test.ts. Images need not be regenerated.",
+    "search": "Search character name or ID",
+    "configured": "Configured",
+    "overview": "Final card head anchors",
+    "default": "Base head anchors",
+    "modified": "Current character modified",
+    "saved": "Current character matches source configuration",
+    "reset": "Reset to defaults",
+    "restore": "Restore source configuration",
+    "crosshair": "Show center crosshair",
+    "invalid": "Invalid parameters: X and Y must be between 0 and 1; scale must be between 0.1 and 8. The last valid value is retained.",
+    "canvas": "Complete portrait: click or drag to position, or use the numeric inputs above",
+    "unavailable": "Image unavailable. Select another character or check the assets.",
+    "profile": "Configuration layer"
   }
 }

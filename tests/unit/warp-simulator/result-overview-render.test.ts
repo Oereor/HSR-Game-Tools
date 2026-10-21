@@ -97,6 +97,15 @@ function configure(app: App) {
   app.directive('tooltip', {})
   apps.push(app)
 }
+function clickOverview(root: HostNode, ancestor = '.warp-wall-viewport', defaultPrevented = false) {
+  const target = {
+    closest: (selector: string) => (selector.split(', ').includes(ancestor) ? {} : null),
+  }
+  ;(cls(root, 'warp-overview').props.onClick as (event: unknown) => void)({
+    target,
+    defaultPrevented,
+  })
+}
 beforeEach(() => {
   focused.length = 0
   vi.stubGlobal('document', { getElementById: (id: string) => ({ focus: () => focused.push(id) }) })
@@ -107,7 +116,7 @@ afterEach(() => {
 })
 
 describe('Overview interactions in the real overlay (Node renderer, no browser focus trap)', () => {
-  it('keeps ten ordered entries, ignores blank activation, and returns from details before closing the batch', async () => {
+  it('keeps ten ordered entries and isolates details before closing the batch', async () => {
     const root = node('root'),
       escape = vi.fn(),
       activate = vi.fn()
@@ -132,11 +141,26 @@ describe('Overview interactions in the real overlay (Node renderer, no browser f
     const cards = descendants(root).filter((n) => String(n.props.id).startsWith('wall-'))
     expect(cards.map((n) => n.props.id)).toEqual(entries.map((e) => `wall-${e.id}`))
     expect(cls(root, 'warp-reveal-screen')).toBeUndefined()
+    for (const ancestor of [
+      'button',
+      '.warp-overview-header',
+      'a',
+      'input',
+      'select',
+      'textarea',
+      '[role="button"]',
+      '[contenteditable="true"]',
+    ])
+      clickOverview(root, ancestor)
+    clickOverview(root, '.warp-wall-viewport', true)
+    expect(escape).not.toHaveBeenCalled()
     ;(cards[0]!.props.onClick as () => void)()
     await flush()
     expect(cls(root, 'warp-overview').props.inert).toBe(true)
     expect(cls(root, 'warp-overview-detail')).toBeDefined()
     expect(focused.at(-1)).toBe('关闭物品详情')
+    clickOverview(root)
+    expect(escape).not.toHaveBeenCalled()
     const tab = { key: 'Tab', repeat: false, preventDefault: vi.fn() }
     ;(cls(root, 'warp-reveal-shell').props.onKeydown as (event: unknown) => void)(tab)
     expect(tab.preventDefault).toHaveBeenCalledOnce()
@@ -156,6 +180,62 @@ describe('Overview interactions in the real overlay (Node renderer, no browser f
     ;(cls(root, 'warp-reveal-shell').props.onKeydown as (event: unknown) => void)(event)
     expect(escape).toHaveBeenCalledOnce()
     expect(activate).not.toHaveBeenCalled()
+  })
+  it.each(['.warp-overview', '.warp-wall-viewport', '.warp-wall-canvas', '.warp-wall-row'])(
+    'closes once through the existing escape event when clicking blank %s',
+    async (ancestor) => {
+      const root = node('root'),
+        escape = vi.fn(),
+        activate = vi.fn()
+      const phase = ref<'overview' | 'leaving'>('overview')
+      const app = renderer.createApp({
+        render: () =>
+          h(WarpRevealOverlay, {
+            visible: true,
+            phase: phase.value,
+            batchId: entries[0]!.batchId,
+            entries,
+            presentation: adapter,
+            artworkReady: false,
+            identityReady: false,
+            onEscape: escape,
+            onActivate: activate,
+          }),
+      })
+      configure(app)
+      app.mount(root)
+      await flush()
+      clickOverview(root, ancestor)
+      expect(escape).toHaveBeenCalledOnce()
+      expect(activate).not.toHaveBeenCalled()
+      phase.value = 'leaving'
+      await flush()
+      clickOverview(root, ancestor)
+      expect(escape).toHaveBeenCalledOnce()
+    },
+  )
+  it('keeps the close button available without double-closing through its bubbled click', async () => {
+    const root = node('root'),
+      escape = vi.fn()
+    const app = renderer.createApp({
+      render: () =>
+        h(WarpRevealOverlay, {
+          visible: true,
+          phase: 'overview',
+          batchId: entries[0]!.batchId,
+          entries,
+          presentation: adapter,
+          artworkReady: false,
+          identityReady: false,
+          onEscape: escape,
+        }),
+    })
+    configure(app)
+    app.mount(root)
+    await flush()
+    ;(cls(root, 'warp-reveal-close').props.onClick as () => void)()
+    clickOverview(root, 'button')
+    expect(escape).toHaveBeenCalledOnce()
   })
   it('uses preview artwork for single cones and preserves image readiness identities', async () => {
     const entry = resultDisplayScenarios().find((s) => s.id === 'single-light-cone-3')!.entries[0]!
@@ -222,23 +302,47 @@ describe('Overview interactions in the real overlay (Node renderer, no browser f
   })
 })
 
-describe('Real result card image sources', () => {
-  it('keeps preview fallback isolated from card rotation and never substitutes a character icon', async () => {
+describe('Unified result card image sources', () => {
+  it('preserves cone metadata and ordered preview fallback without a legacy visual branch', async () => {
     const root = node('root'),
       entry = entries[1]!,
       item = adapter.item(entry.event.itemId, 'zh-CN')
-    const details = vi.fn()
+    const app = renderer.createApp({ render: () => h(WarpResultCard, { entry, item, index: 1 }) })
+    configure(app)
+    app.mount(root)
+    await flush()
+    expect(cls(root, 'warp-cone-card')).toBeDefined()
+    expect(cls(root, 'warp-card-path-icon')).toBeDefined()
+    expect(cls(root, 'warp-card-element-icon')).toBeUndefined()
+    const image = descendants(root).find(
+      (n) => n.type === 'img' && n.props.src === item.lightConePreview!.url,
+    )!
+    ;(image.props.onError as (event: unknown) => void)({
+      target: { getAttribute: () => item.lightConePreview!.url },
+    })
+    await flush()
+    const fallback = descendants(root).find(
+      (n) => n.type === 'img' && n.props.src === item.artworkUrl,
+    )!
+    expect(fallback).toBeDefined()
+    ;(fallback.props.onLoad as (event: unknown) => void)({
+      target: { getAttribute: () => item.artworkUrl, naturalWidth: 902, naturalHeight: 1260 },
+    })
+    await flush()
+    expect(cls(root, 'warp-result-image-loading')).toBeUndefined()
+  })
+  it('keeps the card unrotated and emits the original details identity', async () => {
+    const root = node('root'),
+      entry = entries[1]!,
+      item = adapter.item(entry.event.itemId, 'zh-CN'),
+      details = vi.fn()
     const app = renderer.createApp({
-      render: () => h(WarpResultCard, { entry, item, index: 1, single: false, onDetails: details }),
+      render: () => h(WarpResultCard, { entry, item, index: 1, onDetails: details }),
     })
     configure(app)
     app.mount(root)
     await flush()
     expect(cls(root, 'warp-result-card').props.style).not.toHaveProperty('transform')
-    const image = descendants(root).find(
-      (n) => n.type === 'img' && n.props.src === item.lightConePreview!.url,
-    )!
-    expect(image).toBeDefined()
     ;(cls(root, 'warp-result-card').props.onClick as () => void)()
     expect(details).toHaveBeenCalledWith(entry)
   })

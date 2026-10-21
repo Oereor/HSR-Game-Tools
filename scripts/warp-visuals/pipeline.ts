@@ -55,14 +55,25 @@ type ConversionPurpose =
   | 'icon'
   | 'stars'
   | 'reveal-artwork'
+  | 'result-portrait'
   | 'reveal-icon'
   | 'reveal-stars'
   | 'reveal-star-big'
   | 'card-stars'
   | 'light-cone-preview'
-function profile(purpose: ConversionPurpose, lock: SourceLock): [number, number] {
+function profile(
+  purpose: ConversionPurpose,
+  lock: SourceLock,
+  source?: { width?: number; height?: number },
+): [number, number] {
   const t = lock.transform
   switch (purpose) {
+    case 'result-portrait':
+      if (t.resultPortraitSize !== 'source' || !source?.width || !source.height)
+        throw new Error('Missing native portrait dimensions/profile')
+      // A larger inside bound never enlarges pixels. Retaining the existing HD key
+      // for native canvases that already fit avoids duplicate encodes and files.
+      return [Math.max(source.width, source.height, t.revealArtworkSize), t.resultPortraitQuality]
     case 'artwork-avatar':
       return [t.avatarSize, t.quality]
     case 'artwork-light-cone':
@@ -196,7 +207,7 @@ export async function validateVisuals(
       continue
     }
     const [hash, size, quality, alpha, extra] = asset.transformKey.split(':')
-    const [expectedSize, expectedQuality] = profile(asset.purpose, lock)
+    const [expectedSize, expectedQuality] = profile(asset.purpose, lock, source)
     const output = manifest.files['public/' + asset.output]
     const scale = Math.min(
       1,
@@ -206,6 +217,10 @@ export async function validateVisuals(
     if (
       !source ||
       asset.crop !== undefined ||
+      (asset.purpose === 'result-portrait' &&
+        (asset.slot !== 'result-portrait' ||
+          !asset.id.startsWith('avatar:') ||
+          asset.source !== `image/character_portrait/${asset.id.split(':')[1]}.png`)) ||
       (asset.purpose === 'reveal-star-big' &&
         (asset.source !== 'icon/deco/StarBig.png' || asset.slot !== 'reveal-star-big')) ||
       (asset.purpose === 'light-cone-preview' &&
@@ -273,6 +288,14 @@ export async function validateVisuals(
       'reveal-artwork',
       row.revealArtwork,
     )
+    if (item.kind === 'avatar')
+      reference(
+        item.id,
+        'result-portrait',
+        row.resultPortrait?.path,
+        'result-portrait',
+        row.resultPortrait,
+      )
     if (item.kind === 'light-cone')
       reference(
         item.id,
@@ -479,6 +502,11 @@ export async function generateVisuals(
       width: original.width,
       height: original.height,
     }
+    if (purpose === 'result-portrait') {
+      if (sourcePath !== `image/character_portrait/${id.split(':')[1]}.png`)
+        throw new Error('Invalid native portrait source path')
+      ;[size, quality] = profile(purpose, lock, original)
+    }
     let crop: StarCrop | undefined
     if (purpose === 'card-stars') {
       const inspected = await inspectStarCrop(bytes, Number(id))
@@ -554,10 +582,18 @@ export async function generateVisuals(
   async function revealAsset(
     id: string,
     purpose:
-      'reveal-artwork' | 'reveal-icon' | 'reveal-stars' | 'reveal-star-big' | 'light-cone-preview',
+      | 'reveal-artwork'
+      | 'reveal-icon'
+      | 'reveal-stars'
+      | 'reveal-star-big'
+      | 'light-cone-preview'
+      | 'result-portrait',
     sourcePath: string | undefined,
   ): Promise<VisualImage | undefined> {
-    const [size, quality] = profile(purpose, lock)
+    const [size, quality] =
+      purpose === 'result-portrait'
+        ? [0, lock.transform.resultPortraitQuality]
+        : profile(purpose, lock)
     const file = await asset(id, purpose, sourcePath, size, quality, purpose)
     if (!file) return undefined
     const meta = manifest.files['public/' + file]!
@@ -646,6 +682,9 @@ export async function generateVisuals(
       ...(item.kind === 'avatar' ? { element: cn.element } : {}),
       portraitPath,
       revealArtwork: await revealAsset(item.id, 'reveal-artwork', cn.portrait),
+      ...(item.kind === 'avatar'
+        ? { resultPortrait: await revealAsset(item.id, 'result-portrait', cn.portrait) }
+        : {}),
       ...(item.kind === 'light-cone'
         ? { lightConePreview: await revealAsset(item.id, 'light-cone-preview', cn.preview) }
         : {}),

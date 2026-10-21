@@ -19,7 +19,7 @@ import { assertVisualCatalog } from '../../../src/tools/warp-simulator/model/vis
 import catalog from '../../../src/tools/warp-simulator/data/visuals/catalog.json'
 
 describe('Result-card-only trimmed stars', () => {
-  it('groups path and optional element together above the shared star row, without a vacant slot', () => {
+  it('keeps cone path/stars separate from the character element/stars overlay', () => {
     const source = readFileSync(
       new URL('../../../src/tools/warp-simulator/components/WarpResultCard.vue', import.meta.url),
       'utf8',
@@ -40,18 +40,15 @@ describe('Result-card-only trimmed stars', () => {
     const rows = cluster.children.filter((child) => child.type === 1)
     expect(rows).toHaveLength(2)
     const icons = rows[0]!.children.filter((child) => child.type === 1)
-    expect(icons.map((node) => node.tag)).toEqual(['WarpVisualIcon', 'WarpVisualIcon'])
-    expect(
-      icons[1]!.props.some(
-        (prop) =>
-          prop.type === 7 &&
-          prop.name === 'if' &&
-          prop.exp?.type === 4 &&
-          prop.exp.content === "item.kind === 'avatar'",
-      ),
-    ).toBe(true)
+    expect(icons.map((node) => node.tag)).toEqual(['WarpVisualIcon'])
+    expect(hasClass(icons[0]!, 'warp-card-path-icon')).toBe(true)
     expect(rows[1]!.tag).toBe('WarpVisualIcon')
     expect(rows[1]!.props.some((prop) => prop.type === 6 && prop.name === 'stars')).toBe(true)
+    const character = elements.find((node) => hasClass(node, 'warp-character-metadata'))!
+    const overlay = character.children.filter((child) => child.type === 1)
+    expect(overlay.map((node) => node.tag)).toEqual(['WarpVisualIcon', 'WarpVisualIcon'])
+    expect(hasClass(overlay[0]!, 'warp-card-element-icon')).toBe(true)
+    expect(overlay[1]!.props.some((prop) => prop.type === 6 && prop.name === 'stars')).toBe(true)
   })
   it.each([3, 4, 5])(
     'keeps every alpha pixel of %i repeated stars, including faint edges',

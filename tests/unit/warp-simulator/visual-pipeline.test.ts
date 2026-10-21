@@ -131,6 +131,46 @@ async function fixture() {
   return { root, stage, inputs, source: { read: (file: string) => inputs[file] } }
 }
 describe('explicit Warp visual updater', () => {
+  it('keeps native canvases above 2048 without trimming alpha and reuses HD bytes when they already fit', async () => {
+    const f = await fixture()
+    const first = await generateVisuals(f.root, f.stage, f.source)
+    const native = first.assets.find((a) => a.purpose === 'result-portrait')!
+    const hd = first.assets.find((a) => a.id === 'avatar:1' && a.purpose === 'reveal-artwork')!
+    expect(native.output).toBe(hd.output)
+    await publishVisuals(f.root, f.stage, 'native-reuse')
+    const again = await generateVisuals(f.root, path.join(f.root, 'again'), f.source)
+    expect(again.files).toEqual(first.files)
+    f.inputs['image/character_portrait/1.png'] = await sharp({
+      create: { width: 3072, height: 2304, channels: 4, background: '#00000000' },
+    })
+      .composite([{ input: f.inputs['image/light_cone_portrait/1.png']!, left: 123, top: 456 }])
+      .png()
+      .toBuffer()
+    const stage = path.join(f.root, 'large')
+    const large = await generateVisuals(f.root, stage, f.source)
+    const asset = large.assets.find((a) => a.purpose === 'result-portrait')!
+    const reveal = large.assets.find((a) => a.id === 'avatar:1' && a.purpose === 'reveal-artwork')!
+    expect(asset.output).not.toBe(reveal.output)
+    const bytes = await readFile(path.join(stage, 'public/' + asset.output))
+    expect(await sharp(bytes).metadata()).toMatchObject({
+      width: 3072,
+      height: 2304,
+      hasAlpha: true,
+    })
+    const { data, info } = await sharp(bytes)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    expect(data[3]).toBe(0)
+    expect(data[(456 * info.width + 123) * 4 + 3]).toBe(255)
+    expect(data[(455 * info.width + 123) * 4 + 3]).toBe(0)
+    expect(large.files['public/' + reveal.output]).toMatchObject({ width: 2048, height: 1536 })
+    await publishVisuals(f.root, stage, 'native-large')
+    expect(await validateVisuals(f.root)).toMatchObject({ missing: 0 })
+    large.files['public/' + asset.output]!.width = 2048
+    await write(f.root, visualDirectory + '/manifest.json', JSON.stringify(large))
+    await expect(validateVisuals(f.root)).rejects.toThrow(/provenance/)
+  })
   it('retains transparent preview pixels and records missing/bilingual preview sources explicitly', async () => {
     const f = await fixture()
     f.inputs['image/light_cone_preview/1.png'] = await sharp({
@@ -219,7 +259,7 @@ describe('explicit Warp visual updater', () => {
       width: 16,
       height: 24,
     })
-    expect(new Set(manifest.assets.map((asset) => asset.purpose)).size).toBe(10)
+    expect(new Set(manifest.assets.map((asset) => asset.purpose)).size).toBe(11)
     expect((await readdir(path.join(f.stage, assetDirectory))).length).toBe(14)
     expect(manifest.inputs['index_new/cn/characters.json']).toEqual(
       metadata(f.inputs['index_new/cn/characters.json']!),
@@ -399,7 +439,7 @@ describe('explicit Warp visual updater', () => {
       reason: 'missing-source-file',
     })
     await publishVisuals(f.root, f.stage, 'missing')
-    expect(await validateVisuals(f.root)).toMatchObject({ missing: 2 })
+    expect(await validateVisuals(f.root)).toMatchObject({ missing: 3 })
     await write(f.root, assetDirectory + '/extra.webp', 'bad')
     await expect(validateVisuals(f.root)).rejects.toThrow(/Unexpected/)
     await rm(path.join(f.root, assetDirectory, 'extra.webp'))

@@ -20,6 +20,13 @@ export const ToolsPreset = definePreset(Aura, {
       4: warpVisualTokens.rarity4,
       5: warpVisualTokens.rarity5,
     },
+    warpOverview: {
+      edge: {
+        3: '#78a8ff',
+        4: warpVisualTokens.rarity4,
+        5: warpVisualTokens.rarity5,
+      },
+    },
     event: { 500: '#dfbc66' },
     currencyCost: { 1: '#f1eee7', 2: '#67bd96', 3: '#5fa9e7', 4: '#ae85d7', 5: '#c9a86b' },
     gold: {

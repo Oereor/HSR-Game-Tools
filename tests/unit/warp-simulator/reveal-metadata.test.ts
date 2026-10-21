@@ -42,7 +42,7 @@ const i18n = () =>
 
 describe('Final artwork metadata presentation', () => {
   it.each(['zh-CN', 'en'] as const)(
-    'uses three-row information and cropped stars for all reveal kinds in %s',
+    'selects the primary icon, optional path row and cropped stars in %s',
     (locale) => {
       const { t } = createI18n({ legacy: false, locale, messages: { 'zh-CN': zhCN, en } }).global
       for (const id of [
@@ -55,28 +55,27 @@ describe('Final artwork metadata presentation', () => {
         const item = adapter.item(entry.event.itemId, locale)
         const result = revealMetadata(item, entry.event.rarity, t)
         expect(result.name).toBe(item.name)
-        expect(result.nameColor).toBe(`var(--p-warp-rarity-${entry.event.rarity})`)
         expect(result.stars).toEqual(item.cardStars)
         expect(result.stars!.url).not.toBe(item.starsUrl)
         expect(result.rarityLabel).toBe(t('warp.visual.rarity', { count: entry.event.rarity }))
-        expect(result.groups.map((group) => group.kind)).toEqual(
-          item.kind === 'avatar' ? ['path', 'element'] : ['path'],
-        )
-        expect(result.groups[0]).toMatchObject({
-          name: item.pathName,
-          icon: item.pathIconUrl,
-          color: 'var(--color-ink)',
+        const avatar = item.kind === 'avatar'
+        expect(result.kindLabel).toBe(t(`warp.itemKind.${item.kind}`))
+        expect(result.primaryIcon).toEqual({
+          kind: avatar ? 'element' : 'path',
+          name: avatar ? item.elementName : item.pathName,
+          icon: avatar ? item.elementIconUrl : item.pathIconUrl,
         })
-        if (item.kind === 'avatar')
-          expect(result.groups[1]).toMatchObject({
-            name: item.elementName,
-            icon: item.elementIconUrl,
-            color: item.elementTextColor,
-          })
+        expect(result.path).toEqual(
+          avatar ? { name: item.pathName, icon: item.pathIconUrl } : undefined,
+        )
         expect(result.description).toBe(
-          [result.rarityLabel, ...result.groups.map((group) => group.name)].join(
-            t('warp.resultTooltip.separator'),
-          ),
+          [
+            result.kindLabel,
+            item.name,
+            result.rarityLabel,
+            item.pathName,
+            ...(avatar ? [item.elementName] : []),
+          ].join(t('warp.resultTooltip.separator')),
         )
       }
     },
@@ -92,18 +91,22 @@ describe('Final artwork metadata presentation', () => {
       elementIconUrl: undefined,
     }
     const result = revealMetadata(item, 4, t)
-    expect(result.groups).toEqual([
-      { kind: 'element', name: 'Ice', icon: undefined, color: 'var(--color-ink)' },
-    ])
+    expect(result.primaryIcon).toEqual({ kind: 'element', name: 'Ice', icon: undefined })
+    expect(result.path).toBeUndefined()
     expect(result.stars).toBeUndefined()
     expect(result.starsReferenceAspectRatio).toBe(5)
     expect(result.description).toBe(
-      [result.rarityLabel, 'Ice'].join(t('warp.resultTooltip.separator')),
+      [result.kindLabel, item.name, result.rarityLabel, t('warp.visual.unknown'), 'Ice'].join(
+        t('warp.resultTooltip.separator'),
+      ),
     )
     const cone = revealMetadata({ ...item, kind: 'light-cone' }, 4, t)
-    expect(cone.groups).toEqual([])
+    expect(cone.primaryIcon.name).toBe(t('warp.visual.unknown'))
+    expect(cone.path).toBeUndefined()
     expect(cone.description).toBe(
-      [cone.rarityLabel, t('warp.visual.unknown')].join(t('warp.resultTooltip.separator')),
+      [cone.kindLabel, item.name, cone.rarityLabel, t('warp.visual.unknown')].join(
+        t('warp.resultTooltip.separator'),
+      ),
     )
   })
   it('preserves full long and untrusted names as text without identity lookup', () => {
@@ -119,7 +122,7 @@ describe('Final artwork metadata presentation', () => {
     const name = '<img src=x onerror=alert(1)> & "name"'
     const supplied = revealMetadata({ ...long, name, pathName: 'Supplied path' }, 5, t)
     expect(supplied.name).toBe(name)
-    expect(supplied.groups[0]!.name).toBe('Supplied path')
+    expect(supplied.path!.name).toBe('Supplied path')
   })
   it('shows only ready artwork/waiting, retaining final artwork but not identity during leaving', () => {
     for (const stage of [
@@ -137,7 +140,7 @@ describe('Final artwork metadata presentation', () => {
     expect(showRevealMetadata('waiting', true)).toBe(true)
     expect(showRevealMetadata('identity', true)).toBe(false)
   })
-  it('keeps three visible rows inside artwork, with description text and no interactive controls', () => {
+  it('keeps a shared noninteractive information band and a linked description inside artwork', () => {
     const read = (name: string) =>
       readFileSync(
         new URL('../../../src/tools/warp-simulator/components/' + name + '.vue', import.meta.url),
@@ -165,9 +168,9 @@ describe('Final artwork metadata presentation', () => {
         return prop?.type === 6 ? prop.value?.content : undefined
       }),
     ).toEqual([
-      'warp-reveal-metadata-name',
-      'warp-reveal-metadata-rarity',
-      'warp-reveal-metadata-details',
+      'warp-reveal-metadata-type',
+      'warp-reveal-metadata-band',
+      'warp-reveal-metadata-path',
     ])
     expect(elements.some((node) => ['button', 'a', 'input', 'select'].includes(node.tag))).toBe(
       false,

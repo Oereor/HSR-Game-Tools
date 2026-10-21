@@ -15,6 +15,7 @@ import WarpResultsWall from './WarpResultsWall.vue'
 import WarpItemDetailsContent from './WarpItemDetailsContent.vue'
 import { showRevealMetadata } from './reveal-metadata'
 import { useWarpPixelRatio } from '../composables/useWarpPixelRatio'
+import { revealComposition } from '../model/reveal-composition'
 import type { ToolLocale } from '../../../locales/types'
 
 const props = defineProps<{
@@ -89,7 +90,7 @@ const dialogLabel = computed(() =>
   details.value && detailItem.value
     ? detailItem.value.name
     : overview.value
-      ? t('warp.results.title')
+      ? t('warp.results.overviewTitle')
       : t('warp.reveal.title', { name: props.item?.name ?? t('warp.visual.unknown') }),
 )
 function focusScreen() {
@@ -107,6 +108,18 @@ function closeDetails() {
   void nextTick(() =>
     document.getElementById(`warp-overview-result-${entry?.id}`)?.focus({ preventScroll: true }),
   )
+}
+function clickOverview(event: MouseEvent) {
+  if (props.phase !== 'overview' || details.value || event.defaultPrevented) return
+  const target = event.target as Element | null
+  if (
+    !target ||
+    target.closest(
+      '.warp-overview-header, button, a, input, select, textarea, [role="button"], [contenteditable="true"]',
+    )
+  )
+    return
+  emit('escape')
 }
 function keydown(event: KeyboardEvent) {
   // Details currently has one interactive control. Keep Tab inside this panel;
@@ -157,13 +170,16 @@ function keydown(event: KeyboardEvent) {
         <section
           v-if="overview && presentation"
           class="warp-overview"
+          aria-labelledby="warp-overview-title"
+          aria-describedby="warp-overview-description"
           :inert="!!details"
           :class="{ 'warp-reveal-leaving': phase === 'leaving' }"
+          @click="clickOverview"
         >
           <header class="warp-overview-header">
             <div>
-              <h2>{{ t('warp.results.title') }}</h2>
-              <p>
+              <h2 id="warp-overview-title">{{ t('warp.results.overviewTitle') }}</h2>
+              <p id="warp-overview-description" class="warp-overview-description">
                 {{ sourceLabel }} · {{ t('warp.results.count', { count: entries?.length ?? 0 }) }}
               </p>
             </div>
@@ -188,7 +204,10 @@ function keydown(event: KeyboardEvent) {
           unstyled
           type="button"
           class="warp-reveal-screen"
-          :class="{ 'warp-reveal-leaving': phase === 'leaving' }"
+          :class="{
+            'warp-reveal-leaving': phase === 'leaving',
+            'warp-reveal-full-canvas': stage !== 'identity',
+          }"
           :aria-label="
             t('warp.reveal.action', { name: item?.name ?? t('warp.visual.unknown'), action: hint })
           "
@@ -225,6 +244,8 @@ function keydown(event: KeyboardEvent) {
                   "
                   :fallback-url="item.artworkUrl"
                   :kind="item.kind"
+                  :composition="revealComposition(item.id, item.kind)"
+                  :limit-to-source-pixels="item.kind !== 'avatar'"
                   :label="item.name"
                   :pixel-ratio="pixelRatio"
                   :batch-id="entry.batchId"
@@ -290,6 +311,7 @@ function keydown(event: KeyboardEvent) {
   height: 100%;
   color: #f4f5fa;
   isolation: isolate;
+  overflow: hidden;
 }
 .warp-reveal-screen {
   position: relative;
@@ -309,6 +331,9 @@ function keydown(event: KeyboardEvent) {
   outline: 2px solid var(--color-accent);
   outline-offset: -4px;
 }
+.warp-reveal-screen.warp-reveal-full-canvas {
+  padding: 0;
+}
 .warp-reveal-stage {
   position: relative;
   display: grid;
@@ -325,10 +350,9 @@ function keydown(event: KeyboardEvent) {
 }
 .warp-reveal-art-area {
   position: absolute;
-  inset: 0 0 0 22%;
+  inset: 0;
 }
 .warp-reveal-cone-area {
-  inset-inline-start: 35%;
   filter: drop-shadow(8px 16px 22px #0007);
 }
 .warp-reveal-artwork-enter {
@@ -339,6 +363,7 @@ function keydown(event: KeyboardEvent) {
 }
 .warp-reveal-hint {
   position: absolute;
+  z-index: 2;
   bottom: max(24px, env(safe-area-inset-bottom));
   inset-inline: 24px;
   color: #eef2ff;
@@ -352,15 +377,19 @@ function keydown(event: KeyboardEvent) {
   grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
   height: 100%;
+  gap: 8px;
   padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
     max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
 }
 .warp-overview-header {
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-inline: 16px;
+  padding-inline: 8px;
+}
+.warp-overview-header h2 {
+  font-size: clamp(20px, 1.35vw, 26px);
 }
 h2 {
   margin: 0;
@@ -368,10 +397,15 @@ h2 {
   font-weight: 500;
   overflow-wrap: anywhere;
 }
-.warp-overview-header p {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: #c4cfe2;
+.warp-overview-description {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 .warp-reveal-close {
   display: grid;
@@ -434,9 +468,6 @@ h2 {
   }
 }
 @media (max-width: 640px) {
-  .warp-reveal-art-area {
-    inset: 0 0 140px;
-  }
   .warp-reveal-screen {
     padding-inline: 12px;
   }

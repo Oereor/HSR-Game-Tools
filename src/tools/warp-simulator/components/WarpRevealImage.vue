@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { BookOpen, UserRound } from '@lucide/vue'
 import type { ImagePresentation } from '../model/presentation'
 import { useWarpRevealSource, revealPixelLimit } from '../composables/useWarpRevealSource'
+import { useWarpElementSize } from '../composables/useWarpElementSize'
+import { revealGeometry, type RevealCompositionProfile } from '../model/reveal-composition'
 
 const props = withDefaults(
   defineProps<{
@@ -11,6 +13,7 @@ const props = withDefaults(
     label: string
     pixelRatio: number
     limitToSourcePixels?: boolean
+    composition?: RevealCompositionProfile
     kind?: 'avatar' | 'light-cone'
     batchId: number
     entryId: number
@@ -23,6 +26,23 @@ const image = useWarpRevealSource(
   () => props.fallbackUrl,
 )
 const { source, dimensions, ready } = image
+const frame = ref<HTMLElement>()
+const compositionFrame = computed(() => (props.composition ? frame.value : undefined))
+const size = useWarpElementSize(compositionFrame)
+const positioning = computed(() => {
+  if (!props.composition || !dimensions.value) return limit.value
+  const geometry = revealGeometry(
+    size.value.width,
+    size.value.height,
+    dimensions.value.width,
+    dimensions.value.height,
+    props.composition,
+    props.limitToSourcePixels ? props.pixelRatio : undefined,
+  )
+  return geometry
+    ? Object.fromEntries(Object.entries(geometry).map(([key, value]) => [key, `${value}px`]))
+    : limit.value
+})
 const limit = computed(() =>
   props.limitToSourcePixels && dimensions.value
     ? revealPixelLimit(dimensions.value.width, dimensions.value.height, props.pixelRatio)
@@ -45,13 +65,19 @@ function fail(event: Event) {
 </script>
 
 <template>
-  <span class="warp-reveal-image" role="img" :aria-label="label">
+  <span
+    ref="frame"
+    class="warp-reveal-image"
+    :class="{ 'warp-reveal-image-composed': composition }"
+    role="img"
+    :aria-label="label"
+  >
     <img
       v-if="source"
       :key="source"
       :src="source"
       alt=""
-      :style="limit"
+      :style="positioning"
       :class="{ 'warp-reveal-image-loading': !ready }"
       @load="load"
       @error="fail"
@@ -78,6 +104,14 @@ function fail(event: Event) {
   min-width: 0;
   min-height: 0;
   color: var(--color-muted);
+}
+.warp-reveal-image-composed {
+  position: relative;
+}
+.warp-reveal-image-composed img {
+  position: absolute;
+  max-width: none;
+  max-height: none;
 }
 img {
   display: block;

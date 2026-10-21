@@ -643,6 +643,25 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 .warp-page {
   min-width: 0;
 }
+@media (min-width: 1040px) and (min-height: 640px) {
+  :global(.app-shell:has(> main > .warp-page)) {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100dvh;
+    box-sizing: border-box;
+  }
+  :global(.app-shell:has(> main > .warp-page) > main) {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+  }
+  .warp-page {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    flex: 1;
+    min-height: 0;
+  }
+}
 .warp-page-heading {
   display: flex;
   flex-wrap: wrap;

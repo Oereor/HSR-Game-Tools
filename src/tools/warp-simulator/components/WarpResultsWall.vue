@@ -4,49 +4,85 @@ import { useI18n } from 'vue-i18n'
 import type { ToolLocale } from '../../../locales/types'
 import type { HistoryEntry } from '../composables/useWarpSimulator'
 import type { createPresentation } from '../model/presentation'
-import { resultWall, fitResultWall, wallCard } from '../model/result-wall'
+import {
+  resultWall,
+  flatResultWall,
+  fitResultWall,
+  wallCard,
+  wallLayout,
+  type ResultWallLayout,
+} from '../model/result-wall'
 import { useWarpElementSize } from '../composables/useWarpElementSize'
 import WarpResultCard from './WarpResultCard.vue'
 
-defineProps<{
-  entries: readonly HistoryEntry[]
-  presentation: ReturnType<typeof createPresentation>
-}>()
+const props = withDefaults(
+  defineProps<{
+    entries: readonly HistoryEntry[]
+    presentation: ReturnType<typeof createPresentation>
+    layout?: ResultWallLayout
+    idPrefix?: string
+  }>(),
+  { layout: 'tilted', idPrefix: 'warp-overview-result' },
+)
 const emit = defineEmits<{ details: [entry: HistoryEntry] }>()
 const { locale, t } = useI18n()
 const frame = ref<HTMLElement>()
 const size = useWarpElementSize(frame)
-const scale = computed(() => fitResultWall(size.value.width, size.value.height))
+const wall = computed(() => (props.layout === 'flat' ? flatResultWall : resultWall))
+const scale = computed(() => fitResultWall(size.value.width, size.value.height, wall.value))
+const rows = computed(() =>
+  wall.value.rows.map((row) => ({
+    ...row,
+    entries: props.entries.slice(row.start, row.start + row.count).map((entry, column) => ({
+      entry,
+      index: row.start + column,
+    })),
+  })),
+)
 </script>
 <template>
-  <div ref="frame" class="warp-wall-viewport" :aria-label="t('warp.results.title')">
+  <div
+    ref="frame"
+    class="warp-wall-viewport"
+    :class="{ 'warp-wall-flat': layout === 'flat' }"
+    :aria-label="t('warp.results.overviewTitle')"
+  >
     <div
       class="warp-wall-canvas"
       :style="{
-        width: `${resultWall.width}px`,
-        height: `${resultWall.height}px`,
+        width: `${wall.width}px`,
+        height: `${wall.height}px`,
         '--wall-scale': scale,
+        '--wall-angle': `${wall.angle}deg`,
+        '--wall-card-width': `${wallCard.width}px`,
+        '--wall-card-height': `${wallCard.height}px`,
+        '--wall-gap': `${wallLayout.gap}px`,
       }"
     >
       <div
-        v-for="(entry, index) in entries"
-        :key="`${entry.batchId}:${entry.id}`"
-        class="warp-wall-slot"
+        v-for="(row, rowIndex) in rows"
+        :key="rowIndex"
+        class="warp-wall-row"
         :style="{
-          left: `${resultWall.slots[index]!.left}px`,
-          top: `${resultWall.slots[index]!.top}px`,
-          width: `${wallCard.width}px`,
-          zIndex: resultWall.slots[index]!.zIndex,
+          left: `${row.left}px`,
+          top: `${row.top}px`,
+          width: `${row.width}px`,
+          zIndex: row.zIndex,
         }"
       >
-        <WarpResultCard
-          :entry="entry"
-          :item="presentation.item(entry.event.itemId, locale as ToolLocale)"
-          :index="index"
-          :single="false"
-          id-prefix="warp-overview-result"
-          @details="emit('details', $event)"
-        />
+        <div
+          v-for="{ entry, index } in row.entries"
+          :key="`${entry.batchId}:${entry.id}`"
+          class="warp-wall-slot"
+        >
+          <WarpResultCard
+            :entry="entry"
+            :item="presentation.item(entry.event.itemId, locale as ToolLocale)"
+            :index="index"
+            :id-prefix="idPrefix"
+            @details="emit('details', $event)"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -66,13 +102,43 @@ const scale = computed(() => fitResultWall(size.value.width, size.value.height))
   transform: translate(-50%, -50%) scale(var(--wall-scale));
   transform-origin: center;
 }
-.warp-wall-slot {
+.warp-wall-row {
   position: absolute;
-  transform: rotate(-12deg);
+  display: flex;
+  gap: var(--wall-gap);
+  height: var(--wall-card-height);
+  transform: rotate(var(--wall-angle));
+  transform-origin: center;
+  isolation: isolate;
+}
+.warp-wall-row::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 30%,
+    color-mix(in srgb, var(--p-warp-overview-edge-3) 10%, transparent)
+  );
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--p-warp-overview-edge-3) 18%, transparent);
+}
+.warp-wall-slot {
+  position: relative;
+  flex: 0 0 var(--wall-card-width);
+  min-width: 0;
+}
+.warp-wall-flat .warp-wall-row::before {
+  content: none;
+}
+.warp-wall-row:focus-within,
+.warp-wall-row:hover {
+  z-index: 20 !important;
 }
 .warp-wall-slot:focus-within,
 .warp-wall-slot:hover {
-  z-index: 20 !important;
+  z-index: 20;
 }
 @media (max-width: 1039px), (max-height: 639px) {
   .warp-wall-viewport {
@@ -88,25 +154,24 @@ const scale = computed(() => fitResultWall(size.value.width, size.value.height))
     transform: none;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 38px 28px;
-    padding: 36px;
+    gap: 32px 28px;
+    padding: 40px;
+  }
+  .warp-wall-row {
+    display: contents;
+  }
+  .warp-wall-row::before {
+    content: none;
   }
   .warp-wall-slot {
-    position: relative;
-    left: auto !important;
-    top: auto !important;
-    width: 100% !important;
-    transform: rotate(-4deg);
+    width: 100%;
   }
 }
 @media (max-width: 640px) {
   .warp-wall-canvas {
     grid-template-columns: minmax(0, 1fr);
-    gap: 36px;
-    padding: 30px 22px;
-  }
-  .warp-wall-slot {
-    transform: rotate(-3deg);
+    gap: 30px;
+    padding: 32px;
   }
 }
 </style>

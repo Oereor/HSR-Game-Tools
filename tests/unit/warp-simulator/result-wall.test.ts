@@ -1,80 +1,92 @@
 import { describe, expect, it } from 'vitest'
 import {
-  defaultPortraitFocus,
-  portraitFocus,
-  portraitFocusOverrides,
-  portraitGeometry,
-  validPortraitFocus,
-} from '../../../src/tools/warp-simulator/model/portrait-focus'
-import {
   resultWall,
+  flatResultWall,
   fitResultWall,
   wallCard,
+  wallLayout,
 } from '../../../src/tools/warp-simulator/model/result-wall'
 
-describe('Portrait focus in the complete source canvas', () => {
-  it('provides an independent default and ten reviewed overrides with valid coordinates', () => {
-    expect(portraitFocus('avatar:unknown')).toBe(defaultPortraitFocus)
-    expect(defaultPortraitFocus).toEqual({ x: 0.5, y: 0.3, scale: 2 })
-    expect(Object.keys(portraitFocusOverrides)).toHaveLength(10)
-    for (const [id, focus] of Object.entries(portraitFocusOverrides)) {
-      expect(id).toMatch(/^avatar:/)
-      expect(validPortraitFocus(focus)).toBe(true)
-      expect(portraitFocus(id)).toBe(focus)
+describe('Complete ordered 3–4–3 wall geometry', () => {
+  it('groups ten ordered slots into three parallel rows with non-overlapping card edges', () => {
+    expect(resultWall.rows.map((row) => row.count)).toEqual([3, 4, 3])
+    expect(resultWall.rows.map((row) => row.start)).toEqual([0, 3, 7])
+    expect(resultWall.slots.map((slot) => slot.index)).toEqual(
+      Array.from({ length: 10 }, (_, i) => i),
+    )
+    const radians = (wallCard.angle * Math.PI) / 180
+    for (const row of resultWall.rows) {
+      const slots = resultWall.slots.slice(row.start, row.start + row.count)
+      expect(row.width).toBe(row.count * wallCard.width + (row.count - 1) * wallLayout.gap)
+      for (let i = 1; i < slots.length; i++) {
+        const dx = slots[i]!.centerX - slots[i - 1]!.centerX
+        const dy = slots[i]!.centerY - slots[i - 1]!.centerY
+        expect(dy / dx).toBeCloseTo(Math.tan(radians))
+        expect(Math.hypot(dx, dy) - wallCard.width).toBeCloseTo(wallLayout.gap)
+      }
+    }
+    for (let i = 1; i < resultWall.rows.length; i++) {
+      const a = resultWall.rows[i - 1]!,
+        b = resultWall.rows[i]!
+      const normalDistance = -(b.x - a.x) * Math.sin(radians) + (b.y - a.y) * Math.cos(radians)
+      expect(normalDistance).toBeGreaterThan(wallCard.height + wallLayout.gap)
     }
   })
-  it.each([defaultPortraitFocus, ...Object.values(portraitFocusOverrides)])(
-    'maps the head to the card center for any source and card shape: %j',
-    (focus) => {
-      for (const [w, h, iw, ih] of [
-        [224, 160, 2048, 2048],
-        [224, 160, 768, 768],
-        [168, 120, 2048, 2048],
-        [170, 120, 1000, 1600],
+  it.each([resultWall, flatResultWall])(
+    'keeps every card and its glow inside the fitted $layout viewport',
+    (wall) => {
+      expect(wall.slots).toHaveLength(10)
+      expect(wallCard.width / wallCard.height).toBe(2)
+      for (const [width, height] of [
+        [1872, 980],
+        [1552, 800],
+        [1318, 668],
+        [1232, 580],
+        [2512, 960],
       ]) {
-        const geometry = portraitGeometry(w!, h!, iw!, ih!, focus)!
-        expect(geometry.left + geometry.width * focus.x).toBeCloseTo(w! / 2)
-        expect(geometry.top + geometry.height * focus.y).toBeCloseTo(h! / 2)
-        expect(geometry.width / geometry.height).toBeCloseTo(iw! / ih!)
-        // An outer card angle is deliberately absent from this interface.
-        expect(Object.keys(geometry).sort()).toEqual(['height', 'left', 'top', 'width'])
+        const scale = fitResultWall(width!, height!, wall)
+        expect(scale).toBeGreaterThan(0)
+        wall.slots.forEach((slot, index) => {
+          expect(slot.zIndex).toBe(index + 1)
+          expect(
+            (slot.centerX - slot.rotatedWidth / 2 - wallLayout.padding) * scale,
+          ).toBeGreaterThanOrEqual(-1e-8)
+          expect(
+            (slot.centerY - slot.rotatedHeight / 2 - wallLayout.padding) * scale,
+          ).toBeGreaterThanOrEqual(-1e-8)
+          expect(
+            (slot.centerX + slot.rotatedWidth / 2 + wallLayout.padding) * scale,
+          ).toBeLessThanOrEqual(width! + 1e-8)
+          expect(
+            (slot.centerY + slot.rotatedHeight / 2 + wallLayout.padding) * scale,
+          ).toBeLessThanOrEqual(height! + 1e-8)
+        })
       }
     },
   )
-  it('keeps normalized positions identical for equivalent resized canvases and rejects invalid dimensions', () => {
-    expect(portraitGeometry(224, 160, 2048, 2048, portraitFocus('avatar:1415'))).toEqual(
-      portraitGeometry(224, 160, 768, 768, portraitFocus('avatar:1415')),
-    )
-    expect(portraitGeometry(0, 160, 2048, 2048, defaultPortraitFocus)).toBeUndefined()
-    expect(portraitGeometry(224, 160, NaN, 2048, defaultPortraitFocus)).toBeUndefined()
-    const invalid = { x: 2, y: NaN, scale: -1 }
-    expect(validPortraitFocus(invalid)).toBe(false)
-    expect(portraitGeometry(224, 160, 2048, 2048, invalid)).toEqual(
-      portraitGeometry(224, 160, 2048, 2048, defaultPortraitFocus),
-    )
-  })
-})
-
-describe('Complete ordered 3–4–3 wall geometry', () => {
-  it('keeps every rotated card and its glow inside the fitted viewport', () => {
-    expect(resultWall.slots).toHaveLength(10)
-    expect(wallCard.width / wallCard.height).toBe(2)
-    for (const [width, height] of [
-      [1872, 960],
-      [1318, 640],
-      [1232, 580],
-      [2512, 960],
-    ]) {
-      const scale = fitResultWall(width!, height!)
-      expect(scale).toBeGreaterThan(0)
-      expect(scale).toBeLessThanOrEqual(1)
-      resultWall.slots.forEach((slot, index) => {
-        expect(slot.zIndex).toBe(index + 1)
-        expect((slot.centerX - slot.rotatedWidth / 2 - 40) * scale).toBeGreaterThanOrEqual(0)
-        expect((slot.centerY - slot.rotatedHeight / 2 - 40) * scale).toBeGreaterThanOrEqual(0)
-        expect((slot.centerX + slot.rotatedWidth / 2 + 40) * scale).toBeLessThanOrEqual(width!)
-        expect((slot.centerY + slot.rotatedHeight / 2 + 40) * scale).toBeLessThanOrEqual(height!)
-      })
+  it('centers flat rows and caps homepage scaling at native card size', () => {
+    expect(flatResultWall.angle).toBe(0)
+    expect(flatResultWall.rows.map((row) => row.count)).toEqual([3, 4, 3])
+    for (const row of flatResultWall.rows) {
+      expect(row.left + row.width / 2).toBe(flatResultWall.width / 2)
+      const slots = flatResultWall.slots.slice(row.start, row.start + row.count)
+      expect(new Set(slots.map((slot) => slot.centerY)).size).toBe(1)
+      for (let i = 1; i < slots.length; i++)
+        expect(slots[i]!.centerX - slots[i - 1]!.centerX).toBe(wallCard.width + wallLayout.gap)
     }
+    expect(fitResultWall(4000, 3000, flatResultWall)).toBe(1)
+    expect(fitResultWall(1200, 500, flatResultWall)).toBeLessThan(1)
+    expect(fitResultWall(0, 500, flatResultWall)).toBe(0)
+  })
+  it('fills larger viewports without the old scale cap and rejects unavailable sizes', () => {
+    expect(fitResultWall(1872, 980)).toBeGreaterThan(1)
+    for (const [w, h] of [
+      [0, 10],
+      [10, 0],
+      [-1, 100],
+      [NaN, 100],
+      [100, Infinity],
+    ])
+      expect(fitResultWall(w!, h!)).toBe(0)
   })
 })

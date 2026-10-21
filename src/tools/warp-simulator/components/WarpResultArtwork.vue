@@ -2,16 +2,18 @@
 import { computed, ref } from 'vue'
 import { BookOpen, UserRound } from '@lucide/vue'
 import type { ItemPresentation } from '../model/presentation'
-import { portraitFocus, portraitGeometry, type PortraitFocus } from '../model/portrait-focus'
+import { resultPortraitFocus, portraitGeometry, type PortraitFocus } from '../model/portrait-focus'
 import { useWarpRevealSource } from '../composables/useWarpRevealSource'
 import { useWarpElementSize } from '../composables/useWarpElementSize'
-
 const props = defineProps<{ item: ItemPresentation; focus?: PortraitFocus }>()
 const frame = ref<HTMLElement>()
 const size = useWarpElementSize(frame)
 const image = useWarpRevealSource(
-  () => (props.item.kind === 'light-cone' ? props.item.lightConePreview : undefined),
+  () =>
+    props.item.kind === 'light-cone' ? props.item.lightConePreview : props.item.resultPortrait,
   () => props.item.artworkUrl,
+  () =>
+    props.item.kind === 'avatar' && props.item.revealArtwork ? [props.item.revealArtwork] : [],
 )
 const { source, ready, dimensions } = image
 const positioning = computed(() => {
@@ -21,7 +23,7 @@ const positioning = computed(() => {
     size.value.height,
     dimensions.value.width,
     dimensions.value.height,
-    props.focus ?? portraitFocus(props.item.id),
+    props.focus ?? resultPortraitFocus(props.item.id),
   )
   return geometry
     ? Object.fromEntries(Object.entries(geometry).map(([key, value]) => [key, `${value}px`]))
@@ -37,7 +39,9 @@ function load(event: Event) {
   <span
     ref="frame"
     class="warp-result-artwork"
-    :class="{ 'warp-result-avatar': item.kind === 'avatar' }"
+    :class="{
+      'warp-result-avatar': item.kind === 'avatar',
+    }"
     role="img"
     :aria-label="item.name"
   >
@@ -46,6 +50,7 @@ function load(event: Event) {
       :key="source"
       :src="source"
       alt=""
+      decoding="async"
       :style="positioning"
       :class="{ 'warp-result-image-loading': !ready }"
       @load="load"
@@ -75,14 +80,15 @@ img {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  object-fit: contain;
-  padding: 6px 10px;
+  padding: 0;
+  object-fit: cover;
+  object-position: center top;
 }
 .warp-result-avatar img {
   position: absolute;
   max-width: none;
   padding: 0;
-  object-fit: fill;
+  object-fit: contain;
 }
 .warp-result-image-loading {
   visibility: hidden;

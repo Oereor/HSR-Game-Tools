@@ -5,22 +5,35 @@ import type { ImagePresentation } from '../model/presentation'
 export function useWarpRevealSource(
   preferred: () => ImagePresentation | undefined,
   fallback: () => string | undefined,
+  intermediate: () => readonly ImagePresentation[] = () => [],
 ) {
   const failed = shallowRef<ReadonlySet<string>>(new Set())
   const loaded = shallowRef<{ url: string; width: number; height: number }>()
-  const source = computed(() =>
-    [preferred()?.url, fallback()].find((url) => url && !failed.value.has(url)),
-  )
+  const candidates = computed(() => {
+    const images = [preferred(), ...intermediate(), fallback() ? { url: fallback()! } : undefined]
+    const unique = new Map<string, ImagePresentation | { url: string }>()
+    for (const image of images) if (image && !unique.has(image.url)) unique.set(image.url, image)
+    return [...unique.values()]
+  })
+  const source = computed(() => candidates.value.find((image) => !failed.value.has(image.url))?.url)
   const dimensions = computed(() =>
     loaded.value?.url === source.value
       ? loaded.value
-      : preferred()?.url === source.value
-        ? preferred()
-        : undefined,
+      : (candidates.value.find((image) => image.url === source.value && 'width' in image) as
+          ImagePresentation | undefined),
   )
   const ready = computed(() => !source.value || loaded.value?.url === source.value)
   watch(
-    () => [preferred()?.url, preferred()?.width, preferred()?.height, fallback()].join('\0'),
+    () =>
+      candidates.value
+        .map((image) =>
+          [
+            image.url,
+            'width' in image ? image.width : '',
+            'height' in image ? image.height : '',
+          ].join('\0'),
+        )
+        .join('\n'),
     () => {
       failed.value = new Set()
       loaded.value = undefined

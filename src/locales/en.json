@@ -406,6 +406,7 @@
     },
     "results": {
       "title": "Latest warp results",
+      "overviewTitle": "Warp Results",
       "count": "{count} warps",
       "empty": "Choose a banner and any required characters to begin your first warp.",
       "close": "Close results overview"

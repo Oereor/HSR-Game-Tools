@@ -10,6 +10,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/27d30870b2610ee1c8be5e1417a157473847879cb853f709ed42c98820641b31.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/2803b11c3aaeec1df61554672ef1afbed923764dd86985fd8a07484c9365cc5f.webp"
     },
     "avatar:1002": {
@@ -17,6 +22,11 @@
       "element": "Wind",
       "portraitPath": "game-assets/character/1002.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/72f4fadd9155aa36fde442bd0e947830fe84fdbe832be202c06e0101c73f8534.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/72f4fadd9155aa36fde442bd0e947830fe84fdbe832be202c06e0101c73f8534.webp",
         "width": 2048,
         "height": 2048
@@ -32,6 +42,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/e644fb7bf32184c6acaace5131753b9710c5c6f9457b130d85166801cb939246.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/97ea1fead7bc97ffe7a5f4a63d0aed618d09c8e0c1ae049c94f10811508b56d0.webp"
     },
     "avatar:1004": {
@@ -39,6 +54,11 @@
       "element": "Imaginary",
       "portraitPath": "game-assets/character/1004.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/b02f6a763f5aaac61ac01a97fea961e96279122694ad399f73f747da12d222dd.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/b02f6a763f5aaac61ac01a97fea961e96279122694ad399f73f747da12d222dd.webp",
         "width": 2048,
         "height": 2048
@@ -54,6 +74,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/3539134e5de445a907880ab3cb9fbaf428cf4d102b678ab27257ae459d7d5324.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/43275f5a1b6a9e0d9e09a803e5116e4e94c9ce40281f2a7c5f5c68ec6908a034.webp"
     },
     "avatar:1008": {
@@ -61,6 +86,11 @@
       "element": "Thunder",
       "portraitPath": "game-assets/character/1008.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/3179d70faaf0da6c5f6dcaa1c073b7d17889bd67e7bcccf0b6a17dcd74628087.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/3179d70faaf0da6c5f6dcaa1c073b7d17889bd67e7bcccf0b6a17dcd74628087.webp",
         "width": 2048,
         "height": 2048
@@ -76,6 +106,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/287a7926cdc294501ecb1663bc7989e775f5ef5167fa3ea8f645162785f1f9d2.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/59c6afce45650045591c604e4b9c070bb655250ee71983c616cf227561798c25.webp"
     },
     "avatar:1013": {
@@ -83,6 +118,11 @@
       "element": "Ice",
       "portraitPath": "game-assets/character/1013.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/4f216f760ddf11670dfba0510249250279deba9b9fe82f69ea51b67826c7388b.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/4f216f760ddf11670dfba0510249250279deba9b9fe82f69ea51b67826c7388b.webp",
         "width": 2048,
         "height": 2048
@@ -98,6 +138,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/225ff056d53e307d5bb9e4e9c52deed9483e704221f073f455457ddb5466217a.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/fe57db53ed94a58f241b66426ad5062fedd744c8071847845c57007c59880052.webp"
     },
     "avatar:1015": {
@@ -105,6 +150,11 @@
       "element": "Quantum",
       "portraitPath": "game-assets/character/1015.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/f6a1a020fa512fba4cae0a1a93966975fb8c52c620d57d0275c7b9196aef2846.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/f6a1a020fa512fba4cae0a1a93966975fb8c52c620d57d0275c7b9196aef2846.webp",
         "width": 2048,
         "height": 2048
@@ -120,6 +170,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/a530b1c56a9ff0a7b2bdd3cf1710ce25038c7b000b8a31e55d08c1483be96496.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/b1648b8f9b69a6177029ac2426baccd4dec282cb841f349f4324d36d06c5bec4.webp"
     },
     "avatar:1102": {
@@ -127,6 +182,11 @@
       "element": "Quantum",
       "portraitPath": "game-assets/character/1102.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/ae72deee5affdf09515c1d34c36a5dc3abec1cb6a2230d74a61241b94d3435b0.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/ae72deee5affdf09515c1d34c36a5dc3abec1cb6a2230d74a61241b94d3435b0.webp",
         "width": 2048,
         "height": 2048
@@ -142,6 +202,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/4ef9841c331dc63c90493df59eb33cb27851b21e7f69702c54b53f68a074c373.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/8fd814275ee0c11992f46e77de552617df5b28d291f3a5cb23d284bf9124826b.webp"
     },
     "avatar:1104": {
@@ -149,6 +214,11 @@
       "element": "Ice",
       "portraitPath": "game-assets/character/1104.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/8fb92e15937047e3ff89e7fb9ac4e21c12f176504a43e11448f314fd56340258.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/8fb92e15937047e3ff89e7fb9ac4e21c12f176504a43e11448f314fd56340258.webp",
         "width": 2048,
         "height": 2048
@@ -164,6 +234,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/188e95761f02455ada2572ad404047b8fe70ca65b54b7f0dea81da39240d80c2.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/28278a27a3089045ab3ba95d791ca3d7d2a5e59f89c0a3667bdc80abe9e920c3.webp"
     },
     "avatar:1106": {
@@ -171,6 +246,11 @@
       "element": "Ice",
       "portraitPath": "game-assets/character/1106.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/d03e7a6d4e9180dd4d5f7ddd14770df60a8096a0e0988b9862d615fae24f480b.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/d03e7a6d4e9180dd4d5f7ddd14770df60a8096a0e0988b9862d615fae24f480b.webp",
         "width": 2048,
         "height": 2048
@@ -186,6 +266,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/798c21cb7557203ae983742176e208cd4fef807cbb29c73fb5654946146ca059.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/f6b6e8c156f504962bad574989e81661bf68e3155fb4bce732a3882b8a2f8f91.webp"
     },
     "avatar:1108": {
@@ -193,6 +278,11 @@
       "element": "Wind",
       "portraitPath": "game-assets/character/1108.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/bc11b06b93d6620ad3f5736f7b3133e76b4d574b8c54a4ab7b3f423bd5183fa8.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/bc11b06b93d6620ad3f5736f7b3133e76b4d574b8c54a4ab7b3f423bd5183fa8.webp",
         "width": 2048,
         "height": 2048
@@ -208,6 +298,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/9d12c29f27efbb5911d5efc7617d4c908cf616bbc778260c21644d37b1509351.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/500d7d0015aab1aff2ce9bdd6982f780036fe0462883c66ca52a69dbd62fbf30.webp"
     },
     "avatar:1110": {
@@ -215,6 +310,11 @@
       "element": "Quantum",
       "portraitPath": "game-assets/character/1110.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/2ee1e122247799baad6d5acea9da79935ff2d415df4d1bd48f2a828bd155b30e.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/2ee1e122247799baad6d5acea9da79935ff2d415df4d1bd48f2a828bd155b30e.webp",
         "width": 2048,
         "height": 2048
@@ -230,6 +330,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/ae6c20a7e6a985763509347bf5a2697a24a67e3d021cddb525598409115edc64.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/db9012adfbe2a5f81479162db63cb204440e6445e80d98ea19ccd03d4f056bd1.webp"
     },
     "avatar:1201": {
@@ -237,6 +342,11 @@
       "element": "Quantum",
       "portraitPath": "game-assets/character/1201.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/266da524aef703d9702df89516ae6f96b47d0a377ca3616c3a3e564ff40ef5bd.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/266da524aef703d9702df89516ae6f96b47d0a377ca3616c3a3e564ff40ef5bd.webp",
         "width": 2048,
         "height": 2048
@@ -252,6 +362,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/bb74d6e22bc6ad4776c751d584aa8ff8bf442ff5cd9d5f819f5b6dd9578a3e11.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/eb1fd12169f8351a394cc6ae9a62597d193a2edb6d4617f51cbf0ab73b7f581b.webp"
     },
     "avatar:1205": {
@@ -259,6 +374,11 @@
       "element": "Wind",
       "portraitPath": "game-assets/character/1205.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/63c797c9b31d1f74c6114fee2bd6606073cd70e575cecaf97a59b0e2afe275d4.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/63c797c9b31d1f74c6114fee2bd6606073cd70e575cecaf97a59b0e2afe275d4.webp",
         "width": 2048,
         "height": 2048
@@ -274,6 +394,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/2d3aa7ad01de77625b5583d1359c96053af79209b51c2e24952fd077605a69b8.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/27ec78ff5a101c411eb768d994a27e2ef74f1b04e7099d5d29bd1c81ebf4bd1e.webp"
     },
     "avatar:1207": {
@@ -281,6 +406,11 @@
       "element": "Imaginary",
       "portraitPath": "game-assets/character/1207.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/08fe50407b24de4dd9ab761b633665f5820beb518c6fb9100a8ce0d0c7eb4550.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/08fe50407b24de4dd9ab761b633665f5820beb518c6fb9100a8ce0d0c7eb4550.webp",
         "width": 2048,
         "height": 2048
@@ -296,6 +426,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/c49b5e3e9c8e3248716f25b24525f1baad49112e7601b1fdd1455a8581772924.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/ec98d5e0550b112f0cbc3a03404dd65282f9fe605405f7f7113c98424939db56.webp"
     },
     "avatar:1209": {
@@ -303,6 +438,11 @@
       "element": "Ice",
       "portraitPath": "game-assets/character/1209.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/c928b412239b2f018c7f8ddf2fc3b993d7076c310a089d86dee483ee934f6bea.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/c928b412239b2f018c7f8ddf2fc3b993d7076c310a089d86dee483ee934f6bea.webp",
         "width": 2048,
         "height": 2048
@@ -318,6 +458,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/9dd96f95857ece83eb54b1ac55ec9dfdbc7cc50fd2c1b7c695c4bb9c46acc43d.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/81240ff2dc63a4a96a07f34c47ceeae7a3af6fee33cfbd64c7c624c9fd90274c.webp"
     },
     "avatar:1211": {
@@ -325,6 +470,11 @@
       "element": "Thunder",
       "portraitPath": "game-assets/character/1211.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/b5f5220ca873cd54e675a42ebb747531bbc95d83e7a8f9de5abaa026b36e87c3.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/b5f5220ca873cd54e675a42ebb747531bbc95d83e7a8f9de5abaa026b36e87c3.webp",
         "width": 2048,
         "height": 2048
@@ -340,6 +490,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/b3d3cd9e9fdc1b0d14f772e21bce4fcfadb24cae18ac2be0a955e34376f34ff9.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/1cc2934262935819facd55968514c7ba702d9460e33016a046876a85e2ccd6b3.webp"
     },
     "avatar:1215": {
@@ -347,6 +502,11 @@
       "element": "Physical",
       "portraitPath": "game-assets/character/1215.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/dc59255ba25001ee67d35ec23de5455b1ce65cec87a298740a4e48c9b0ecc27c.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/dc59255ba25001ee67d35ec23de5455b1ce65cec87a298740a4e48c9b0ecc27c.webp",
         "width": 2048,
         "height": 2048
@@ -362,6 +522,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/eecca74bae443284c467264b97523283aa4cd43be5783c943784a25ff0c4312a.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/820b18100114d7339c9d945f2826c0d8f64602e5f475889b74da3444a828240f.webp"
     },
     "avatar:1223": {
@@ -369,6 +534,11 @@
       "element": "Thunder",
       "portraitPath": "game-assets/character/1223.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/8b30412bbf9a920e3242bf58b5efd1efe12eed8c63ade5f12fb02fe632aed6df.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/8b30412bbf9a920e3242bf58b5efd1efe12eed8c63ade5f12fb02fe632aed6df.webp",
         "width": 2048,
         "height": 2048
@@ -384,6 +554,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/e5d92e5cfcef6b058d7d2f7a4cf87547978854cd0f4bcb8ede3dd04f8293b567.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/81b01ddd03c15a45db31e27feaf971dbf289ff6e65229335820f4217db1520fd.webp"
     },
     "avatar:1302": {
@@ -391,6 +566,11 @@
       "element": "Physical",
       "portraitPath": "game-assets/character/1302.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/2f310e396c9adc39d61a7cc09b804c35e871a263d93844513b40f07a3f356673.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/2f310e396c9adc39d61a7cc09b804c35e871a263d93844513b40f07a3f356673.webp",
         "width": 2048,
         "height": 2048
@@ -406,6 +586,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/1f6bef0b823302dfa7260ab6f56a71cc13214cf60b8865bea43e624bf65d2bd0.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/9aafec0778f7d7f8e239024b31bb788caf77a858251fc829d73a8ac2baceb82d.webp"
     },
     "avatar:1312": {
@@ -413,6 +598,11 @@
       "element": "Ice",
       "portraitPath": "game-assets/character/1312.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/fd5eb51642da4714a1998368522b67d1232184a427b5beacf91ceb1f2e642d02.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/fd5eb51642da4714a1998368522b67d1232184a427b5beacf91ceb1f2e642d02.webp",
         "width": 2048,
         "height": 2048
@@ -428,6 +618,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/2c1047bb1e788ef077470355a45192a4d6f16f67ac702a4cd3bb38afbb102c2b.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/0f57cccb3fd14bdd07f2c59f950e2bc7849ce15ed543d4a81a9b874989e41de6.webp"
     },
     "avatar:1408": {
@@ -435,6 +630,11 @@
       "element": "Physical",
       "portraitPath": "game-assets/character/1408.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/5aff58be4482ed45494b9dc13a6d0f10b06e3a9fd6fa000a82e757964d303915.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/5aff58be4482ed45494b9dc13a6d0f10b06e3a9fd6fa000a82e757964d303915.webp",
         "width": 2048,
         "height": 2048
@@ -450,6 +650,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/d15ead0a25c451de31a7c2192d7ccdf72de944bdcc88a1ae57a00ed6fe00eade.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/feabef3c6d8b896decaebbd71946cee13b2959cee2832b69bb5a209d17c6a907.webp"
     },
     "avatar:1412": {
@@ -457,6 +662,11 @@
       "element": "Wind",
       "portraitPath": "game-assets/character/1412.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/67fa8b86d180e66661eb8f50854af9be6ea6c9b53724bb74b6082c726cc64da4.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/67fa8b86d180e66661eb8f50854af9be6ea6c9b53724bb74b6082c726cc64da4.webp",
         "width": 2048,
         "height": 2048
@@ -472,6 +682,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/62251df0fb992ec3350bd99b1af48e187ef68b320551227ca1d1a8b276c2089b.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/27eeb1657cb47a9c0262d8e15b969e47aa900abd11f91b9554e7405b18c77545.webp"
     },
     "avatar:1414": {
@@ -479,6 +694,11 @@
       "element": "Physical",
       "portraitPath": "game-assets/character/1414.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/6fd1abe7bcbb1f0f02b679bd9eeb593a5e5ee7f7e575771ef300f89c2de1c070.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/6fd1abe7bcbb1f0f02b679bd9eeb593a5e5ee7f7e575771ef300f89c2de1c070.webp",
         "width": 2048,
         "height": 2048
@@ -494,6 +714,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/8df8e5d0fd51002da6005c2deb1bd9c45de7a0e52503f4d1191754c4c5e97b26.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/9c05bf23757663344f4b3e77c2d2f5754a401d5360c42f31b75778b2b55dbf2e.webp"
     },
     "avatar:1501": {
@@ -501,6 +726,11 @@
       "element": "Fire",
       "portraitPath": "game-assets/character/1501.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/a3357e3ac7b1cb0c35496cccca3a86957a28aabd09f9e3cc5eec99948a683607.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/a3357e3ac7b1cb0c35496cccca3a86957a28aabd09f9e3cc5eec99948a683607.webp",
         "width": 2048,
         "height": 2048
@@ -516,6 +746,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/0fa7a64cf8ebda51efc6cb2346ebd89afb839c00a91eb002cd0869b3655f1557.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/3b927b7c51bd3074acfa67279399439d12f3355e5bfc0638319c46724d75eaf0.webp"
     },
     "avatar:1504": {
@@ -523,6 +758,11 @@
       "element": "Thunder",
       "portraitPath": "game-assets/character/1504.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/988283ceb667b28a4b7079d98ceff71d894cdb2d18fe6334545132216386d316.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/988283ceb667b28a4b7079d98ceff71d894cdb2d18fe6334545132216386d316.webp",
         "width": 2048,
         "height": 2048
@@ -538,6 +778,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/5e7dc8518d45aac63c07e4d2df48f7ec3e990bec559a8926c9ecbd2c5a226cb3.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/f3d5d9f133201859911efe376f9274d4e9b24838e495c845387d58a8cc774443.webp"
     },
     "avatar:1507": {
@@ -545,6 +790,11 @@
       "element": "Fire",
       "portraitPath": "game-assets/character/1507.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/84164fd6675e569eb68be890c1cedc31f20f67d67024e00d22583886440c8c81.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/84164fd6675e569eb68be890c1cedc31f20f67d67024e00d22583886440c8c81.webp",
         "width": 2048,
         "height": 2048
@@ -560,6 +810,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/00add9f05772a00d1edeca9d6da750060a9c9713cc509d46ca050494258cdeb7.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/9ce2633237f5ad5106b1ab1927fbb97f402e6efcbd6d0cde7cdf427e89638f79.webp"
     },
     "avatar:1509": {
@@ -567,6 +822,11 @@
       "element": "Thunder",
       "portraitPath": "game-assets/character/1509.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/9c3e469b04632a4a9ba3cb68331604003ae34effab9d1612835febd1ce63cfcb.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/9c3e469b04632a4a9ba3cb68331604003ae34effab9d1612835febd1ce63cfcb.webp",
         "width": 2048,
         "height": 2048
@@ -582,6 +842,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/cc386af846343f16072d56cbbb322c54fcbce7a183fbb372296389f894a9071c.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/7e891f65c465f9113debe2807edfc0548662b9805020f8ad863ab73b1811b29f.webp"
     },
     "avatar:1512": {
@@ -593,6 +858,11 @@
         "width": 2048,
         "height": 2048
       },
+      "resultPortrait": {
+        "path": "game-assets/warp/9397c0563a986b2da13689f276efcfcd6638c5fdba33924c71709fd9e0e2786f.webp",
+        "width": 2048,
+        "height": 2048
+      },
       "artworkPath": "game-assets/warp/d3ca5e46d6d28437e03420eda89194a8642c62d16efbca5cab6611ee8d7fc3a2.webp"
     },
     "avatar:1513": {
@@ -600,6 +870,11 @@
       "element": "Quantum",
       "portraitPath": "game-assets/character/1513.webp",
       "revealArtwork": {
+        "path": "game-assets/warp/b0036bbb38a6f5edbdf8eb5e06dac442931026787009ecb40fa08bebbe21d5bf.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
         "path": "game-assets/warp/b0036bbb38a6f5edbdf8eb5e06dac442931026787009ecb40fa08bebbe21d5bf.webp",
         "width": 2048,
         "height": 2048
