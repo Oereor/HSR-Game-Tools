@@ -8,8 +8,8 @@ import type { ItemPresentation } from '../../../src/tools/warp-simulator/model/p
 import reviewZhCN from '../../manual/warp-results/zh-CN.json'
 import reviewEn from '../../manual/warp-results/en.json'
 
-// The current runtime snapshot contains no five-star light cones. Keep this
-// synthetic identity and its reused four-star artwork entirely in the test graph.
+// Keep this deliberately synthetic identity and its reused four-star artwork
+// entirely in the test graph; production five-star cones use their own mappings.
 export const syntheticConeId = 'fixture:light-cone:5'
 export const syntheticLongNameId = 'fixture:avatar:long-name'
 const coneTemplate = warpSnapshot.items
@@ -133,21 +133,24 @@ export function resultDisplayScenarios(
   add('image-fallbacks', [avatar4, cone4, avatar5, cone5, ...allThree.slice(0, 6)], [], {
     [avatar4.id]: {
       artworkUrl: undefined,
+      resultPortrait: undefined,
       pathIconUrl: undefined,
       revealArtwork: undefined,
       revealPathIcon: undefined,
     },
     [cone4.id]: {
+      lightConePreview: undefined,
       artworkUrl: '/tests/manual/warp-results/missing-fixture.webp',
       starsUrl: undefined,
       cardStars: undefined,
       revealArtwork: undefined,
     },
-    [avatar5.id]: { artworkUrl: svg(800, 80), revealArtwork: undefined },
-    [cone5.id]: { artworkUrl: svg(80, 800), revealArtwork: undefined },
+    [avatar5.id]: { artworkUrl: svg(800, 80), revealArtwork: undefined, resultPortrait: undefined },
+    [cone5.id]: { artworkUrl: svg(80, 800), revealArtwork: undefined, lightConePreview: undefined },
   })
   add('missing-artwork', [avatar5], [], {
     [avatar5.id]: {
+      resultPortrait: undefined,
       artworkUrl: undefined,
       pathIconUrl: undefined,
       starsUrl: undefined,
@@ -159,6 +162,11 @@ export function resultDisplayScenarios(
   })
   add('failed-artwork', [cone4], [], {
     [cone4.id]: {
+      lightConePreview: {
+        url: '/tests/manual/warp-results/missing-preview-fixture.webp',
+        width: 348,
+        height: 408,
+      },
       cardStars: {
         url: '/tests/manual/warp-results/missing-card-stars.webp',
         width: 260,
@@ -174,6 +182,11 @@ export function resultDisplayScenarios(
   })
   add('hd-fallback', [avatar5], [], {
     [avatar5.id]: {
+      resultPortrait: {
+        url: '/tests/manual/warp-results/missing-native-fixture.webp',
+        width: 2048,
+        height: 2048,
+      },
       revealArtwork: {
         url: '/tests/manual/warp-results/missing-hd-fixture.webp',
         width: 2048,
@@ -204,5 +217,25 @@ export function resultDisplayScenarios(
       elementIconUrl: undefined,
     },
   })
+  for (const [id, itemId] of [
+    ['reveal-cyrene', 'avatar:1415'],
+    ['reveal-battle-isnt-over', 'light-cone:23003'],
+    ['reveal-march', 'avatar:1001'],
+    ['reveal-bronya', 'avatar:1101'],
+    ['reveal-clara', 'avatar:1107'],
+  ] as const) {
+    const item = snapshot.items.find((item) => item.id === itemId)
+    if (!item) throw new Error(`Missing single-reveal review identity: ${itemId}`)
+    add(id, [item])
+  }
+  const cyrene = snapshot.items.find((item) => item.id === 'avatar:1415')
+  const arlan = snapshot.items.find((item) => item.id === 'avatar:1008')
+  const battle = snapshot.items.find((item) => item.id === 'light-cone:23003')
+  if (!cyrene || !arlan || !battle) throw new Error('Missing overview reference identities')
+  add(
+    'overview-reference',
+    [cone3(4), cone3(3), cyrene, cone3(5), arlan, cone4, cone3(2), cyrene, cone3(6), battle],
+    [2, 4, 7],
+  )
   return Object.freeze(scenarios)
 }

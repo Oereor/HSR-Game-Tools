@@ -5,6 +5,7 @@ import type { ToolLocale } from '../../../locales/types'
 import type { HistoryEntry } from '../composables/useWarpSimulator'
 import type { createPresentation } from '../model/presentation'
 import WarpResultCard from './WarpResultCard.vue'
+import WarpResultsWall from './WarpResultsWall.vue'
 
 defineProps<{
   entries: readonly HistoryEntry[]
@@ -30,32 +31,42 @@ const { t, locale } = useI18n()
     </div>
     <div
       v-else
-      class="warp-result-grid"
-      :class="{
-        'warp-ten-grid': entries.length === 10,
-        'warp-single-grid': entries.length === 1,
-      }"
+      class="warp-results-content"
+      :class="{ 'warp-single-result': entries.length === 1 }"
     >
-      <WarpResultCard
-        v-for="(entry, index) in entries"
-        :key="`${entry.batchId}:${entry.id}`"
-        :entry="entry"
-        :item="presentation.item(entry.event.itemId, locale as ToolLocale)"
-        :index="index"
-        :single="entries.length === 1"
+      <WarpResultsWall
+        v-if="entries.length === 10"
+        :entries="entries"
+        :presentation="presentation"
+        layout="flat"
+        id-prefix="warp-result"
         @details="emit('details', $event)"
       />
+      <template v-else>
+        <WarpResultCard
+          v-for="(entry, index) in entries"
+          :key="`${entry.batchId}:${entry.id}`"
+          :entry="entry"
+          :item="presentation.item(entry.event.itemId, locale as ToolLocale)"
+          :index="index"
+          @details="emit('details', $event)"
+        />
+      </template>
     </div>
   </section>
 </template>
 
 <style scoped>
 .warp-results {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
   overflow: visible;
   padding: 12px 0 20px;
 }
 .warp-results-heading {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -75,6 +86,7 @@ const { t, locale } = useI18n()
   color: var(--color-muted);
 }
 .warp-result-source {
+  flex-shrink: 0;
   margin: 0 0 4px;
   overflow-wrap: anywhere;
 }
@@ -91,45 +103,37 @@ const { t, locale } = useI18n()
   text-align: center;
   font-size: 13px;
 }
-.warp-result-grid {
-  display: grid;
-  grid-auto-rows: max-content;
-  align-items: start;
-  gap: 36px;
-  padding: 24px;
+.warp-results-content {
   min-width: 0;
-  overflow: visible;
+  min-height: 0;
 }
-.warp-single-grid {
-  justify-items: center;
+.warp-single-result {
+  display: grid;
+  place-items: center;
+  padding: 48px;
 }
-.warp-ten-grid {
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+.warp-single-result > .warp-result-card {
+  width: 100%;
+  max-width: 620px;
 }
-.warp-ten-grid > * {
-  grid-column: span 2;
-}
-.warp-ten-grid > :nth-child(1),
-.warp-ten-grid > :nth-child(8) {
-  grid-column: 2 / span 2;
-}
-.warp-ten-grid > :nth-child(4) {
-  grid-column: 1 / span 2;
-}
-@media (max-width: 1039px) {
-  .warp-ten-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (min-width: 1040px) and (min-height: 640px) {
+  .warp-results-content,
+  .warp-results-empty {
+    flex: 1;
   }
-  .warp-ten-grid > *,
-  .warp-ten-grid > :nth-child(1),
-  .warp-ten-grid > :nth-child(4),
-  .warp-ten-grid > :nth-child(8) {
-    grid-column: auto;
+  .warp-results-empty {
+    min-height: 0;
+  }
+  .warp-single-result {
+    container-type: size;
+  }
+  .warp-single-result > .warp-result-card {
+    width: min(100%, 620px, 200cqh);
   }
 }
 @media (max-width: 640px) {
-  .warp-ten-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .warp-single-result {
+    padding: 32px;
   }
 }
 </style>

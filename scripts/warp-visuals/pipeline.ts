@@ -55,13 +55,25 @@ type ConversionPurpose =
   | 'icon'
   | 'stars'
   | 'reveal-artwork'
+  | 'result-portrait'
   | 'reveal-icon'
   | 'reveal-stars'
   | 'reveal-star-big'
   | 'card-stars'
-function profile(purpose: ConversionPurpose, lock: SourceLock): [number, number] {
+  | 'light-cone-preview'
+function profile(
+  purpose: ConversionPurpose,
+  lock: SourceLock,
+  source?: { width?: number; height?: number },
+): [number, number] {
   const t = lock.transform
   switch (purpose) {
+    case 'result-portrait':
+      if (t.resultPortraitSize !== 'source' || !source?.width || !source.height)
+        throw new Error('Missing native portrait dimensions/profile')
+      // A larger inside bound never enlarges pixels. Retaining the existing HD key
+      // for native canvases that already fit avoids duplicate encodes and files.
+      return [Math.max(source.width, source.height, t.revealArtworkSize), t.resultPortraitQuality]
     case 'artwork-avatar':
       return [t.avatarSize, t.quality]
     case 'artwork-light-cone':
@@ -72,6 +84,8 @@ function profile(purpose: ConversionPurpose, lock: SourceLock): [number, number]
       return [t.starSize, t.iconQuality]
     case 'reveal-artwork':
       return [t.revealArtworkSize, t.revealQuality]
+    case 'light-cone-preview':
+      return [t.lightConePreviewSize, t.revealQuality]
     case 'reveal-icon':
       return [t.revealIconSize, t.iconQuality]
     case 'reveal-stars':
@@ -193,7 +207,7 @@ export async function validateVisuals(
       continue
     }
     const [hash, size, quality, alpha, extra] = asset.transformKey.split(':')
-    const [expectedSize, expectedQuality] = profile(asset.purpose, lock)
+    const [expectedSize, expectedQuality] = profile(asset.purpose, lock, source)
     const output = manifest.files['public/' + asset.output]
     const scale = Math.min(
       1,
@@ -203,8 +217,16 @@ export async function validateVisuals(
     if (
       !source ||
       asset.crop !== undefined ||
+      (asset.purpose === 'result-portrait' &&
+        (asset.slot !== 'result-portrait' ||
+          !asset.id.startsWith('avatar:') ||
+          asset.source !== `image/character_portrait/${asset.id.split(':')[1]}.png`)) ||
       (asset.purpose === 'reveal-star-big' &&
         (asset.source !== 'icon/deco/StarBig.png' || asset.slot !== 'reveal-star-big')) ||
+      (asset.purpose === 'light-cone-preview' &&
+        (asset.slot !== 'light-cone-preview' ||
+          !asset.id.startsWith('light-cone:') ||
+          asset.source !== `image/light_cone_preview/${asset.id.split(':')[1]}.png`)) ||
       /[\\:?#%]/.test(asset.source) ||
       asset.source.split('/').some((part) => !part || part === '.' || part === '..') ||
       source.sha256 !== hash ||
@@ -266,6 +288,22 @@ export async function validateVisuals(
       'reveal-artwork',
       row.revealArtwork,
     )
+    if (item.kind === 'avatar')
+      reference(
+        item.id,
+        'result-portrait',
+        row.resultPortrait?.path,
+        'result-portrait',
+        row.resultPortrait,
+      )
+    if (item.kind === 'light-cone')
+      reference(
+        item.id,
+        'light-cone-preview',
+        row.lightConePreview?.path,
+        'light-cone-preview',
+        row.lightConePreview,
+      )
   }
   for (const [group, definitions] of [
     ['paths', catalog.paths],
@@ -360,6 +398,7 @@ interface IndexRow {
   element?: string
   rarity?: number
   portrait?: string
+  preview?: string
   icon?: string
   name: string
   color?: string
@@ -463,6 +502,11 @@ export async function generateVisuals(
       width: original.width,
       height: original.height,
     }
+    if (purpose === 'result-portrait') {
+      if (sourcePath !== `image/character_portrait/${id.split(':')[1]}.png`)
+        throw new Error('Invalid native portrait source path')
+      ;[size, quality] = profile(purpose, lock, original)
+    }
     let crop: StarCrop | undefined
     if (purpose === 'card-stars') {
       const inspected = await inspectStarCrop(bytes, Number(id))
@@ -537,10 +581,19 @@ export async function generateVisuals(
   }
   async function revealAsset(
     id: string,
-    purpose: 'reveal-artwork' | 'reveal-icon' | 'reveal-stars' | 'reveal-star-big',
+    purpose:
+      | 'reveal-artwork'
+      | 'reveal-icon'
+      | 'reveal-stars'
+      | 'reveal-star-big'
+      | 'light-cone-preview'
+      | 'result-portrait',
     sourcePath: string | undefined,
   ): Promise<VisualImage | undefined> {
-    const [size, quality] = profile(purpose, lock)
+    const [size, quality] =
+      purpose === 'result-portrait'
+        ? [0, lock.transform.resultPortraitQuality]
+        : profile(purpose, lock)
     const file = await asset(id, purpose, sourcePath, size, quality, purpose)
     if (!file) return undefined
     const meta = manifest.files['public/' + file]!
@@ -594,7 +647,8 @@ export async function generateVisuals(
       en.rarity !== item.rarity ||
       cn.path !== en.path ||
       cn.element !== en.element ||
-      cn.portrait !== en.portrait
+      cn.portrait !== en.portrait ||
+      (item.kind === 'light-cone' && cn.preview !== en.preview)
     )
       throw new Error('Item identity or bilingual mismatch: ' + item.id)
     if (cn.path && !paths[cn.path]) paths[cn.path] = await definition('paths', cn.path)
@@ -628,6 +682,12 @@ export async function generateVisuals(
       ...(item.kind === 'avatar' ? { element: cn.element } : {}),
       portraitPath,
       revealArtwork: await revealAsset(item.id, 'reveal-artwork', cn.portrait),
+      ...(item.kind === 'avatar'
+        ? { resultPortrait: await revealAsset(item.id, 'result-portrait', cn.portrait) }
+        : {}),
+      ...(item.kind === 'light-cone'
+        ? { lightConePreview: await revealAsset(item.id, 'light-cone-preview', cn.preview) }
+        : {}),
       artworkPath: await asset(
         item.id,
         'artwork',

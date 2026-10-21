@@ -54,6 +54,8 @@ export interface ItemPresentation {
   readonly elementTextColor?: string
   readonly starsUrl?: string
   readonly revealArtwork?: ImagePresentation
+  readonly resultPortrait?: ImagePresentation
+  readonly lightConePreview?: ImagePresentation
   readonly revealPathIcon?: ImagePresentation
   readonly revealStars?: ImagePresentation
   readonly revealStarBig?: ImagePresentation
@@ -119,6 +121,10 @@ export function createPresentation(
         : undefined,
       starsUrl: source ? portraitUrl(definitions.stars[source.rarity], base) : undefined,
       revealArtwork: source ? revealImage(visual?.revealArtwork, base) : undefined,
+      resultPortrait:
+        source?.kind === 'avatar' ? revealImage(visual?.resultPortrait, base) : undefined,
+      lightConePreview:
+        source?.kind === 'light-cone' ? revealImage(visual?.lightConePreview, base) : undefined,
       revealPathIcon: revealImage(pathDefinition?.revealIcon, base),
       revealStars: source ? revealImage(definitions.revealStars?.[source.rarity], base) : undefined,
       revealStarBig:

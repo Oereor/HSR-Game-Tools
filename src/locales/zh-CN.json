@@ -406,8 +406,10 @@
     },
     "results": {
       "title": "最新跃迁结果",
+      "overviewTitle": "结果展示",
       "count": "{count} 次跃迁",
-      "empty": "选择卡池并完成星缘选择后，开始第一次跃迁。"
+      "empty": "选择卡池并完成星缘选择后，开始第一次跃迁。",
+      "close": "关闭结果总览"
     },
     "history": {
       "title": "跃迁记录",

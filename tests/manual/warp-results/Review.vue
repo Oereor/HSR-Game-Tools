@@ -20,6 +20,9 @@ import {
   resultDisplayVisuals,
 } from '../../fixtures/warp-simulator/result-display'
 
+import PortraitCalibration from './PortraitCalibration.vue'
+const development = import.meta.env.DEV
+
 defineOptions({ name: 'WarpResultReview' })
 const { t, locale } = useI18n()
 const scenarios = resultDisplayScenarios()
@@ -69,8 +72,9 @@ function playReveal() {
     scenario.value.entries.map((entry) => ({ ...entry, batchId })),
   )
 }
-function afterRevealHide() {
-  if (reveal.afterHide()) void nextTick(() => document.getElementById('review-play')?.focus())
+function afterRevealHide(batchId?: number) {
+  if (reveal.afterHide(batchId))
+    void nextTick(() => document.getElementById('review-play')?.focus())
 }
 function openDetails(entry: HistoryEntry, source = 'result') {
   returnId = `warp-${source}-${entry.id}`
@@ -133,6 +137,7 @@ watchEffect(() => {
         </li>
       </ol>
     </details>
+    <PortraitCalibration v-if="development" />
     <WarpHistory
       :entries="[...scenario.entries].reverse()"
       :total="scenario.entries.length"
@@ -142,6 +147,10 @@ watchEffect(() => {
     />
     <WarpRevealOverlay
       :visible="revealVisible"
+      :batch-id="reveal.batchId.value"
+      :entries="reveal.overviewEntries.value"
+      :presentation="presentation"
+      :source-label="t('review.scenarios.' + scenario.id)"
       :entry="revealEntry"
       :item="
         revealEntry ? presentation.item(revealEntry.event.itemId, locale as ToolLocale) : undefined
@@ -166,6 +175,12 @@ watchEffect(() => {
 </template>
 
 <style scoped>
+/* The standalone review has no route shell to allocate the desktop result area. */
+@media (min-width: 1040px) and (min-height: 640px) {
+  :deep(.warp-results) {
+    height: min(720px, 75dvh);
+  }
+}
 .review-header {
   display: flex;
   flex-wrap: wrap;

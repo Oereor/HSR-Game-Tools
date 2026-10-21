@@ -107,7 +107,26 @@ vi.mock('../../../src/tools/warp-simulator/components/WarpSelectionDialog.vue', 
   }),
 }))
 vi.mock('../../../src/tools/warp-simulator/components/WarpRevealOverlay.vue', () => ({
-  default: { render: () => null },
+  default: defineComponent({
+    props: ['visible', 'batchId', 'phase'],
+    emits: ['escape', 'after-hide'],
+    setup(props, { emit }) {
+      watch(
+        () => props.visible,
+        async (visible) => {
+          if (!visible) {
+            const batchId = props.batchId
+            await nextTick()
+            emit('after-hide', batchId)
+          }
+        },
+      )
+      return () =>
+        props.visible
+          ? h('button', { id: 'test-close-overview', onClick: () => emit('escape') })
+          : null
+    },
+  }),
 }))
 vi.mock('../../../src/tools/warp-simulator/components/WarpResults.vue', () => ({
   default: { render: () => null },
@@ -275,6 +294,7 @@ describe('Control page integration (Node renderer; browser overlays are stubbed)
     const { root, focused } = mountPage()
     choose()
     await simulator.draw(10)
+    await click(byId(root, 'test-close-overview'))
     const session = simulator.session.value
     await click(byId(root, 'warp-history-trigger'))
     const row = byClass(root, 'warp-history-name')[0]!
@@ -373,6 +393,7 @@ describe('Control page integration (Node renderer; browser overlays are stubbed)
       const { root, focused } = mountPage()
       choose()
       await simulator.draw(10)
+      await click(byId(root, 'test-close-overview'))
       const before = simulator.session.value
       await click(byId(root, 'warp-controls-trigger'))
       await click(byId(root, `warp-reset-${scope}`))
@@ -413,6 +434,7 @@ describe('Control page integration (Node renderer; browser overlays are stubbed)
     const { root, rng } = mountPage()
     choose()
     await simulator.draw(10)
+    await click(byId(root, 'test-close-overview'))
     const before = simulator.session.value
     const consumed = rng.consumed
     await click(byId(root, 'warp-controls-trigger'))

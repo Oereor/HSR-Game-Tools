@@ -7,6 +7,34 @@ import {
 import type { ImagePresentation } from '../../../src/tools/warp-simulator/model/presentation'
 
 describe('Reveal image readiness and pixel limits', () => {
+  it('falls back native → reveal → thumbnail → neutral, deduplicates URLs and preserves readiness', () => {
+    const scope = effectScope()
+    const preferred = ref<ImagePresentation>({ url: '/native.webp', width: 4096, height: 4096 })
+    const image = scope.run(() =>
+      useWarpRevealSource(
+        () => preferred.value,
+        () => '/thumb.webp',
+        () => [{ url: '/reveal.webp', width: 2048, height: 2048 }],
+      ),
+    )!
+    expect(image.dimensions.value).toMatchObject({ width: 4096 })
+    image.fail('/native.webp')
+    expect(image.source.value).toBe('/reveal.webp')
+    expect(image.dimensions.value).toMatchObject({ width: 2048 })
+    image.fail('/reveal.webp')
+    expect(image.source.value).toBe('/thumb.webp')
+    image.load('/native.webp', 4096, 4096)
+    expect(image.ready.value).toBe(false)
+    image.fail('/thumb.webp')
+    expect(image.ready.value).toBe(true)
+    preferred.value = { url: '/reveal.webp', width: 2048, height: 2048 }
+    image.load('/reveal.webp', 2048, 2048)
+    preferred.value = { ...preferred.value }
+    expect(image.ready.value).toBe(true)
+    image.fail('/reveal.webp')
+    expect(image.source.value).toBe('/thumb.webp')
+    scope.stop()
+  })
   it('waits for actual loading and falls back HD → lightweight → neutral', () => {
     const scope = effectScope()
     const image = scope.run(() =>

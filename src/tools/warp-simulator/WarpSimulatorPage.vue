@@ -86,8 +86,8 @@ function draw(count: 1 | 10) {
   revealTrigger = count === 1 ? 'warp-pull-one' : 'warp-pull-ten'
   void simulator.draw(count)
 }
-function afterRevealHide() {
-  if (reveal.afterHide()) focus(revealTrigger)
+function afterRevealHide(batchId?: number) {
+  if (reveal.afterHide(batchId)) focus(revealTrigger)
 }
 const presentation = createPresentation(
   warpSnapshot,
@@ -451,6 +451,14 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
     </div>
     <WarpRevealOverlay
       :visible="revealVisible"
+      :batch-id="reveal.batchId.value"
+      :entries="reveal.overviewEntries.value"
+      :presentation="presentation"
+      :source-label="
+        reveal.overviewEntries.value.length
+          ? sourceLabel(reveal.overviewEntries.value[0].event.bannerId)
+          : ''
+      "
       :entry="revealEntry"
       :item="revealEntry ? item(revealEntry.event.itemId) : undefined"
       :phase="revealPhase"
@@ -634,6 +642,25 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 
 .warp-page {
   min-width: 0;
+}
+@media (min-width: 1040px) and (min-height: 640px) {
+  :global(.app-shell:has(> main > .warp-page)) {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100dvh;
+    box-sizing: border-box;
+  }
+  :global(.app-shell:has(> main > .warp-page) > main) {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+  }
+  .warp-page {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    flex: 1;
+    min-height: 0;
+  }
 }
 .warp-page-heading {
   display: flex;

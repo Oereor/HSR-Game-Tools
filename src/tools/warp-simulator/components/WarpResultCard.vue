@@ -4,14 +4,16 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import type { HistoryEntry } from '../composables/useWarpSimulator'
 import type { ItemPresentation } from '../model/presentation'
-import WarpItemVisual from './WarpItemVisual.vue'
+import WarpResultArtwork from './WarpResultArtwork.vue'
+import type { PortraitFocus } from '../model/portrait-focus'
 import WarpVisualIcon from './WarpVisualIcon.vue'
 import { rarityColorVariable, resultTooltip } from './result-presentation'
 const props = defineProps<{
   entry: HistoryEntry
   item: ItemPresentation
   index: number
-  single: boolean
+  focus?: PortraitFocus
+  idPrefix?: string
 }>()
 const emit = defineEmits<{ details: [entry: HistoryEntry] }>()
 const { t } = useI18n()
@@ -32,7 +34,7 @@ const summary = computed(() =>
 
 <template>
   <Button
-    :id="`warp-result-${entry.id}`"
+    :id="`${idPrefix ?? 'warp-result'}-${entry.id}`"
     v-tooltip="{
       value: tooltip,
       escape: true,
@@ -41,7 +43,10 @@ const summary = computed(() =>
     unstyled
     type="button"
     class="warp-result-card"
-    :class="[`warp-rarity-${entry.event.rarity}`, { 'warp-result-single': single }]"
+    :class="[
+      `warp-rarity-${entry.event.rarity}`,
+      item.kind === 'avatar' ? 'warp-character-card' : 'warp-cone-card',
+    ]"
     :style="{
       '--warp-delay': `${index * 50}ms`,
       '--warp-rarity': rarityColorVariable(entry.event.rarity),
@@ -50,19 +55,28 @@ const summary = computed(() =>
     aria-haspopup="dialog"
     @click="emit('details', entry)"
   >
-    <span class="warp-card-visual"><WarpItemVisual :item="item" artwork crop /></span>
+    <span class="warp-card-visual"><WarpResultArtwork :item="item" :focus="focus" /></span>
     <span v-if="entry.event.isUp === true" class="warp-up">{{ t('warp.up') }}</span>
-    <span class="warp-card-metadata">
+    <span v-if="item.kind === 'avatar'" class="warp-character-metadata">
+      <WarpVisualIcon
+        class="warp-card-element-icon"
+        :url="item.elementIconUrl"
+        :label="item.elementName ?? t('warp.visual.unknown')"
+      />
+      <WarpVisualIcon
+        :image="item.cardStars"
+        :reference-aspect-ratio="item.cardStarsReferenceAspectRatio ?? 5"
+        :label="t('warp.visual.rarity', { count: entry.event.rarity })"
+        stars
+      />
+    </span>
+    <span v-else class="warp-card-metadata">
       <span class="warp-metadata-cluster">
         <span class="warp-metadata-icons">
           <WarpVisualIcon
+            class="warp-card-path-icon"
             :url="item.pathIconUrl"
             :label="item.pathName ?? t('warp.visual.unknown')"
-          />
-          <WarpVisualIcon
-            v-if="item.kind === 'avatar'"
-            :url="item.elementIconUrl"
-            :label="item.elementName ?? t('warp.visual.unknown')"
           />
         </span>
         <WarpVisualIcon
@@ -78,26 +92,28 @@ const summary = computed(() =>
 
 <style scoped>
 .warp-result-card {
-  --warp-rarity: var(--p-warp-rarity-3);
-  --warp-near-glow: 20%;
-  --warp-outer-glow: 10%;
-  --warp-glow-radius: 16px;
+  --warp-edge: var(--p-warp-overview-edge-3);
+  --warp-near-glow: 28%;
+  --warp-outer-glow: 12%;
+  --warp-glow-radius: 12px;
   --warp-glow-spread: 0px;
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(80px, 30%);
-  grid-template-rows: minmax(0, 1fr);
-  align-items: stretch;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   width: 100%;
-  aspect-ratio: 2.1 / 1;
+  aspect-ratio: 2 / 1;
   min-width: 0;
   min-height: 0;
   padding: 0;
   overflow: visible;
-  color: var(--color-ink);
-  border: 2px solid var(--warp-rarity);
-  border-radius: 8px;
-  background: var(--color-surface);
+  color: #f4f5fa;
+  border: 1px solid color-mix(in srgb, var(--warp-edge) 38%, transparent);
+  border-radius: 0;
+  background: linear-gradient(
+    165deg,
+    #080c14 20%,
+    color-mix(in srgb, var(--warp-edge) 17%, #101a30)
+  );
   box-shadow:
     0 0 4px color-mix(in srgb, var(--warp-rarity) var(--warp-near-glow), transparent),
     0 0 var(--warp-glow-radius) var(--warp-glow-spread)
@@ -106,52 +122,101 @@ const summary = computed(() =>
   animation: warp-result-in 180ms ease-out both;
   animation-delay: var(--warp-delay);
 }
+.warp-result-card::after {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  height: 3px;
+  pointer-events: none;
+  background: var(--warp-edge);
+  box-shadow:
+    0 0 4px var(--warp-edge),
+    0 3px 12px color-mix(in srgb, var(--warp-edge) 65%, transparent);
+}
 .warp-rarity-4 {
-  --warp-near-glow: 80%;
-  --warp-outer-glow: 48%;
-  --warp-glow-radius: 32px;
-  --warp-glow-spread: 1px;
+  --warp-edge: var(--p-warp-overview-edge-4);
+  --warp-near-glow: 95%;
+  --warp-outer-glow: 62%;
+  --warp-glow-radius: 26px;
+  --warp-glow-spread: 2px;
+  border-color: var(--warp-edge);
 }
 .warp-rarity-5 {
+  --warp-edge: var(--p-warp-overview-edge-5);
   --warp-near-glow: 100%;
-  --warp-outer-glow: 62%;
+  --warp-outer-glow: 90%;
   --warp-glow-radius: 40px;
-  --warp-glow-spread: 2px;
+  --warp-glow-spread: 5px;
+  border-width: 3px;
+  border-color: var(--warp-edge);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--warp-edge) 24%, #17120a),
+    #0c111b 65%
+  );
 }
 .warp-result-card:hover {
-  background: color-mix(in srgb, var(--warp-rarity) 5%, var(--color-surface));
+  filter: brightness(1.12);
+}
+.warp-result-card:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 5px;
 }
 .warp-card-visual {
+  grid-column: 1;
+  grid-row: 1;
   position: relative;
   display: block;
   min-width: 0;
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  border-radius: 6px 0 0 6px;
 }
-.warp-card-visual > :deep(.warp-visual) {
+.warp-cone-card {
+  grid-template-columns: minmax(0, 26%) minmax(0, 1fr);
+}
+.warp-cone-card .warp-card-visual {
+  grid-column: 2;
+}
+.warp-character-metadata {
+  --warp-icon-size: 36px;
+  --warp-stars-target-height: 18px;
+  container-type: inline-size;
   position: absolute;
-  inset: 0;
+  z-index: 1;
+  left: 12px;
+  bottom: 12px;
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  width: min(30%, 100px);
+  max-width: calc(100% - 24px);
+  pointer-events: none;
+  filter: drop-shadow(0 1px 3px #000b);
+}
+.warp-character-metadata .warp-card-element-icon {
+  --warp-icon-size: min(40px, 50cqi);
 }
 .warp-card-metadata {
-  --warp-icon-size: min(32px, calc((100cqi - 8px) / 2));
-  --warp-stars-target-height: 18px;
-  --warp-metadata-gap: 14px;
+  grid-column: 1;
+  grid-row: 1;
+  --warp-stars-target-height: 17px;
   container-type: inline-size;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   place-items: center;
   min-width: 0;
   min-height: 0;
-  padding: 8px 6px;
-  border-left: 1px solid color-mix(in srgb, var(--warp-rarity) 14%, transparent);
+  padding: 8px 5px;
 }
 .warp-metadata-cluster {
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: var(--warp-metadata-gap);
+  gap: 8px;
   width: 100%;
   min-width: 0;
 }
@@ -159,15 +224,16 @@ const summary = computed(() =>
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   width: 100%;
-  max-width: 100%;
   min-width: 0;
+}
+.warp-card-path-icon {
+  --warp-icon-size: min(44px, 56cqi);
 }
 .warp-up {
   position: absolute;
   top: 8px;
-  left: 8px;
+  right: 8px;
   padding: 3px 6px;
   border: 1px solid color-mix(in srgb, var(--warp-rarity) 50%, transparent);
   border-radius: 4px;
@@ -175,14 +241,6 @@ const summary = computed(() =>
   font-size: 11px;
   line-height: 1.2;
   color: var(--warp-rarity);
-}
-.warp-result-single {
-  max-width: 620px;
-}
-.warp-result-single .warp-card-metadata {
-  --warp-icon-size: min(40px, calc((100cqi - 8px) / 2));
-  --warp-stars-target-height: 23px;
-  --warp-metadata-gap: 20px;
 }
 @keyframes warp-result-in {
   from {
