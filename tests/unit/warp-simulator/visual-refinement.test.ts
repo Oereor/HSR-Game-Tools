@@ -10,8 +10,6 @@ import manifest from '../../../src/tools/warp-simulator/data/visuals/manifest.js
 import { createPresentation } from '../../../src/tools/warp-simulator/model/presentation'
 import { assertVisualCatalog } from '../../../src/tools/warp-simulator/model/visual-catalog'
 import catalog from '../../../src/tools/warp-simulator/data/visuals/catalog.json'
-import { contrastRatio, readableColor } from '../../../src/tools/warp-simulator/model/color'
-import { warpVisualTokens } from '../../../src/theme/preset'
 import { useWarpOverlay } from '../../../src/tools/warp-simulator/composables/useWarpOverlay'
 import { useImageSource } from '../../../src/composables/useImageSource'
 import { useWarpSimulator } from '../../../src/tools/warp-simulator/composables/useWarpSimulator'
@@ -55,13 +53,7 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
       const item = adapter.item(source.id, 'zh-CN')
       expect(item.pathIconUrl).toBeTruthy()
       expect(item.artworkUrl).toBeTruthy()
-      for (const field of [
-        'element',
-        'elementName',
-        'elementColor',
-        'elementTextColor',
-        'elementIconUrl',
-      ] as const)
+      for (const field of ['element', 'elementName', 'elementColor', 'elementIconUrl'] as const)
         expect(item[field]).toBeUndefined()
     }
   })
@@ -120,19 +112,33 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
     expect(read('WarpResultCard')).not.toContain('revealArtwork')
     expect(read('WarpItemVisual')).not.toContain('revealArtwork')
   })
-  it('preserves source colors and minimally brightens only low-contrast element text', () => {
-    for (const definition of Object.values(warpVisualDefinitions.elements)) {
-      expect(definition.color).toMatch(/^#[\da-f]{6}$/i)
-      const color = readableColor(definition.color, warpVisualTokens.surface)!
-      expect(contrastRatio(color, warpVisualTokens.surface)).toBeGreaterThanOrEqual(4.5)
-      if (contrastRatio(definition.color, warpVisualTokens.surface) >= 4.5)
-        expect(color).toBe(definition.color)
+  it('uses the HSR-Database palette for all seven elements in both languages', () => {
+    // HSR-Database ELEMENT_COLORS; Lightning is named Thunder in the Warp catalog.
+    const colors = {
+      Physical: '#b6b6b6',
+      Fire: '#f25740',
+      Ice: '#6dc4ea',
+      Thunder: '#d46aeb',
+      Wind: '#7ad8a5',
+      Quantum: '#8a86de',
+      Imaginary: '#fee554',
     }
-    const quantum = warpVisualDefinitions.elements.Quantum!
-    expect(quantum.color).toBe('#1C29BA')
-    expect(readableColor(quantum.color, warpVisualTokens.surface)).not.toBe(quantum.color)
-    expect(readableColor('red', warpVisualTokens.surface)).toBeUndefined()
-    expect(readableColor('#123456', 'invalid')).toBeUndefined()
+    expect(Object.keys(warpVisualDefinitions.elements).sort()).toEqual(Object.keys(colors).sort())
+    for (const [element, color] of Object.entries(colors)) {
+      const characters = warpSnapshot.items.filter(
+        (source) => source.kind === 'avatar' && warpVisuals[source.id]?.element === element,
+      )
+      expect(characters.length).toBeGreaterThan(0)
+      for (const source of characters) {
+        for (const locale of ['zh-CN', 'en'] as const) {
+          expect(adapter.item(source.id, locale)).toMatchObject({ element, elementColor: color })
+        }
+      }
+    }
+    const missing = createPresentation(warpSnapshot, { 'avatar:1503': { path: 'Elation' } })
+    expect(missing.item('avatar:1503', 'en').elementColor).toBeUndefined()
+    const unknown = createPresentation(warpSnapshot, { 'avatar:1503': { element: 'Unknown' } })
+    expect(unknown.item('avatar:1503', 'en').elementColor).toBeUndefined()
   })
   it('rejects invalid metadata and unsafe paths while allowing explicit missing artwork', () => {
     const invalid = structuredClone(catalog)
@@ -206,12 +212,12 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
       'utf8',
     )
     const results = readFileSync(
-      new URL('../../../src/tools/warp-simulator/components/WarpResults.vue', import.meta.url),
+      new URL('../../../src/tools/warp-simulator/components/WarpResultsWall.vue', import.meta.url),
       'utf8',
     )
     expect(results).toContain(':key="`${entry.batchId}:${entry.id}`"')
     expect(card).toContain('prefers-reduced-motion: reduce')
     expect(card).not.toMatch(/Math\.random|draw\(/)
-    expect(page.indexOf('<WarpResults')).toBeLessThan(page.indexOf('<Drawer'))
+    expect(page.indexOf('<WarpBannerStage')).toBeLessThan(page.indexOf('<Drawer'))
   })
 })

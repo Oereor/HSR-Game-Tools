@@ -54,7 +54,6 @@ describe('Committed batch reveal state machine', () => {
       begin(reveal, entries(id))
       expect(reveal.visible.value).toBe(true)
       expect(reveal.phase.value).toBe('artwork')
-      expect(reveal.displayedEntries.value).toEqual([])
       reveal.activate()
       expect(reveal.phase.value).toBe('artwork')
       vi.advanceTimersByTime(400)
@@ -67,7 +66,6 @@ describe('Committed batch reveal state machine', () => {
       expect(reveal.visible.value).toBe(false)
       expect(reveal.locked.value).toBe(true)
       expect(reveal.afterHide()).toBe(true)
-      expect(reveal.displayedEntries.value).toEqual(entries(id))
       expect(reveal.locked.value).toBe(false)
     },
   )
@@ -100,12 +98,11 @@ describe('Committed batch reveal state machine', () => {
       expect(vi.getTimerCount()).toBe(0)
       endCurrent(reveal)
       expect(reveal.afterHide()).toBe(true)
-      expect(reveal.displayedEntries.value).toEqual(entries(id))
     },
   )
 
   it.each(['ten-one-five', 'five-mixed'])(
-    'reveals %s in original order before publishing the complete batch',
+    'reveals %s in original order before showing the complete batch',
     (id) => {
       const { reveal } = setup()
       const previous = entries('all-three')
@@ -118,7 +115,6 @@ describe('Committed batch reveal state machine', () => {
       const seen: number[] = []
       for (const current of expected) {
         expect(reveal.current.value).toBe(current)
-        expect(reveal.displayedEntries.value).toEqual(previous)
         seen.push(reveal.current.value!.id)
         vi.advanceTimersByTime(1500)
         reveal.activate()
@@ -133,9 +129,7 @@ describe('Committed batch reveal state machine', () => {
       expect(reveal.locked.value).toBe(true)
       endCurrent(reveal)
       expect(reveal.visible.value).toBe(false)
-      expect(reveal.displayedEntries.value).toEqual(previous)
       reveal.afterHide()
-      expect(reveal.displayedEntries.value).toEqual(batch)
     },
   )
 
@@ -258,7 +252,6 @@ describe('Committed batch reveal state machine', () => {
     reveal.afterHide()
     reveal.activate()
     await nextTick()
-    expect(reveal.displayedEntries.value).toEqual(simulator.latestResults.value)
     expect(simulator.session.value).toBe(committed)
     expect(JSON.stringify(committed)).toBe(before)
     expect(rng.consumed).toBe(consumed)
@@ -335,6 +328,5 @@ describe('Committed batch reveal state machine', () => {
     expect(reveal.afterHide(old[0]!.batchId)).toBe(false)
     expect(reveal.locked.value).toBe(true)
     expect(reveal.afterHide(next[0]!.batchId)).toBe(true)
-    expect(reveal.displayedEntries.value).toEqual(next)
   })
 })

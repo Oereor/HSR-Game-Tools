@@ -6,17 +6,16 @@ export const wallLayout = {
   rowStep: 212,
   padding: 48,
 } as const
-export type ResultWallLayout = 'tilted' | 'flat'
 
-function createResultWall(layout: ResultWallLayout) {
-  const angle = layout === 'flat' ? 0 : wallCard.angle
+function createResultWall() {
+  const angle = wallCard.angle
   const radians = (angle * Math.PI) / 180
   const cos = Math.cos(radians),
     sin = Math.sin(radians)
   const rows = wallLayout.counts.map((count, row) => ({
     count,
     start: wallLayout.counts.slice(0, row).reduce((sum, count) => sum + count, 0),
-    x: layout === 'flat' ? 0 : wallLayout.offsets[row]!,
+    x: wallLayout.offsets[row]!,
     y: row * wallLayout.rowStep,
     width: count * wallCard.width + (count - 1) * wallLayout.gap,
     zIndex: row + 1,
@@ -33,7 +32,6 @@ function createResultWall(layout: ResultWallLayout) {
   const minX = Math.min(...corners.map((c) => c.x)) - wallLayout.padding
   const minY = Math.min(...corners.map((c) => c.y)) - wallLayout.padding
   return {
-    layout,
     angle,
     width: Math.max(...corners.map((c) => c.x)) + wallLayout.padding - minX,
     height: Math.max(...corners.map((c) => c.y)) + wallLayout.padding - minY,
@@ -59,9 +57,8 @@ function createResultWall(layout: ResultWallLayout) {
     ),
   }
 }
-export const resultWall = createResultWall('tilted')
-export const flatResultWall = createResultWall('flat')
+export const resultWall = createResultWall()
 export function fitResultWall(width: number, height: number, wall = resultWall) {
   if (![width, height].every((v) => Number.isFinite(v) && v > 0)) return 0
-  return Math.min(width / wall.width, height / wall.height, wall.layout === 'flat' ? 1 : Infinity)
+  return Math.min(width / wall.width, height / wall.height)
 }

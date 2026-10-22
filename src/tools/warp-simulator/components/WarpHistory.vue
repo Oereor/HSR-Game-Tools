@@ -90,7 +90,7 @@ const rows = computed(() =>
               <span
                 v-if="item.kind === 'avatar'"
                 class="warp-history-meta"
-                :style="{ color: item.elementTextColor }"
+                :style="{ color: item.elementColor }"
                 ><WarpVisualIcon
                   :url="item.elementIconUrl"
                   :label="item.elementName ?? t('warp.visual.unknown')"

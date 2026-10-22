@@ -237,6 +237,66 @@ describe('Overview interactions in the real overlay (Node renderer, no browser f
     clickOverview(root, 'button')
     expect(escape).toHaveBeenCalledOnce()
   })
+  it.each(['single-avatar-5', 'single-light-cone-5', 'five-mixed'])(
+    'reviews %s with no reveal controls and restores card focus after details',
+    async (scenarioId) => {
+      const batch = resultDisplayScenarios().find((s) => s.id === scenarioId)!.entries
+      const visible = ref(true),
+        closed = vi.fn(),
+        hidden = vi.fn(),
+        activate = vi.fn(),
+        escape = vi.fn(),
+        ready = vi.fn()
+      const root = node('root')
+      const app = renderer.createApp({
+        render: () =>
+          h(WarpRevealOverlay, {
+            mode: 'review',
+            reviewRevision: 7,
+            visible: visible.value,
+            batchId: batch[0]!.batchId,
+            entries: batch,
+            presentation: adapter,
+            sourceLabel: 'Original banner',
+            phase: 'idle',
+            artworkReady: false,
+            identityReady: false,
+            onActivate: activate,
+            onEscape: escape,
+            'onArtwork-ready': ready,
+            'onReview-close': () => {
+              closed()
+              visible.value = false
+            },
+            'onReview-after-hide': hidden,
+          }),
+      })
+      configure(app)
+      app.mount(root)
+      await flush()
+      expect(cls(root, 'warp-reveal-screen')).toBeUndefined()
+      expect(cls(root, 'warp-reveal-identity')).toBeUndefined()
+      const card =
+        batch.length === 10
+          ? descendants(root).find((n) => n.props.id === `wall-${batch[0]!.id}`)!
+          : descendants(root).find((n) => n.props.id === `warp-overview-result-${batch[0]!.id}`)!
+      ;(card.props.onClick as () => void)()
+      await flush()
+      expect(cls(root, 'warp-overview-detail')).toBeDefined()
+      const key = { key: 'Escape', repeat: false, preventDefault() {}, stopPropagation() {} }
+      ;(cls(root, 'warp-reveal-shell').props.onKeydown as (event: unknown) => void)(key)
+      await flush()
+      expect(focused.at(-1)).toBe(`warp-overview-result-${batch[0]!.id}`)
+      expect(closed).not.toHaveBeenCalled()
+      ;(cls(root, 'warp-reveal-shell').props.onKeydown as (event: unknown) => void)(key)
+      await flush()
+      expect(closed).toHaveBeenCalledOnce()
+      expect(hidden).toHaveBeenCalledWith(batch[0]!.batchId, 7)
+      expect(activate).not.toHaveBeenCalled()
+      expect(escape).not.toHaveBeenCalled()
+      expect(ready).not.toHaveBeenCalled()
+    },
+  )
   it('uses preview artwork for single cones and preserves image readiness identities', async () => {
     const entry = resultDisplayScenarios().find((s) => s.id === 'single-light-cone-3')!.entries[0]!
     const item = adapter.item(entry.event.itemId, 'zh-CN'),

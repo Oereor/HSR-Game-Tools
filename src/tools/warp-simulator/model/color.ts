@@ -17,21 +17,3 @@ export function contrastRatio(a: string, b: string): number {
     y = luminance(b)
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
 }
-/** Preserve source hue by applying the smallest quantized white mix that passes. */
-export function readableColor(color: string, background: string): string | undefined {
-  if (!validColor(color) || !validColor(background)) return undefined
-  const rgb = channels(color)
-  for (let step = 0; step <= 255; step++) {
-    const mixed =
-      '#' +
-      rgb
-        .map((channel) =>
-          Math.round(channel + ((255 - channel) * step) / 255)
-            .toString(16)
-            .padStart(2, '0'),
-        )
-        .join('')
-    if (contrastRatio(mixed, background) >= 4.5) return step === 0 ? color : mixed
-  }
-  return undefined
-}

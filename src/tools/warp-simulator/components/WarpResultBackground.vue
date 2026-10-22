@@ -12,9 +12,9 @@
     linear-gradient(
       180deg,
       var(--p-warp-result-top) 0%,
-      var(--p-warp-result-upper) 36%,
-      var(--p-warp-result-middle) 62%,
-      var(--p-warp-result-lower) 83%,
+      var(--p-warp-result-upper) 40%,
+      var(--p-warp-result-middle) 72%,
+      var(--p-warp-result-lower) 92%,
       var(--p-warp-result-bottom) 100%
     );
 }

@@ -12,6 +12,7 @@ import WarpRevealIdentity from './WarpRevealIdentity.vue'
 import WarpRevealMetadata from './WarpRevealMetadata.vue'
 import WarpResultBackground from './WarpResultBackground.vue'
 import WarpResultsWall from './WarpResultsWall.vue'
+import WarpResultCard from './WarpResultCard.vue'
 import WarpItemDetailsContent from './WarpItemDetailsContent.vue'
 import { showRevealMetadata } from './reveal-metadata'
 import { useWarpPixelRatio } from '../composables/useWarpPixelRatio'
@@ -19,7 +20,9 @@ import { revealComposition } from '../model/reveal-composition'
 import type { ToolLocale } from '../../../locales/types'
 
 const props = defineProps<{
+  mode?: 'reveal' | 'review'
   visible: boolean
+  reviewRevision?: number
   batchId?: number
   entry?: HistoryEntry
   item?: ItemPresentation
@@ -31,6 +34,8 @@ const props = defineProps<{
   identityReady: boolean
 }>()
 const emit = defineEmits<{
+  'review-close': []
+  'review-after-hide': [batchId?: number, revision?: number]
   activate: []
   escape: []
   'after-hide': [batchId?: number]
@@ -45,10 +50,16 @@ const detailClose = ref<{ $el: HTMLButtonElement }>()
 const details = shallowRef<HistoryEntry>()
 const leavingStage = ref<RevealPhase>('artwork')
 let hiddenBatch: number | undefined
+let hiddenRevision: number | undefined
+let hiddenMode: 'reveal' | 'review' | undefined
 watch(
   () => props.visible,
   (visible) => {
-    if (!visible) hiddenBatch = props.batchId ?? props.entry?.batchId
+    if (!visible) {
+      hiddenBatch = props.batchId ?? props.entry?.batchId
+      hiddenMode = props.mode
+      hiddenRevision = props.reviewRevision
+    }
   },
   { flush: 'sync' },
 )
@@ -61,13 +72,22 @@ watch(
   { flush: 'sync' },
 )
 watch(
-  () => props.batchId,
+  () => [props.batchId, props.mode, props.reviewRevision],
   () => {
     details.value = undefined
   },
 )
 const stage = computed(() => (props.phase === 'leaving' ? leavingStage.value : props.phase))
-const overview = computed(() => stage.value === 'overview')
+const overview = computed(() => props.mode === 'review' || stage.value === 'overview')
+function closeResults() {
+  if (!props.visible) return
+  if (props.mode === 'review') emit('review-close')
+  else emit('escape')
+}
+function afterHide() {
+  if (hiddenMode === 'review') emit('review-after-hide', hiddenBatch, hiddenRevision)
+  else emit('after-hide', hiddenBatch)
+}
 const metadataVisible = computed(() => showRevealMetadata(stage.value, props.artworkReady))
 const metadataDescriptionId = computed(
   () => `warp-reveal-metadata-${props.entry?.batchId}-${props.entry?.id}`,
@@ -110,7 +130,13 @@ function closeDetails() {
   )
 }
 function clickOverview(event: MouseEvent) {
-  if (props.phase !== 'overview' || details.value || event.defaultPrevented) return
+  if (
+    !overview.value ||
+    (props.mode !== 'review' && props.phase !== 'overview') ||
+    details.value ||
+    event.defaultPrevented
+  )
+    return
   const target = event.target as Element | null
   if (
     !target ||
@@ -119,7 +145,7 @@ function clickOverview(event: MouseEvent) {
     )
   )
     return
-  emit('escape')
+  closeResults()
 }
 function keydown(event: KeyboardEvent) {
   // Details currently has one interactive control. Keep Tab inside this panel;
@@ -135,7 +161,7 @@ function keydown(event: KeyboardEvent) {
   event.stopPropagation()
   if (event.repeat) return
   if (details.value) closeDetails()
-  else emit('escape')
+  else closeResults()
 }
 </script>
 
@@ -158,7 +184,7 @@ function keydown(event: KeyboardEvent) {
       transition: { css: false },
     }"
     @show="focusScreen"
-    @after-hide="emit('after-hide', hiddenBatch)"
+    @after-hide="afterHide"
   >
     <template #container>
       <div
@@ -166,14 +192,14 @@ function keydown(event: KeyboardEvent) {
         :style="{ '--reveal-fade': `${REVEAL_TIMING.fade}ms` }"
         @keydown="keydown"
       >
-        <WarpResultBackground v-if="stage !== 'identity'" />
+        <WarpResultBackground v-if="mode === 'review' || stage !== 'identity'" />
         <section
           v-if="overview && presentation"
           class="warp-overview"
           aria-labelledby="warp-overview-title"
           aria-describedby="warp-overview-description"
           :inert="!!details"
-          :class="{ 'warp-reveal-leaving': phase === 'leaving' }"
+          :class="{ 'warp-reveal-leaving': mode !== 'review' && phase === 'leaving' }"
           @click="clickOverview"
         >
           <header class="warp-overview-header">
@@ -188,15 +214,27 @@ function keydown(event: KeyboardEvent) {
               unstyled
               class="warp-reveal-close"
               :aria-label="t('warp.results.close')"
-              @click="emit('escape')"
+              @click="closeResults"
               ><X :size="30" aria-hidden="true"
             /></Button>
           </header>
           <WarpResultsWall
+            v-if="entries?.length === 10"
             :entries="entries ?? []"
             :presentation="presentation"
             @details="openDetails"
           />
+          <div v-else class="warp-review-single">
+            <WarpResultCard
+              v-for="(result, index) in entries ?? []"
+              :key="`${result.batchId}:${result.id}`"
+              :entry="result"
+              :item="presentation.item(result.event.itemId, locale as ToolLocale)"
+              :index="index"
+              id-prefix="warp-overview-result"
+              @details="openDetails"
+            />
+          </div>
         </section>
         <Button
           v-else
@@ -205,7 +243,7 @@ function keydown(event: KeyboardEvent) {
           type="button"
           class="warp-reveal-screen"
           :class="{
-            'warp-reveal-leaving': phase === 'leaving',
+            'warp-reveal-leaving': mode !== 'review' && phase === 'leaving',
             'warp-reveal-full-canvas': stage !== 'identity',
           }"
           :aria-label="
@@ -380,6 +418,16 @@ function keydown(event: KeyboardEvent) {
   gap: 8px;
   padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
     max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+}
+.warp-review-single {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: auto;
+  padding: 32px;
+}
+.warp-review-single > .warp-result-card {
+  width: min(100%, 620px);
 }
 .warp-overview-header {
   display: flex;

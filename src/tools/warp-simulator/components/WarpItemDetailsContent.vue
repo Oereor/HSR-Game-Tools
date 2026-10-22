@@ -30,7 +30,7 @@ const { t } = useI18n()
       </dd>
       <template v-if="item.kind === 'avatar'"
         ><dt>{{ t('warp.visual.element') }}</dt>
-        <dd :style="{ color: item.elementTextColor }">
+        <dd :style="{ color: item.elementColor }">
           <WarpVisualIcon
             :url="item.elementIconUrl"
             :label="item.elementName ?? t('warp.visual.unknown')"

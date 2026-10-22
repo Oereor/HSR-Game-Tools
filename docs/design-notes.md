@@ -110,7 +110,7 @@ Tooltip 使用转义文本并保留 Escape 关闭，效果含文字和符号，�
 
 ## 跃迁模拟器
 
-`/warp-simulator` 使用现有 Header、语言切换及黑金主题。顶部展示标题、当前卡池摘要和控制／历史入口；中央以结果展示为主。左右 PrimeVue Drawer 默认收起、互斥展开，宽度分别为 25rem／49rem 且不超过视口。单抽、十连、选择状态及星缘入口位于结果下方的 sticky 操作栏，收起控制仍可抽取，底部考虑 safe-area。
+`/warp-simulator` 保留站点 Header 和语言切换，仅本路由放宽 App Shell 宽度。页头展示紧凑标题（20–24px）和靠右的控制／历史入口，不重复展示卡池摘要；中央使用 WarpBannerStage 展示当前五星 UP，底部保留星缘、单抽和十连。工作区按页头、弹性舞台和操作栏分配剩余视口高度；宽度不足时舞台改为上下结构并内部滚动，极矮窗口使用自然流和 sticky 操作栏。左右 PrimeVue Drawer 默认收起、互斥展开，内部功能和宽度不变。
 
 跃迁普通界面保留原深色布局、Surface、Drawer／Dialog、保底 Tag／Badge、InputText、Checkbox 与五列历史表格。仅通用操作按钮改用 HButton、卡池类别改用 HTabs，复用现有 astral-ui/components 与 scoped-theme.css；h-theme 只挂在按钮和页签本身。按钮保留原 ID、事件、Disabled、ARIA 和焦点锚点；单抽 secondary、十连 primary，ghost 文字沿用深色界面前景色。业务头像、卡池条目和结果卡按钮保留原实现。按钮图标排列与必要尺寸仅由 ui/controls.css 局部适配，不改变容器配色、字体或其他工具。历史分页及星缘／重置弹窗操作同样使用 HButton，其余界面恢复原样。
 
@@ -126,7 +126,9 @@ Dialog 标题旁的数量 Badge 未满七人为 secondary、恰好七人为 succ
 
 重置 Dialog 解释当前组／全部的实际范围，默认焦点落在取消；两种重置均保留共享星缘选择。抽屉使用 PrimeVue 的 Escape、焦点陷阱、遮罩及滚动锁，HTabs 保留键盘导航和原生 tabpanel 关联；真实键盘交互由维护者验收。
 
-结果展示使用单件揭示、十连全屏总览和主页面常驻结果区。全屏由同一个 PrimeVue Dialog 承载，角色／光锥 Artwork 和十连总览共用 `WarpResultBackground`：顶部近黑深蓝、中部蓝紫、下部灰蓝、底部浅灰白，渐变 Token 集中在 preset 的 warpResult；装饰只使用少量静态星点和光柱。五星 Identity 前置阶段继续纯黑背景，保留已验收的 V3 构图、1100ms 时序和图片就绪门控。
+主页舞台使用独立的 warpHome 深蓝黑 Token、少量 CSS 星点和金色圆弧。角色主体居中偏右，等比放大高清 resultPortrait，允许外围装饰裁切；缺失时回退同源 revealArtwork，不放大头像。主页构图独立于十连头部锚点和单件揭示，昔涟仅有少量主页专用尺寸／位置覆盖。光锥采用独立竖幅 contain 构图，使用来自 light_cone_portrait 的高清 revealArtwork，失败回退 artworkUrl，不使用 preview。左侧不嵌套 Card，角色显示大名称、星级、属性和命途，属性文字在主页、历史和详情统一使用 HSR-Database 的七属性配色，不自动提亮（物理 #b6b6b6、火 #f25740、冰 #6dc4ea、雷 #d46aeb、风 #7ad8a5、量子 #8a86de、虚数 #fee554）。配色集中在 warpVisualTokens.element，来源为 HSR-Database/src/lib/domain/elements.ts，提交 17257c58c4e3b4e9e9a801c617e3e3232764e51d，Lightning 对应本工具的 Thunder；光锥提供更宽名称区，仅显示星级和命途。无 UP 时显示通用卡池舞台，无有效卡池或资源全部失败时保留可读信息和中性占位。
+
+结果展示使用单件揭示、十连全屏总览和只读最新结果回看。全屏由同一个 PrimeVue Dialog 承载，共用 WarpResultBackground：warpResult Token 为 #03060e、#071024、#142344、#526584、#ced8e6，位置为 0／40／72／92／100%，浅色集中于底部。装饰继续使用少量静态星点和光柱，主页不复用该渐变。五星 Identity 前置阶段保持纯黑背景、V3 构图、1100ms 时序及图片就绪门控。
 
 单件 Artwork 使用独立的全屏构图坐标，不再将图片限制在右侧容器。`reveal-composition` 的 x／y 表示图片中心在展示区中的归一化位置，scale 是相对于完整画布 contain 的倍率。所有角色统一使用 scale 1，不再按角色 ID 设置放大覆盖：完整高清 character_portrait 以 (0.5,0.5) 居中，保持宽高比并等比适配 viewport，一条边占满、另一条边可留白，整个源画布不溢出屏幕。角色不受源像素／DPR 上限限制，十连 PortraitFocus 不参与单件构图。源图失败时按实际轻量图片尺寸重新计算，全部失败保留中性占位和就绪通知。
 
@@ -136,7 +138,7 @@ Dialog 标题旁的数量 Badge 未满七人为 secondary、恰好七人为 succ
 
 十连全屏使用 `WarpResultsWall` 的三条平行展示带，按原始抽取顺序分组为 3–4–3。`result-wall` 集中管理 360×180 逻辑卡片、16px 同排间隙、212px 排中心垂直间隔及 −40／0／40 水平偏移；整排绕中心旋转 −12°，卡片自身不重复旋转。旋转后的整排四角加 48px 光效／焦点安全区形成约 1589×927 的包围盒，按可用宽高等比适配并允许大于 1 的缩放。每排的轻薄共享背景与卡片底边形成连续展示带，不重叠卡片主体；Hover／Focus 同时提升卡片和所属排。宽度 <1040px 或高度 <640px 时改为内部滚动双列，行／列间距为 32px／28px、内边距 40px；≤640px 使用单列、30px 间距及 32px 内边距，取消旋转。十件物品始终完整可访问，DOM 和 Tab 顺序对应原始抽取顺序。
 
-全屏标题使用独立双语消息“结果展示／Warp Results”，来源和次数通过区域的读屏描述保留，右上关闭按钮固定在滚动区外。主页继续使用“最新跃迁结果”，并与全屏总览共用唯一的 WarpResultCard／WarpResultArtwork 实现，不再有 default／overview 视觉变体。角色均使用全幅立绘和左下角属性／星级叠加，使用基础配置合并 overviewOverrides 后的最终人工锚点；光锥统一使用 26% 左侧命途／星级区域，右侧 preview 无内边距、等比 cover、顶部居中，允许内部裁切。主页十连复用卡片墙 flat 模式：三排水平居中、原始顺序 3–4–3、零角度、不绘制整排背景，逻辑包围盒为 1584×700，按实际容器宽高等比适配且缩放上限为 1。桌面宽 ≥1040px 且高 ≥640px 时，跃迁页限定的 App Shell Grid 按实际站点 Header、页头、弹性结果区和操作栏分配 100dvh，其他工具不受影响。窄屏／矮屏采用自然流的双列或单列滚动。主页单抽使用同一新版卡片，外层限制最大宽 620px，并按结果区宽高保持 2:1 居中适配；单抽大小不再是卡片自身变体。主页 idPrefix 为 warp-result，全屏为 warp-overview-result，保留详情返回焦点。
+全屏标题继续使用独立双语消息“结果展示／Warp Results”，来源和次数保留于读屏描述，关闭按钮固定在滚动区外。主页“最新跃迁结果”仅作为 HButton 入口，无结果时隐藏。回看使用 WarpRevealOverlay 的 review 模式：十连复用倾斜卡片墙，单抽使用同一 WarpResultCard，详情在当前模态内展示。角色卡片沿用完整立绘及已校准头部锚点，光锥卡片沿用 preview 和命途／星级布局；不再提供主页 flat 卡片墙或大型结果空状态。
 
 角色优先加载 resultPortrait 原始尺寸完整画布，失败依次回退 revealArtwork、轻量 Artwork 和中性占位；重复 URL 只尝试一次。原始尺寸与既有高清输出相同时共享文件，不改变 artworkUrl 或 revealArtwork 的原有职责。卡内图片容器负责裁切，外框继续显示光效；图像保持比例，显式约束 min-width／min-height 避免固有尺寸撑开布局。UP、转义文本 Tooltip、ARIA 和详情入口保留，不增加“新”、资源结算或转换奖励。
 

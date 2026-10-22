@@ -13,7 +13,6 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
   const pending = shallowRef<{ id: number; entries: readonly HistoryEntry[] }>()
   const queue = shallowRef<readonly HistoryEntry[]>([])
   const cursor = ref(0)
-  const displayedEntries = shallowRef<readonly HistoryEntry[]>([])
   const current = computed(() => queue.value[cursor.value])
   const locked = computed(() => !!pending.value)
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -112,7 +111,6 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
     queue.value = []
     cursor.value = 0
     phase.value = 'idle'
-    displayedEntries.value = []
     leavingOverview = false
   }
   function beginBatch(batchId: number, entries: readonly HistoryEntry[]) {
@@ -148,7 +146,6 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
     )
       return false
     clearTimer()
-    displayedEntries.value = pending.value.entries
     pending.value = undefined
     queue.value = []
     phase.value = 'idle'
@@ -174,7 +171,6 @@ export function useWarpReveal(reducedMotion: Readonly<Ref<boolean>>) {
     locked,
     current,
     batchId: computed(() => pending.value?.id),
-    displayedEntries: readonly(displayedEntries),
     overviewEntries: computed(() => pending.value?.entries ?? []),
     identityReady: readonly(identityReady),
     markIdentityReady,
