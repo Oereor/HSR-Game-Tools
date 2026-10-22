@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef, watch } from 'vue'
+import { computed, nextTick, ref, shallowRef, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
@@ -12,25 +12,31 @@ import WarpRevealIdentity from './WarpRevealIdentity.vue'
 import WarpRevealMetadata from './WarpRevealMetadata.vue'
 import WarpResultBackground from './WarpResultBackground.vue'
 import WarpResultsWall from './WarpResultsWall.vue'
-import WarpItemDetailsContent from './WarpItemDetailsContent.vue'
+import WarpResultCard from './WarpResultCard.vue'
+import WarpItemDetails from './WarpItemDetails.vue'
 import { showRevealMetadata } from './reveal-metadata'
 import { useWarpPixelRatio } from '../composables/useWarpPixelRatio'
 import { revealComposition } from '../model/reveal-composition'
 import type { ToolLocale } from '../../../locales/types'
 
 const props = defineProps<{
+  mode?: 'reveal' | 'review'
   visible: boolean
+  reviewRevision?: number
   batchId?: number
   entry?: HistoryEntry
   item?: ItemPresentation
   entries?: readonly HistoryEntry[]
   presentation?: ReturnType<typeof createPresentation>
   sourceLabel?: string
+  sourceLabelForEntry?: (entry: HistoryEntry) => string
   phase: RevealPhase
   artworkReady: boolean
   identityReady: boolean
 }>()
 const emit = defineEmits<{
+  'review-close': []
+  'review-after-hide': [batchId?: number, revision?: number]
   activate: []
   escape: []
   'after-hide': [batchId?: number]
@@ -41,14 +47,31 @@ const { t, locale } = useI18n()
 const pixelRatio = useWarpPixelRatio()
 const screen = ref<{ $el: HTMLButtonElement }>()
 const overviewClose = ref<{ $el: HTMLButtonElement }>()
-const detailClose = ref<{ $el: HTMLButtonElement }>()
+const maskId = useId()
+const detailActive = ref(false)
+const detailZIndex = ref(1001)
+const detailContext = ref(0)
+let detailOrigin: number | undefined
+function resetDetails() {
+  detailContext.value++
+  details.value = undefined
+  detailActive.value = false
+  detailOrigin = undefined
+}
 const details = shallowRef<HistoryEntry>()
 const leavingStage = ref<RevealPhase>('artwork')
 let hiddenBatch: number | undefined
+let hiddenRevision: number | undefined
+let hiddenMode: 'reveal' | 'review' | undefined
 watch(
   () => props.visible,
   (visible) => {
-    if (!visible) hiddenBatch = props.batchId ?? props.entry?.batchId
+    if (!visible) {
+      hiddenBatch = props.batchId ?? props.entry?.batchId
+      hiddenMode = props.mode
+      hiddenRevision = props.reviewRevision
+      resetDetails()
+    }
   },
   { flush: 'sync' },
 )
@@ -61,13 +84,23 @@ watch(
   { flush: 'sync' },
 )
 watch(
-  () => props.batchId,
+  () => [props.batchId, props.mode, props.reviewRevision],
   () => {
-    details.value = undefined
+    resetDetails()
   },
+  { flush: 'sync' },
 )
 const stage = computed(() => (props.phase === 'leaving' ? leavingStage.value : props.phase))
-const overview = computed(() => stage.value === 'overview')
+const overview = computed(() => props.mode === 'review' || stage.value === 'overview')
+function closeResults() {
+  if (!props.visible || detailActive.value) return
+  if (props.mode === 'review') emit('review-close')
+  else emit('escape')
+}
+function afterHide() {
+  if (hiddenMode === 'review') emit('review-after-hide', hiddenBatch, hiddenRevision)
+  else emit('after-hide', hiddenBatch)
+}
 const metadataVisible = computed(() => showRevealMetadata(stage.value, props.artworkReady))
 const metadataDescriptionId = computed(
   () => `warp-reveal-metadata-${props.entry?.batchId}-${props.entry?.id}`,
@@ -87,30 +120,46 @@ const hint = computed(() =>
   ),
 )
 const dialogLabel = computed(() =>
-  details.value && detailItem.value
-    ? detailItem.value.name
-    : overview.value
-      ? t('warp.results.overviewTitle')
-      : t('warp.reveal.title', { name: props.item?.name ?? t('warp.visual.unknown') }),
+  overview.value
+    ? t('warp.results.overviewTitle')
+    : t('warp.reveal.title', { name: props.item?.name ?? t('warp.visual.unknown') }),
 )
 function focusScreen() {
-  void nextTick(() =>
-    (overview.value ? overviewClose.value : screen.value)?.$el.focus({ preventScroll: true }),
-  )
+  void nextTick(() => {
+    if (!props.visible || detailActive.value) return
+    ;(overview.value ? overviewClose.value : screen.value)?.$el.focus({ preventScroll: true })
+  })
 }
 function openDetails(entry: HistoryEntry) {
+  if (!props.visible || detailActive.value) return
+  const mask = document.getElementById(maskId)
+  const parentZIndex = mask ? Number(getComputedStyle(mask).zIndex) : 1000
+  detailZIndex.value = (Number.isFinite(parentZIndex) ? parentZIndex : 1000) + 1
+  detailOrigin = entry.id
+  detailActive.value = true
   details.value = entry
-  void nextTick(() => detailClose.value?.$el.focus({ preventScroll: true }))
 }
-function closeDetails() {
-  const entry = details.value
-  details.value = undefined
-  void nextTick(() =>
-    document.getElementById(`warp-overview-result-${entry?.id}`)?.focus({ preventScroll: true }),
-  )
+function afterDetailsLeave() {
+  if (details.value) return
+  const origin = detailOrigin
+  const context = detailContext.value
+  detailActive.value = false
+  detailOrigin = undefined
+  void nextTick(() => {
+    if (!props.visible || detailActive.value || context !== detailContext.value) return
+    const card = document.getElementById(`warp-overview-result-${origin}`)
+    const target = card ?? overviewClose.value?.$el
+    if (target?.isConnected) target.focus({ preventScroll: true })
+  })
 }
 function clickOverview(event: MouseEvent) {
-  if (props.phase !== 'overview' || details.value || event.defaultPrevented) return
+  if (
+    !overview.value ||
+    (props.mode !== 'review' && props.phase !== 'overview') ||
+    detailActive.value ||
+    event.defaultPrevented
+  )
+    return
   const target = event.target as Element | null
   if (
     !target ||
@@ -119,23 +168,16 @@ function clickOverview(event: MouseEvent) {
     )
   )
     return
-  emit('escape')
+  closeResults()
 }
 function keydown(event: KeyboardEvent) {
-  // Details currently has one interactive control. Keep Tab inside this panel;
-  // the outer Dialog's sentinels otherwise try to focus the inert overview.
-  if (event.key === 'Tab' && details.value) {
-    event.preventDefault()
-    detailClose.value?.$el.focus({ preventScroll: true })
-    return
-  }
+  if (detailActive.value) return
   if (event.repeat && ['Escape', 'Enter', ' '].includes(event.key)) event.preventDefault()
   if (event.key !== 'Escape') return
   event.preventDefault()
   event.stopPropagation()
   if (event.repeat) return
-  if (details.value) closeDetails()
-  else emit('escape')
+  closeResults()
 }
 </script>
 
@@ -153,12 +195,17 @@ function keydown(event: KeyboardEvent) {
     :show-header="false"
     :aria-label="dialogLabel"
     :pt="{
-      mask: { class: 'warp-reveal-mask' },
-      root: { class: 'warp-reveal-dialog', 'aria-labelledby': undefined },
+      mask: { id: maskId, class: 'warp-reveal-mask' },
+      root: {
+        class: 'warp-reveal-dialog',
+        'aria-labelledby': undefined,
+        inert: detailActive,
+        'aria-hidden': detailActive ? 'true' : undefined,
+      },
       transition: { css: false },
     }"
     @show="focusScreen"
-    @after-hide="emit('after-hide', hiddenBatch)"
+    @after-hide="afterHide"
   >
     <template #container>
       <div
@@ -166,14 +213,14 @@ function keydown(event: KeyboardEvent) {
         :style="{ '--reveal-fade': `${REVEAL_TIMING.fade}ms` }"
         @keydown="keydown"
       >
-        <WarpResultBackground v-if="stage !== 'identity'" />
+        <WarpResultBackground v-if="mode === 'review' || stage !== 'identity'" />
         <section
           v-if="overview && presentation"
           class="warp-overview"
           aria-labelledby="warp-overview-title"
           aria-describedby="warp-overview-description"
-          :inert="!!details"
-          :class="{ 'warp-reveal-leaving': phase === 'leaving' }"
+          :inert="detailActive"
+          :class="{ 'warp-reveal-leaving': mode !== 'review' && phase === 'leaving' }"
           @click="clickOverview"
         >
           <header class="warp-overview-header">
@@ -188,15 +235,27 @@ function keydown(event: KeyboardEvent) {
               unstyled
               class="warp-reveal-close"
               :aria-label="t('warp.results.close')"
-              @click="emit('escape')"
+              @click="closeResults"
               ><X :size="30" aria-hidden="true"
             /></Button>
           </header>
           <WarpResultsWall
+            v-if="entries?.length === 10"
             :entries="entries ?? []"
             :presentation="presentation"
             @details="openDetails"
           />
+          <div v-else class="warp-review-single">
+            <WarpResultCard
+              v-for="(result, index) in entries ?? []"
+              :key="`${result.batchId}:${result.id}`"
+              :entry="result"
+              :item="presentation.item(result.event.itemId, locale as ToolLocale)"
+              :index="index"
+              id-prefix="warp-overview-result"
+              @details="openDetails"
+            />
+          </div>
         </section>
         <Button
           v-else
@@ -205,7 +264,7 @@ function keydown(event: KeyboardEvent) {
           type="button"
           class="warp-reveal-screen"
           :class="{
-            'warp-reveal-leaving': phase === 'leaving',
+            'warp-reveal-leaving': mode !== 'review' && phase === 'leaving',
             'warp-reveal-full-canvas': stage !== 'identity',
           }"
           :aria-label="
@@ -263,29 +322,19 @@ function keydown(event: KeyboardEvent) {
           </span>
           <span class="warp-reveal-hint" aria-hidden="true">{{ hint }}</span>
         </Button>
-        <div v-if="details && detailItem" class="warp-overview-detail-backdrop">
-          <section class="warp-overview-detail" aria-labelledby="warp-overview-detail-title">
-            <header>
-              <h2 id="warp-overview-detail-title">{{ detailItem.name }}</h2>
-              <Button
-                ref="detailClose"
-                unstyled
-                class="warp-reveal-close"
-                :aria-label="t('warp.details.close')"
-                @click="closeDetails"
-                ><X :size="24" aria-hidden="true"
-              /></Button>
-            </header>
-            <WarpItemDetailsContent
-              :entry="details"
-              :item="detailItem"
-              :source-label="sourceLabel ?? ''"
-            />
-          </section>
-        </div>
       </div>
     </template>
   </Dialog>
+  <WarpItemDetails
+    v-if="visible"
+    :key="detailContext"
+    :entry="details"
+    :item="detailItem"
+    :source-label="details ? (sourceLabelForEntry?.(details) ?? details.event.bannerId) : ''"
+    :z-index="detailZIndex"
+    @close="details = undefined"
+    @after-leave="afterDetailsLeave"
+  />
 </template>
 
 <style>
@@ -381,6 +430,16 @@ function keydown(event: KeyboardEvent) {
   padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
     max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
 }
+.warp-review-single {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: auto;
+  padding: 32px;
+}
+.warp-review-single > .warp-result-card {
+  width: min(100%, 620px);
+}
 .warp-overview-header {
   display: flex;
   align-items: center;
@@ -425,30 +484,6 @@ h2 {
 .warp-reveal-close:hover {
   background: #ffffff15;
 }
-.warp-overview-detail-backdrop {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: #030712b8;
-}
-.warp-overview-detail {
-  width: min(36rem, 100%);
-  max-height: 100%;
-  overflow: auto;
-  padding: 24px;
-  border: 1px solid #59647b;
-  border-radius: 6px;
-  background: var(--color-surface);
-}
-.warp-overview-detail header {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  gap: 16px;
-  margin-bottom: 12px;
-}
 @keyframes warp-reveal-in {
   from {
     opacity: 0;
@@ -473,12 +508,6 @@ h2 {
   }
   .warp-overview {
     padding-inline: 8px;
-  }
-  .warp-overview-detail-backdrop {
-    padding: 12px;
-  }
-  .warp-overview-detail {
-    padding: 16px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

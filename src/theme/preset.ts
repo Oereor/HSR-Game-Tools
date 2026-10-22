@@ -5,15 +5,27 @@ export const warpVisualTokens = {
   rarity3: '#6A8EB7',
   rarity4: '#CE8FFF',
   rarity5: '#FFD17A',
+  // HSR-Database/src/lib/domain/elements.ts @ 17257c58c4e3b4e9e9a801c617e3e3232764e51d.
+  // Its Lightning key maps to the Warp catalog's Thunder ID.
+  element: {
+    Physical: '#b6b6b6',
+    Fire: '#f25740',
+    Ice: '#6dc4ea',
+    Thunder: '#d46aeb',
+    Wind: '#7ad8a5',
+    Quantum: '#8a86de',
+    Imaginary: '#fee554',
+  },
 } as const
 export const ToolsPreset = definePreset(Aura, {
   primitive: {
+    warpHome: { base: '#060b17', glow: '#24335d', ink: '#f0edff' },
     warpResult: {
-      top: '#070a10',
-      upper: '#0c1428',
-      middle: '#252e50',
-      lower: '#7e89a5',
-      bottom: '#e0e8f0',
+      top: '#03060e',
+      upper: '#071024',
+      middle: '#142344',
+      lower: '#526584',
+      bottom: '#ced8e6',
     },
     warpRarity: {
       3: warpVisualTokens.rarity3,

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   resultWall,
-  flatResultWall,
   fitResultWall,
   wallCard,
   wallLayout,
@@ -32,51 +31,34 @@ describe('Complete ordered 3–4–3 wall geometry', () => {
       expect(normalDistance).toBeGreaterThan(wallCard.height + wallLayout.gap)
     }
   })
-  it.each([resultWall, flatResultWall])(
-    'keeps every card and its glow inside the fitted $layout viewport',
-    (wall) => {
-      expect(wall.slots).toHaveLength(10)
-      expect(wallCard.width / wallCard.height).toBe(2)
-      for (const [width, height] of [
-        [1872, 980],
-        [1552, 800],
-        [1318, 668],
-        [1232, 580],
-        [2512, 960],
-      ]) {
-        const scale = fitResultWall(width!, height!, wall)
-        expect(scale).toBeGreaterThan(0)
-        wall.slots.forEach((slot, index) => {
-          expect(slot.zIndex).toBe(index + 1)
-          expect(
-            (slot.centerX - slot.rotatedWidth / 2 - wallLayout.padding) * scale,
-          ).toBeGreaterThanOrEqual(-1e-8)
-          expect(
-            (slot.centerY - slot.rotatedHeight / 2 - wallLayout.padding) * scale,
-          ).toBeGreaterThanOrEqual(-1e-8)
-          expect(
-            (slot.centerX + slot.rotatedWidth / 2 + wallLayout.padding) * scale,
-          ).toBeLessThanOrEqual(width! + 1e-8)
-          expect(
-            (slot.centerY + slot.rotatedHeight / 2 + wallLayout.padding) * scale,
-          ).toBeLessThanOrEqual(height! + 1e-8)
-        })
-      }
-    },
-  )
-  it('centers flat rows and caps homepage scaling at native card size', () => {
-    expect(flatResultWall.angle).toBe(0)
-    expect(flatResultWall.rows.map((row) => row.count)).toEqual([3, 4, 3])
-    for (const row of flatResultWall.rows) {
-      expect(row.left + row.width / 2).toBe(flatResultWall.width / 2)
-      const slots = flatResultWall.slots.slice(row.start, row.start + row.count)
-      expect(new Set(slots.map((slot) => slot.centerY)).size).toBe(1)
-      for (let i = 1; i < slots.length; i++)
-        expect(slots[i]!.centerX - slots[i - 1]!.centerX).toBe(wallCard.width + wallLayout.gap)
+  it.each([resultWall])('keeps every card and its glow inside the fitted viewport', (wall) => {
+    expect(wall.slots).toHaveLength(10)
+    expect(wallCard.width / wallCard.height).toBe(2)
+    for (const [width, height] of [
+      [1872, 980],
+      [1552, 800],
+      [1318, 668],
+      [1232, 580],
+      [2512, 960],
+    ]) {
+      const scale = fitResultWall(width!, height!, wall)
+      expect(scale).toBeGreaterThan(0)
+      wall.slots.forEach((slot, index) => {
+        expect(slot.zIndex).toBe(index + 1)
+        expect(
+          (slot.centerX - slot.rotatedWidth / 2 - wallLayout.padding) * scale,
+        ).toBeGreaterThanOrEqual(-1e-8)
+        expect(
+          (slot.centerY - slot.rotatedHeight / 2 - wallLayout.padding) * scale,
+        ).toBeGreaterThanOrEqual(-1e-8)
+        expect(
+          (slot.centerX + slot.rotatedWidth / 2 + wallLayout.padding) * scale,
+        ).toBeLessThanOrEqual(width! + 1e-8)
+        expect(
+          (slot.centerY + slot.rotatedHeight / 2 + wallLayout.padding) * scale,
+        ).toBeLessThanOrEqual(height! + 1e-8)
+      })
     }
-    expect(fitResultWall(4000, 3000, flatResultWall)).toBe(1)
-    expect(fitResultWall(1200, 500, flatResultWall)).toBeLessThan(1)
-    expect(fitResultWall(0, 500, flatResultWall)).toBe(0)
   })
   it('fills larger viewports without the old scale cap and rejects unavailable sizes', () => {
     expect(fitResultWall(1872, 980)).toBeGreaterThan(1)

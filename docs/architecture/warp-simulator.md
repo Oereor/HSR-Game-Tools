@@ -157,13 +157,17 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 阶段为 idle／identity／artwork／waiting／overview／leaving。五星沿用已验收的命途与 StarBig 前置动画及就绪门控，随后等待当前 Artwork 或最终占位就绪，完成 400ms 淡入后等待确认。普通单抽直接 Artwork；点击前置阶段只跳到当前 Artwork，加载／淡入期间点击不推进。Escape 结束当前单件而不跳过整个队列。Reduced Motion 跳过前置与非必要淡入，资源就绪后等待确认。
 
-十连没有五星时直接 overview；有五星时最后一件离场后进入 overview。overviewEntries 始终为本批完整十项，不重新排序、不根据逐项确认删减。阶段切换保持同一个 Dialog 和操作锁；总览外侧空白、卡片间隙和展示带间空白可点击关闭，与关闭按钮及 Escape 共用离场流程。总览容器统一处理 click，排除卡片、标题栏和其他交互控件，忽略已阻止默认行为的事件、详情打开期间的背景点击及 leaving 阶段重复点击；不将触屏滚动或 pointerup 映射为关闭。单抽最后一项及总览离场完成后隐藏 Dialog，只有匹配 batchId 的 afterHide 才发布 displayedEntries、释放 pending 和恢复原抽取按钮焦点。关闭后主页面保留最新结果。
+十连没有五星时直接 overview；有五星时最后一件离场后进入 overview。overviewEntries 始终为本批完整十项，不重新排序、不根据逐项确认删减。阶段切换保持同一个 Dialog 和操作锁；总览外侧空白、卡片间隙和展示带间空白可点击关闭，与关闭按钮及 Escape 共用离场流程。总览容器统一处理 click，排除卡片、标题栏和其他交互控件，忽略已阻止默认行为的事件、详情打开期间的背景点击及 leaving 阶段重复点击；不将触屏滚动或 pointerup 映射为关闭。单抽最后一项及总览离场完成后隐藏 Dialog，只有匹配 batchId 的 afterHide 才释放 pending 并恢复原抽取按钮焦点。主页始终展示当前卡池，最近一次结果由 session 的 latestBatchId／latestResults 提供，不在演出状态机中维护第二份已展示结果。
 
 每次批次／阶段变化取消旧定时器并递增 revision，ready 事件携带 batchId／entryId，隐藏事件携带离场 batchId。状态机拒绝旧 ID、重复就绪、过期隐藏及销毁后的回调。全部重置清空展示状态且不复用业务批次号。启用 Reduced Motion 不退出 overview；正在 leaving 时立即完成当前离场。图片全失败时最终占位也提供 ready，Escape 在资源加载期间仍可用。
 
-`WarpRevealOverlay` 负责同一模态中的阶段显示、当前物品预加载与局部详情。总览详情复用 `WarpItemDetailsContent`，打开时卡片墙 inert，将焦点移到详情关闭按钮；关闭／Escape 返回原卡片，保持墙的滚动位置。详情存在时 Escape 只返回总览；不启动第二个模态或关闭整批。主页面及历史继续由 `WarpItemDetails` 包装相同内容；原 Drawer 队列仍由 `useWarpOverlay` 管理。
+`WarpRevealOverlay` 负责结果阶段显示、当前物品预加载和详情导航；总览与历史共用 `WarpItemDetails` 包装，详情期间 Escape 只关闭详情，保持卡片墙滚动位置。原 Drawer 队列仍由 `useWarpOverlay` 管理，详情弹层契约见[物品详情弹层](#物品详情弹层)。
 
-`WarpResultArtwork` 负责统一卡内图片回退和最终角色头部定位；所有正式卡片使用 resultPortraitFocus 合并基础配置及 overviewOverrides，开发校准器可显式传入 focus 预览任一配置层。`WarpResultsWall` 的 layout 默认为 tilted，主页十连使用 flat，二者共用 3–4–3 分组和模型边界计算：全屏整排旋转 −12° 并保留排偏移，主页零旋转且每排居中，fitResultWall 仅对 flat 限制最大缩放 1。idPrefix 默认为 warp-overview-result，主页传入 warp-result，点击继续转发原 HistoryEntry。窄屏使用相同 DOM 顺序的自然流网格。WarpResultCard／Artwork 已删除旧视觉变体及 single 属性，单抽尺寸由 WarpResults 外层控制；主页按实际剩余宽高适配，桌面保留页头与操作栏，窄屏和矮屏允许滚动。元素尺寸通过 ResizeObserver 获取未变换的 clientWidth／clientHeight，监听器随作用域清理。具体布局及校准工具见[设计规范](../design-notes.md#跃迁模拟器)。
+主页 WarpBannerStage 只接收当前 Banner、由 up5 解析的 ItemPresentation 及回看入口状态，不持有引擎或抽卡逻辑。当前卡池和语言驱动舞台信息；无单一 UP 时使用通用舞台。角色、光锥使用各自的主页构图，不复用 PortraitFocus 或 reveal-composition。
+
+`useWarpReview` 仅管理只读回看导航，打开时冻结 latestResults 的数组副本，来源从记录的 event.bannerId 解析，不受当前卡池切换影响。WarpRevealOverlay 的 review 模式直接展示单卡或完整卡片墙，不进入 useWarpReveal，不播放 Identity、揭示或命途动画，不生成记录或消费 RNG。回看关闭后匹配 batchId 与每次打开的 revision 才释放导航锁并恢复入口焦点；重复打开、离场期间打开及过期隐藏回调被拒绝。演出和回看互斥，回看详情沿用原卡片焦点恢复和 Esc 分层关闭。全量重置后入口随 latestResults 清空而隐藏。
+
+`WarpResultArtwork` 负责统一卡内图片回退和最终角色头部定位；正式卡片使用 resultPortraitFocus 合并基础配置及 overviewOverrides，开发校准器可显式传入 focus。`WarpResultsWall` 仅保留倾斜 3–4–3 布局，整排旋转 −12° 并保留排偏移；fitResultWall 按边界等比适配。默认 idPrefix 为 warp-overview-result，点击转发原 HistoryEntry，窄屏按原 DOM 顺序使用自然流网格。单抽回看尺寸由全屏容器控制。元素尺寸通过 ResizeObserver 获取，监听器随作用域清理。
 
 单件 Artwork 另用 `reveal-composition` 描述等比 contain 缩放；所有构图中心均为完整 viewport 的 (0.5,0.5)，不读取结果卡 PortraitFocus。`WarpRevealImage` 根据当前源图尺寸和 ResizeObserver 结果计算等比几何，桌面、窄屏和矮屏均使用全屏容器；未提供 composition 时保持原像素限制与 Identity 渲染。单件角色统一使用完整画布的 contain 比例适配 viewport，保持居中和宽高比，不额外放大或溢出，单件光锥保留完整图片与实际像素／DPR 上限。左侧信息条作为独立覆盖层，保持类型、图标、名称、星级和角色命途信息，不参与主体区域尺寸计算。
 
@@ -173,16 +177,22 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 [visuals](../../src/tools/warp-simulator/data/visuals/)为独立的规范化展示快照，来源锁定和显式离线维护见[游戏数据指南](../game-data.md#warp-展示资源)。它不表达抽取资格，不修改引擎输入，不在普通构建中生成。共享头像的复用仅发生于维护阶段；运行时无排轴业务导入或原始来源依赖。
 
-`createPresentation(snapshot, visuals?, base?, definitions?)` 继续按 canonical ID 从 Warp Snapshot 取得名称、类别、稀有度，另外返回命途内部 ID／本地化名称／图标、角色属性内部 ID／名称／图标／原色／可读色、头像、立绘／封面及星级图片 URL。物品路径只由登记的安全 `game-assets/*.webp` 相对路径与 BASE_URL 组合。光锥无属性；缺失元数据和加载失败均使用中性占位，不猜测资源。
+`createPresentation(snapshot, visuals?, base?, definitions?)` 继续按 canonical ID 从 Warp Snapshot 取得名称、类别、稀有度，另外返回命途内部 ID／本地化名称／图标、角色属性内部 ID／名称／图标／展示色、头像、立绘／封面及星级图片 URL。物品路径只由登记的安全 `game-assets/*.webp` 相对路径与 BASE_URL 组合。主页和历史的属性文字统一使用 elementColor，从主题 warpVisualTokens.element 取得 HSR-Database 配色，不使用 StarRailRes 快照中的颜色或派生提亮色。配色来源为 HSR-Database 的 src/lib/domain/elements.ts（17257c58c4e3b4e9e9a801c617e3e3232764e51d），其中 Lightning 对应本工具的 Thunder；未知或缺失属性继承普通前景色。颜色属于本工具的展示策略，不改写资源快照及来源 Manifest，也不引入运行时跨仓库依赖。光锥无属性；缺失元数据和加载失败均使用中性占位，不猜测资源。
 
-Catalog 的可选 `resultPortrait` 仅用于角色高清特写，保存原始完整画布的 path／width／height；Adapter 提供同名 url／width／height，不替代 artworkUrl 或 revealArtwork。当前 55 个角色均为 2048×2048，与既有 revealArtwork 共用已校验输出。角色卡按 resultPortrait → revealArtwork → artworkUrl → 中性占位降级，URL 去重，不预加载全图鉴。仅光锥可用的 lightConePreview 和既有演出字段 revealArtwork／revealPathIcon／revealStars／revealStarBig 保持职责；光锥卡片及单件使用 preview，详情继续原 Artwork，V3 Identity 继续独立 StarBig。资源 Manifest 校验用途、原始尺寸、哈希和引用覆盖，见[资源维护](../game-data.md#warp-展示资源)。
+Catalog 的可选 `resultPortrait` 仅用于角色高清特写，保存原始完整画布的 path／width／height；Adapter 提供同名 url／width／height，不替代 artworkUrl 或 revealArtwork。当前 55 个角色均为 2048×2048，与既有 revealArtwork 共用已校验输出。角色卡按 resultPortrait → revealArtwork → artworkUrl → 中性占位降级，URL 去重，不预加载全图鉴。仅光锥可用的 lightConePreview 和既有演出字段 revealArtwork／revealPathIcon／revealStars／revealStarBig 保持职责；光锥卡片、单件及详情使用 preview，V3 Identity 继续独立 StarBig。资源 Manifest 校验用途、原始尺寸、哈希和引用覆盖，见[资源维护](../game-data.md#warp-展示资源)。
 
-裁切星级 cardStars[3/4/5] 同样使用 path／width／height；Adapter 提供可选 cardStars 图片描述与 cardStarsReferenceAspectRatio，后者取裁切五星图宽高比，缺失时以 5 保守限制。卡片的两行 Metadata 信息簇和最终 Artwork 信息面板选择 cardStars，资源缺失／失败使用中性占位；历史、详情仍使用旧 starsUrl，V3 Identity 使用独立 StarBig。WarpVisualIcon 的 image／referenceAspectRatio 可选输入由结果卡和最终 Artwork 信息面板启用，按共同参考比约束三档高度；旧 url／stars 调用保留原行为。Manifest v3 保留裁切追溯，维护规则见[资源维护](../game-data.md#warp-展示资源)。这些元数据派生不调用 RNG 或修改会话。
+裁切星级 cardStars[3/4/5] 同样使用 path／width／height；Adapter 提供可选 cardStars 图片描述与 cardStarsReferenceAspectRatio，后者取裁切五星图宽高比，缺失时以 5 保守限制。卡片的两行 Metadata 信息簇、最终 Artwork 信息面板及详情选择 cardStars，资源缺失／失败使用中性占位；历史仍使用旧 starsUrl，V3 Identity 使用独立 StarBig。WarpVisualIcon 的 image／referenceAspectRatio 可选输入由结果卡、最终 Artwork 信息面板及详情启用，按共同参考比约束三档高度；旧 url／stars 调用保留原行为。Manifest v3 保留裁切追溯，维护规则见[资源维护](../game-data.md#warp-展示资源)。这些元数据派生不调用 RNG 或修改会话。
 
-`useWarpOverlay` 只管理互斥 Drawer、Dialog 进入队列及恢复焦点 ID，不引用会话或 RNG。控制与历史默认收起，结果区域和常驻抽取栏保持挂载；打开／关闭面板不会重建 `useWarpSimulator` 或结果批次。Dialog 先等待 Drawer 的 after-hide，关闭后恢复来源面板／触发项；浮层关闭后的 DOM 焦点恢复只在页面层执行。星缘头像／空状态按钮沿用原队列；关闭后若原触发项已消失，页面将焦点回退到首个可用头像。星缘 Dialog 内手动移除失效角色后，在下一次 DOM 更新恢复搜索输入焦点，避免焦点留在已移除的按钮上。
+`useWarpOverlay` 只管理互斥 Drawer、Dialog 进入队列及恢复焦点 ID，不引用会话或 RNG。控制与历史默认收起，结果区域和常驻抽取栏保持挂载；打开／关闭面板不会重建 `useWarpSimulator` 或结果批次。Dialog 先等待 Drawer 的 after-hide，关闭后恢复来源面板／触发项；页面及结果容器负责浮层离场后的导航焦点，HModal 负责详情内部焦点。星缘头像／空状态按钮沿用原队列；关闭后若原触发项已消失，页面将焦点回退到首个可用头像。星缘 Dialog 内手动移除失效角色后，在下一次 DOM 更新恢复搜索输入焦点，避免焦点留在已移除的按钮上。
 
 结果卡按物品类型分支：角色是全幅原始尺寸立绘，属性和星级叠加在左下角，没有可见命途信息列；光锥保留左侧命途／星级和右侧透明预览。头部配置仅来自 data/portrait-focus.json，默认、角色覆盖和总览差异按顺序合并，完整卡片的未旋转尺寸交给 portraitGeometry。十连全屏保留倾斜 3–4–3 卡片墙；Tooltip、ARIA 和详情保留完整文字。历史表格及最新批次顺序、抽取、分页、重置和历史容量不变，星缘配置继续独立于会话重置。
 
 双语 UI 文案集中于 `warp.*`，官方命途／属性名称来自展示快照。语言、动画与资源加载不改变身份、UP 或 RNG。结果卡稳定 key 与 reduced-motion 规则保持不变，稀有度 Token 共用于结果卡和历史名称；历史正文 14px，名称 Hover／Focus 保留稀有度颜色。真实视觉、键盘／触屏、焦点及响应式由维护者人工验收。
 
 会话持久化、导入导出、统计图表及粒子／镜头等复杂演出仍未实现；真实 Banner 的后续维护需单独审阅，不自动进入下一阶段。
+
+## 物品详情弹层
+
+普通历史入口与全屏结果入口复用同一个 Astral UI HModal。详情只读 HistoryEntry 与 ItemPresentation；来源使用记录的 bannerId，UP、保底和记录编号沿用抽取时事件，不读取当前所选卡池或会话最新保底。包装在 close 时通知外部清空选择，并保留离场内容到 after-leave；历史抽屉在该事件后恢复原导航和行焦点。
+
+全屏详情包装位于 PrimeVue Dialog 同级，Teleport 后显式设置局部主题及高于实际全屏遮罩的层级。详情打开和退出期间父 Dialog 根节点保持 inert／aria-hidden，父滚动锁保持；HModal 负责子层焦点，after-leave 后解除父层 inert 并恢复有效卡片或关闭按钮焦点。父层隐藏、批次或回看版本替换时卸载旧详情，清除旧导航状态。视觉和人工验收要求见[设计规范](../design-notes.md#跃迁模拟器)。

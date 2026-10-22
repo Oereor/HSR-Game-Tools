@@ -4,14 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { ToolLocale } from '../../../locales/types'
 import type { HistoryEntry } from '../composables/useWarpSimulator'
 import type { createPresentation } from '../model/presentation'
-import {
-  resultWall,
-  flatResultWall,
-  fitResultWall,
-  wallCard,
-  wallLayout,
-  type ResultWallLayout,
-} from '../model/result-wall'
+import { resultWall, fitResultWall, wallCard, wallLayout } from '../model/result-wall'
 import { useWarpElementSize } from '../composables/useWarpElementSize'
 import WarpResultCard from './WarpResultCard.vue'
 
@@ -19,19 +12,18 @@ const props = withDefaults(
   defineProps<{
     entries: readonly HistoryEntry[]
     presentation: ReturnType<typeof createPresentation>
-    layout?: ResultWallLayout
     idPrefix?: string
   }>(),
-  { layout: 'tilted', idPrefix: 'warp-overview-result' },
+  { idPrefix: 'warp-overview-result' },
 )
 const emit = defineEmits<{ details: [entry: HistoryEntry] }>()
 const { locale, t } = useI18n()
 const frame = ref<HTMLElement>()
 const size = useWarpElementSize(frame)
-const wall = computed(() => (props.layout === 'flat' ? flatResultWall : resultWall))
-const scale = computed(() => fitResultWall(size.value.width, size.value.height, wall.value))
+const wall = resultWall
+const scale = computed(() => fitResultWall(size.value.width, size.value.height, wall))
 const rows = computed(() =>
-  wall.value.rows.map((row) => ({
+  wall.rows.map((row) => ({
     ...row,
     entries: props.entries.slice(row.start, row.start + row.count).map((entry, column) => ({
       entry,
@@ -41,12 +33,7 @@ const rows = computed(() =>
 )
 </script>
 <template>
-  <div
-    ref="frame"
-    class="warp-wall-viewport"
-    :class="{ 'warp-wall-flat': layout === 'flat' }"
-    :aria-label="t('warp.results.overviewTitle')"
-  >
+  <div ref="frame" class="warp-wall-viewport" :aria-label="t('warp.results.overviewTitle')">
     <div
       class="warp-wall-canvas"
       :style="{
@@ -128,9 +115,6 @@ const rows = computed(() =>
   position: relative;
   flex: 0 0 var(--wall-card-width);
   min-width: 0;
-}
-.warp-wall-flat .warp-wall-row::before {
-  content: none;
 }
 .warp-wall-row:focus-within,
 .warp-wall-row:hover {

@@ -32,7 +32,8 @@ import WarpPityPanel from './components/WarpPityPanel.vue'
 import WarpBannerList from './components/WarpBannerList.vue'
 import WarpItemVisual from './components/WarpItemVisual.vue'
 import WarpSelectionDialog from './components/WarpSelectionDialog.vue'
-import WarpResults from './components/WarpResults.vue'
+import WarpBannerStage from './components/WarpBannerStage.vue'
+import { useWarpReview } from './composables/useWarpReview'
 import WarpHistory from './components/WarpHistory.vue'
 import WarpItemDetails from './components/WarpItemDetails.vue'
 
@@ -70,19 +71,20 @@ const {
   artworkReady,
   identityReady,
   current: revealEntry,
-  displayedEntries,
 } = reveal
+const review = useWarpReview()
 let revealTrigger: string | undefined
 watch(
   () => session.value.latestBatchId,
   (batchId) => {
+    review.close()
     if (batchId === undefined) reveal.reset()
     else reveal.beginBatch(batchId, latestResults.value)
   },
   { flush: 'sync' },
 )
 function draw(count: 1 | 10) {
-  if (revealLocked.value) return
+  if (revealLocked.value || review.locked.value) return
   revealTrigger = count === 1 ? 'warp-pull-one' : 'warp-pull-ten'
   void simulator.draw(count)
 }
@@ -96,6 +98,24 @@ const presentation = createPresentation(
   warpVisualDefinitions,
 )
 const item = (id: string) => presentation.item(id, locale.value as ToolLocale)
+const bannerItem = computed(() => {
+  const up5 = activeBanner.value?.banner.up5
+  const candidate = up5 ? item(up5) : undefined
+  return candidate?.rarity === 5 ? candidate : undefined
+})
+function openReview() {
+  review.open(latestResults.value, controlsLocked.value || !!panel.value)
+}
+function afterReviewHide(batchId?: number, revision?: number) {
+  if (review.afterHide(batchId, revision)) focus('warp-review-trigger')
+}
+const resultEntries = computed(() =>
+  review.locked.value ? review.entries.value : reveal.overviewEntries.value,
+)
+const resultSource = computed(() => {
+  const first = resultEntries.value[0]
+  return first ? sourceLabel(first.event.bannerId) : ''
+})
 function sourceLabel(bannerId: string) {
   const banner = warpSnapshot.banners.find((entry) => entry.id === bannerId)
   return banner
@@ -105,7 +125,12 @@ function sourceLabel(bannerId: string) {
     : bannerId
 }
 const controlsLocked = computed(
-  () => busy.value || revealLocked.value || selectionOpen.value || !!resetScope.value,
+  () =>
+    busy.value ||
+    revealLocked.value ||
+    review.locked.value ||
+    selectionOpen.value ||
+    !!resetScope.value,
 )
 const kindTabs = computed(() =>
   simulator.bannerGroups.map((group) => ({
@@ -155,102 +180,102 @@ function openReset(scope: 'group' | 'all') {
     simulator.requestReset(scope)
   }, `warp-reset-${scope}`)
 }
-function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
+function showDetails(entry: HistoryEntry) {
   overlay.openDialog(() => {
     details.value = entry
-  }, `warp-${source}-${entry.id}`)
+  }, `warp-history-${entry.id}`)
 }
 </script>
 
 <template>
-  <div class="warp-page" :inert="revealLocked">
-    <header class="warp-page-heading">
-      <div class="warp-page-title">
-        <Ticket :size="24" :stroke-width="1.75" aria-hidden="true" />
-        <h1>{{ t('warp.title') }}</h1>
-      </div>
-      <p class="warp-current-banner">
-        {{ activeBanner ? sourceLabel(activeBanner.banner.id) : t('warp.noBanners') }}
-      </p>
-      <div class="warp-panel-actions">
+  <div class="warp-page">
+    <div class="warp-home" :inert="revealLocked || review.locked.value">
+      <header class="warp-page-heading">
+        <div class="warp-page-title">
+          <Ticket :size="24" :stroke-width="1.75" aria-hidden="true" />
+          <h1>{{ t('warp.title') }}</h1>
+        </div>
+        <div class="warp-panel-actions">
+          <HButton
+            class="h-theme warp-astral-button"
+            variant="secondary"
+            id="warp-controls-trigger"
+            :aria-expanded="panel === 'controls'"
+            aria-controls="warp-controls-drawer"
+            @click="overlay.openPanel('controls')"
+            ><SlidersHorizontal :size="16" aria-hidden="true" />{{
+              t('warp.panels.controls')
+            }}</HButton
+          >
+          <HButton
+            class="h-theme warp-astral-button"
+            variant="secondary"
+            id="warp-history-trigger"
+            :aria-expanded="panel === 'history'"
+            aria-controls="warp-history-drawer"
+            @click="overlay.openPanel('history')"
+            ><History :size="16" aria-hidden="true" />{{ t('warp.history.title') }}</HButton
+          >
+        </div>
+      </header>
+      <WarpBannerStage
+        :banner="activeBanner?.banner"
+        :item="bannerItem"
+        :has-results="latestResults.length > 0"
+        :disabled="controlsLocked"
+        @review="openReview"
+      />
+      <div class="warp-actionbar">
+        <p id="warp-choice-status" class="warp-action-status">
+          {{
+            !activeBanner
+              ? t('warp.noBanners')
+              : selectionIssue
+                ? t(`warp.selection.${selectionIssue}`)
+                : ''
+          }}
+        </p>
         <HButton
           class="h-theme warp-astral-button"
           variant="secondary"
-          id="warp-controls-trigger"
-          :aria-expanded="panel === 'controls'"
-          aria-controls="warp-controls-drawer"
-          @click="overlay.openPanel('controls')"
-          ><SlidersHorizontal :size="16" aria-hidden="true" />{{
-            t('warp.panels.controls')
+          v-if="activeBanner?.requiresSelection"
+          id="warp-action-selection"
+          size="sm"
+          :disabled="controlsLocked"
+          @click="openSelection('warp-action-selection')"
+          ><UsersRound :size="16" aria-hidden="true" />{{
+            t(selectedAvatarIds.length ? 'warp.selection.edit' : 'warp.selection.choose')
           }}</HButton
         >
-        <HButton
-          class="h-theme warp-astral-button"
-          variant="secondary"
-          id="warp-history-trigger"
-          :aria-expanded="panel === 'history'"
-          aria-controls="warp-history-drawer"
-          @click="overlay.openPanel('history')"
-          ><History :size="16" aria-hidden="true" />{{ t('warp.history.title') }}</HButton
-        >
+        <div class="warp-actions" :aria-busy="busy">
+          <HButton
+            class="h-theme warp-astral-button"
+            variant="secondary"
+            id="warp-pull-one"
+            :loading="busy"
+            :disabled="!canPull || revealLocked || review.locked.value"
+            :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
+            @click="draw(1)"
+            ><Ticket :size="17" aria-hidden="true" />{{ t('warp.pullOne') }}</HButton
+          >
+          <HButton
+            class="h-theme warp-astral-button"
+            variant="primary"
+            id="warp-pull-ten"
+            :loading="busy"
+            :disabled="!canPull || revealLocked || review.locked.value"
+            :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
+            @click="draw(10)"
+            ><TicketsIcon :size="17" aria-hidden="true" />{{ t('warp.pullTen') }}</HButton
+          >
+        </div>
+        <p v-if="diagnostic" id="warp-draw-error" class="warp-error" role="alert">
+          {{ t(`warp.error.${diagnostic.code}`) }}
+        </p>
+        <p v-if="storageNotice" class="warp-storage-notice" role="status">
+          {{ t(`warp.storage.${storageNotice}`) }}
+        </p>
       </div>
-    </header>
-    <WarpResults
-      :entries="displayedEntries"
-      :presentation="presentation"
-      :source-label="displayedEntries.length ? sourceLabel(displayedEntries[0].event.bannerId) : ''"
-      @details="showDetails($event, 'result')"
-    />
-    <div class="warp-actionbar">
-      <p id="warp-choice-status" class="warp-action-status">
-        {{
-          !activeBanner
-            ? t('warp.noBanners')
-            : selectionIssue
-              ? t(`warp.selection.${selectionIssue}`)
-              : ''
-        }}
-      </p>
-      <HButton
-        class="h-theme warp-astral-button"
-        variant="secondary"
-        v-if="activeBanner?.requiresSelection"
-        id="warp-action-selection"
-        size="sm"
-        :disabled="controlsLocked"
-        @click="openSelection('warp-action-selection')"
-        ><UsersRound :size="16" aria-hidden="true" />{{
-          t(selectedAvatarIds.length ? 'warp.selection.edit' : 'warp.selection.choose')
-        }}</HButton
-      >
-      <div class="warp-actions" :aria-busy="busy">
-        <HButton
-          class="h-theme warp-astral-button"
-          variant="secondary"
-          id="warp-pull-one"
-          :loading="busy"
-          :disabled="!canPull || revealLocked"
-          :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
-          @click="draw(1)"
-          ><Ticket :size="17" aria-hidden="true" />{{ t('warp.pullOne') }}</HButton
-        >
-        <HButton
-          class="h-theme warp-astral-button"
-          variant="primary"
-          id="warp-pull-ten"
-          :loading="busy"
-          :disabled="!canPull || revealLocked"
-          :aria-describedby="diagnostic ? 'warp-draw-error' : 'warp-choice-status'"
-          @click="draw(10)"
-          ><TicketsIcon :size="17" aria-hidden="true" />{{ t('warp.pullTen') }}</HButton
-        >
-      </div>
-      <p v-if="diagnostic" id="warp-draw-error" class="warp-error" role="alert">
-        {{ t(`warp.error.${diagnostic.code}`) }}
-      </p>
-      <p v-if="storageNotice" class="warp-storage-notice" role="status">
-        {{ t(`warp.storage.${storageNotice}`) }}
-      </p>
     </div>
     <Drawer
       block-scroll
@@ -441,7 +466,7 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
         :page="historyPage"
         :presentation="presentation"
         @page="simulator.setHistoryPage"
-        @details="showDetails($event, 'history')"
+        @details="showDetails"
       />
     </Drawer>
     <div class="warp-sr-only" role="status" aria-live="polite" aria-atomic="true">
@@ -450,15 +475,14 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       }}</span>
     </div>
     <WarpRevealOverlay
-      :visible="revealVisible"
-      :batch-id="reveal.batchId.value"
-      :entries="reveal.overviewEntries.value"
+      :review-revision="review.revision.value"
+      :mode="review.locked.value ? 'review' : 'reveal'"
+      :visible="review.locked.value ? review.visible.value : revealVisible"
+      :batch-id="review.locked.value ? review.batchId.value : reveal.batchId.value"
+      :entries="resultEntries"
       :presentation="presentation"
-      :source-label="
-        reveal.overviewEntries.value.length
-          ? sourceLabel(reveal.overviewEntries.value[0].event.bannerId)
-          : ''
-      "
+      :source-label="resultSource"
+      :source-label-for-entry="(entry) => sourceLabel(entry.event.bannerId)"
       :entry="revealEntry"
       :item="revealEntry ? item(revealEntry.event.itemId) : undefined"
       :phase="revealPhase"
@@ -469,6 +493,8 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       @activate="reveal.activate"
       @escape="reveal.escape"
       @after-hide="afterRevealHide"
+      @review-close="review.close"
+      @review-after-hide="afterReviewHide"
     />
     <WarpSelectionDialog
       :visible="selectionOpen"
@@ -486,7 +512,7 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
       :item="details ? item(details.event.itemId) : undefined"
       :source-label="details ? sourceLabel(details.event.bannerId) : ''"
       @close="details = undefined"
-      @after-hide="afterDialogHide"
+      @after-leave="afterDialogHide"
     />
     <Dialog
       :visible="!!resetScope"
@@ -642,24 +668,39 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 
 .warp-page {
   min-width: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
-@media (min-width: 1040px) and (min-height: 640px) {
+.warp-home {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  background: var(--p-warp-home-base);
+}
+:global(.app-shell:has(> main > .warp-page)) {
+  max-width: none;
+  padding-inline: clamp(12px, 2vw, 40px);
+}
+@media (min-height: 480px) {
   :global(.app-shell:has(> main > .warp-page)) {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
     height: 100dvh;
     box-sizing: border-box;
+    padding-bottom: 0;
   }
   :global(.app-shell:has(> main > .warp-page) > main) {
     display: flex;
     min-width: 0;
     min-height: 0;
   }
-  .warp-page {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    flex: 1;
-    min-height: 0;
+}
+@media (max-height: 479px) {
+  .warp-home {
+    grid-template-rows: auto minmax(300px, 1fr) auto;
   }
 }
 .warp-page-heading {
@@ -667,7 +708,9 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   flex-wrap: wrap;
   align-items: center;
   gap: 12px 20px;
-  margin-bottom: 28px;
+  padding: 18px 24px;
+  position: relative;
+  z-index: 2;
 }
 .warp-page-title {
   display: flex;
@@ -679,16 +722,10 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 }
 .warp-page-title h1 {
   margin: 0;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-}
-.warp-current-banner {
-  font-size: 12px;
-  color: var(--color-muted);
-  flex: 1 1 220px;
-  margin: 0;
-  overflow-wrap: anywhere;
+  font-size: clamp(20px, 2vw, 24px);
 }
 .warp-panel-actions {
+  margin-inline-start: auto;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -703,8 +740,8 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
   gap: 10px 16px;
   padding: 14px 12px calc(14px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--color-line);
-  background: var(--color-page);
-  z-index: 1;
+  background: var(--p-warp-home-base);
+  z-index: 2;
 }
 .warp-action-status {
   flex: 1 1 210px;
@@ -782,7 +819,7 @@ function showDetails(entry: HistoryEntry, source: 'result' | 'history') {
 }
 @media (max-width: 1039px) {
   .warp-page-heading {
-    margin-bottom: 16px;
+    padding: 14px 16px;
   }
   .warp-panel-actions {
     width: 100%;

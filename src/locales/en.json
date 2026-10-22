@@ -192,6 +192,19 @@
       "finalName": "Khaslana-Final Strike",
       "noAllies": "No allied actors can leave the field at this point."
     },
+    "robin": {
+      "name": "Robin · Ultimate",
+      "description": "Make allies act immediately and create a 90 SPD Concerto countdown",
+      "eventName": "Concerto",
+      "unavailable": {
+        "context": "The execution context at this insertion point is unavailable. Adjust the horizon or earlier configuration.",
+        "missing": "Robin is not in the current lineup.",
+        "ambiguous": "Multiple actors are identified as Robin. The ultimate target cannot be determined.",
+        "departed": "Robin has already left the field at this insertion point.",
+        "unavailable": "Robin no longer exists at this insertion point.",
+        "activeAlly": "An allied actor on the field is currently acting and cannot act immediately before its action. Select the post-action phase."
+      }
+    },
     "speedTag": {
       "flat": "SPD {amount}",
       "percent": "SPD {amount}%",
@@ -408,7 +421,6 @@
       "title": "Latest warp results",
       "overviewTitle": "Warp Results",
       "count": "{count} warps",
-      "empty": "Choose a banner and any required characters to begin your first warp.",
       "close": "Close results overview"
     },
     "history": {
@@ -478,9 +490,10 @@
       "continue": "Click to continue"
     },
     "details": {
-      "title": "Item details",
+      "avatarDescription": "Combat Type: {element}, Path: {path}",
+      "coneDescription": "Path: {path}",
       "open": "View details: {summary}",
-      "close": "Close item details",
+      "close": "Close",
       "summary": "{name}, {kind}, {rarity}-star, Path: {path}, Element: {element}",
       "source": "Warp source",
       "eventUp": "UP hit on this pull",

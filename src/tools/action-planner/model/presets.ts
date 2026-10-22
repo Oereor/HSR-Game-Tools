@@ -1,7 +1,119 @@
-import type { EffectOperation, EventAnchor, EffectPhase, SimulationState } from '../engine/types'
+import type {
+  EffectOperation,
+  EventAnchor,
+  EffectPhase,
+  PlanEvent,
+  SimulationState,
+} from '../engine/types'
 import { FULL_AG, anchorKey, spawnedParticipantId } from '../engine/queue'
 import { operationTargets } from '../engine/targeting'
-import type { PlannerDocument } from './editor'
+import { metadataValue, type PlannerDocument } from './editor'
+
+export interface BatchPresetResult {
+  document?: PlannerDocument
+  operationIds: string[]
+  invalid: string[]
+}
+
+function appendPresetEvents(document: PlannerDocument, patches: PlanEvent[]): PlannerDocument {
+  const events = document.plan.events.map((event) => ({
+    ...event,
+    operations: [...event.operations],
+  }))
+  for (const patch of patches) {
+    const existing = events.find((event) => anchorKey(event.anchor) === anchorKey(patch.anchor))
+    if (existing) existing.operations.push(...patch.operations)
+    else events.push({ anchor: { ...patch.anchor }, operations: [...patch.operations] })
+  }
+  return { ...document, plan: { ...document.plan, events } }
+}
+
+export interface RobinPresetInput {
+  name: string
+}
+
+export type RobinPresetIssue =
+  'context' | 'missing' | 'ambiguous' | 'departed' | 'unavailable' | 'activeAlly'
+
+/** Eligibility at the insertion point, shared by the UI and submission. */
+export function robinPresetAvailability(
+  document: PlannerDocument,
+  preview: SimulationState | undefined,
+): { participantId?: string; hasOtherAllies?: boolean; issue?: RobinPresetIssue } {
+  if (!preview) return { issue: 'context' }
+  const robins = document.plan.actors.filter(
+    (actor) =>
+      actor.camp === 'ally' && metadataValue(document.metadata.characterIds, actor.id) === '1309',
+  )
+  if (!robins.length) return { issue: 'missing' }
+  if (robins.length !== 1) return { issue: 'ambiguous' }
+  const robin = preview.participants.find(
+    (participant) => participant.id === robins[0]!.id && participant.kind === 'actor',
+  )
+  if (!robin) return { issue: 'unavailable' }
+  if (robin.departed) return { issue: 'departed' }
+  const allies = operationTargets(preview, 'immediatelyAct').filter(
+    (participant) =>
+      participant.kind === 'actor' && participant.camp === 'ally' && participant.id !== robin.id,
+  )
+  if (allies.some((participant) => participant.id === preview.activeParticipantId))
+    return { issue: 'activeAlly' }
+  return { participantId: robin.id, hasOtherAllies: allies.length > 0 }
+}
+
+/** Ordinary operations only; the countdown's trigger anchor follows its stable spawn identity. */
+export function buildRobinPreset(
+  document: PlannerDocument,
+  anchor: EventAnchor,
+  phase: EffectPhase,
+  preview: SimulationState | undefined,
+  input: RobinPresetInput,
+  nextId: () => string,
+): BatchPresetResult {
+  const available = robinPresetAvailability(document, preview)
+  if (available.issue) return { invalid: [`robin:${available.issue}`], operationIds: [] }
+  if (!input.name.trim()) return { invalid: ['form'], operationIds: [] }
+  const operationIds: string[] = []
+  const id = () => {
+    const value = nextId()
+    operationIds.push(value)
+    return value
+  }
+  const target = () => ({
+    kind: 'participants' as const,
+    participantIds: [available.participantId!],
+  })
+  const common = anchor.kind === 'action' ? { phase } : {}
+  const operations: EffectOperation[] = [{ id: id(), type: 'depart', target: target(), ...common }]
+  if (available.hasOtherAllies)
+    operations.push({ id: id(), type: 'immediatelyAct', target: { kind: 'allies' }, ...common })
+  const spawnId = id()
+  operations.push({
+    id: spawnId,
+    type: 'spawnParticipant',
+    ...common,
+    participant: {
+      kind: 'scheduledEvent',
+      name: input.name.trim(),
+      speed: 90,
+      initialAG: FULL_AG,
+    },
+  })
+  return {
+    document: appendPresetEvents(document, [
+      { anchor, operations },
+      {
+        anchor: { kind: 'trigger', participantId: spawnedParticipantId(spawnId) },
+        operations: [
+          { id: id(), type: 'returnToField', target: target() },
+          { id: id(), type: 'immediatelyAct', target: target() },
+        ],
+      },
+    ]),
+    operationIds,
+    invalid: [],
+  }
+}
 
 export interface KhaslanaPresetInput {
   baseSpeed: number | undefined
@@ -17,7 +129,7 @@ export function buildKhaslanaPreset(
   preview: SimulationState | undefined,
   input: KhaslanaPresetInput,
   nextId: () => string,
-): { document?: PlannerDocument; operationIds: string[]; invalid: string[] } {
+): BatchPresetResult {
   const invalid: string[] = []
   const positive = (value: number | undefined): value is number =>
     value !== undefined && Number.isFinite(value) && value > 0
@@ -65,17 +177,8 @@ export function buildKhaslanaPreset(
       ],
     },
   ]
-  let events = document.plan.events.map((event) => ({
-    ...event,
-    operations: [...event.operations],
-  }))
-  for (const patch of patches) {
-    const existing = events.find((event) => anchorKey(event.anchor) === anchorKey(patch.anchor))
-    if (existing) existing.operations.push(...patch.operations)
-    else events = [...events, { anchor: { ...patch.anchor }, operations: patch.operations }]
-  }
   return {
-    document: { ...document, plan: { ...document.plan, events } },
+    document: appendPresetEvents(document, patches),
     operationIds,
     invalid: [],
   }

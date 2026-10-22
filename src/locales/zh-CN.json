@@ -182,8 +182,8 @@
     "eventBaseSpeed": "百分比速度基数（留空使用初始速度）",
     "eventUnlimitedOnly": "战斗事件的速度效果只支持无限持续。",
     "khaslana": {
-      "name": "卡厄斯兰那的额外回合",
-      "description": "八个倒计时与我方离场、回场",
+      "name": "白厄·终结技",
+      "description": "添加8个倒计时回合并使队友离场",
       "baseSpeed": "白厄基础速度",
       "inheritance": "倒计时速度继承比例",
       "hint": "0 魂填 60%，1 魂以上填 66%",
@@ -191,6 +191,19 @@
       "eventName": "卡厄斯兰那-{index}",
       "finalName": "卡厄斯兰那-最后一击",
       "noAllies": "当前没有可离场的我方行动单位。"
+    },
+    "robin": {
+      "name": "知更鸟·终结技",
+      "description": "使我方全体立即行动，并添加「协奏」倒计时",
+      "eventName": "协奏",
+      "unavailable": {
+        "context": "此操作插入位置的执行上下文不可用，请调整范围或上游配置。",
+        "missing": "当前编队中没有知更鸟。",
+        "ambiguous": "编队中存在多个知更鸟身份，无法确定终结技的目标。",
+        "departed": "知更鸟在此操作插入位置已经离场。",
+        "unavailable": "知更鸟在此操作插入位置已不再存在。",
+        "activeAlly": "当前在场队友正在行动，行动前无法使其立即行动；请选择行动后阶段。"
+      }
     },
     "speedTag": {
       "flat": "速度 {amount}",
@@ -408,7 +421,6 @@
       "title": "最新跃迁结果",
       "overviewTitle": "结果展示",
       "count": "{count} 次跃迁",
-      "empty": "选择卡池并完成星缘选择后，开始第一次跃迁。",
       "close": "关闭结果总览"
     },
     "history": {
@@ -478,9 +490,10 @@
       "continue": "点击继续"
     },
     "details": {
-      "title": "物品详情",
+      "avatarDescription": "战斗属性为{element}，命途为{path}",
+      "coneDescription": "命途为{path}",
       "open": "查看详情：{summary}",
-      "close": "关闭物品详情",
+      "close": "关闭",
       "summary": "{name}，{kind}，{rarity}星，命途：{path}，属性：{element}",
       "source": "抽取来源",
       "eventUp": "当次抽取命中 UP",

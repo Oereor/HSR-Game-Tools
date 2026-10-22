@@ -39,9 +39,9 @@ const adapter = createPresentation(
 )
 
 describe('Real result wall row grouping', () => {
-  it.each(['tilted', 'flat'] as const)(
+  it.each(['tilted'] as const)(
     'preserves ordered records and details identities in the %s wall across language changes',
-    async (layout) => {
+    async () => {
       const entries = ref(
         resultDisplayScenarios().find((s) => s.id === 'overview-reference')!.entries,
       )
@@ -52,8 +52,6 @@ describe('Real result wall row grouping', () => {
           h(WarpResultsWall, {
             entries: entries.value,
             presentation: adapter,
-            layout,
-            idPrefix: layout === 'flat' ? 'warp-result' : undefined,
             onDetails: details,
           }),
       })
@@ -66,12 +64,9 @@ describe('Real result wall row grouping', () => {
         [3, 4, 3],
       )
       const buttons = () => descendants(root).filter((n) => n.type === 'button')
-      const prefix = layout === 'flat' ? 'warp-result' : 'warp-overview-result'
+      const prefix = 'warp-overview-result'
       const canvas = descendants(root).find((n) => n.props.class === 'warp-wall-canvas')!
-      expect(canvas.props.style).toHaveProperty(
-        '--wall-angle',
-        layout === 'flat' ? '0deg' : '-12deg',
-      )
+      expect(canvas.props.style).toHaveProperty('--wall-angle', '-12deg')
       expect(buttons().map((n) => n.props.id)).toEqual(
         entries.value.map((e) => `${prefix}-${e.id}`),
       )

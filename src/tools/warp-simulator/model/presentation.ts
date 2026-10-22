@@ -1,8 +1,7 @@
+import { warpVisualTokens } from '../../../theme/preset'
 import type { ToolLocale } from '../../../locales/types'
 import type { WarpSnapshot } from '../data/schema'
 import type { PityState } from '../engine/types'
-import { warpVisualTokens } from '../../../theme/preset'
-import { readableColor } from './color'
 import {
   emptyDefinitions,
   safeAssetPath,
@@ -51,7 +50,6 @@ export interface ItemPresentation {
   readonly elementName?: string
   readonly elementIconUrl?: string
   readonly elementColor?: string
-  readonly elementTextColor?: string
   readonly starsUrl?: string
   readonly revealArtwork?: ImagePresentation
   readonly resultPortrait?: ImagePresentation
@@ -89,6 +87,8 @@ export function createPresentation(
   const item = (id: string, locale: ToolLocale): ItemPresentation => {
     const source = items.get(id),
       visual = visuals[id]
+    const element =
+      source?.kind === 'avatar' ? ELEMENT_CODES.find((code) => code === visual?.element) : undefined
     const pathDefinition = visual?.path ? definitions.paths[visual.path] : undefined
     const elementDefinition =
       source?.kind === 'avatar' && visual?.element
@@ -103,22 +103,14 @@ export function createPresentation(
         visual?.path && (PATH_CODES as readonly string[]).includes(visual.path)
           ? visual.path
           : undefined,
-      element:
-        source?.kind === 'avatar' &&
-        visual?.element &&
-        (ELEMENT_CODES as readonly string[]).includes(visual.element)
-          ? visual.element
-          : undefined,
+      element,
       portraitUrl: source ? portraitUrl(visual?.portraitPath, base) : undefined,
       artworkUrl: source ? portraitUrl(visual?.artworkPath, base) : undefined,
       pathName: pathDefinition?.names[locale],
       pathIconUrl: portraitUrl(pathDefinition?.iconPath, base),
       elementName: elementDefinition?.names[locale],
       elementIconUrl: portraitUrl(elementDefinition?.iconPath, base),
-      elementColor: elementDefinition?.color,
-      elementTextColor: elementDefinition
-        ? readableColor(elementDefinition.color, warpVisualTokens.surface)
-        : undefined,
+      elementColor: element ? warpVisualTokens.element[element] : undefined,
       starsUrl: source ? portraitUrl(definitions.stars[source.rarity], base) : undefined,
       revealArtwork: source ? revealImage(visual?.revealArtwork, base) : undefined,
       resultPortrait:

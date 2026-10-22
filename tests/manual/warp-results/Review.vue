@@ -8,7 +8,7 @@ import type { ToolLocale } from '../../../src/locales/types'
 import type { HistoryEntry } from '../../../src/tools/warp-simulator/composables/useWarpSimulator'
 import { warpVisualDefinitions } from '../../../src/tools/warp-simulator/data/adapters/warp-data'
 import { createPresentation } from '../../../src/tools/warp-simulator/model/presentation'
-import WarpResults from '../../../src/tools/warp-simulator/components/WarpResults.vue'
+import { useWarpReview } from '../../../src/tools/warp-simulator/composables/useWarpReview'
 import WarpItemDetails from '../../../src/tools/warp-simulator/components/WarpItemDetails.vue'
 import WarpHistory from '../../../src/tools/warp-simulator/components/WarpHistory.vue'
 import WarpRevealOverlay from '../../../src/tools/warp-simulator/components/WarpRevealOverlay.vue'
@@ -46,7 +46,7 @@ const presentation = computed(() => ({
 }))
 const details = shallowRef<HistoryEntry>()
 let returnId: string | undefined
-const replay = ref(0)
+const review = useWarpReview()
 const simulateReduced = ref(false)
 const systemReduced = useWarpReducedMotion()
 const reveal = useWarpReveal(computed(() => simulateReduced.value || systemReduced.value))
@@ -57,16 +57,10 @@ const {
   phase: revealPhase,
   artworkReady,
   identityReady,
-  displayedEntries,
 } = reveal
-const played = ref(false)
-const reviewResults = computed(() =>
-  played.value ? displayedEntries.value : scenario.value.entries,
-)
 let reviewBatch = 0
 function playReveal() {
   const batchId = ++reviewBatch
-  played.value = true
   reveal.beginBatch(
     batchId,
     scenario.value.entries.map((entry) => ({ ...entry, batchId })),
@@ -85,7 +79,7 @@ function restoreFocus() {
 }
 watch(scenarioId, () => {
   details.value = undefined
-  played.value = false
+  review.close()
   reveal.reset()
 })
 watchEffect(() => {
@@ -95,7 +89,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <main class="app-shell" :inert="revealLocked">
+  <main class="app-shell" :inert="revealLocked || review.locked.value">
     <header class="review-header">
       <h1>{{ t('review.title') }}</h1>
       <div class="language-control" :aria-label="t('site.language')">
@@ -116,19 +110,17 @@ watchEffect(() => {
         option-label="label"
         option-value="id"
       />
-      <Button :label="t('review.replay')" severity="secondary" outlined @click="replay++" />
+      <Button
+        :label="t('review.replay')"
+        severity="secondary"
+        outlined
+        @click="review.open(scenario.entries, revealLocked)"
+      />
       <Button id="review-play" :label="t('review.play')" @click="playReveal" />
       <label class="review-motion"
         ><Checkbox v-model="simulateReduced" binary />{{ t('review.reducedMotion') }}</label
       >
     </header>
-    <WarpResults
-      :key="`${scenario.id}:${replay}`"
-      :entries="reviewResults"
-      :presentation="presentation"
-      :source-label="t('review.scenarios.' + scenario.id)"
-      @details="openDetails"
-    />
     <details class="review-order">
       <summary>{{ t('review.order') }}</summary>
       <ol>
@@ -146,11 +138,14 @@ watchEffect(() => {
       @details="openDetails($event, 'history')"
     />
     <WarpRevealOverlay
-      :visible="revealVisible"
-      :batch-id="reveal.batchId.value"
-      :entries="reveal.overviewEntries.value"
+      :review-revision="review.revision.value"
+      :mode="review.locked.value ? 'review' : 'reveal'"
+      :visible="review.locked.value ? review.visible.value : revealVisible"
+      :batch-id="review.locked.value ? review.batchId.value : reveal.batchId.value"
+      :entries="review.locked.value ? review.entries.value : reveal.overviewEntries.value"
       :presentation="presentation"
       :source-label="t('review.scenarios.' + scenario.id)"
+      :source-label-for-entry="(entry) => entry.event.bannerId"
       :entry="revealEntry"
       :item="
         revealEntry ? presentation.item(revealEntry.event.itemId, locale as ToolLocale) : undefined
@@ -163,24 +158,20 @@ watchEffect(() => {
       @activate="reveal.activate"
       @escape="reveal.escape"
       @after-hide="afterRevealHide"
+      @review-close="review.close"
+      @review-after-hide="review.afterHide"
     />
     <WarpItemDetails
       :entry="details"
       :item="details ? presentation.item(details.event.itemId, locale as ToolLocale) : undefined"
       :source-label="t('review.notice')"
       @close="details = undefined"
-      @after-hide="restoreFocus"
+      @after-leave="restoreFocus"
     />
   </main>
 </template>
 
 <style scoped>
-/* The standalone review has no route shell to allocate the desktop result area. */
-@media (min-width: 1040px) and (min-height: 640px) {
-  :deep(.warp-results) {
-    height: min(720px, 75dvh);
-  }
-}
 .review-header {
   display: flex;
   flex-wrap: wrap;

@@ -108,40 +108,46 @@ vi.mock('../../../src/tools/warp-simulator/components/WarpSelectionDialog.vue', 
 }))
 vi.mock('../../../src/tools/warp-simulator/components/WarpRevealOverlay.vue', () => ({
   default: defineComponent({
-    props: ['visible', 'batchId', 'phase'],
-    emits: ['escape', 'after-hide'],
+    props: ['mode', 'visible', 'batchId', 'phase', 'reviewRevision', 'entries', 'sourceLabel'],
+    emits: ['escape', 'after-hide', 'review-close', 'review-after-hide'],
     setup(props, { emit }) {
       watch(
         () => props.visible,
         async (visible) => {
           if (!visible) {
-            const batchId = props.batchId
+            const batchId = props.batchId,
+              revision = props.reviewRevision,
+              mode = props.mode
             await nextTick()
-            emit('after-hide', batchId)
+            if (mode === 'review') emit('review-after-hide', batchId, revision)
+            else emit('after-hide', batchId)
           }
         },
       )
       return () =>
         props.visible
-          ? h('button', { id: 'test-close-overview', onClick: () => emit('escape') })
+          ? h('button', {
+              id: 'test-close-overview',
+              'data-entries': props.entries,
+              'data-source': props.sourceLabel,
+              'data-mode': props.mode,
+              onClick: () => emit(props.mode === 'review' ? 'review-close' : 'escape'),
+            })
           : null
     },
   }),
 }))
-vi.mock('../../../src/tools/warp-simulator/components/WarpResults.vue', () => ({
-  default: { render: () => null },
-}))
 vi.mock('../../../src/tools/warp-simulator/components/WarpItemDetails.vue', () => ({
   default: defineComponent({
     props: ['entry'],
-    emits: ['close', 'after-hide'],
+    emits: ['close', 'after-leave'],
     setup(props, { emit }) {
       watch(
         () => props.entry,
         async (entry) => {
           if (!entry) {
             await nextTick()
-            emit('after-hide')
+            emit('after-leave')
           }
         },
       )
@@ -290,6 +296,42 @@ describe('Rendered banner list', () => {
 })
 
 describe('Control page integration (Node renderer; browser overlays are stubbed)', () => {
+  it('keeps the page heading focused on its title and navigation', () => {
+    const { root } = mountPage()
+    const heading = byClass(root, 'warp-page-heading')[0]!
+    expect(descendants(heading).filter((entry) => entry.type === 'h1')).toHaveLength(1)
+    expect(descendants(heading).filter((entry) => entry.type === 'p')).toHaveLength(0)
+    expect(byId(heading, 'warp-controls-trigger')).toBeDefined()
+    expect(byId(heading, 'warp-history-trigger')).toBeDefined()
+  })
+  it('opens latest results independently of the selected banner and returns focus without changing session data', async () => {
+    const { root, focused } = mountPage()
+    expect(byId(root, 'warp-review-trigger')).toBeUndefined()
+    choose()
+    await flush()
+    await click(byId(root, 'warp-pull-ten'))
+    expect(byId(root, 'test-close-overview').props['data-mode']).toBe('reveal')
+    await click(byId(root, 'test-close-overview'))
+    expect(focused.at(-1)).toBe('warp-pull-ten')
+    simulator.selectKind('ordinary')
+    await flush()
+    const session = simulator.session.value
+    const batch = simulator.latestResults.value
+    await click(byId(root, 'warp-review-trigger'))
+    const view = byId(root, 'test-close-overview')
+    expect(view.props['data-mode']).toBe('review')
+    expect(view.props['data-entries']).toEqual(batch)
+    expect(view.props['data-source']).toContain(zh.warp.kind['event-avatar'])
+    expect(byClass(root, 'warp-home')[0]!.props.inert).toBe(true)
+    await click(view)
+    expect(focused.at(-1)).toBe('warp-review-trigger')
+    expect(byClass(root, 'warp-home')[0]!.props.inert).toBe(false)
+    expect(simulator.session.value).toBe(session)
+    simulator.requestReset('all')
+    simulator.confirmReset()
+    await flush()
+    expect(byId(root, 'warp-review-trigger')).toBeUndefined()
+  })
   it('closes history before details and restores the history row after Dialog hide', async () => {
     const { root, focused } = mountPage()
     choose()

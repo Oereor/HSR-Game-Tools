@@ -32,7 +32,7 @@ import type {
 import { formatAV, formatNumber, renderMessage } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
 import type { OperationDraft } from '../model/editor'
-import type { KhaslanaPresetInput } from '../model/presets'
+import type { KhaslanaPresetInput, RobinPresetInput, RobinPresetIssue } from '../model/presets'
 import { operationMetadata, type MetadataField } from '../model/metadata'
 const props = defineProps<{
   countdownSources: CountdownSources
@@ -44,6 +44,7 @@ const props = defineProps<{
   preview?: SimulationState
   targets: ParticipantInfo[]
   invalid: string[]
+  robinPresetIssue?: RobinPresetIssue
   label: (id: string) => string
   image: (id: string) => string | undefined
   anchorLabel: (a: EventAnchor) => string
@@ -58,6 +59,7 @@ const emit = defineEmits<{
   cancel: []
   submit: []
   khaslana: [input: KhaslanaPresetInput]
+  robin: [input: RobinPresetInput]
 }>()
 const { t, locale } = useI18n()
 const groups = computed(() =>
@@ -148,11 +150,13 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       :participants="targets"
       :preview="preview"
       :invalid="invalid"
+      :robin-preset-issue="robinPresetIssue"
       :label="label"
       :image="image"
       @cancel="emit('cancel')"
       @submit="emit('submit')"
       @khaslana="emit('khaslana', $event)"
+      @robin="emit('robin', $event)"
     />
     <div v-else class="inspector-overview">
       <div class="current-node">

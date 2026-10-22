@@ -13,7 +13,14 @@ import type {
 } from '../engine/types'
 import { saveOperation, moveOperation } from '../model/effect-config'
 import { buildCurrentQueueView } from '../model/current-queue'
-import { buildKhaslanaPreset, type KhaslanaPresetInput } from '../model/presets'
+import {
+  buildKhaslanaPreset,
+  buildRobinPreset,
+  robinPresetAvailability,
+  type BatchPresetResult,
+  type KhaslanaPresetInput,
+  type RobinPresetInput,
+} from '../model/presets'
 import {
   emptyDocument,
   serializePlannerDocument,
@@ -98,6 +105,9 @@ export function useActionPlanner(
     draft.value
       ? previewDraft(context.value, operations.value, selected.value, draft.value)
       : undefined,
+  )
+  const robinPresetIssue = computed(
+    () => robinPresetAvailability(document.value, preview.value).issue,
   )
   const targets = computed(() =>
     operationTargets(
@@ -279,14 +289,31 @@ export function useActionPlanner(
   }
   function submitKhaslana(input: KhaslanaPresetInput) {
     if (!draft.value || draft.value.id) return false
-    const built = buildKhaslanaPreset(
-      document.value,
-      selected.value,
-      draft.value.phase,
-      preview.value,
-      input,
-      nextId,
+    return submitBatchPreset(
+      buildKhaslanaPreset(
+        document.value,
+        selected.value,
+        draft.value.phase,
+        preview.value,
+        input,
+        nextId,
+      ),
     )
+  }
+  function submitRobin(input: RobinPresetInput) {
+    if (!draft.value || draft.value.id) return false
+    return submitBatchPreset(
+      buildRobinPreset(
+        document.value,
+        selected.value,
+        draft.value.phase,
+        preview.value,
+        input,
+        nextId,
+      ),
+    )
+  }
+  function submitBatchPreset(built: BatchPresetResult) {
     invalid.value = built.invalid
     if (!built.document) return false
     try {
@@ -431,6 +458,7 @@ export function useActionPlanner(
     operations,
     context,
     preview,
+    robinPresetIssue,
     targets,
     unreached,
     inactive,
@@ -444,6 +472,7 @@ export function useActionPlanner(
     cancel,
     submit,
     submitKhaslana,
+    submitRobin,
     remove,
     move,
     deleteEvent,
