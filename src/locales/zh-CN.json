@@ -490,9 +490,10 @@
       "continue": "点击继续"
     },
     "details": {
-      "title": "物品详情",
+      "avatarDescription": "战斗属性为{element}，命途为{path}",
+      "coneDescription": "命途为{path}",
       "open": "查看详情：{summary}",
-      "close": "关闭物品详情",
+      "close": "关闭",
       "summary": "{name}，{kind}，{rarity}星，命途：{path}，属性：{element}",
       "source": "抽取来源",
       "eventUp": "当次抽取命中 UP",

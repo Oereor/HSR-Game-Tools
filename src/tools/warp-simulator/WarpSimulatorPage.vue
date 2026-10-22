@@ -482,6 +482,7 @@ function showDetails(entry: HistoryEntry) {
       :entries="resultEntries"
       :presentation="presentation"
       :source-label="resultSource"
+      :source-label-for-entry="(entry) => sourceLabel(entry.event.bannerId)"
       :entry="revealEntry"
       :item="revealEntry ? item(revealEntry.event.itemId) : undefined"
       :phase="revealPhase"
@@ -511,7 +512,7 @@ function showDetails(entry: HistoryEntry) {
       :item="details ? item(details.event.itemId) : undefined"
       :source-label="details ? sourceLabel(details.event.bannerId) : ''"
       @close="details = undefined"
-      @after-hide="afterDialogHide"
+      @after-leave="afterDialogHide"
     />
     <Dialog
       :visible="!!resetScope"

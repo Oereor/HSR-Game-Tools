@@ -490,9 +490,10 @@
       "continue": "Click to continue"
     },
     "details": {
-      "title": "Item details",
+      "avatarDescription": "Combat Type: {element}, Path: {path}",
+      "coneDescription": "Path: {path}",
       "open": "View details: {summary}",
-      "close": "Close item details",
+      "close": "Close",
       "summary": "{name}, {kind}, {rarity}-star, Path: {path}, Element: {element}",
       "source": "Warp source",
       "eventUp": "UP hit on this pull",

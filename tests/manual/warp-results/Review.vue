@@ -145,6 +145,7 @@ watchEffect(() => {
       :entries="review.locked.value ? review.entries.value : reveal.overviewEntries.value"
       :presentation="presentation"
       :source-label="t('review.scenarios.' + scenario.id)"
+      :source-label-for-entry="(entry) => entry.event.bannerId"
       :entry="revealEntry"
       :item="
         revealEntry ? presentation.item(revealEntry.event.itemId, locale as ToolLocale) : undefined
@@ -165,7 +166,7 @@ watchEffect(() => {
       :item="details ? presentation.item(details.event.itemId, locale as ToolLocale) : undefined"
       :source-label="t('review.notice')"
       @close="details = undefined"
-      @after-hide="restoreFocus"
+      @after-leave="restoreFocus"
     />
   </main>
 </template>

@@ -3,11 +3,31 @@ import { useI18n } from 'vue-i18n'
 import { BookOpen, UserRound } from '@lucide/vue'
 import type { ItemPresentation } from '../model/presentation'
 import { useImageSource } from '../../../composables/useImageSource'
-const props = defineProps<{ item: ItemPresentation; artwork?: boolean; crop?: boolean }>()
+import { useWarpRevealSource } from '../composables/useWarpRevealSource'
+const props = defineProps<{
+  item: ItemPresentation
+  artwork?: boolean
+  crop?: boolean
+  details?: boolean
+}>()
 const { t } = useI18n()
 const { source, fail } = useImageSource(() =>
   props.artwork ? props.item.artworkUrl : (props.item.portraitUrl ?? props.item.artworkUrl),
 )
+const detailImage = useWarpRevealSource(
+  () =>
+    props.details && props.item.kind === 'light-cone' ? props.item.lightConePreview : undefined,
+  () =>
+    !props.details
+      ? undefined
+      : props.item.kind === 'avatar'
+        ? props.item.portraitUrl
+        : props.item.artworkUrl,
+)
+function failImage(event: Event) {
+  if (props.details) detailImage.fail((event.target as HTMLImageElement).getAttribute('src') ?? '')
+  else fail()
+}
 </script>
 
 <template>
@@ -17,9 +37,15 @@ const { source, fail } = useImageSource(() =>
       'warp-artwork': artwork,
       'warp-crop': artwork && crop,
       'warp-cone': item.kind === 'light-cone',
+      'warp-detail-visual': details,
     }"
   >
-    <img v-if="source" :src="source" :alt="item.name" @error="fail" />
+    <img
+      v-if="details ? detailImage.source.value : source"
+      :src="details ? detailImage.source.value : source"
+      :alt="item.name"
+      @error="failImage"
+    />
     <span
       v-else
       class="warp-visual-fallback"
@@ -66,6 +92,12 @@ const { source, fail } = useImageSource(() =>
 }
 .warp-cone img {
   object-position: center;
+}
+.warp-detail-visual:not(.warp-cone) img {
+  object-fit: cover;
+}
+.warp-detail-visual.warp-cone {
+  padding: 8px;
 }
 img {
   width: 100%;

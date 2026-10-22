@@ -140,14 +140,14 @@ vi.mock('../../../src/tools/warp-simulator/components/WarpRevealOverlay.vue', ()
 vi.mock('../../../src/tools/warp-simulator/components/WarpItemDetails.vue', () => ({
   default: defineComponent({
     props: ['entry'],
-    emits: ['close', 'after-hide'],
+    emits: ['close', 'after-leave'],
     setup(props, { emit }) {
       watch(
         () => props.entry,
         async (entry) => {
           if (!entry) {
             await nextTick()
-            emit('after-hide')
+            emit('after-leave')
           }
         },
       )
