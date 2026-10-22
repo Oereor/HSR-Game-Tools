@@ -119,6 +119,12 @@ Version 3 的贡献者 ID 是已保存的身份事实，不在导入时随新快
 参数为用户输入的基础速度 B 和继承百分比 r，八个事件设置 `baseSpeed = B`、`speed = B × r / 100`、`initialAG = i × 10000 / 7`（i = 0…7），不舍入。默认基础速度读取白厄快照，继承比例默认 60%；不识别星魂或击杀，不限制比例到 84%。
 事件名称在创建时从 Site Messages 取得并保存为普通可编辑名称。提交后十条操作各自独立，没有预设组状态、隐藏效果或删除联动；编辑事件保留其 ID、独立 baseSpeed 和 initialAG。一星魂加速由用户多选剩余事件，添加普通无限持续百分比 Modifier。
 
+知更鸟终结技预设通过 metadata.characterIds 的角色 ID `1309` 识别我方 Actor，并在所选锚点、阶段及插入位置的真实预览中检查存在与在场状态；不依赖显示名称、固定槽位或最终参与者目录。身份缺失、歧义、已离场、已移除或上下文不可用时拒绝应用。
+
+预设在所选阶段末尾依次追加显式知更鸟 depart、动态 allies immediatelyAct、创建「协奏」Scheduled Event（speed = 90、initialAG = 10000）。知更鸟已先离场，因此不参与群体立即行动；其他已离场队友也不参与。没有其他在场我方 Actor 时省略群体操作。协奏的稳定 trigger Anchor 下依次追加知更鸟 returnToField、immediatelyAct；回场本身保留 AG，立即行动独立清零。倒计时独立于知更鸟 SPD，首次触发间隔默认 10000 / 90 AV，可继续通过普通操作提前、延后或变速，不保存绝对触发时间。
+
+其他在场队友的 preAction 中，群体立即行动会命中 active-target，因此预设明确拒绝并提示改用 postAction；当前行动者已离场时按真实目标集合判断。知更鸟自身的 preAction / postAction 沿用当前自然回合完整结算及 AG 重置规则，不模拟中断回合。知更鸟与卡厄斯兰那共用内部批量校验与提交函数；生成操作目标失败或完整候选重放错误时均不部分发布。既有 Anchor 操作按原序保留，新操作随后追加。提交后的四或五条操作均可独立编辑、删除；删除协奏创建操作保留孤立回场 Anchor 并诊断，不级联清理。预算外 Anchor 及 Version 3 持久化规则不变，不增加角色专属引擎行为。
+
 [当前队列投影](../../src/tools/action-planner/model/current-queue.ts)在开始位置读取开始操作结算后的初始 Snapshot，其余位置读取 NodeRecord.beforeEffects；引擎 snapshots 保留原本的结算后语义。
 queueCursor 与 Inspector 选择独立，模式切换保留推进锚点；重放后锚点不可达则游标回开始，Inspector 保留原选择用于修复。
 Trace、Tag、目标头像与数值展示约定见 UI 设计规范，不改变执行状态或持久化文档。

@@ -26,6 +26,8 @@ import {
   presetOperation,
   type PresetKind,
   type KhaslanaPresetInput,
+  type RobinPresetInput,
+  type RobinPresetIssue,
 } from '../model/presets'
 import { formatNumber } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
@@ -35,10 +37,16 @@ const props = defineProps<{
   participants: ParticipantInfo[]
   preview?: SimulationState
   invalid: string[]
+  robinPresetIssue?: RobinPresetIssue
   label: (id: string) => string
   image: (id: string) => string | undefined
 }>()
-const emit = defineEmits<{ cancel: []; submit: []; khaslana: [input: KhaslanaPresetInput] }>()
+const emit = defineEmits<{
+  cancel: []
+  submit: []
+  khaslana: [input: KhaslanaPresetInput]
+  robin: [input: RobinPresetInput]
+}>()
 const { t, locale } = useI18n()
 const heading = ref<HTMLElement>()
 onMounted(() => heading.value?.focus())
@@ -68,6 +76,10 @@ const automaticName = computed(() =>
 const popover = ref<InstanceType<typeof Popover>>()
 const khaslana = ref(false)
 const phainon = gameData.characters.find((character) => character.id === '1408')
+const robin = gameData.characters.find((character) => character.id === '1309')
+const robinError = computed(() =>
+  props.invalid.find((issue) => issue.startsWith('robin:'))?.slice(6),
+)
 const baseSpeed = ref<number | undefined>(phainon?.baseSpeed)
 const inheritancePercent = ref<number | undefined>(60)
 const initialSpeed = computed(
@@ -84,6 +96,11 @@ const eventTarget = computed(
 function chooseKhaslana() {
   khaslana.value = true
   popover.value?.hide()
+}
+function chooseRobin() {
+  if (props.robinPresetIssue) return
+  popover.value?.hide()
+  emit('robin', { name: t('planner.robin.eventName') })
 }
 function submit() {
   if (!khaslana.value) emit('submit')
@@ -139,6 +156,9 @@ function preset(kind: PresetKind) {
     </div>
     <p v-if="invalid.includes('form')" role="alert" class="validation-summary">
       {{ t('ui.formInvalid') }}
+    </p>
+    <p v-if="robinError" role="alert" class="validation-summary">
+      {{ t(`planner.robin.unavailable.${robinError}`) }}
     </p>
     <p v-if="!preview" class="validation-summary" role="status">{{ t('ui.contextUnavailable') }}</p>
     <div v-if="!khaslana" class="field">
@@ -296,6 +316,30 @@ function preset(kind: PresetKind) {
             ><small>{{ t('planner.khaslana.description') }}</small></span
           >
         </button>
+        <button
+          type="button"
+          class="preset-option preset-batch"
+          :disabled="!!robinPresetIssue"
+          :aria-describedby="robinPresetIssue ? 'robin-preset-unavailable' : undefined"
+          @click="chooseRobin"
+        >
+          <GameIcon
+            :asset-key="robin?.assetKey"
+            :name="t('planner.robin.name')"
+            :fallback="t('planner.imageMissing')"
+          />
+          <span class="preset-copy"
+            ><span>{{ t('planner.robin.name') }}</span
+            ><small>{{ t('planner.robin.description') }}</small></span
+          >
+        </button>
+        <small
+          v-if="robinPresetIssue"
+          id="robin-preset-unavailable"
+          class="fine-print preset-batch"
+          role="status"
+          >{{ t(`planner.robin.unavailable.${robinPresetIssue}`) }}</small
+        >
       </div></Popover
     >
   </form>
