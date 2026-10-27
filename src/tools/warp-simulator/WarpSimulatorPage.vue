@@ -34,7 +34,7 @@ import WarpItemVisual from './components/WarpItemVisual.vue'
 import WarpSelectionDialog from './components/WarpSelectionDialog.vue'
 import WarpBannerStage from './components/WarpBannerStage.vue'
 import { useWarpReview } from './composables/useWarpReview'
-import WarpHistory from './components/WarpHistory.vue'
+import WarpHistoryDialog from './components/WarpHistoryDialog.vue'
 import WarpItemDetails from './components/WarpItemDetails.vue'
 
 const { t, locale } = useI18n()
@@ -130,6 +130,7 @@ const controlsLocked = computed(
     revealLocked.value ||
     review.locked.value ||
     selectionOpen.value ||
+    overlay.locked.value ||
     !!resetScope.value,
 )
 const kindTabs = computed(() =>
@@ -156,34 +157,50 @@ function focus(id: string | undefined) {
     const target = document.getElementById(id)
     const fallback = id.startsWith('warp-affinity-')
       ? document.querySelector<HTMLButtonElement>('.warp-affinity button:not(:disabled)')
-      : undefined
+      : id.startsWith('warp-history-') || id.startsWith('warp-statistics-')
+        ? document.querySelector<HTMLButtonElement>(
+            '.warp-history-dialog [role="tab"][aria-selected="true"]',
+          )
+        : undefined
     const focusTarget = target ?? fallback
-    focusTarget?.focus()
+    focusTarget?.focus({ preventScroll: true })
   })
 }
-function afterPanelHide() {
-  focus(overlay.afterPanelHide())
+function afterPanelHide(source: 'history' | 'controls') {
+  focus(overlay.afterPanelHide(source))
 }
-function afterPanelShow() {
-  focus(overlay.takeFocus())
+function afterPanelShow(source: 'history' | 'controls') {
+  if (panel.value === source && !overlay.locked.value) focus(overlay.takeFocus())
 }
-function afterDialogHide() {
-  focus(overlay.afterDialogHide())
+function afterDialogHide(source: 'details' | 'selection' | 'reset') {
+  focus(overlay.afterDialogHide(source))
 }
 function openSelection(triggerId: string) {
-  overlay.openDialog(() => {
-    simulator.openSelection()
-  }, triggerId)
+  overlay.openDialog(
+    () => {
+      simulator.openSelection()
+    },
+    triggerId,
+    'selection',
+  )
 }
 function openReset(scope: 'group' | 'all') {
-  overlay.openDialog(() => {
-    simulator.requestReset(scope)
-  }, `warp-reset-${scope}`)
+  overlay.openDialog(
+    () => {
+      simulator.requestReset(scope)
+    },
+    `warp-reset-${scope}`,
+    'reset',
+  )
 }
-function showDetails(entry: HistoryEntry) {
-  overlay.openDialog(() => {
-    details.value = entry
-  }, `warp-history-${entry.id}`)
+function showDetails(entry: HistoryEntry, triggerId: string) {
+  overlay.openDialog(
+    () => {
+      details.value = entry
+    },
+    triggerId,
+    'details',
+  )
 }
 </script>
 
@@ -200,6 +217,7 @@ function showDetails(entry: HistoryEntry) {
             class="h-theme warp-astral-button"
             variant="secondary"
             id="warp-controls-trigger"
+            :disabled="controlsLocked"
             :aria-expanded="panel === 'controls'"
             aria-controls="warp-controls-drawer"
             @click="overlay.openPanel('controls')"
@@ -211,8 +229,10 @@ function showDetails(entry: HistoryEntry) {
             class="h-theme warp-astral-button"
             variant="secondary"
             id="warp-history-trigger"
+            :disabled="controlsLocked"
             :aria-expanded="panel === 'history'"
-            aria-controls="warp-history-drawer"
+            aria-controls="warp-history-dialog"
+            aria-haspopup="dialog"
             @click="overlay.openPanel('history')"
             ><History :size="16" aria-hidden="true" />{{ t('warp.history.title') }}</HButton
           >
@@ -306,8 +326,8 @@ function showDetails(entry: HistoryEntry) {
           if (!value) overlay.closePanel()
         }
       "
-      @after-hide="afterPanelHide"
-      @after-show="afterPanelShow"
+      @after-hide="afterPanelHide('controls')"
+      @after-show="afterPanelShow('controls')"
     >
       <section class="warp-controls" :aria-label="t('warp.panels.controls')">
         <div v-if="simulator.bannerGroups.length" class="warp-control-tabs">
@@ -444,31 +464,20 @@ function showDetails(entry: HistoryEntry) {
         </div>
       </section>
     </Drawer>
-    <Drawer
-      block-scroll
-      id="warp-history-drawer"
+    <WarpHistoryDialog
       :visible="panel === 'history'"
-      position="right"
-      :header="t('warp.history.title')"
-      :style="{ width: '49rem', maxWidth: '100vw' }"
-      :close-button-props="{ 'aria-label': t('warp.panels.closeHistory') }"
-      @update:visible="
-        (value) => {
-          if (!value) overlay.closePanel()
-        }
-      "
-      @after-hide="afterPanelHide"
-      @after-show="afterPanelShow"
-    >
-      <WarpHistory
-        :entries="visibleHistory"
-        :total="session.history.length"
-        :page="historyPage"
-        :presentation="presentation"
-        @page="simulator.setHistoryPage"
-        @details="showDetails"
-      />
-    </Drawer>
+      :history="session.history"
+      :entries="visibleHistory"
+      :page="historyPage"
+      :group="activeBanner?.pityGroup"
+      :kind="activeKind"
+      :presentation="presentation"
+      @close="overlay.closePanel"
+      @after-leave="afterPanelHide('history')"
+      @after-show="afterPanelShow('history')"
+      @page="simulator.setHistoryPage"
+      @details="showDetails"
+    />
     <div class="warp-sr-only" role="status" aria-live="polite" aria-atomic="true">
       <span v-if="announcement" :key="`${announcement.key}:${announcement.batchId ?? ''}`">{{
         t(announcement.key, { count: announcement.count ?? 0 })
@@ -505,14 +514,14 @@ function showDetails(entry: HistoryEntry) {
       @update:draft="simulator.setSelectionDraft"
       @cancel="simulator.cancelSelection"
       @confirm="simulator.confirmSelection"
-      @after-hide="afterDialogHide"
+      @after-hide="afterDialogHide('selection')"
     />
     <WarpItemDetails
       :entry="details"
       :item="details ? item(details.event.itemId) : undefined"
       :source-label="details ? sourceLabel(details.event.bannerId) : ''"
       @close="details = undefined"
-      @after-leave="afterDialogHide"
+      @after-leave="afterDialogHide('details')"
     />
     <Dialog
       :visible="!!resetScope"
@@ -526,7 +535,7 @@ function showDetails(entry: HistoryEntry) {
           if (!value) simulator.cancelReset()
         }
       "
-      @after-hide="afterDialogHide"
+      @after-hide="afterDialogHide('reset')"
     >
       <p class="warp-reset-description">
         {{ t(resetScope === 'group' ? 'warp.reset.groupConfirm' : 'warp.reset.allConfirm') }}

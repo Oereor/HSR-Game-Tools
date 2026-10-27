@@ -425,6 +425,10 @@
     },
     "history": {
       "title": "Warp history",
+      "records": "Pull records",
+      "statistics": "5-star history",
+      "noFiveStars": "No 5-star pulls recorded for the current pity group.",
+      "pulls": "{count} pull | {count} pulls",
       "count": "{count} entries",
       "limit": "Keeps the latest {count} entries on this page, newest first.",
       "empty": "No warps yet.",

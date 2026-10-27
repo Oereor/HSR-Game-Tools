@@ -110,13 +110,17 @@ Tooltip 使用转义文本并保留 Escape 关闭，效果含文字和符号，�
 
 ## 跃迁模拟器
 
-`/warp-simulator` 保留站点 Header 和语言切换，仅本路由放宽 App Shell 宽度。页头展示紧凑标题（20–24px）和靠右的控制／历史入口，不重复展示卡池摘要；中央使用 WarpBannerStage 展示当前五星 UP，底部保留星缘、单抽和十连。工作区按页头、弹性舞台和操作栏分配剩余视口高度；宽度不足时舞台改为上下结构并内部滚动，极矮窗口使用自然流和 sticky 操作栏。左右 PrimeVue Drawer 默认收起、互斥展开，内部功能和宽度不变。
+`/warp-simulator` 保留站点 Header 和语言切换，仅本路由放宽 App Shell 宽度。页头展示紧凑标题（20–24px）和靠右的控制／历史入口，不重复展示卡池摘要；中央使用 WarpBannerStage 展示当前五星 UP，底部保留星缘、单抽和十连。工作区按页头、弹性舞台和操作栏分配剩余视口高度；宽度不足时舞台改为上下结构并内部滚动，极矮窗口使用自然流和 sticky 操作栏。控制使用左侧 PrimeVue Drawer，历史使用 Astral UI HModal，默认均关闭；切换面板须等待前一个完成离场。
 
-跃迁普通界面保留原深色布局、Surface、Drawer、星缘／重置 Dialog、保底 Tag／Badge、InputText、Checkbox 与五列历史表格。通用操作按钮使用 HButton、卡池类别使用 HTabs，复用现有 astral-ui/components 与 scoped-theme.css；普通界面的 h-theme 只挂在按钮和页签本身；物品详情单独使用显式局部主题的 HModal。按钮保留原 ID、事件、Disabled、ARIA 和焦点锚点；单抽 secondary、十连 primary，ghost 文字沿用深色界面前景色。业务头像、卡池条目和结果卡按钮保留原实现。按钮图标排列与必要尺寸仅由 ui/controls.css 局部适配，不改变容器配色、字体或其他工具。历史分页及星缘／重置弹窗操作同样使用 HButton，其余界面恢复原样。
+跃迁主界面保留原深色布局、Surface、控制 Drawer、星缘／重置 Dialog、保底 Tag／Badge、InputText 与 Checkbox。通用操作按钮使用 HButton、卡池类别使用 HTabs，复用现有 astral-ui/components 与 scoped-theme.css；主界面的 h-theme 只挂在按钮和页签本身，历史与物品详情的 Teleport 遮罩各自显式启用局部浅色主题。按钮保留原 ID、事件、Disabled、ARIA 和焦点锚点；单抽 secondary、十连 primary，深色界面的 ghost 文字沿用原前景色。业务头像、卡池条目和结果卡按钮保留原实现。主界面按钮的排列与必要尺寸由 ui/controls.css 局部适配，历史分页使用独立的浅色 HButton 样式。
+
+跃迁记录 HModal 宽约 960px、高度固定为 86dvh，并受视口安全边距约束：桌面上下至少各留 24px，移动端各留 16px。使用内置关闭按钮，不提供 Footer。无标题 HPanel 容纳 HTabs／HTabPanels，胶囊样式的两个页签作为紧凑的一组水平居中；首次显示出金统计，后续保留当前 Tab。Header、Tabs 和容量说明固定，当前内容区域填满剩余高度并独立滚动，空状态、分页和 Tab 切换不改变弹窗高度。逐条记录保留名称、类别、游戏星级素材和命途四列，长名称换行，最多 1000 条、最新优先、每页 25 条。名称局部使用深蓝／深紫／深金，星级素材适度调暗并提高对比度，命途单色图标局部调暗，彩色游戏图片不加滤镜。
+
+出金统计仅显示当前卡池所属保底池，按每次五星出货独立成行。左侧 48px 头像或光锥预览使用暗金背景和低调金边，Hover Tooltip 与按钮可访问名称提供物品名，点击打开原详情。柱区等宽、左端对齐，数值与 UP 位于独立右侧列；短柱至少 3px，实际抽数保留为文字。单色柱按抽数相对于 90／80 上限使用绿至黄至红的连续 HSL 映射，不展示顶部数字刻度。只有历史事件 isUp 为 true 才显示 UP Badge。窄屏优先收缩柱区；空状态和容量说明不暗示统计包含已经截断的旧历史。
 
 控制抽屉上方使用 pill HTabs，导航区可横向滚动，两侧 HButton 前后滚动，获得键盘焦点的页签自动进入可视范围。方向键及 Home／End 沿用 HTabs，idPrefix 连接原生 tabpanel，不启用内容高度动画，下方直接展示当前类别全部有效 Banner。类别顺序及本页记忆策略不变；每个卡池为完整按钮，当前选择同时具有整行背景、边框及左侧强调，不以头像稀有度边框代替选择状态。普通活动池只显示约 88px 五星头像和三个约 52px 四星头像，同一行排列；分别使用既有五星金／四星紫 Token，不显示名称及 UP 详情文字。Fate 只显示实际 UP，不生成四星占位；Ordinary 使用简短常驻入口，不伪造 UP。名称由 Presentation Adapter 取得，头像 Hover Tooltip 与整行 Focus Tooltip／ARIA 提供完整名称及稀有度，图片缺失沿用中性占位。
 
-控制 Drawer 通过局部 PassThrough 保留 `clamp(16px, 4vw, 20px)` 标题／内容 inset，内容改为 `min-height: 0` 的 Flex Column，并关闭 Drawer 内容区默认纵向滚动。页签容器及当前原生 tabpanel 逐层允许收缩，仅中间卡池列表纵向滚动；页签导航不收缩。保底、星缘和两类重置组成 Tabs 外的底部控制区，不使用 sticky 或绝对定位。底部有轻量顶部分隔及安全区留白；最大高度为内容区的 65%，极矮视口或长错误提示时底部自身允许滚动，全部操作保持可达。页签外壳和导航仍沿用 Drawer 背景，不修改历史 Drawer 或全站主题。
+控制 Drawer 通过局部 PassThrough 保留 `clamp(16px, 4vw, 20px)` 标题／内容 inset，内容改为 `min-height: 0` 的 Flex Column，并关闭 Drawer 内容区默认纵向滚动。页签容器及当前原生 tabpanel 逐层允许收缩，仅中间卡池列表纵向滚动；页签导航不收缩。保底、星缘和两类重置组成 Tabs 外的底部控制区，不使用 sticky 或绝对定位。底部有轻量顶部分隔及安全区留白；最大高度为内容区的 65%，极矮视口或长错误提示时底部自身允许滚动，全部操作保持可达。控制页签外壳和导航仍沿用 Drawer 背景，全站主题不变。
 
 保底按五星／四星分成两行，每行并列计数与保证状态。计数为 30px 等宽数字，使用已有五星金／四星紫 Token；标签 12px 弱化，保证沿用 Tag＋Check，普通灰色、大保底绿色，无 UP 为“不适用”。四星 9 显示 9+ 和待兑现说明，不改变引擎饱和值。抽屉状态独立于业务会话；从抽屉进入 Dialog 时先完成抽屉退出，再打开 Dialog，关闭后恢复原抽屉及触发项焦点。普通抽屉关闭返回顶部入口；直接打开星缘则返回常驻操作栏入口。
 
@@ -124,7 +128,7 @@ Tooltip 使用转义文本并保留 Escape 关闭，效果含文字和符号，�
 
 Dialog 标题旁的数量 Badge 未满七人为 secondary、恰好七人为 success；搜索标签仅对读屏保留。继续使用可搜索的双列头像 Checkbox 网格，≤480px 单列，支持中英文名和 ID；七名合法才可确认、取消丢弃草稿。不兼容的已选角色另列移除按钮，不能作为候选重新勾选。所有角色 Event／Fate 共用已确认选择，浏览器只保存该名单，保底和历史仍只属于页面会话；读写失败的简短提示不阻断内存选择。资格和存储契约见跃迁架构。
 
-重置 Dialog 解释当前组／全部的实际范围，默认焦点落在取消；两种重置均保留共享星缘选择。抽屉使用 PrimeVue 的 Escape、焦点陷阱、遮罩及滚动锁，HTabs 保留键盘导航和原生 tabpanel 关联；真实键盘交互由维护者验收。
+重置 Dialog 解释当前组／全部的实际范围，默认焦点落在取消；两种重置均保留共享星缘选择。控制抽屉使用 PrimeVue 的 Escape、焦点陷阱、遮罩及滚动锁，历史与详情使用 HModal 原生关闭和焦点管理，HTabs 保留键盘导航和 tabpanel 关联。历史先完成 after-leave 才能打开详情；详情离场后恢复原 Tab、分页、各 Tab 滚动位置与触发项焦点，触发项不存在时回退当前 Tab。快速连续导航受转换锁保护，卸载取消恢复调度；浅色主题沿用 Astral 的 Reduced Motion 支持。真实键盘交互由维护者验收。
 
 主页舞台使用独立的 warpHome 深蓝黑 Token、少量 CSS 星点和金色圆弧。角色主体居中偏右，等比放大高清 resultPortrait，允许外围装饰裁切；缺失时回退同源 revealArtwork，不放大头像。主页构图独立于十连头部锚点和单件揭示，昔涟仅有少量主页专用尺寸／位置覆盖。光锥采用独立竖幅 contain 构图，使用来自 light_cone_portrait 的高清 revealArtwork，失败回退 artworkUrl，不使用 preview。左侧不嵌套 Card，角色显示大名称、星级、属性和命途，属性文字在主页和历史统一使用 HSR-Database 的七属性配色，不自动提亮（物理 #b6b6b6、火 #f25740、冰 #6dc4ea、雷 #d46aeb、风 #7ad8a5、量子 #8a86de、虚数 #fee554）。配色集中在 warpVisualTokens.element，来源为 HSR-Database/src/lib/domain/elements.ts，提交 17257c58c4e3b4e9e9a801c617e3e3232764e51d，Lightning 对应本工具的 Thunder；光锥提供更宽名称区，仅显示星级和命途。无 UP 时显示通用卡池舞台，无有效卡池或资源全部失败时保留可读信息和中性占位。
 

@@ -2,7 +2,7 @@
 
 本指南描述纯引擎、页面会话、结果展示、全屏演出及 Phase 1L 控制面板与星缘持久化当前实现。模型由维护者确定，标识为 `hsr-warp`，版本为 `v0.3`；它是**本项目的标准模型，不代表已经取得或验证游戏服务器源码**。历史调查不能覆盖本指南中的既定规则。
 
-数据维护见[游戏数据指南](../game-data.md#warp-数据基础设施)，实施证据见 [Phase 1D 报告](../investigations/warp-simulator/phase-1d-engine-implementation.md)、[Phase 1E 报告](../investigations/warp-simulator/phase-1e-ui-implementation.md)和 [Phase 1F 报告](../investigations/warp-simulator/phase-1f-visual-refinement.md)。`/warp-simulator` 提供单抽、十连、星缘选择及页面内历史，没有用户存档、导入导出或统计面板。
+数据维护见[游戏数据指南](../game-data.md#warp-数据基础设施)，实施证据见 [Phase 1D 报告](../investigations/warp-simulator/phase-1d-engine-implementation.md)、[Phase 1E 报告](../investigations/warp-simulator/phase-1e-ui-implementation.md)和 [Phase 1F 报告](../investigations/warp-simulator/phase-1f-visual-refinement.md)。`/warp-simulator` 提供单抽、十连、星缘选择、页面内历史及按保底池的逐次出金统计，没有用户存档或导入导出。
 
 ## 模块与输入边界
 
@@ -135,6 +135,8 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 历史保存原始只读 PullEvent，并增加页面内递增条目 ID 和批次 ID。最多保留最近 1000 条，每页 25 条，最新优先；新抽取回到第一页。最新批次从同一历史派生并恢复原始抽取顺序，不为了稀有度排序。UP 标记仅使用事件的 `isUp`，来源按事件的 Banner ID 显示，模型及抽前状态仍保留于事件。五星条目的“当次五星保底抽数”为 `pityBefore.pullsSinceLast5 + 1`，不会因后续切池、重置或语言改变而重算。
 
+`WarpHistoryDialog` 用局部浅色 HModal、无标题 HPanel 和 HTabs／HTabPanels 包装逐条记录与出金统计。HTabs 使用居中的 pill 变体；弹窗固定视口相关高度，内容填满剩余空间并独立滚动，切换 Tab 不改变高度。`WarpHistory` 只展示已有分页的名称、类别、星级与命途，统计组件从同一个 session.history 派生；首次进入统计页，后续保存页面内 Tab、页码及各 Tab 滚动位置，不持久化。纯函数 `fiveStarHistory` 按当前有效 Banner 的 pityGroup 及 rarity === 5 筛选保留事件，每次出货保留独立 ID 与历史 isUp，不按物品合并，不重新累加低星事件。上限复用引擎 isLightCone 分类，光锥为 80，其余为 90；柱宽用 pulls / max，色相用 120 × (1 − (pulls − 1) / (max − 1))，不显示顶部刻度。统计只涵盖最近保留的 1000 次跃迁，旧记录截断不改变保留下来的抽数。
+
 重置须经 Dialog 确认，取消不提交：
 
 - 当前组重置只替换该继承组的引擎计数与保证，保留其他组、历史、最新批次和所有星缘选择。
@@ -161,7 +163,7 @@ node --import tsx tests/experiments/warp-simulator.ts
 
 每次批次／阶段变化取消旧定时器并递增 revision，ready 事件携带 batchId／entryId，隐藏事件携带离场 batchId。状态机拒绝旧 ID、重复就绪、过期隐藏及销毁后的回调。全部重置清空展示状态且不复用业务批次号。启用 Reduced Motion 不退出 overview；正在 leaving 时立即完成当前离场。图片全失败时最终占位也提供 ready，Escape 在资源加载期间仍可用。
 
-`WarpRevealOverlay` 负责结果阶段显示、当前物品预加载和详情导航；总览与历史共用 `WarpItemDetails` 包装，详情期间 Escape 只关闭详情，保持卡片墙滚动位置。原 Drawer 队列仍由 `useWarpOverlay` 管理，详情弹层契约见[物品详情弹层](#物品详情弹层)。
+`WarpRevealOverlay` 负责结果阶段显示、当前物品预加载和详情导航；总览与历史共用 `WarpItemDetails` 包装，详情期间 Escape 只关闭详情，保持卡片墙滚动位置。控制 Drawer 与历史 HModal 的串行导航由 `useWarpOverlay` 管理，详情弹层契约见[物品详情弹层](#物品详情弹层)。
 
 主页 WarpBannerStage 只接收当前 Banner、由 up5 解析的 ItemPresentation 及回看入口状态，不持有引擎或抽卡逻辑。当前卡池和语言驱动舞台信息；无单一 UP 时使用通用舞台。角色、光锥使用各自的主页构图，不复用 PortraitFocus 或 reveal-composition。
 
@@ -183,16 +185,16 @@ Catalog 的可选 `resultPortrait` 仅用于角色高清特写，保存原始完
 
 裁切星级 cardStars[3/4/5] 同样使用 path／width／height；Adapter 提供可选 cardStars 图片描述与 cardStarsReferenceAspectRatio，后者取裁切五星图宽高比，缺失时以 5 保守限制。卡片的两行 Metadata 信息簇、最终 Artwork 信息面板及详情选择 cardStars，资源缺失／失败使用中性占位；历史仍使用旧 starsUrl，V3 Identity 使用独立 StarBig。WarpVisualIcon 的 image／referenceAspectRatio 可选输入由结果卡、最终 Artwork 信息面板及详情启用，按共同参考比约束三档高度；旧 url／stars 调用保留原行为。Manifest v3 保留裁切追溯，维护规则见[资源维护](../game-data.md#warp-展示资源)。这些元数据派生不调用 RNG 或修改会话。
 
-`useWarpOverlay` 只管理互斥 Drawer、Dialog 进入队列及恢复焦点 ID，不引用会话或 RNG。控制与历史默认收起，结果区域和常驻抽取栏保持挂载；打开／关闭面板不会重建 `useWarpSimulator` 或结果批次。Dialog 先等待 Drawer 的 after-hide，关闭后恢复来源面板／触发项；页面及结果容器负责浮层离场后的导航焦点，HModal 负责详情内部焦点。星缘头像／空状态按钮沿用原队列；关闭后若原触发项已消失，页面将焦点回退到首个可用头像。星缘 Dialog 内手动移除失效角色后，在下一次 DOM 更新恢复搜索输入焦点，避免焦点留在已移除的按钮上。
+`useWarpOverlay` 只管理控制 Drawer、历史 HModal、Dialog 进入队列及恢复焦点 ID，不引用会话或 RNG。控制与历史默认关闭，结果区域和常驻抽取栏保持挂载；打开／关闭面板不会重建 `useWarpSimulator` 或结果批次。Dialog 先等待来源面板完成 after-hide／after-leave，关闭后恢复来源面板／触发项；转换期间拒绝重复导航，回调按来源面板或 Dialog 类型检查当前状态，作用域销毁时清理待执行动作。页面及结果容器负责离场后的导航焦点，HModal 负责模态内部焦点。历史包装在 HModal 的初始聚焦完成后恢复滚动位置，再通知页面以 preventScroll 恢复原行或缩略图焦点；触发项已消失时回退当前 Tab。星缘头像／空状态按钮沿用原队列；关闭后若原触发项已消失，页面将焦点回退到首个可用头像。星缘 Dialog 内手动移除失效角色后，在下一次 DOM 更新恢复搜索输入焦点，避免焦点留在已移除的按钮上。
 
 结果卡按物品类型分支：角色是全幅原始尺寸立绘，属性和星级叠加在左下角，没有可见命途信息列；光锥保留左侧命途／星级和右侧透明预览。头部配置仅来自 data/portrait-focus.json，默认、角色覆盖和总览差异按顺序合并，完整卡片的未旋转尺寸交给 portraitGeometry。十连全屏保留倾斜 3–4–3 卡片墙；Tooltip、ARIA 和详情保留完整文字。历史表格及最新批次顺序、抽取、分页、重置和历史容量不变，星缘配置继续独立于会话重置。
 
-双语 UI 文案集中于 `warp.*`，官方命途／属性名称来自展示快照。语言、动画与资源加载不改变身份、UP 或 RNG。结果卡稳定 key 与 reduced-motion 规则保持不变，稀有度 Token 共用于结果卡和历史名称；历史正文 14px，名称 Hover／Focus 保留稀有度颜色。真实视觉、键盘／触屏、焦点及响应式由维护者人工验收。
+双语 UI 文案集中于 `warp.*`，官方命途／属性名称来自展示快照。语言、动画与资源加载不改变身份、UP 或 RNG。结果卡稳定 key 与 reduced-motion 规则保持不变；浅色历史名称局部使用深蓝／深紫／深金色，不修改结果卡的全局稀有度 Token。历史正文桌面 14px、窄屏 12px，名称 Hover／Focus 保留稀有度颜色；星级素材与命途单色图标局部调暗，统计头像及光锥预览保持原色并复用失败占位。真实视觉、键盘／触屏、焦点及响应式由维护者人工验收。
 
-会话持久化、导入导出、统计图表及粒子／镜头等复杂演出仍未实现；真实 Banner 的后续维护需单独审阅，不自动进入下一阶段。
+会话持久化、导入导出及粒子／镜头等复杂演出仍未实现；真实 Banner 的后续维护需单独审阅，不自动进入下一阶段。
 
 ## 物品详情弹层
 
-普通历史入口与全屏结果入口复用同一个 Astral UI HModal。详情只读 HistoryEntry 与 ItemPresentation；来源使用记录的 bannerId，UP、保底和记录编号沿用抽取时事件，不读取当前所选卡池或会话最新保底。包装在 close 时通知外部清空选择，并保留离场内容到 after-leave；历史抽屉在该事件后恢复原导航和行焦点。
+普通历史入口与全屏结果入口复用同一个 Astral UI HModal 详情组件。详情只读 HistoryEntry 与 ItemPresentation；来源使用记录的 bannerId，UP、保底和记录编号沿用抽取时事件，不读取当前所选卡池或会话最新保底。包装在 close 时通知外部清空选择，并保留离场内容到 after-leave；历史 HModal 在该事件后重新打开并恢复导航、滚动及触发项焦点，历史与详情不会同时持有焦点监听或滚动锁。
 
 全屏详情包装位于 PrimeVue Dialog 同级，Teleport 后显式设置局部主题及高于实际全屏遮罩的层级。详情打开和退出期间父 Dialog 根节点保持 inert／aria-hidden，父滚动锁保持；HModal 负责子层焦点，after-leave 后解除父层 inert 并恢复有效卡片或关闭按钮焦点。父层隐藏、批次或回看版本替换时卸载旧详情，清除旧导航状态。视觉和人工验收要求见[设计规范](../design-notes.md#跃迁模拟器)。

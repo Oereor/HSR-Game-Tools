@@ -61,6 +61,26 @@ vi.mock('primevue/drawer', () => ({
     },
   }),
 }))
+// This suite stubs browser overlays; real HModal locks/focus are covered by history-dialog-render.
+vi.mock('astral-ui/components', async (original) => ({
+  ...(await original<typeof import('astral-ui/components')>()),
+  HModal: defineComponent({
+    props: ['modelValue'],
+    emits: ['after-leave', 'update:modelValue'],
+    setup(props, { slots, attrs, emit }) {
+      watch(
+        () => props.modelValue,
+        async (visible) => {
+          if (!visible) {
+            await nextTick()
+            emit('after-leave')
+          }
+        },
+      )
+      return () => (props.modelValue ? h('section', attrs, slots.default?.()) : null)
+    },
+  }),
+}))
 vi.mock('primevue/dialog', () => ({
   default: defineComponent({
     props: ['visible'],
@@ -166,6 +186,11 @@ vi.mock('../../../src/tools/warp-simulator/composables/useWarpReducedMotion', ()
 
 const apps: App[] = []
 beforeEach(() => {
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    callback(0)
+    return 1
+  })
+  vi.stubGlobal('cancelAnimationFrame', () => {})
   vi.stubGlobal(
     'ResizeObserver',
     class {
@@ -339,13 +364,14 @@ describe('Control page integration (Node renderer; browser overlays are stubbed)
     await click(byId(root, 'test-close-overview'))
     const session = simulator.session.value
     await click(byId(root, 'warp-history-trigger'))
+    await click(byId(root, 'warp-history-view-tab-records'))
     const row = byClass(root, 'warp-history-name')[0]!
     const id = String(row.props.id)
     await click(row)
-    expect(byId(root, 'warp-history-drawer')).toBeUndefined()
+    expect(byId(root, 'warp-history-dialog')).toBeUndefined()
     expect(byClass(root, 'item-dialog')).toHaveLength(1)
     await click(byId(root, 'test-close-details'))
-    expect(byId(root, 'warp-history-drawer')).toBeDefined()
+    expect(byId(root, 'warp-history-dialog')).toBeDefined()
     expect(focused.at(-1)).toBe(id)
     expect(simulator.session.value).toBe(session)
   })
