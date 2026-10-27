@@ -168,6 +168,7 @@ describe('Phase 1F visual metadata and interaction isolation', () => {
     expect(overlay.panel.value).toBeUndefined()
     overlay.openPanel('controls')
     overlay.openPanel('history')
+    overlay.afterPanelHide('controls')
     expect(overlay.panel.value).toBe('history')
     let dialogOpened = false
     overlay.openDialog(() => {

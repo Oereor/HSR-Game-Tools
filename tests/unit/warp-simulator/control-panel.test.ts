@@ -245,12 +245,8 @@ const condition = (node: TemplateNode) =>
   node.props?.find((prop) => prop.type === 7 && prop.name === 'if')?.exp?.content
 
 describe('control templates and accessible validation wiring', () => {
-  it('opts into the Astral theme only on buttons and category tabs', () => {
-    for (const file of [
-      'WarpSimulatorPage.vue',
-      'components/WarpSelectionDialog.vue',
-      'components/WarpHistory.vue',
-    ]) {
+  it('keeps the dark control surfaces opted in only on buttons and category tabs', () => {
+    for (const file of ['WarpSimulatorPage.vue', 'components/WarpSelectionDialog.vue']) {
       const nodes = template(file)
       for (const node of nodes) {
         const classes =
@@ -268,11 +264,6 @@ describe('control templates and accessible validation wiring', () => {
         (prop) => prop.name === 'id' && prop.value?.content === 'warp-controls-drawer',
       ),
     )!
-    const history = drawers.find((node) =>
-      node.props?.some(
-        (prop) => prop.name === 'id' && prop.value?.content === 'warp-history-drawer',
-      ),
-    )!
     expect(binding(controls, 'style')).toContain('clamp(16px, 4vw, 20px)')
     expect(binding(controls, 'pt')).toMatch(
       /header:[\s\S]*padding:\s*'var\(--warp-controls-inset\)'/,
@@ -280,8 +271,8 @@ describe('control templates and accessible validation wiring', () => {
     expect(binding(controls, 'pt')).toMatch(
       /content:[\s\S]*padding:\s*'0 var\(--warp-controls-inset\)'/,
     )
-    expect(binding(history, 'pt')).toBeUndefined()
-    expect(binding(history, 'style')).not.toContain('--warp-controls-inset')
+    expect(drawers).toHaveLength(1)
+    expect(nodes.some((node) => node.tag === 'WarpHistoryDialog')).toBe(true)
   })
   it('connects real tabs/panels and the full banner list, with a separate control footer', () => {
     const nodes = template('WarpSimulatorPage.vue')

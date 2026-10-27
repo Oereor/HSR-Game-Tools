@@ -425,6 +425,10 @@
     },
     "history": {
       "title": "跃迁记录",
+      "records": "逐条记录",
+      "statistics": "出金统计",
+      "noFiveStars": "当前保底池暂无五星出货记录。",
+      "pulls": "{count} 抽",
       "count": "{count} 条",
       "limit": "仅保留本页最近 {count} 条记录，按最新优先排列。",
       "empty": "暂无跃迁记录。",
