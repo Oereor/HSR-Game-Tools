@@ -115,6 +115,79 @@ export function buildRobinPreset(
   }
 }
 
+export interface FireflyPresetInput {
+  spd: number | undefined
+  countdownName: string
+}
+
+export type FireflyPresetIssue =
+  'context' | 'missing' | 'ambiguous' | 'departed' | 'unavailable' | 'activeTarget'
+
+/** Resolve character identity against the actual insertion preview, not the final catalog. */
+export function fireflyPresetAvailability(
+  document: PlannerDocument,
+  preview: SimulationState | undefined,
+): { participantId?: string; issue?: FireflyPresetIssue } {
+  if (!preview) return { issue: 'context' }
+  const fireflies = document.plan.actors.filter(
+    (actor) =>
+      actor.camp === 'ally' && metadataValue(document.metadata.characterIds, actor.id) === '1310',
+  )
+  if (!fireflies.length) return { issue: 'missing' }
+  if (fireflies.length !== 1) return { issue: 'ambiguous' }
+  const firefly = preview.participants.find(
+    (participant) => participant.id === fireflies[0]!.id && participant.kind === 'actor',
+  )
+  if (!firefly) return { issue: 'unavailable' }
+  if (firefly.departed) return { issue: 'departed' }
+  if (!operationTargets(preview, 'advance').some((participant) => participant.id === firefly.id))
+    return { issue: 'unavailable' }
+  if (firefly.id === preview.activeParticipantId) return { issue: 'activeTarget' }
+  return { participantId: firefly.id }
+}
+
+/** The speed operation owns its countdown; the advance keeps ordinary 100% AG semantics. */
+export function buildFireflyPreset(
+  document: PlannerDocument,
+  anchor: EventAnchor,
+  phase: EffectPhase,
+  preview: SimulationState | undefined,
+  input: FireflyPresetInput,
+  nextId: () => string,
+): BatchPresetResult {
+  const available = fireflyPresetAvailability(document, preview)
+  if (available.issue) return { invalid: [`firefly:${available.issue}`], operationIds: [] }
+  if (input.spd === undefined || !Number.isFinite(input.spd) || input.spd < 0)
+    return { invalid: ['spd'], operationIds: [] }
+  if (!input.countdownName.trim()) return { invalid: ['form'], operationIds: [] }
+  const operationIds = [nextId(), nextId()]
+  const target = { kind: 'participants' as const, participantIds: [available.participantId!] }
+  const common = anchor.kind === 'action' ? { phase } : {}
+  const operations: EffectOperation[] = [
+    {
+      id: operationIds[0]!,
+      type: 'addSpeedModifier',
+      target,
+      mode: 'flat',
+      amount: input.spd,
+      duration: { kind: 'countdown', name: input.countdownName.trim(), speed: 70 },
+      ...common,
+    },
+    {
+      id: operationIds[1]!,
+      type: 'advance',
+      target: { ...target, participantIds: [...target.participantIds] },
+      percent: 100,
+      ...common,
+    },
+  ]
+  return {
+    document: appendPresetEvents(document, [{ anchor, operations }]),
+    operationIds,
+    invalid: [],
+  }
+}
+
 export interface KhaslanaPresetInput {
   baseSpeed: number | undefined
   inheritancePercent: number | undefined

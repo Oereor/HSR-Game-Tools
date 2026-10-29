@@ -205,6 +205,20 @@
         "activeAlly": "当前在场队友正在行动，行动前无法使其立即行动；请选择行动后阶段。"
       }
     },
+    "firefly": {
+      "name": "流萤 · 终结技",
+      "description": "行动提前 100%，获得速度加成及完全燃烧倒计时",
+      "speedIncrease": "速度提高",
+      "countdownName": "完全燃烧",
+      "unavailable": {
+        "context": "此操作插入位置的执行上下文不可用，请调整范围或上游配置。",
+        "missing": "当前编队中没有流萤。",
+        "ambiguous": "编队中存在多个流萤身份，无法确定终结技的目标。",
+        "departed": "流萤在此操作插入位置已经离场。",
+        "unavailable": "流萤在此操作插入位置已不再存在。",
+        "activeTarget": "流萤正在自然行动，行动前无法使其行动提前；请选择行动后阶段。"
+      }
+    },
     "speedTag": {
       "flat": "速度 {amount}",
       "percent": "速度 {amount}%",

@@ -28,6 +28,8 @@ import {
   type KhaslanaPresetInput,
   type RobinPresetInput,
   type RobinPresetIssue,
+  type FireflyPresetInput,
+  type FireflyPresetIssue,
 } from '../model/presets'
 import { formatNumber } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
@@ -38,6 +40,7 @@ const props = defineProps<{
   preview?: SimulationState
   invalid: string[]
   robinPresetIssue?: RobinPresetIssue
+  fireflyPresetIssue?: FireflyPresetIssue
   label: (id: string) => string
   image: (id: string) => string | undefined
 }>()
@@ -46,6 +49,7 @@ const emit = defineEmits<{
   submit: []
   khaslana: [input: KhaslanaPresetInput]
   robin: [input: RobinPresetInput]
+  firefly: [input: FireflyPresetInput]
 }>()
 const { t, locale } = useI18n()
 const heading = ref<HTMLElement>()
@@ -74,9 +78,17 @@ const automaticName = computed(() =>
     : t(`ui.${draft.value.type}`),
 )
 const popover = ref<InstanceType<typeof Popover>>()
-const khaslana = ref(false)
+const batchPreset = ref<'khaslana' | 'firefly'>()
 const phainon = gameData.characters.find((character) => character.id === '1408')
 const robin = gameData.characters.find((character) => character.id === '1309')
+const firefly = gameData.characters.find((character) => character.id === '1310')
+const spd = ref<number | undefined>(60)
+const fireflyError = computed(() =>
+  batchPreset.value === 'firefly'
+    ? (props.fireflyPresetIssue ??
+      props.invalid.find((issue) => issue.startsWith('firefly:'))?.slice(8))
+    : undefined,
+)
 const robinError = computed(() =>
   props.invalid.find((issue) => issue.startsWith('robin:'))?.slice(6),
 )
@@ -94,7 +106,12 @@ const eventTarget = computed(
     ),
 )
 function chooseKhaslana() {
-  khaslana.value = true
+  batchPreset.value = 'khaslana'
+  popover.value?.hide()
+}
+function chooseFirefly() {
+  if (props.fireflyPresetIssue) return
+  batchPreset.value = 'firefly'
   popover.value?.hide()
 }
 function chooseRobin() {
@@ -103,7 +120,9 @@ function chooseRobin() {
   emit('robin', { name: t('planner.robin.eventName') })
 }
 function submit() {
-  if (!khaslana.value) emit('submit')
+  if (batchPreset.value === 'firefly')
+    emit('firefly', { spd: spd.value, countdownName: t('planner.firefly.countdownName') })
+  else if (!batchPreset.value) emit('submit')
   else
     emit('khaslana', {
       baseSpeed: baseSpeed.value,
@@ -142,10 +161,10 @@ function preset(kind: PresetKind) {
         ><ArrowLeft :size="18" :stroke-width="1.75"
       /></Button>
       <h2 ref="heading" tabindex="-1">
-        {{ khaslana ? t('planner.khaslana.name') : draft.id ? t('ui.edit') : t('ui.add') }}
+        {{ batchPreset ? t(`planner.${batchPreset}.name`) : draft.id ? t('ui.edit') : t('ui.add') }}
       </h2>
       <Button
-        v-if="!draft.id && !khaslana"
+        v-if="!draft.id && !batchPreset"
         text
         severity="secondary"
         size="small"
@@ -160,8 +179,11 @@ function preset(kind: PresetKind) {
     <p v-if="robinError" role="alert" class="validation-summary">
       {{ t(`planner.robin.unavailable.${robinError}`) }}
     </p>
+    <p v-if="fireflyError" role="alert" class="validation-summary">
+      {{ t(`planner.firefly.unavailable.${fireflyError}`) }}
+    </p>
     <p v-if="!preview" class="validation-summary" role="status">{{ t('ui.contextUnavailable') }}</p>
-    <div v-if="!khaslana" class="field">
+    <div v-if="!batchPreset" class="field">
       <span id="type-label" class="field-label">{{ t('ui.type') }}</span
       ><SelectButton
         v-model="draft.type"
@@ -187,7 +209,30 @@ function preset(kind: PresetKind) {
         aria-labelledby="phase-label"
       />
     </div>
-    <template v-if="khaslana">
+    <div v-if="batchPreset === 'firefly'" class="field">
+      <label for="firefly-spd">{{ t('planner.firefly.speedIncrease') }}</label>
+      <InputNumber
+        v-model="spd"
+        input-id="firefly-spd"
+        :locale="locale"
+        :use-grouping="false"
+        :max-fraction-digits="20"
+        :suffix="t('common.speedSuffix')"
+        :invalid="invalid.includes('spd')"
+        :pt="{
+          pcInputText: {
+            root: {
+              'aria-describedby': invalid.includes('spd') ? 'firefly-spd-error' : undefined,
+            },
+          },
+        }"
+        fluid
+      />
+      <small v-if="invalid.includes('spd')" id="firefly-spd-error" class="field-error">{{
+        t('ui.nonnegative')
+      }}</small>
+    </div>
+    <template v-else-if="batchPreset === 'khaslana'">
       <div class="field">
         <label for="khaslana-base">{{ t('planner.khaslana.baseSpeed') }}</label>
         <InputNumber
@@ -274,7 +319,7 @@ function preset(kind: PresetKind) {
         :invalid="invalid"
         :event-target="eventTarget"
     /></template>
-    <div v-if="!khaslana" class="field">
+    <div v-if="!batchPreset" class="field">
       <label for="custom-name">{{ t('ui.customName') }}</label
       ><InputText id="custom-name" v-model="draft.customName" :placeholder="automaticName" fluid />
     </div>
@@ -283,7 +328,7 @@ function preset(kind: PresetKind) {
         <Button text severity="secondary" :label="t('ui.cancel')" @click="emit('cancel')" /><Button
           type="submit"
           :label="t('ui.applyOperation')"
-          :disabled="!preview"
+          :disabled="!preview || (batchPreset === 'firefly' && !!fireflyPresetIssue)"
         />
       </div>
     </footer>
@@ -339,6 +384,30 @@ function preset(kind: PresetKind) {
           class="fine-print preset-batch"
           role="status"
           >{{ t(`planner.robin.unavailable.${robinPresetIssue}`) }}</small
+        >
+        <button
+          type="button"
+          class="preset-option preset-batch"
+          :disabled="!!fireflyPresetIssue"
+          :aria-describedby="fireflyPresetIssue ? 'firefly-preset-unavailable' : undefined"
+          @click="chooseFirefly"
+        >
+          <GameIcon
+            :asset-key="firefly?.assetKey"
+            :name="t('planner.firefly.name')"
+            :fallback="t('planner.imageMissing')"
+          />
+          <span class="preset-copy"
+            ><span>{{ t('planner.firefly.name') }}</span
+            ><small>{{ t('planner.firefly.description') }}</small></span
+          >
+        </button>
+        <small
+          v-if="fireflyPresetIssue"
+          id="firefly-preset-unavailable"
+          class="fine-print preset-batch"
+          role="status"
+          >{{ t(`planner.firefly.unavailable.${fireflyPresetIssue}`) }}</small
         >
       </div></Popover
     >

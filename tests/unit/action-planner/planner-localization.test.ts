@@ -1,4 +1,5 @@
 import { ordinaryNode } from '../../fixtures/action-planner/ordinary-node'
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -50,6 +51,20 @@ const plan = (): SimulationPlan => ({
 })
 
 describe('site messages and semantic presentation', () => {
+  it('resolves static translation references in the operation editor in both locales', () => {
+    const source = readFileSync(
+      new URL('../../../src/tools/action-planner/components/OperationEditor.vue', import.meta.url),
+      'utf8',
+    )
+    const keys = new Set(
+      [...source.matchAll(/\bt\(\s*(['"])([^'"]+)\1/g)].map((match) => match[2]!),
+    )
+    expect(keys.size).toBeGreaterThan(0)
+    const { global: composer } = makeI18n()
+    for (const locale of ['zh-CN', 'en'] as ToolLocale[])
+      for (const key of keys) expect(composer.te(key, locale), `${locale}: ${key}`).toBe(true)
+  })
+
   it('validates the catalogs and rejects duplicate, empty, missing, malformed and mismatched messages', () => {
     const sources = { 'zh-CN': JSON.stringify(zhCN), en: JSON.stringify(en) }
     expect(validateMessages(sources)).toEqual([])

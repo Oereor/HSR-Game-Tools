@@ -32,7 +32,13 @@ import type {
 import { formatAV, formatNumber, renderMessage } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
 import type { OperationDraft } from '../model/editor'
-import type { KhaslanaPresetInput, RobinPresetInput, RobinPresetIssue } from '../model/presets'
+import type {
+  KhaslanaPresetInput,
+  RobinPresetInput,
+  RobinPresetIssue,
+  FireflyPresetInput,
+  FireflyPresetIssue,
+} from '../model/presets'
 import { operationMetadata, type MetadataField } from '../model/metadata'
 const props = defineProps<{
   countdownSources: CountdownSources
@@ -45,6 +51,7 @@ const props = defineProps<{
   targets: ParticipantInfo[]
   invalid: string[]
   robinPresetIssue?: RobinPresetIssue
+  fireflyPresetIssue?: FireflyPresetIssue
   label: (id: string) => string
   image: (id: string) => string | undefined
   anchorLabel: (a: EventAnchor) => string
@@ -60,6 +67,7 @@ const emit = defineEmits<{
   submit: []
   khaslana: [input: KhaslanaPresetInput]
   robin: [input: RobinPresetInput]
+  firefly: [input: FireflyPresetInput]
 }>()
 const { t, locale } = useI18n()
 const groups = computed(() =>
@@ -151,12 +159,14 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       :preview="preview"
       :invalid="invalid"
       :robin-preset-issue="robinPresetIssue"
+      :firefly-preset-issue="fireflyPresetIssue"
       :label="label"
       :image="image"
       @cancel="emit('cancel')"
       @submit="emit('submit')"
       @khaslana="emit('khaslana', $event)"
       @robin="emit('robin', $event)"
+      @firefly="emit('firefly', $event)"
     />
     <div v-else class="inspector-overview">
       <div class="current-node">

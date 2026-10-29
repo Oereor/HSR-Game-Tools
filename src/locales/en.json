@@ -205,6 +205,20 @@
         "activeAlly": "An allied actor on the field is currently acting and cannot act immediately before its action. Select the post-action phase."
       }
     },
+    "firefly": {
+      "name": "Firefly · Ultimate",
+      "description": "Advance action by 100% and gain a speed bonus with a Complete Combustion countdown",
+      "speedIncrease": "Speed increase",
+      "countdownName": "Complete Combustion",
+      "unavailable": {
+        "context": "The execution context at this insertion point is unavailable. Adjust the horizon or earlier configuration.",
+        "missing": "Firefly is not in the current lineup.",
+        "ambiguous": "Multiple actors are identified as Firefly. The ultimate target cannot be determined.",
+        "departed": "Firefly has already left the field at this insertion point.",
+        "unavailable": "Firefly no longer exists at this insertion point.",
+        "activeTarget": "Firefly is taking a natural action and cannot advance her action before it finishes. Select the post-action phase."
+      }
+    },
     "speedTag": {
       "flat": "SPD {amount}",
       "percent": "SPD {amount}%",

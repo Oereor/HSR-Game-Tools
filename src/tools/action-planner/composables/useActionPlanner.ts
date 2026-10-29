@@ -17,9 +17,12 @@ import {
   buildKhaslanaPreset,
   buildRobinPreset,
   robinPresetAvailability,
+  buildFireflyPreset,
+  fireflyPresetAvailability,
   type BatchPresetResult,
   type KhaslanaPresetInput,
   type RobinPresetInput,
+  type FireflyPresetInput,
 } from '../model/presets'
 import {
   emptyDocument,
@@ -108,6 +111,9 @@ export function useActionPlanner(
   )
   const robinPresetIssue = computed(
     () => robinPresetAvailability(document.value, preview.value).issue,
+  )
+  const fireflyPresetIssue = computed(
+    () => fireflyPresetAvailability(document.value, preview.value).issue,
   )
   const targets = computed(() =>
     operationTargets(
@@ -313,6 +319,19 @@ export function useActionPlanner(
       ),
     )
   }
+  function submitFirefly(input: FireflyPresetInput) {
+    if (!draft.value || draft.value.id) return false
+    return submitBatchPreset(
+      buildFireflyPreset(
+        document.value,
+        selected.value,
+        draft.value.phase,
+        preview.value,
+        input,
+        nextId,
+      ),
+    )
+  }
   function submitBatchPreset(built: BatchPresetResult) {
     invalid.value = built.invalid
     if (!built.document) return false
@@ -459,6 +478,7 @@ export function useActionPlanner(
     context,
     preview,
     robinPresetIssue,
+    fireflyPresetIssue,
     targets,
     unreached,
     inactive,
@@ -473,6 +493,7 @@ export function useActionPlanner(
     submit,
     submitKhaslana,
     submitRobin,
+    submitFirefly,
     remove,
     move,
     deleteEvent,
