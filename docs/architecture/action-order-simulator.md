@@ -125,6 +125,10 @@ Version 3 的贡献者 ID 是已保存的身份事实，不在导入时随新快
 
 其他在场队友的 preAction 中，群体立即行动会命中 active-target，因此预设明确拒绝并提示改用 postAction；当前行动者已离场时按真实目标集合判断。知更鸟自身的 preAction / postAction 沿用当前自然回合完整结算及 AG 重置规则，不模拟中断回合。知更鸟与卡厄斯兰那共用内部批量校验与提交函数；生成操作目标失败或完整候选重放错误时均不部分发布。既有 Anchor 操作按原序保留，新操作随后追加。提交后的四或五条操作均可独立编辑、删除；删除协奏创建操作保留孤立回场 Anchor 并诊断，不级联清理。预算外 Anchor 及 Version 3 持久化规则不变，不增加角色专属引擎行为。
 
+流萤终结技预设通过 metadata.characterIds 的角色 ID `1310` 识别我方 Actor，并复用所选锚点、阶段末尾的真实 previewOperationState 上下文。身份缺失、歧义、已离场、已移除或上下文不可用时拒绝应用。流萤自身 preAction 中的行动提前会命中 active-target，因此拒绝并提示改用 postAction；提交时再次检查资格并走同一批量候选校验流程。
+
+预设依次追加单目标 addSpeedModifier（mode = flat、amount = 用户输入、duration = countdown）和 advance 100%。固定速度增量默认 60，接受有限非负数，包括 0。倒计时名称在应用时读取当前语言消息「完全燃烧」或「Complete Combustion」，初始速度固定为 70 SPD，初始 AG 使用引擎默认值 10000。速度操作自动创建倒计时，通过其稳定操作 ID 关联效果到期；不额外保存 spawnParticipant 或移除操作。倒计时触发时仅移除关联 Modifier。advance 100% 将剩余 AG 减少 10000 并以 0 为下限，剩余 AG 超过 10000 时仍需等待，不使用 immediatelyAct。生成后的两条普通操作各自独立编辑、删除，保留 Version 3 格式。
+
 [当前队列投影](../../src/tools/action-planner/model/current-queue.ts)在开始位置读取开始操作结算后的初始 Snapshot，其余位置读取 NodeRecord.beforeEffects；引擎 snapshots 保留原本的结算后语义。
 queueCursor 与 Inspector 选择独立，模式切换保留推进锚点；重放后锚点不可达则游标回开始，Inspector 保留原选择用于修复。
 Trace、Tag、目标头像与数值展示约定见 UI 设计规范，不改变执行状态或持久化文档。
