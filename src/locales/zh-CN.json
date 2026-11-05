@@ -207,7 +207,7 @@
     },
     "firefly": {
       "name": "流萤 · 终结技",
-      "description": "行动提前 100%，获得速度加成及完全燃烧倒计时",
+      "description": "行动提前 100%，速度提高并添加倒计时",
       "speedIncrease": "速度提高",
       "countdownName": "完全燃烧",
       "unavailable": {
@@ -232,15 +232,15 @@
     "presets": {
       "vonwacq": {
         "name": "生命的翁瓦克",
-        "description": "40%"
+        "description": "行动提前 40%"
       },
       "eagle": {
         "name": "晨昏交界的翔鹰",
-        "description": "25%"
+        "description": "行动提前 25%"
       },
       "dance": {
         "name": "舞！舞！舞！",
-        "description": "24%"
+        "description": "我方全体行动提前 24%"
       }
     },
     "presetErrors": {
