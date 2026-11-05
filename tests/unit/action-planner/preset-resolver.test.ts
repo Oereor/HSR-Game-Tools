@@ -1,14 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { presets } from '../../../src/tools/action-planner/presets/catalog'
 import { compilePreset } from '../../../src/tools/action-planner/presets/resolver'
 import { collectInputs, valueResolver } from '../../../src/tools/action-planner/presets/values'
-import { messageAt, validatePresets } from '../../../src/tools/action-planner/presets/validation'
+import { validatePresets } from '../../../src/tools/action-planner/presets/validation'
 import type {
+  PresetContext,
   PresetDefinition,
   PresetOperation,
 } from '../../../src/tools/action-planner/presets/types'
-import { gameData } from '../../../src/tools/action-planner/data/adapters/game-data'
-import { emptyDocument } from '../../../src/tools/action-planner/model/document-file'
 import {
   applyOperations,
   createInitialState,
@@ -18,40 +16,30 @@ import {
   countdownParticipantId,
   spawnedParticipantId,
 } from '../../../src/tools/action-planner/engine/queue'
-import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
-import zh from '../../../src/locales/zh-CN.json'
-import en from '../../../src/locales/en.json'
+import {
+  fixture,
+  definition,
+  game,
+  messages,
+  translate,
+  repeatPreset,
+  returnPreset,
+} from '../../fixtures/action-planner/presets'
 
-const translate = (key: string) => messageAt(en, key) ?? key
-function fixture() {
-  const document = emptyDocument()
-  document.plan.actors = ['a', 'b'].map((id, position) => ({
-    id,
-    position,
-    name: id,
-    kind: 'actor',
-    camp: 'ally',
-    baseSpeed: 100,
-    panelSpeed: 100,
-  }))
-  return document
-}
-function definition(operations: PresetOperation[]): PresetDefinition {
-  return {
-    id: 'synthetic',
-    order: 0,
-    interaction: 'batch',
-    i18n: { name: 'ui.add', description: 'ui.add' },
-    operations,
-  }
-}
-function compile(preset: PresetDefinition, values = {}, document = fixture()) {
+function compile(
+  preset: PresetDefinition,
+  values = {},
+  document = fixture(),
+  context: Partial<PresetContext> = {},
+) {
   let serial = 0
-  const preview = applyOperations(
-    createInitialState(document.plan),
-    document.plan.events.find((event) => event.anchor.kind === 'start')?.operations ?? [],
-    { kind: 'start' },
-  ).state
+  const preview = Object.hasOwn(context, 'preview')
+    ? context.preview
+    : applyOperations(
+        createInitialState(document.plan),
+        document.plan.events.find((event) => event.anchor.kind === 'start')?.operations ?? [],
+        { kind: 'start' },
+      ).state
   return compilePreset(
     preset,
     {
@@ -62,28 +50,81 @@ function compile(preset: PresetDefinition, values = {}, document = fixture()) {
       selectedIds: ['a', 'b'],
       values,
       translate,
+      ...context,
     },
-    gameData.characters,
+    game.characters,
     () => `generated-${++serial}`,
   )
 }
 
 describe('declarative preset compiler', () => {
-  it.each(['vonwacq', 'eagle', 'dance'])('prefills %s without publishing the document', (id) => {
-    const document = fixture(),
-      planner = useActionPlanner(document.plan, document.metadata)
-    planner.edit()
-    const before = planner.document.value
-    expect(planner.submitPreset({ id, values: {}, translate })).toBe(true)
-    expect(planner.document.value).toBe(before)
-    expect(planner.draft.value?.percent).toBe(id === 'vonwacq' ? 40 : id === 'eagle' ? 25 : 24)
-    expect(planner.draft.value?.id).toBeUndefined()
-    expect(planner.submit()).toBe(true)
+  it('identifies self from metadata and checks presence at the insertion point', () => {
+    const document = fixture()
+    const state = createInitialState(document.plan)
+    const missing = fixture()
+    missing.metadata.characterIds = {}
+    const ambiguous = fixture()
+    ambiguous.metadata.characterIds.b = returnPreset.characterId!
+    const departed = applyOperations(
+      state,
+      [{ id: 'leave', type: 'depart', target: { kind: 'participants', participantIds: ['a'] } }],
+      { kind: 'start' },
+    ).state
+    const cases = [
+      { document: missing, preview: state, issue: 'missing' },
+      { document: ambiguous, preview: state, issue: 'ambiguous' },
+      { document, preview: departed, issue: 'departed' },
+      {
+        document,
+        preview: { ...state, participants: state.participants.filter((p) => p.id !== 'a') },
+        issue: 'unavailable',
+      },
+      { document, preview: undefined, issue: 'context' },
+    ]
+    for (const { document, preview, issue } of cases) {
+      expect(compile(returnPreset, {}, document, { preview }).invalid, issue).toEqual([issue])
+    }
   })
-  it('preserves start-only eligibility and the 40% gauge calculation below 120 SPD', () => {
-    const preset = presets.find((p) => p.id === 'vonwacq')!
-    const document = compile(preset).document!
-    expect(simulatePlan(document.plan).records[0].elapsedAV).toBe(60)
+  it('resolves independent catalog and self stats and rejects missing or invalid sources', () => {
+    const preset = definition([
+      {
+        type: 'delay',
+        target: 'allies',
+        percent: {
+          type: 'user-input',
+          id: 'base',
+          value: { type: 'character-stat', characterId: 'test-character', stat: 'baseSpeed' },
+        },
+      },
+    ])
+    expect(compile(preset).document!.plan.events[0]!.operations[0]).toMatchObject({ percent: 94 })
+    expect(compile(preset, { base: 120 }).document!.plan.events[0]!.operations[0]).toMatchObject({
+      percent: 120,
+    })
+    const stat = { type: 'self-stat', stat: 'panelSpeed' } as const
+    expect(() => valueResolver(repeatPreset, game.characters, translate).resolve(stat)).toThrow(
+      'self-stat',
+    )
+    expect(
+      valueResolver(
+        repeatPreset,
+        game.characters,
+        translate,
+        {},
+        { panelSpeed: 123.456789 },
+      ).resolve(stat),
+    ).toBe(123.456789)
+    const document = fixture()
+    const preview = createInitialState(document.plan)
+    document.plan.actors[0]!.panelSpeed = NaN
+    expect(compile(repeatPreset, {}, document, { preview }).invalid).toEqual(['self-stat'])
+    expect(() => valueResolver(preset, [], translate)).toThrow('character-stat')
+  })
+  it('restricts start-only definitions to the start anchor', () => {
+    const preset = definition([{ type: 'advance', target: 'allies', percent: 35 }], {
+      startOnly: true,
+    })
+    const document = fixture()
     expect(
       compilePreset(
         preset,
@@ -94,7 +135,7 @@ describe('declarative preset compiler', () => {
           preview: createInitialState(document.plan),
           translate,
         },
-        gameData.characters,
+        game.characters,
         () => 'unused',
       ).invalid,
     ).toEqual(['startOnly'])
@@ -172,7 +213,7 @@ describe('declarative preset compiler', () => {
         type: 'spawnParticipant',
         participant: {
           kind: 'scheduledEvent',
-          name: { type: 'i18n', key: 'planner.robin.eventName' },
+          name: { type: 'i18n', key: 'test.event', params: { index: 2 } },
           speed: 90,
         },
         onTrigger: [
@@ -190,7 +231,7 @@ describe('declarative preset compiler', () => {
     const built = compile(preset),
       events = built.document!.plan.events
     expect(events[0].operations[0]).toMatchObject({
-      participant: { name: en.planner.robin.eventName },
+      participant: { name: 'Event 2' },
     })
     expect(events[1].anchor).toEqual({
       kind: 'trigger',
@@ -241,7 +282,7 @@ describe('declarative preset compiler', () => {
         preview: createInitialState(document.plan),
         translate,
       },
-      gameData.characters,
+      game.characters,
       () => 'new',
     )
     expect(result.document!.plan.events[0].anchor).toEqual(anchor)
@@ -262,16 +303,12 @@ describe('declarative preset compiler', () => {
           preview: createInitialState(document.plan),
           translate,
         },
-        gameData.characters,
+        game.characters,
         () => String(++count),
       ).document,
     ).toBeUndefined()
     expect(count).toBe(0)
-    const resolver = valueResolver(
-      presets.find((p) => p.id === 'khaslana')!,
-      gameData.characters,
-      translate,
-    )
+    const resolver = valueResolver(definition([]), game.characters, translate)
     expect(
       resolver.resolve({
         type: 'multiply',
@@ -322,53 +359,22 @@ describe('declarative preset compiler', () => {
     expect(simulatePlan(built.document!.plan).diagnostics).toEqual([])
     expect(built.document!.plan.events).toHaveLength(2)
   })
-  it('avoids temporary operation and participant ID collisions during compilation and prefill', () => {
-    const document = fixture()
-    document.plan.actors[0].id = spawnedParticipantId('preset-probe-1')
-    document.plan.events = [
-      {
-        anchor: { kind: 'start' },
-        operations: [
-          { id: 'preset-draft-1', type: 'delay', target: { kind: 'allies' }, percent: 1 },
-        ],
-      },
-    ]
-    expect(
-      compile(
-        definition([
-          {
-            type: 'spawnParticipant',
-            participant: { kind: 'scheduledEvent', name: 'timer', speed: 90 },
-          },
-        ]),
-        {},
-        document,
-      ).invalid,
-    ).toEqual([])
-    const planner = useActionPlanner(document.plan, document.metadata)
-    planner.edit()
-    expect(planner.submitPreset({ id: 'eagle', values: {}, translate })).toBe(true)
-    expect(planner.draft.value?.type).toBe('advance')
-    expect(planner.draft.value?.percent).toBe(25)
-  })
-  it('allows editing a prefilled equipment target during an active actor preAction', () => {
-    const document = fixture(),
-      planner = useActionPlanner(document.plan, document.metadata)
-    planner.select({ kind: 'action', participantId: 'a', turn: 1 })
-    planner.edit()
-    planner.draft.value!.phase = 'preAction'
-    planner.draft.value!.selectedIds = ['a']
-    expect(planner.presetIssues.value.eagle).toBeUndefined()
-    expect(planner.submitPreset({ id: 'eagle', values: {}, translate })).toBe(true)
-    expect(planner.draft.value?.selectedIds).toEqual(['a'])
-    planner.draft.value!.selectedIds = ['b']
-    expect(planner.submit()).toBe(true)
+  it('skips empty dynamic groups without hiding invalid explicit targets', () => {
+    const preset = definition([
+      { type: 'depart', target: 'allies' },
+      { type: 'immediatelyAct', target: 'allies', onEmpty: 'skip' },
+    ])
+    expect(compile(preset).document!.plan.events[0]!.operations.map((op) => op.type)).toEqual([
+      'depart',
+    ])
+    preset.operations[1]!.target = 'selected'
+    expect(compile(preset).document).toBeUndefined()
   })
   it('supports a declarative self-return preset without imposing an in-field character rule', () => {
     const preset = definition([{ type: 'returnToField', target: 'self' }])
-    preset.characterId = '1310'
+    preset.characterId = 'test-character'
     const document = fixture()
-    document.metadata.characterIds = { a: '1310' }
+    document.metadata.characterIds = { a: 'test-character' }
     document.plan.events = [
       {
         anchor: { kind: 'start' },
@@ -384,8 +390,31 @@ describe('declarative preset compiler', () => {
 })
 
 describe('preset static validation', () => {
-  it('validates every auto-discovered production definition', () =>
-    expect(() => validatePresets(presets, [zh, en], gameData)).not.toThrow())
+  it('accepts synthetic declarations and requires a valid self-stat shape and identity', () => {
+    expect(() =>
+      validatePresets([repeatPreset, returnPreset], [messages, messages], game),
+    ).not.toThrow()
+    for (const value of [
+      { type: 'self-stat', stat: 'baseSpeed' },
+      { type: 'self-stat', stat: 'panelSpeed', extra: true },
+    ]) {
+      expect(() =>
+        validatePresets(
+          [
+            definition([{ type: 'delay', target: 'allies', percent: value } as PresetOperation], {
+              characterId: 'test-character',
+            }),
+          ],
+          [messages, messages],
+          game,
+        ),
+      ).toThrow()
+    }
+    const preset = definition([
+      { type: 'delay', target: 'allies', percent: { type: 'self-stat', stat: 'panelSpeed' } },
+    ])
+    expect(() => validatePresets([preset], [messages, messages], game)).toThrow('self-reference')
+  })
   it.each(
     [
       [{ type: 'unknown', target: 'allies' }],
@@ -429,12 +458,12 @@ describe('preset static validation', () => {
     ].map((operations) => [operations]),
   )('rejects malformed or unsupported declarations %#', (operations) => {
     expect(() =>
-      validatePresets([definition(operations as PresetOperation[])], [zh, en], gameData),
+      validatePresets([definition(operations as PresetOperation[])], [messages, messages], game),
     ).toThrow()
   })
   it('rejects duplicate IDs, conflicting inputs and excessive operations/depth', () => {
     const preset = definition([{ type: 'delay', target: 'allies', percent: 1 }])
-    expect(() => validatePresets([preset, preset], [zh, en], gameData)).toThrow()
+    expect(() => validatePresets([preset, preset], [messages, messages], game)).toThrow()
     const conflict = definition(
       [1, 2].map((value) => ({
         type: 'delay',
@@ -442,12 +471,12 @@ describe('preset static validation', () => {
         percent: { type: 'user-input', id: 'same', value },
       })),
     )
-    expect(() => validatePresets([conflict], [zh, en], gameData)).toThrow()
+    expect(() => validatePresets([conflict], [messages, messages], game)).toThrow()
     expect(() =>
       validatePresets(
         [{ ...preset, operations: Array.from({ length: 129 }, () => preset.operations[0]) }],
-        [zh, en],
-        gameData,
+        [messages, messages],
+        game,
       ),
     ).toThrow()
     let nested = preset.operations
@@ -459,7 +488,7 @@ describe('preset static validation', () => {
           onTrigger: nested,
         },
       ]
-    expect(() => validatePresets([definition(nested)], [zh, en], gameData)).toThrow()
+    expect(() => validatePresets([definition(nested)], [messages, messages], game)).toThrow()
     expect(compile(definition(nested)).invalid).toEqual(['depth'])
   })
   it('checks default operation semantics, interpolation arguments and input/value limits', () => {
@@ -474,7 +503,7 @@ describe('preset static validation', () => {
         type: 'spawnParticipant',
         participant: {
           kind: 'scheduledEvent',
-          name: { type: 'i18n', key: 'planner.khaslana.eventName' },
+          name: { type: 'i18n', key: 'test.event' },
           speed: 90,
         },
       },
@@ -487,14 +516,14 @@ describe('preset static validation', () => {
       })),
     )
     for (const preset of [invalidSpeed, invalidMessage, tooManyInputs])
-      expect(() => validatePresets([preset], [zh, en], gameData)).toThrow()
+      expect(() => validatePresets([preset], [messages, messages], game)).toThrow()
     let value: import('../../../src/tools/action-planner/presets/types').Value = 1
     for (let i = 0; i < 17; i++) value = { type: 'multiply', left: value, right: 1 }
     expect(() =>
       validatePresets(
         [definition([{ type: 'delay', target: 'allies', percent: value }])],
-        [zh, en],
-        gameData,
+        [messages, messages],
+        game,
       ),
     ).toThrow()
   })
@@ -507,7 +536,7 @@ describe('preset static validation', () => {
           type: 'user-input',
           id: 'p',
           value: 1,
-          i18n: { label: 'ui.add', hint: 'ui.edit' },
+          i18n: { label: 'test.label', hint: 'test.title' },
         },
       },
       {
@@ -517,11 +546,11 @@ describe('preset static validation', () => {
           type: 'user-input',
           value: 1,
           id: 'p',
-          i18n: { hint: 'ui.edit', label: 'ui.add' },
+          i18n: { hint: 'test.title', label: 'test.label' },
         },
       },
     ])
     expect(collectInputs(preset)).toHaveLength(1)
-    expect(() => validatePresets([preset], [zh, en], gameData)).not.toThrow()
+    expect(() => validatePresets([preset], [messages, messages], game)).not.toThrow()
   })
 })

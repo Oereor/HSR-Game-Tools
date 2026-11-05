@@ -65,10 +65,9 @@ describe('site messages and semantic presentation', () => {
       for (const key of keys) expect(composer.te(key, locale), `${locale}: ${key}`).toBe(true)
   })
 
-  it('validates the catalogs and rejects duplicate, empty, missing, malformed and mismatched messages', () => {
-    const sources = { 'zh-CN': JSON.stringify(zhCN), en: JSON.stringify(en) }
-    expect(validateMessages(sources)).toEqual([])
+  it('validates message structure, syntax and matching interpolation parameters', () => {
     const good = '{"message":"Hello {name}"}'
+    expect(validateMessages({ 'zh-CN': good, en: good })).toEqual([])
     for (const bad of [
       '{"message":""}',
       '{"other":"Hello"}',

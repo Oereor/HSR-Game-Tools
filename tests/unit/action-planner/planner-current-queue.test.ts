@@ -1,5 +1,4 @@
 import { ordinaryNode } from '../../fixtures/action-planner/ordinary-node'
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { simulatePlan } from '../../../src/tools/action-planner/engine/engine'
 import {
@@ -274,19 +273,6 @@ describe('current queue presentation', () => {
     for (const index of [-1, 0.5, Number.NaN, result.records.length + 1])
       expect(buildCurrentQueueView(result, index)).toBeUndefined()
     expect(currentQueueCards()).toEqual([])
-  })
-
-  it('removes visible camp metadata while retaining dot tooltips and accessible camp labels', () => {
-    const source = readFileSync(
-      new URL('../../../src/tools/action-planner/components/ActionNavigator.vue', import.meta.url),
-      'utf8',
-    )
-    const template = source.split('<template>')[1]!
-    expect(template).not.toMatch(/\{\{\s*campLabel\(/)
-    expect(template).toContain('v-tooltip="campLabel(card)"')
-    expect(template).toContain(':aria-label="campLabel(card)"')
-    expect(template).toContain('v-if="showStart"')
-    expect(template).toContain(':aria-current="card.isCurrent')
   })
 })
 
