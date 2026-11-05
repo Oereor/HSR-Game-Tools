@@ -1,0 +1,369 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "khaslana",
+  "order": 3,
+  "interaction": "batch",
+  "i18n": {
+    "name": "planner.khaslana.name",
+    "description": "planner.khaslana.description",
+    "unavailable": {
+      "target": "planner.khaslana.noAllies"
+    }
+  },
+  "icon": {
+    "characterId": "1408"
+  },
+  "snapshots": {
+    "departedAllies": {
+      "target": "allies",
+      "operation": "depart"
+    }
+  },
+  "operations": [
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "scheduledEvent",
+        "name": {
+          "type": "i18n",
+          "key": "planner.khaslana.eventName",
+          "params": {
+            "index": 1
+          }
+        },
+        "baseSpeed": {
+          "type": "user-input",
+          "id": "baseSpeed",
+          "value": {
+            "type": "character-stat",
+            "characterId": "1408",
+            "stat": "baseSpeed"
+          },
+          "i18n": {
+            "label": "planner.khaslana.baseSpeed"
+          },
+          "exclusiveMinimum": 0
+        },
+        "speed": {
+          "type": "multiply",
+          "left": {
+            "type": "ref",
+            "id": "baseSpeed"
+          },
+          "right": {
+            "type": "divide",
+            "left": {
+              "type": "user-input",
+              "id": "inheritancePercent",
+              "value": 60,
+              "i18n": {
+                "label": "planner.khaslana.inheritance",
+                "hint": "planner.khaslana.hint",
+                "suffix": "common.percentSuffix"
+              },
+              "exclusiveMinimum": 0
+            },
+            "right": 100
+          }
+        },
+        "initialAG": {
+          "type": "divide",
+          "left": 0,
+          "right": 7
+        }
+      }
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "scheduledEvent",
+        "name": {
+          "type": "i18n",
+          "key": "planner.khaslana.eventName",
+          "params": {
+            "index": 2
+          }
+        },
+        "baseSpeed": {
+          "type": "ref",
+          "id": "baseSpeed"
+        },
+        "speed": {
+          "type": "multiply",
+          "left": {
+            "type": "ref",
+            "id": "baseSpeed"
+          },
+          "right": {
+            "type": "divide",
+            "left": {
+              "type": "ref",
+              "id": "inheritancePercent"
+            },
+            "right": 100
+          }
+        },
+        "initialAG": {
+          "type": "divide",
+          "left": 10000,
+          "right": 7
+        }
+      }
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "scheduledEvent",
+        "name": {
+          "type": "i18n",
+          "key": "planner.khaslana.eventName",
+          "params": {
+            "index": 3
+          }
+        },
+        "baseSpeed": {
+          "type": "ref",
+          "id": "baseSpeed"
+        },
+        "speed": {
+          "type": "multiply",
+          "left": {
+            "type": "ref",
+            "id": "baseSpeed"
+          },
+          "right": {
+            "type": "divide",
+            "left": {
+              "type": "ref",
+              "id": "inheritancePercent"
+            },
+            "right": 100
+          }
+        },
+        "initialAG": {
+          "type": "divide",
+          "left": 20000,
+          "right": 7
+        }
+      }
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "scheduledEvent",
+        "name": {
+          "type": "i18n",
+          "key": "planner.khaslana.eventName",
+          "params": {
+            "index": 4
+          }
+        },
+        "baseSpeed": {
+          "type": "ref",
+          "id": "baseSpeed"
+        },
+        "speed": {
+          "type": "multiply",
+          "left": {
+            "type": "ref",
+            "id": "baseSpeed"
+          },
+          "right": {
+            "type": "divide",
+            "left": {
+              "type": "ref",
+              "id": "inheritancePercent"
+            },
+            "right": 100
+          }
+        },
+        "initialAG": {
+          "type": "divide",
+          "left": 30000,
+          "right": 7
+        }
+      }
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "scheduledEvent",
+        "name": {
+          "type": "i18n",
+          "key": "planner.khaslana.eventName",
+          "params": {
+            "index": 5
+          }
+        },
+        "baseSpeed": {
+          "type": "ref",
+          "id": "baseSpeed"
+        },
+        "speed": {
+          "type": "multiply",
+          "left": {
+            "type": "ref",
+            "id": "baseSpeed"
+          },
+          "right": {
+            "type": "divide",
+            "left": {
+              "type": "ref",
+              "id": "inheritancePercent"
+            },
+            "right": 100
+          }
+        },
+        "initialAG": {
+          "type": "divide",
+          "left": 40000,
+          "right": 7
+        }
+      }
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "scheduledEvent",
+        "name": {
+          "type": "i18n",
+          "key": "planner.khaslana.eventName",
+          "params": {
+            "index": 6
+          }
+        },
+        "baseSpeed": {
+          "type": "ref",
+          "id": "baseSpeed"
+        },
+        "speed": {
+          "type": "multiply",
+          "left": {
+            "type": "ref",
+            "id": "baseSpeed"
+          },
+          "right": {
+            "type": "divide",
+            "left": {
+              "type": "ref",
+              "id": "inheritancePercent"
+            },
+            "right": 100
+          }
+        },
+        "initialAG": {
+          "type": "divide",
+          "left": 50000,
+          "right": 7
+        }
+      }
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "scheduledEvent",
+        "name": {
+          "type": "i18n",
+          "key": "planner.khaslana.eventName",
+          "params": {
+            "index": 7
+          }
+        },
+        "baseSpeed": {
+          "type": "ref",
+          "id": "baseSpeed"
+        },
+        "speed": {
+          "type": "multiply",
+          "left": {
+            "type": "ref",
+            "id": "baseSpeed"
+          },
+          "right": {
+            "type": "divide",
+            "left": {
+              "type": "ref",
+              "id": "inheritancePercent"
+            },
+            "right": 100
+          }
+        },
+        "initialAG": {
+          "type": "divide",
+          "left": 60000,
+          "right": 7
+        }
+      }
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "scheduledEvent",
+        "name": {
+          "type": "i18n",
+          "key": "planner.khaslana.finalName"
+        },
+        "baseSpeed": {
+          "type": "ref",
+          "id": "baseSpeed"
+        },
+        "speed": {
+          "type": "multiply",
+          "left": {
+            "type": "ref",
+            "id": "baseSpeed"
+          },
+          "right": {
+            "type": "divide",
+            "left": {
+              "type": "ref",
+              "id": "inheritancePercent"
+            },
+            "right": 100
+          }
+        },
+        "initialAG": {
+          "type": "divide",
+          "left": 70000,
+          "right": 7
+        }
+      },
+      "onTrigger": [
+        {
+          "type": "returnToField",
+          "target": {
+            "snapshot": "departedAllies"
+          }
+        }
+      ]
+    },
+    {
+      "type": "depart",
+      "target": {
+        "snapshot": "departedAllies"
+      }
+    }
+  ],
+  "previews": [
+    {
+      "key": "planner.khaslana.initialSpeed",
+      "params": {
+        "speed": {
+          "type": "multiply",
+          "left": {
+            "type": "ref",
+            "id": "baseSpeed"
+          },
+          "right": {
+            "type": "divide",
+            "left": {
+              "type": "ref",
+              "id": "inheritancePercent"
+            },
+            "right": 100
+          }
+        }
+      }
+    }
+  ]
+}

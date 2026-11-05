@@ -13,17 +13,11 @@ import type {
 } from '../engine/types'
 import { saveOperation, moveOperation } from '../model/effect-config'
 import { buildCurrentQueueView } from '../model/current-queue'
-import {
-  buildKhaslanaPreset,
-  buildRobinPreset,
-  robinPresetAvailability,
-  buildFireflyPreset,
-  fireflyPresetAvailability,
-  type BatchPresetResult,
-  type KhaslanaPresetInput,
-  type RobinPresetInput,
-  type FireflyPresetInput,
-} from '../model/presets'
+import { presets } from '../presets/catalog'
+import { compilePreset } from '../presets/resolver'
+import { selectionOperation } from '../presets/values'
+import { gameData } from '../data/adapters/game-data'
+import type { PresetRequest, PresetResult } from '../presets/types'
 import {
   emptyDocument,
   serializePlannerDocument,
@@ -82,6 +76,7 @@ export function useActionPlanner(
   const queueCursor = ref<EventAnchor>({ kind: 'start' })
   const draft = ref<OperationDraft>()
   const invalid = ref<string[]>([])
+  const presetFailure = shallowRef<PresetResult['issue']>()
   const documentError = ref<FileErrorCode>()
   const migrationNotice = shallowRef<MigrationNotice>()
   const resourceIssues = shallowRef<ResourceIssue[]>([])
@@ -109,11 +104,47 @@ export function useActionPlanner(
       ? previewDraft(context.value, operations.value, selected.value, draft.value)
       : undefined,
   )
-  const robinPresetIssue = computed(
-    () => robinPresetAvailability(document.value, preview.value).issue,
-  )
-  const fireflyPresetIssue = computed(
-    () => fireflyPresetAvailability(document.value, preview.value).issue,
+  function temporaryIds() {
+    const reserved = referencedIds(plan.value)
+    let serial = 0
+    return () => {
+      let id: string
+      do {
+        id = `preset-draft-${++serial}`
+      } while (
+        reserved.has(id) ||
+        reserved.has(spawnedParticipantId(id)) ||
+        reserved.has(countdownParticipantId(id))
+      )
+      reserved.add(id)
+      return id
+    }
+  }
+  const presetIssues = computed(() =>
+    Object.fromEntries(
+      presets.map((definition) => {
+        const built = compilePreset(
+          definition,
+          {
+            document: document.value,
+            anchor: selected.value,
+            phase: draft.value?.phase ?? 'postAction',
+            preview: preview.value,
+            selectedIds: draft.value?.selectedIds,
+            translate: (key) => key,
+          },
+          gameData.characters,
+          temporaryIds(),
+        )
+        const issue = built.invalid[0]
+        return [
+          definition.id,
+          selectionOperation(definition) && ['target', 'activeTarget', 'activeAlly'].includes(issue)
+            ? undefined
+            : issue,
+        ]
+      }),
+    ),
   )
   const targets = computed(() =>
     operationTargets(
@@ -150,6 +181,7 @@ export function useActionPlanner(
   function cancel() {
     draft.value = undefined
     invalid.value = []
+    presetFailure.value = undefined
   }
   watch([stage, view], cancel, { flush: 'sync' })
   watch(
@@ -293,47 +325,44 @@ export function useActionPlanner(
     cancel()
     return true
   }
-  function submitKhaslana(input: KhaslanaPresetInput) {
+  function submitPreset(request: PresetRequest) {
     if (!draft.value || draft.value.id) return false
-    return submitBatchPreset(
-      buildKhaslanaPreset(
-        document.value,
-        selected.value,
-        draft.value.phase,
-        preview.value,
-        input,
-        nextId,
-      ),
+    const definition = presets.find((preset) => preset.id === request.id)
+    if (!definition) {
+      invalid.value = ['form']
+      return false
+    }
+    const built = compilePreset(
+      definition,
+      {
+        document: document.value,
+        anchor: selected.value,
+        phase: draft.value.phase,
+        preview: preview.value,
+        selectedIds: draft.value.selectedIds,
+        values: request.values,
+        translate: request.translate,
+      },
+      gameData.characters,
+      definition.interaction === 'draft' ? temporaryIds() : nextId,
     )
+    if (definition.interaction === 'draft') {
+      invalid.value = built.invalid
+      if (!built.document) return false
+      const generated = built.document.plan.events
+        .flatMap((event) => event.operations)
+        .find((operation) => built.operationIds.includes(operation.id))!
+      const next = operationDraft(generated)
+      next.id = undefined
+      next.original = undefined
+      draft.value = next
+      return true
+    }
+    return submitBatchPreset(built)
   }
-  function submitRobin(input: RobinPresetInput) {
-    if (!draft.value || draft.value.id) return false
-    return submitBatchPreset(
-      buildRobinPreset(
-        document.value,
-        selected.value,
-        draft.value.phase,
-        preview.value,
-        input,
-        nextId,
-      ),
-    )
-  }
-  function submitFirefly(input: FireflyPresetInput) {
-    if (!draft.value || draft.value.id) return false
-    return submitBatchPreset(
-      buildFireflyPreset(
-        document.value,
-        selected.value,
-        draft.value.phase,
-        preview.value,
-        input,
-        nextId,
-      ),
-    )
-  }
-  function submitBatchPreset(built: BatchPresetResult) {
+  function submitBatchPreset(built: PresetResult) {
     invalid.value = built.invalid
+    presetFailure.value = built.issue
     if (!built.document) return false
     try {
       const prepared = preparePlannerDocument(built.document)
@@ -474,11 +503,11 @@ export function useActionPlanner(
     view,
     draft,
     invalid,
+    presetFailure,
     operations,
     context,
     preview,
-    robinPresetIssue,
-    fireflyPresetIssue,
+    presetIssues,
     targets,
     unreached,
     inactive,
@@ -491,9 +520,7 @@ export function useActionPlanner(
     edit,
     cancel,
     submit,
-    submitKhaslana,
-    submitRobin,
-    submitFirefly,
+    submitPreset,
     remove,
     move,
     deleteEvent,

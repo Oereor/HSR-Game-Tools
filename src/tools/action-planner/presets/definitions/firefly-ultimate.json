@@ -1,0 +1,53 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "firefly-ultimate",
+  "order": 5,
+  "characterId": "1310",
+  "interaction": "batch",
+  "i18n": {
+    "name": "planner.firefly.name",
+    "description": "planner.firefly.description",
+    "unavailable": {
+      "context": "planner.firefly.unavailable.context",
+      "missing": "planner.firefly.unavailable.missing",
+      "ambiguous": "planner.firefly.unavailable.ambiguous",
+      "departed": "planner.firefly.unavailable.departed",
+      "unavailable": "planner.firefly.unavailable.unavailable",
+      "activeTarget": "planner.firefly.unavailable.activeTarget"
+    }
+  },
+  "icon": {
+    "characterId": "1310"
+  },
+  "operations": [
+    {
+      "type": "addSpeedModifier",
+      "target": "self",
+      "mode": "flat",
+      "amount": {
+        "type": "user-input",
+        "id": "spd",
+        "value": 60,
+        "i18n": {
+          "label": "planner.firefly.speedIncrease",
+          "suffix": "common.speedSuffix"
+        },
+        "minimum": 0
+      },
+      "duration": {
+        "kind": "countdown",
+        "name": {
+          "type": "i18n",
+          "key": "planner.firefly.countdownName"
+        },
+        "speed": 70
+      }
+    },
+    {
+      "type": "advance",
+      "target": "self",
+      "percent": 100
+    }
+  ],
+  "selfPresence": "present"
+}

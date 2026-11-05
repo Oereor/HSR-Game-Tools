@@ -113,7 +113,9 @@ Version 3 的贡献者 ID 是已保存的身份事实，不在导入时随新快
 
 ## 跨节点批量预设
 
-[presets.ts](../../src/tools/action-planner/model/presets.ts)中的工具层 Builder 先生成候选 PlannerDocument；useActionPlanner 通过统一文件校验和 simulatePlan 重放后一次提交。生成操作出现目标失败警告或候选存在错误时不发布文档、结果或部分存档；预算导致的不可达 Anchor 警告允许保留。ID 由现有分配器预留，失败后不复用已经分配的身份。
+配置格式、限制、复制示例与校验命令见[预设维护指南](../action-planner-presets.md)。装备预设继续预填单条普通操作草稿，角色批量预设通过统一参数界面应用；列表由定义目录自动发现，游戏数据 Catalog 只提供资源适配。解释器不按角色 ID 分支，不向引擎传递预设专属字段。
+
+[presets](../../src/tools/action-planner/presets/) 中的人工 JSON 声明七种原子操作、共享参数、目标快照和 onTrigger 事件。通用解释器解析参数与身份、按声明顺序生成普通 EffectOperation / PlanEvent，并生成候选 PlannerDocument；useActionPlanner 通过统一文件校验和 simulatePlan 重放后一次提交。生成操作出现目标失败警告或候选存在错误时不发布文档、结果或部分存档；预算导致的不可达 Anchor 警告允许保留。ID 由现有分配器预留，失败后不复用已经分配的身份。
 
 卡厄斯兰那预设在所选阶段末尾追加八个 spawnParticipant 与一个显式 depart，另以最后事件的稳定 trigger Anchor 保存 returnToField。离场及回场目标是开始时实际在场的全部我方 Actor ID；没有合法目标时拒绝创建。既有操作与自定义名称保留。
 参数为用户输入的基础速度 B 和继承百分比 r，八个事件设置 `baseSpeed = B`、`speed = B × r / 100`、`initialAG = i × 10000 / 7`（i = 0…7），不舍入。默认基础速度读取白厄快照，继承比例默认 60%；不识别星魂或击杀，不限制比例到 84%。

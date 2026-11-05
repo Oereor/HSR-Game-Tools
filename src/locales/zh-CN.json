@@ -228,6 +228,31 @@
       "countdownUnknown": "持续至关联倒计时触发",
       "description": "{effect}；{duration}",
       "nodeDescription": "{node}；速度效果：{effects}"
+    },
+    "presets": {
+      "vonwacq": {
+        "name": "生命的翁瓦克",
+        "description": "40%"
+      },
+      "eagle": {
+        "name": "晨昏交界的翔鹰",
+        "description": "25%"
+      },
+      "dance": {
+        "name": "舞！舞！舞！",
+        "description": "24%"
+      }
+    },
+    "presetErrors": {
+      "depth": "预设触发事件嵌套超过四层。",
+      "operations": "预设操作数量超过 128 条。",
+      "inputs": "预设输入参数超过 64 个。",
+      "value-depth": "预设参数值嵌套超过 16 层。",
+      "onTrigger": "仅定时事件和倒计时效果支持触发操作。",
+      "parameter-reference": "预设参数引用无效。",
+      "speed": "计算结果必须是符合操作要求的有限数值。",
+      "character-stat": "无法读取角色基础速度。",
+      "form": "请检查预设参数及目标。"
     }
   },
   "ui": {

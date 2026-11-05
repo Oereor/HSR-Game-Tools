@@ -1,10 +1,8 @@
+import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
 import { describe, expect, it } from 'vitest'
 import { effectScope, watch } from 'vue'
-import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
-import {
-  buildFireflyPreset,
-  fireflyPresetAvailability,
-} from '../../../src/tools/action-planner/model/presets'
+import { fireflyRequest } from './preset-fixtures'
+import { compileFireflyFixture, fireflyAvailability } from './preset-fixtures'
 import {
   emptyDocument,
   parsePlannerDocument,
@@ -72,7 +70,7 @@ describe('Firefly ordinary-operation batch preset', () => {
       ]
       document.metadata.customNames = { existing: 'Keep this name' }
       const p = planner(document)
-      expect(p.submitFirefly({ spd, countdownName })).toBe(true)
+      expect(p.submitPreset(fireflyRequest({ spd, countdownName }))).toBe(true)
       const operations = operationsAt(p.plan.value, start)
       expect(operations[0]).toEqual(document.plan.events[0]!.operations[0])
       expect(operations.slice(1)).toEqual([
@@ -103,7 +101,7 @@ describe('Firefly ordinary-operation batch preset', () => {
       },
     ]
     const p = planner(document)
-    expect(p.submitFirefly(input)).toBe(true)
+    expect(p.submitPreset(fireflyRequest(input))).toBe(true)
     const state = afterStart(p)
     expect(state.participants.find((p) => p.id === 'f')!.remainingAG).toBe(5000)
     const action = p.result.value.records[0]!
@@ -137,7 +135,7 @@ describe('Firefly ordinary-operation batch preset', () => {
       },
     ]
     const p = planner(document)
-    expect(p.submitFirefly(input)).toBe(true)
+    expect(p.submitPreset(fireflyRequest(input))).toBe(true)
     const speedId = operationsAt(p.plan.value, start)[1]!.id
     const countdownId = countdownParticipantId(speedId)
     const state = afterStart(p)
@@ -164,7 +162,7 @@ describe('Firefly ordinary-operation batch preset', () => {
     (spd) => {
       const document = fixture()
       let allocations = 0
-      const built = buildFireflyPreset(
+      const built = compileFireflyFixture(
         document,
         start,
         'postAction',
@@ -172,18 +170,22 @@ describe('Firefly ordinary-operation batch preset', () => {
         { ...input, spd },
         () => `id-${++allocations}`,
       )
-      expect(built).toEqual({ invalid: ['spd'], operationIds: [] })
+      expect(built).toMatchObject({
+        invalid: ['spd'],
+        operationIds: [],
+        issue: { code: 'spd', field: 'spd' },
+      })
       expect(allocations).toBe(0)
       const p = planner(document)
       const before = p.document.value
-      expect(p.submitFirefly({ ...input, spd })).toBe(false)
+      expect(p.submitPreset(fireflyRequest({ ...input, spd }))).toBe(false)
       expect(p.document.value).toBe(before)
     },
   )
 
   it('accepts zero speed and rejects an empty countdown name before allocating IDs', () => {
     const p = planner()
-    expect(p.submitFirefly({ ...input, spd: 0 })).toBe(true)
+    expect(p.submitPreset(fireflyRequest({ ...input, spd: 0 }))).toBe(true)
     const state = afterStart(p)
     expect(
       effectiveSpeed(
@@ -193,7 +195,7 @@ describe('Firefly ordinary-operation batch preset', () => {
     ).toBe(100)
     let allocations = 0
     expect(
-      buildFireflyPreset(
+      compileFireflyFixture(
         p.document.value,
         start,
         'postAction',
@@ -211,8 +213,15 @@ describe('Firefly ordinary-operation batch preset', () => {
     let allocations = 0
     const check = (doc: PlannerDocument, preview: SimulationState | undefined, issue: string) => {
       expect(
-        buildFireflyPreset(doc, start, 'postAction', preview, input, () => `id-${++allocations}`),
-      ).toEqual({ invalid: [`firefly:${issue}`], operationIds: [] })
+        compileFireflyFixture(
+          doc,
+          start,
+          'postAction',
+          preview,
+          input,
+          () => `id-${++allocations}`,
+        ),
+      ).toEqual({ invalid: [issue], operationIds: [], issue: { code: issue } })
     }
     check({ ...document, metadata: { customNames: {}, characterIds: {} } }, state, 'missing')
     check(
@@ -233,7 +242,7 @@ describe('Firefly ordinary-operation batch preset', () => {
     )
     check(document, undefined, 'context')
     expect(allocations).toBe(0)
-    expect(fireflyPresetAvailability(document, undefined).issue).toBe('context')
+    expect(fireflyAvailability(document, undefined).issue).toBe('context')
   })
 
   it('uses the insertion preview for departure, removal and unreachable anchors', () => {
@@ -244,8 +253,8 @@ describe('Firefly ordinary-operation batch preset', () => {
     const p = planner(document)
     const before = p.document.value
     expect(p.result.value.participants.some((p) => p.id === 'f')).toBe(true)
-    expect(p.fireflyPresetIssue.value).toBe('departed')
-    expect(p.submitFirefly(input)).toBe(false)
+    expect(p.presetIssues.value['firefly-ultimate']).toBe('departed')
+    expect(p.submitPreset(fireflyRequest(input))).toBe(false)
     expect(p.document.value).toBe(before)
 
     const limited = fixture()
@@ -253,14 +262,14 @@ describe('Firefly ordinary-operation batch preset', () => {
     const q = planner(limited)
     q.select({ kind: 'action', participantId: 'a', turn: 2 })
     q.edit()
-    expect(q.fireflyPresetIssue.value).toBe('unavailable')
+    expect(q.presetIssues.value['firefly-ultimate']).toBe('unavailable')
     const previous = q.document.value
-    expect(q.submitFirefly(input)).toBe(false)
+    expect(q.submitPreset(fireflyRequest(input))).toBe(false)
     expect(q.document.value).toBe(previous)
     q.select({ kind: 'trigger', participantId: 'orphan' })
     q.edit()
-    expect(q.fireflyPresetIssue.value).toBe('context')
-    expect(q.submitFirefly(input)).toBe(false)
+    expect(q.presetIssues.value['firefly-ultimate']).toBe('context')
+    expect(q.submitPreset(fireflyRequest(input))).toBe(false)
     expect(q.document.value).toBe(previous)
   })
 
@@ -282,14 +291,14 @@ describe('Firefly ordinary-operation batch preset', () => {
     p.draft.value!.phase = 'preAction'
     const before = p.document.value
     const result = p.result.value
-    expect(p.fireflyPresetIssue.value).toBe('activeTarget')
-    expect(p.submitFirefly(input)).toBe(false)
-    expect(p.invalid.value).toEqual(['firefly:activeTarget'])
+    expect(p.presetIssues.value['firefly-ultimate']).toBe('activeTarget')
+    expect(p.submitPreset(fireflyRequest(input))).toBe(false)
+    expect(p.invalid.value).toEqual(['activeTarget'])
     expect(p.document.value).toBe(before)
     expect(p.result.value).toBe(result)
     p.draft.value!.phase = 'postAction'
-    expect(p.fireflyPresetIssue.value).toBeUndefined()
-    expect(p.submitFirefly(input)).toBe(true)
+    expect(p.presetIssues.value['firefly-ultimate']).toBeUndefined()
+    expect(p.submitPreset(fireflyRequest(input))).toBe(true)
     const operations = operationsAt(p.plan.value, anchor)
     expect(operations.slice(0, 2)).toEqual(document.plan.events[0]!.operations)
     expect(operations.slice(2).map((op) => op.phase)).toEqual(['postAction', 'postAction'])
@@ -317,11 +326,11 @@ describe('Firefly ordinary-operation batch preset', () => {
     scope.run(() => watch(p.document, (document) => persistence.save(document), { flush: 'sync' }))
     const before = p.document.value
     const result = p.result.value
-    expect(p.submitFirefly({ ...input, countdownName: 'x'.repeat(300) })).toBe(false)
+    expect(p.submitPreset(fireflyRequest({ ...input, countdownName: 'x'.repeat(300) }))).toBe(false)
     expect(p.document.value).toBe(before)
     expect(p.result.value).toBe(result)
     expect(storage.writes).toBe(0)
-    expect(p.submitFirefly(input)).toBe(true)
+    expect(p.submitPreset(fireflyRequest(input))).toBe(true)
     expect(storage.writes).toBe(1)
     expect(JSON.parse(storage.raw).version).toBe(3)
     const restored = createPlannerPersistence(() => storage).initialize().document
@@ -353,7 +362,7 @@ describe('Firefly ordinary-operation batch preset', () => {
     let writes = 0
     const failureScope = effectScope()
     failureScope.run(() => watch(q.document, () => writes++, { flush: 'sync' }))
-    expect(q.submitFirefly(input)).toBe(false)
+    expect(q.submitPreset(fireflyRequest(input))).toBe(false)
     expect(q.invalid.value).toEqual(['form'])
     expect(q.document.value).toBe(previous)
     expect(q.result.value).toBe(previousResult)
@@ -370,12 +379,12 @@ describe('Firefly ordinary-operation batch preset', () => {
       },
     ]
     const p = planner(document)
-    expect(p.submitFirefly(input)).toBe(true)
+    expect(p.submitPreset(fireflyRequest(input))).toBe(true)
     const [speed, advance] = operationsAt(p.plan.value, start)
     expect([speed!.id, advance!.id].some((id) => ['editor-1', 'editor-2'].includes(id))).toBe(false)
     const countdownId = countdownParticipantId(speed!.id)
     p.edit(speed)
-    expect(p.submitFirefly(input)).toBe(false)
+    expect(p.submitPreset(fireflyRequest(input))).toBe(false)
     p.draft.value!.amount = 65
     p.draft.value!.customName = 'My speed effect'
     p.draft.value!.duration.countdownName = 'My countdown'
@@ -392,7 +401,7 @@ describe('Firefly ordinary-operation batch preset', () => {
     expect(operationsAt(p.plan.value, start)).toHaveLength(1)
     expect(p.document.value.metadata.customNames[speed!.id]).toBe('My speed effect')
     p.edit()
-    expect(p.submitFirefly(input)).toBe(true)
+    expect(p.submitPreset(fireflyRequest(input))).toBe(true)
     p.remove(speed!.id)
     expect(operationsAt(p.plan.value, start).map((op) => op.type)).toEqual([
       'addSpeedModifier',
@@ -403,6 +412,6 @@ describe('Firefly ordinary-operation batch preset', () => {
       p.document.value,
     )
     p.cancel()
-    expect(p.submitFirefly(input)).toBe(false)
+    expect(p.submitPreset(fireflyRequest(input))).toBe(false)
   })
 })

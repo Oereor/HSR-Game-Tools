@@ -1,0 +1,56 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "robin-ultimate",
+  "order": 4,
+  "characterId": "1309",
+  "interaction": "batch",
+  "i18n": {
+    "name": "planner.robin.name",
+    "description": "planner.robin.description",
+    "unavailable": {
+      "context": "planner.robin.unavailable.context",
+      "missing": "planner.robin.unavailable.missing",
+      "ambiguous": "planner.robin.unavailable.ambiguous",
+      "departed": "planner.robin.unavailable.departed",
+      "unavailable": "planner.robin.unavailable.unavailable",
+      "activeAlly": "planner.robin.unavailable.activeAlly"
+    }
+  },
+  "icon": {
+    "characterId": "1309"
+  },
+  "operations": [
+    {
+      "type": "depart",
+      "target": "self"
+    },
+    {
+      "type": "immediatelyAct",
+      "target": "allies",
+      "onEmpty": "skip"
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "scheduledEvent",
+        "name": {
+          "type": "i18n",
+          "key": "planner.robin.eventName"
+        },
+        "speed": 90,
+        "initialAG": 10000
+      },
+      "onTrigger": [
+        {
+          "type": "returnToField",
+          "target": "self"
+        },
+        {
+          "type": "immediatelyAct",
+          "target": "self"
+        }
+      ]
+    }
+  ],
+  "selfPresence": "present"
+}

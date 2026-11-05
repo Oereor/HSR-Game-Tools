@@ -36,7 +36,7 @@ Vercel 继续使用已有项目和 Git Integration，Framework Preset 为 Vite�
 Agent 不自行切换到 develop，不擅自 Commit、Push 或执行任何部署；具体权限见 AGENTS.md。
 
 [CI Workflow](../.github/workflows/ci.yml) 在 develop Push 及目标为 develop/main 的 PR 上自动运行一个固定名称为 **Validation** 的 Job。
-使用 Node 24.x、npm Cache 和 `npm ci`，依次执行 type-check、test、lint、validate:i18n、build；安装前确认 Node 满足项目版本范围。
+使用 Node 24.x、npm Cache 和 `npm ci`，依次执行 type-check、test、lint、validate:i18n、validate:planner-presets、build；安装前确认 Node 满足项目版本范围。
 Workflow 只有 contents 读取权限，普通 PR 不访问部署凭证，不运行上游数据更新、Benchmark、浏览器测试或部署。
 format:check、游戏数据和模板校验继续用于本地维护及发布前检查，不自动加入每次 Push 的 CI。
 
@@ -120,6 +120,7 @@ workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并
 | `npm run format`                                                      | 全仓格式写入，仅在明确需要时执行                                    |
 | `npm run validate:i18n`                                               | 校验双语消息结构、参数与语法                                        |
 | `npm run validate:game-data`                                          | 校验快照、Manifest、来源锁定、文件哈希及图片                        |
+| `npm run validate:planner-presets`                                    | 校验预设 JSON、参数引用、翻译及静态约束                             |
 | `npm run validate:planner-templates`                                  | 校验人工审阅的方案模板和双语介绍                                    |
 | `npm run build`                                                       | 将现有应用和快照构建至 dist，不生成游戏数据                         |
 | `npm run update:game-data`                                            | 显式数据更新；参数和前提见[游戏数据维护](game-data.md#显式更新流程) |

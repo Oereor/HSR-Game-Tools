@@ -1,0 +1,940 @@
+{
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "description": "Relative URL of the independent preset Draft-07 JSON Schema.",
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "description": "Stable preset or shared parameter ID; never a runtime participant ID.",
+      "type": "string",
+      "minLength": 1
+    },
+    "order": {
+      "description": "Display order; the preset ID breaks ties deterministically.",
+      "type": "number"
+    },
+    "characterId": {
+      "description": "Canonical character identity from the normalized game snapshot.",
+      "type": "string",
+      "minLength": 1
+    },
+    "i18n": {
+      "description": "Localization keys resolved by the UI or compiler.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Participant name or preset display-name localization key, according to context.",
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "description": "Preset description localization key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "unavailable": {
+          "description": "Map semantic issue codes to existing localized explanations.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["name", "description"],
+      "additionalProperties": false
+    },
+    "icon": {
+      "description": "Registered asset key or normalized character portrait reference.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "characterId": {
+              "description": "Canonical character identity from the normalized game snapshot.",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["characterId"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "assetKey": {
+              "description": "assetKey",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["assetKey"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "interaction": {
+      "description": "draft prefills one editable operation; batch atomically applies the whole compiled document.",
+      "enum": ["draft", "batch"]
+    },
+    "startOnly": {
+      "description": "Restrict this preset to the battle-start insertion window.",
+      "type": "boolean"
+    },
+    "snapshots": {
+      "description": "Named immutable participant ID sets captured once from the insertion preview.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "target": {
+            "description": "Semantic target resolved using engine eligibility at the actual insertion point.",
+            "enum": ["allies", "enemies"]
+          },
+          "operation": {
+            "description": "Engine operation used to determine snapshot eligibility.",
+            "const": "depart"
+          }
+        },
+        "required": ["target", "operation"],
+        "additionalProperties": false
+      }
+    },
+    "previews": {
+      "description": "Localized read-only summaries derived from the shared inputs.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "description": "Existing localization key in both zh-CN.json and en.json.",
+            "type": "string",
+            "minLength": 1
+          },
+          "params": {
+            "description": "Named localization arguments; names must match both message catalogs.",
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/definitions/value"
+            }
+          }
+        },
+        "required": ["key", "params"],
+        "additionalProperties": false
+      }
+    },
+    "operations": {
+      "description": "Operations in execution order, at most 128 including nested triggers.",
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 128,
+      "items": {
+        "$ref": "#/definitions/operation"
+      }
+    },
+    "selfPresence": {
+      "description": "Required self presence at insertion; default any. Requires characterId. Each operation still checks its own target eligibility.",
+      "enum": ["present", "departed", "any"]
+    }
+  },
+  "required": ["id", "order", "i18n", "interaction", "operations"],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Action Planner Preset",
+  "description": "Declarative presets compiled into ordinary planner operations.",
+  "definitions": {
+    "value": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": ["string", "null"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "user-input"
+            },
+            "id": {
+              "description": "Stable preset or shared parameter ID; never a runtime participant ID.",
+              "type": "string",
+              "minLength": 1
+            },
+            "value": {
+              "description": "Default numeric/string input or normalized character base-speed lookup.",
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "description": "Operation or declarative value discriminator.",
+                      "const": "character-stat"
+                    },
+                    "characterId": {
+                      "description": "Canonical character identity from the normalized game snapshot.",
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "stat": {
+                      "description": "Only normalized character baseSpeed is supported.",
+                      "const": "baseSpeed"
+                    }
+                  },
+                  "required": ["type", "characterId", "stat"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "i18n": {
+              "description": "Localization keys resolved by the UI or compiler.",
+              "type": "object",
+              "properties": {
+                "label": {
+                  "description": "Optional localization key for the input label.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "hint": {
+                  "description": "Optional localization key for input guidance.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "placeholder": {
+                  "description": "Optional localization key for the input placeholder.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "suffix": {
+                  "description": "Optional localization key for the displayed input unit.",
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "minimum": {
+              "description": "Inclusive numeric input lower bound.",
+              "type": "number"
+            },
+            "exclusiveMinimum": {
+              "description": "Exclusive numeric input lower bound.",
+              "type": "number"
+            }
+          },
+          "required": ["type", "id", "value"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "character-stat"
+            },
+            "characterId": {
+              "description": "Canonical character identity from the normalized game snapshot.",
+              "type": "string",
+              "minLength": 1
+            },
+            "stat": {
+              "description": "Only normalized character baseSpeed is supported.",
+              "const": "baseSpeed"
+            }
+          },
+          "required": ["type", "characterId", "stat"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "i18n"
+            },
+            "key": {
+              "description": "Existing localization key in both zh-CN.json and en.json.",
+              "type": "string",
+              "minLength": 1
+            },
+            "params": {
+              "description": "Named localization arguments; names must match both message catalogs.",
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/value"
+              }
+            }
+          },
+          "required": ["type", "key"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "ref"
+            },
+            "id": {
+              "description": "Stable preset or shared parameter ID; never a runtime participant ID.",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["type", "id"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "enum": ["multiply", "divide"]
+            },
+            "left": {
+              "description": "Left operand, evaluated without rearranging the expression.",
+              "$ref": "#/definitions/value"
+            },
+            "right": {
+              "description": "Right operand; division by zero is rejected.",
+              "$ref": "#/definitions/value"
+            }
+          },
+          "required": ["type", "left", "right"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "numeric": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "user-input"
+            },
+            "id": {
+              "description": "Stable preset or shared parameter ID; never a runtime participant ID.",
+              "type": "string",
+              "minLength": 1
+            },
+            "value": {
+              "description": "Default numeric/string input or normalized character base-speed lookup.",
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "description": "Operation or declarative value discriminator.",
+                      "const": "character-stat"
+                    },
+                    "characterId": {
+                      "description": "Canonical character identity from the normalized game snapshot.",
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "stat": {
+                      "description": "Only normalized character baseSpeed is supported.",
+                      "const": "baseSpeed"
+                    }
+                  },
+                  "required": ["type", "characterId", "stat"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "i18n": {
+              "description": "Localization keys resolved by the UI or compiler.",
+              "type": "object",
+              "properties": {
+                "label": {
+                  "description": "Optional localization key for the input label.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "hint": {
+                  "description": "Optional localization key for input guidance.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "placeholder": {
+                  "description": "Optional localization key for the input placeholder.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "suffix": {
+                  "description": "Optional localization key for the displayed input unit.",
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "minimum": {
+              "description": "Inclusive numeric input lower bound.",
+              "type": "number"
+            },
+            "exclusiveMinimum": {
+              "description": "Exclusive numeric input lower bound.",
+              "type": "number"
+            }
+          },
+          "required": ["type", "id", "value"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "character-stat"
+            },
+            "characterId": {
+              "description": "Canonical character identity from the normalized game snapshot.",
+              "type": "string",
+              "minLength": 1
+            },
+            "stat": {
+              "description": "Only normalized character baseSpeed is supported.",
+              "const": "baseSpeed"
+            }
+          },
+          "required": ["type", "characterId", "stat"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "ref"
+            },
+            "id": {
+              "description": "Stable preset or shared parameter ID; never a runtime participant ID.",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["type", "id"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "enum": ["multiply", "divide"]
+            },
+            "left": {
+              "description": "Left operand, evaluated without rearranging the expression.",
+              "$ref": "#/definitions/numeric"
+            },
+            "right": {
+              "description": "Right operand; division by zero is rejected.",
+              "$ref": "#/definitions/numeric"
+            }
+          },
+          "required": ["type", "left", "right"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "string": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "user-input"
+            },
+            "id": {
+              "description": "Stable preset or shared parameter ID; never a runtime participant ID.",
+              "type": "string",
+              "minLength": 1
+            },
+            "value": {
+              "description": "Default numeric/string input or normalized character base-speed lookup.",
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "description": "Operation or declarative value discriminator.",
+                      "const": "character-stat"
+                    },
+                    "characterId": {
+                      "description": "Canonical character identity from the normalized game snapshot.",
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "stat": {
+                      "description": "Only normalized character baseSpeed is supported.",
+                      "const": "baseSpeed"
+                    }
+                  },
+                  "required": ["type", "characterId", "stat"],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "i18n": {
+              "description": "Localization keys resolved by the UI or compiler.",
+              "type": "object",
+              "properties": {
+                "label": {
+                  "description": "Optional localization key for the input label.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "hint": {
+                  "description": "Optional localization key for input guidance.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "placeholder": {
+                  "description": "Optional localization key for the input placeholder.",
+                  "type": "string",
+                  "minLength": 1
+                },
+                "suffix": {
+                  "description": "Optional localization key for the displayed input unit.",
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            },
+            "minimum": {
+              "description": "Inclusive numeric input lower bound.",
+              "type": "number"
+            },
+            "exclusiveMinimum": {
+              "description": "Exclusive numeric input lower bound.",
+              "type": "number"
+            }
+          },
+          "required": ["type", "id", "value"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "i18n"
+            },
+            "key": {
+              "description": "Existing localization key in both zh-CN.json and en.json.",
+              "type": "string",
+              "minLength": 1
+            },
+            "params": {
+              "description": "Named localization arguments; names must match both message catalogs.",
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/value"
+              }
+            }
+          },
+          "required": ["type", "key"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "ref"
+            },
+            "id": {
+              "description": "Stable preset or shared parameter ID; never a runtime participant ID.",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["type", "id"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "target": {
+      "anyOf": [
+        {
+          "enum": ["self", "allies", "enemies", "selected"]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "snapshot": {
+              "description": "Previously declared insertion-time target snapshot name.",
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": ["snapshot"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "operation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "advance"
+            },
+            "target": {
+              "description": "Semantic target resolved using engine eligibility at the actual insertion point.",
+              "$ref": "#/definitions/target"
+            },
+            "onEmpty": {
+              "description": "Skip empty allies/enemies operations during compilation. Other target failures still reject the preset.",
+              "const": "skip"
+            },
+            "percent": {
+              "description": "Gauge percentage relative to FULL_AG (10000), not remaining AG.",
+              "$ref": "#/definitions/numeric"
+            }
+          },
+          "required": ["type", "target", "percent"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "delay"
+            },
+            "target": {
+              "description": "Semantic target resolved using engine eligibility at the actual insertion point.",
+              "$ref": "#/definitions/target"
+            },
+            "onEmpty": {
+              "description": "Skip empty allies/enemies operations during compilation. Other target failures still reject the preset.",
+              "const": "skip"
+            },
+            "percent": {
+              "description": "Gauge percentage relative to FULL_AG (10000), not remaining AG.",
+              "$ref": "#/definitions/numeric"
+            }
+          },
+          "required": ["type", "target", "percent"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "immediatelyAct"
+            },
+            "target": {
+              "description": "Semantic target resolved using engine eligibility at the actual insertion point.",
+              "$ref": "#/definitions/target"
+            },
+            "onEmpty": {
+              "description": "Skip empty allies/enemies operations during compilation. Other target failures still reject the preset.",
+              "const": "skip"
+            }
+          },
+          "required": ["type", "target"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "depart"
+            },
+            "target": {
+              "description": "Semantic target resolved using engine eligibility at the actual insertion point.",
+              "$ref": "#/definitions/target"
+            },
+            "onEmpty": {
+              "description": "Skip empty allies/enemies operations during compilation. Other target failures still reject the preset.",
+              "const": "skip"
+            }
+          },
+          "required": ["type", "target"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "returnToField"
+            },
+            "target": {
+              "description": "Semantic target resolved using engine eligibility at the actual insertion point.",
+              "$ref": "#/definitions/target"
+            },
+            "onEmpty": {
+              "description": "Skip empty allies/enemies operations during compilation. Other target failures still reject the preset.",
+              "const": "skip"
+            }
+          },
+          "required": ["type", "target"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "addSpeedModifier"
+            },
+            "target": {
+              "description": "Semantic target resolved using engine eligibility at the actual insertion point.",
+              "$ref": "#/definitions/target"
+            },
+            "onEmpty": {
+              "description": "Skip empty allies/enemies operations during compilation. Other target failures still reject the preset.",
+              "const": "skip"
+            },
+            "mode": {
+              "description": "flat adds SPD; percent scales the independent baseSpeed.",
+              "enum": ["flat", "percent"]
+            },
+            "amount": {
+              "description": "Finite flat speed or percentage of base speed, according to mode.",
+              "$ref": "#/definitions/numeric"
+            },
+            "duration": {
+              "description": "Positive turn count (null means unlimited) or a countdown event lifetime.",
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "description": "Engine participant or lifecycle discriminator.",
+                  "const": "turns"
+                },
+                "turns": {
+                  "description": "Positive integer turn count, or null for an unlimited lifetime.",
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/numeric"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["kind", "turns"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["type", "target", "mode", "amount", "duration"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "addSpeedModifier"
+            },
+            "target": {
+              "description": "Semantic target resolved using engine eligibility at the actual insertion point.",
+              "$ref": "#/definitions/target"
+            },
+            "onEmpty": {
+              "description": "Skip empty allies/enemies operations during compilation. Other target failures still reject the preset.",
+              "const": "skip"
+            },
+            "mode": {
+              "description": "flat adds SPD; percent scales the independent baseSpeed.",
+              "enum": ["flat", "percent"]
+            },
+            "amount": {
+              "description": "Finite flat speed or percentage of base speed, according to mode.",
+              "$ref": "#/definitions/numeric"
+            },
+            "duration": {
+              "description": "Positive turn count (null means unlimited) or a countdown event lifetime.",
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "description": "Engine participant or lifecycle discriminator.",
+                  "const": "countdown"
+                },
+                "name": {
+                  "description": "Participant name or preset display-name localization key, according to context.",
+                  "$ref": "#/definitions/string"
+                },
+                "speed": {
+                  "description": "Finite positive actual speed in SPD.",
+                  "$ref": "#/definitions/numeric"
+                }
+              },
+              "required": ["kind", "name", "speed"],
+              "additionalProperties": false
+            },
+            "onTrigger": {
+              "description": "Ordered operations at the derived event trigger anchor. Only scheduled events and countdown lifetimes support this; maximum four trigger levels.",
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 128,
+              "items": {
+                "$ref": "#/definitions/operation"
+              }
+            }
+          },
+          "required": ["type", "target", "mode", "amount", "duration"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "spawnParticipant"
+            },
+            "participant": {
+              "description": "Actor or one-shot Scheduled Event creation definition.",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "description": "Participant name or preset display-name localization key, according to context.",
+                  "$ref": "#/definitions/string"
+                },
+                "iconUrl": {
+                  "description": "Optional registered participant icon path; document resource validation still applies.",
+                  "$ref": "#/definitions/string"
+                },
+                "initialAG": {
+                  "description": "Initial AG, default 10000. Nonnegative fractional values retain full precision.",
+                  "$ref": "#/definitions/numeric"
+                },
+                "kind": {
+                  "description": "Engine participant or lifecycle discriminator.",
+                  "const": "actor"
+                },
+                "camp": {
+                  "description": "Actor camp: ally or enemy.",
+                  "enum": ["ally", "enemy"]
+                },
+                "category": {
+                  "description": "Optional Actor display category.",
+                  "enum": ["character", "enemy", "summon", "memosprite", "custom"]
+                },
+                "baseSpeed": {
+                  "description": "Finite positive speed base for percentage modifiers.",
+                  "$ref": "#/definitions/numeric"
+                },
+                "panelSpeed": {
+                  "description": "Initial actual Actor panel speed in SPD.",
+                  "$ref": "#/definitions/numeric"
+                },
+                "actionLimit": {
+                  "description": "Positive natural-action limit, or null for no limit.",
+                  "anyOf": [
+                    {
+                      "$ref": "#/definitions/numeric"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["kind", "name", "camp", "baseSpeed", "panelSpeed"],
+              "additionalProperties": false
+            }
+          },
+          "required": ["type", "participant"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "description": "Operation or declarative value discriminator.",
+              "const": "spawnParticipant"
+            },
+            "participant": {
+              "description": "Actor or one-shot Scheduled Event creation definition.",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "description": "Participant name or preset display-name localization key, according to context.",
+                  "$ref": "#/definitions/string"
+                },
+                "iconUrl": {
+                  "description": "Optional registered participant icon path; document resource validation still applies.",
+                  "$ref": "#/definitions/string"
+                },
+                "initialAG": {
+                  "description": "Initial AG, default 10000. Nonnegative fractional values retain full precision.",
+                  "$ref": "#/definitions/numeric"
+                },
+                "kind": {
+                  "description": "Engine participant or lifecycle discriminator.",
+                  "const": "scheduledEvent"
+                },
+                "baseSpeed": {
+                  "description": "Finite positive speed base for percentage modifiers.",
+                  "$ref": "#/definitions/numeric"
+                },
+                "speed": {
+                  "description": "Finite positive actual speed in SPD.",
+                  "$ref": "#/definitions/numeric"
+                }
+              },
+              "required": ["kind", "name", "speed"],
+              "additionalProperties": false
+            },
+            "onTrigger": {
+              "description": "Ordered operations at the derived event trigger anchor. Only scheduled events and countdown lifetimes support this; maximum four trigger levels.",
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 128,
+              "items": {
+                "$ref": "#/definitions/operation"
+              }
+            }
+          },
+          "required": ["type", "participant"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

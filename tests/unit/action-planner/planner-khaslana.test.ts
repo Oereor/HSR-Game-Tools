@@ -1,10 +1,8 @@
+import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
 import { describe, expect, it } from 'vitest'
 import { effectScope, watch } from 'vue'
-import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
-import {
-  buildKhaslanaPreset,
-  type KhaslanaPresetInput,
-} from '../../../src/tools/action-planner/model/presets'
+import { khaslanaRequest } from './preset-fixtures'
+import { compileKhaslanaFixture, type KhaslanaPresetInput } from './preset-fixtures'
 import { buildOperation, operationDraft } from '../../../src/tools/action-planner/model/editor'
 import {
   emptyDocument,
@@ -80,7 +78,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
   ])('builds exact gauges and additive speed bases for B=%s r=%s', (base, ratio) => {
     const p = planner()
     const before = p.document.value
-    expect(p.submitKhaslana(input(base, ratio))).toBe(true)
+    expect(p.submitPreset(khaslanaRequest(input(base, ratio)))).toBe(true)
     const spawns = spawnOps(p.plan.value)
     expect(spawns).toHaveLength(8)
     const operations = p.plan.value.events.flatMap((event) => event.operations)
@@ -132,7 +130,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
       p.select({ kind: 'action', participantId: 'b', turn: 1 })
       p.edit()
       p.draft.value!.phase = phase
-      expect(p.submitKhaslana(input())).toBe(true)
+      expect(p.submitPreset(khaslanaRequest(input()))).toBe(true)
       const generated = p.plan.value.events.find(
         (event) => event.anchor.kind === 'action',
       )!.operations
@@ -149,7 +147,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
     const limited = plan()
     limited.maxNodes = 2
     const p = planner(limited)
-    expect(p.submitKhaslana(input())).toBe(true)
+    expect(p.submitPreset(khaslanaRequest(input()))).toBe(true)
     const final = p.plan.value.events.find((event) => event.anchor.kind === 'trigger')!
     expect(p.unreached.value).toContainEqual(final)
     const imported = parsePlannerDocument(serializePlannerDocument(p.document.value)).document
@@ -181,13 +179,13 @@ describe('Khaslana ordinary-operation batch preset', () => {
     const previous = p.document.value
     const result = p.result.value
     p.cancel()
-    expect(p.submitKhaslana(input())).toBe(false)
+    expect(p.submitPreset(khaslanaRequest(input()))).toBe(false)
     p.edit()
-    expect(p.submitKhaslana(input(0))).toBe(false)
+    expect(p.submitPreset(khaslanaRequest(input(0)))).toBe(false)
     expect(p.document.value).toBe(previous)
     expect(p.result.value).toBe(result)
     expect(storage.writes).toBe(0)
-    expect(p.submitKhaslana(input())).toBe(true)
+    expect(p.submitPreset(khaslanaRequest(input()))).toBe(true)
     expect(storage.writes).toBe(1)
     const restored = createPlannerPersistence(() => storage).initialize().document
     expect(restored).toEqual(p.document.value)
@@ -201,7 +199,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
     const badInput = input()
     badInput.names[7] = 'x'.repeat(300)
     const result = p.result.value
-    expect(p.submitKhaslana(badInput)).toBe(false)
+    expect(p.submitPreset(khaslanaRequest(badInput))).toBe(false)
     expect(p.document.value).toBe(before)
     expect(p.result.value).toBe(result)
     expect(spawnOps(p.plan.value)).toEqual([])
@@ -225,7 +223,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
     })
     const p = planner(broken)
     const before = p.document.value
-    expect(p.submitKhaslana(input())).toBe(false)
+    expect(p.submitPreset(khaslanaRequest(input()))).toBe(false)
     expect(p.document.value).toBe(before)
     const limited = plan()
     limited.actors[0]!.actionLimit = 1
@@ -233,7 +231,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
     q.select({ kind: 'action', participantId: 'a', turn: 1 })
     q.edit()
     const qBefore = q.document.value
-    expect(q.submitKhaslana(input())).toBe(false)
+    expect(q.submitPreset(khaslanaRequest(input()))).toBe(false)
     expect(q.document.value).toBe(qBefore)
   })
 
@@ -250,12 +248,12 @@ describe('Khaslana ordinary-operation batch preset', () => {
       ],
     })
     const p = planner(imported)
-    expect(p.submitKhaslana(input())).toBe(true)
+    expect(p.submitPreset(khaslanaRequest(input()))).toBe(true)
     const first = spawnOps(p.plan.value)
     expect(first.some((op) => op.id === 'editor-1' || op.id === 'editor-2')).toBe(false)
     p.select({ kind: 'trigger', participantId: spawnedParticipantId(first[7]!.id) })
     p.edit()
-    expect(p.submitKhaslana(input(120, 66))).toBe(true)
+    expect(p.submitPreset(khaslanaRequest(input(120, 66)))).toBe(true)
     const all = p.plan.value.events.flatMap((e) => e.operations)
     expect(spawnOps(p.plan.value)).toHaveLength(16)
     expect(new Set(all.map((op) => op.id)).size).toBe(all.length)
@@ -263,7 +261,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
 
   it('edits event names/speeds without losing the speed base, ID or fractional gauge; deletion leaves an orphan', () => {
     const p = planner()
-    expect(p.submitKhaslana(input(100, 66))).toBe(true)
+    expect(p.submitPreset(khaslanaRequest(input(100, 66)))).toBe(true)
     const spawns = spawnOps(p.plan.value)
     const edited = spawns[1]!
     p.select({ kind: 'start' })
@@ -285,7 +283,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
 
   it('supports standard event multi-target speed edits and presence naming from the actual context', () => {
     const p = planner()
-    expect(p.submitKhaslana(input(100, 66))).toBe(true)
+    expect(p.submitPreset(khaslanaRequest(input(100, 66)))).toBe(true)
     const spawns = spawnOps(p.plan.value)
     p.select({ kind: 'trigger', participantId: spawnedParticipantId(spawns[0]!.id) })
     p.edit()
@@ -338,7 +336,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
       input(Number.MAX_VALUE, Number.MAX_VALUE),
     ]) {
       expect(
-        buildKhaslanaPreset(
+        compileKhaslanaFixture(
           document,
           { kind: 'start' },
           'postAction',
@@ -350,7 +348,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
     }
     const empty = emptyDocument()
     expect(
-      buildKhaslanaPreset(
+      compileKhaslanaFixture(
         empty,
         { kind: 'start' },
         'postAction',
@@ -384,7 +382,7 @@ describe('Khaslana ordinary-operation batch preset', () => {
       ).toBeDefined()
     }
     const p = planner()
-    p.submitKhaslana(input())
+    p.submitPreset(khaslanaRequest(input()))
     const file = JSON.parse(serializePlannerDocument(p.document.value))
     file.document.plan.events[0].operations[1].participant.baseSpeed = 0
     expect(() => validatePlannerFile(file)).toThrow()

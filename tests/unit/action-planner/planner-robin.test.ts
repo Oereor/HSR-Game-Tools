@@ -1,10 +1,8 @@
+import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
 import { describe, expect, it } from 'vitest'
 import { effectScope, watch } from 'vue'
-import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
-import {
-  buildRobinPreset,
-  robinPresetAvailability,
-} from '../../../src/tools/action-planner/model/presets'
+import { robinRequest } from './preset-fixtures'
+import { compileRobinFixture, robinAvailability } from './preset-fixtures'
 import {
   emptyDocument,
   parsePlannerDocument,
@@ -63,7 +61,7 @@ describe('Robin ordinary-operation batch preset', () => {
     (position) => {
       const p = planner(fixture(position))
       const before = p.document.value
-      expect(p.submitRobin(input)).toBe(true)
+      expect(p.submitPreset(robinRequest(input))).toBe(true)
       const operations = operationsAt(p.plan.value, start)
       expect(operations.map((op) => op.type)).toEqual([
         'depart',
@@ -98,7 +96,7 @@ describe('Robin ordinary-operation batch preset', () => {
 
   it('orders the ally batch by the pre-operation queue and returns Robin at zero AV', () => {
     const p = planner()
-    p.submitRobin(input)
+    p.submitPreset(robinRequest(input))
     const records = p.result.value.records
     expect(
       records.slice(0, 3).map((r) => [r.kind !== 'cycleBoundary' && r.id, r.elapsedAV]),
@@ -151,7 +149,7 @@ describe('Robin ordinary-operation batch preset', () => {
     ]
     document.metadata.customNames = { 'leave-c': 'Keep this name' }
     const p = planner(document)
-    expect(p.submitRobin(input)).toBe(true)
+    expect(p.submitPreset(robinRequest(input))).toBe(true)
     expect(operationsAt(p.plan.value, start).slice(0, 2)).toEqual(
       document.plan.events[0]!.operations,
     )
@@ -166,7 +164,7 @@ describe('Robin ordinary-operation batch preset', () => {
 
   it('freezes Robin AG and keeps return and immediatelyAct as separate semantics', () => {
     const p = planner()
-    p.submitRobin(input)
+    p.submitPreset(robinRequest(input))
     let state = applyOperations(
       createInitialState(p.plan.value),
       operationsAt(p.plan.value, start),
@@ -202,7 +200,7 @@ describe('Robin ordinary-operation batch preset', () => {
     const document = fixture()
     document.plan.actors.find((a) => a.id === 'r')!.panelSpeed = 777
     const p = planner(document)
-    p.submitRobin(input)
+    p.submitPreset(robinRequest(input))
     const eventId = spawnedParticipantId(spawn(p).id)
     p.edit()
     p.draft.value!.type = type
@@ -230,7 +228,7 @@ describe('Robin ordinary-operation batch preset', () => {
     document.plan.events = [{ anchor, operations: [existing] }]
     document.metadata.customNames = { existing: 'Retained trigger operation' }
     let serial = 0
-    const built = buildRobinPreset(
+    const built = compileRobinFixture(
       document,
       start,
       'postAction',
@@ -267,7 +265,7 @@ describe('Robin ordinary-operation batch preset', () => {
       p.select({ kind: 'action', participantId: 'r', turn: 1 })
       p.edit()
       p.draft.value!.phase = phase
-      expect(p.submitRobin(input)).toBe(true)
+      expect(p.submitPreset(robinRequest(input))).toBe(true)
       expect(operationsAt(p.plan.value, p.selected.value).every((op) => op.phase === phase)).toBe(
         true,
       )
@@ -299,16 +297,16 @@ describe('Robin ordinary-operation batch preset', () => {
     p.select(anchor)
     p.edit()
     p.draft.value!.phase = 'preAction'
-    expect(p.robinPresetIssue.value).toBe('activeAlly')
+    expect(p.presetIssues.value['robin-ultimate']).toBe('activeAlly')
     const before = p.document.value
     const result = p.result.value
-    expect(p.submitRobin(input)).toBe(false)
-    expect(p.invalid.value).toEqual(['robin:activeAlly'])
+    expect(p.submitPreset(robinRequest(input))).toBe(false)
+    expect(p.invalid.value).toEqual(['activeAlly'])
     expect(p.document.value).toBe(before)
     expect(p.result.value).toBe(result)
     p.draft.value!.phase = 'postAction'
-    expect(p.robinPresetIssue.value).toBeUndefined()
-    expect(p.submitRobin(input)).toBe(true)
+    expect(p.presetIssues.value['robin-ultimate']).toBeUndefined()
+    expect(p.submitPreset(robinRequest(input))).toBe(true)
     expect(operationsAt(p.plan.value, anchor).slice(0, 2)).toEqual(
       document.plan.events[0]!.operations,
     )
@@ -335,7 +333,7 @@ describe('Robin ordinary-operation batch preset', () => {
     p.select(anchor)
     p.edit()
     p.draft.value!.phase = 'preAction'
-    expect(p.submitRobin(input)).toBe(true)
+    expect(p.submitPreset(robinRequest(input))).toBe(true)
     expect(p.result.value.diagnostics).toEqual([])
   })
 
@@ -354,7 +352,7 @@ describe('Robin ordinary-operation batch preset', () => {
       },
     ]
     const p = planner(document)
-    expect(p.submitRobin(input)).toBe(true)
+    expect(p.submitPreset(robinRequest(input))).toBe(true)
     expect(
       operationsAt(p.plan.value, start)
         .slice(1)
@@ -376,30 +374,36 @@ describe('Robin ordinary-operation batch preset', () => {
     const state = createInitialState(document.plan)
     let allocations = 0
     const build = (doc: PlannerDocument, preview = state) =>
-      buildRobinPreset(doc, start, 'postAction', preview, input, () => `id-${++allocations}`)
+      compileRobinFixture(doc, start, 'postAction', preview, input, () => `id-${++allocations}`)
     expect(build({ ...document, metadata: { customNames: {}, characterIds: {} } }).invalid).toEqual(
-      ['robin:missing'],
+      ['missing'],
     )
     expect(
       build({ ...document, metadata: { customNames: {}, characterIds: { r: '1309', a: '1309' } } })
         .invalid,
-    ).toEqual(['robin:ambiguous'])
+    ).toEqual(['ambiguous'])
     expect(
       build(
         document,
         applyOperations(state, [{ id: 'leave', type: 'depart', target: target('r') }], start).state,
       ).invalid,
-    ).toEqual(['robin:departed'])
+    ).toEqual(['departed'])
     expect(
       build(document, { ...state, participants: state.participants.filter((p) => p.id !== 'r') })
         .invalid,
-    ).toEqual(['robin:unavailable'])
+    ).toEqual(['unavailable'])
     expect(
-      buildRobinPreset(document, start, 'postAction', undefined, input, () => `id-${++allocations}`)
-        .invalid,
-    ).toEqual(['robin:context'])
+      compileRobinFixture(
+        document,
+        start,
+        'postAction',
+        undefined,
+        input,
+        () => `id-${++allocations}`,
+      ).invalid,
+    ).toEqual(['context'])
     expect(
-      buildRobinPreset(
+      compileRobinFixture(
         document,
         start,
         'postAction',
@@ -412,8 +416,8 @@ describe('Robin ordinary-operation batch preset', () => {
     const p = planner(document)
     p.select({ kind: 'trigger', participantId: 'orphan' })
     p.edit()
-    expect(p.submitRobin(input)).toBe(false)
-    expect(p.robinPresetIssue.value).toBe('context')
+    expect(p.submitPreset(robinRequest(input))).toBe(false)
+    expect(p.presetIssues.value['robin-ultimate']).toBe('context')
   })
 
   it('detects earlier Robin departure at the insertion point instead of the final catalog', () => {
@@ -423,8 +427,8 @@ describe('Robin ordinary-operation batch preset', () => {
     ]
     const p = planner(document)
     expect(p.result.value.participants.some((p) => p.id === 'r')).toBe(true)
-    expect(p.robinPresetIssue.value).toBe('departed')
-    expect(p.submitRobin(input)).toBe(false)
+    expect(p.presetIssues.value['robin-ultimate']).toBe('departed')
+    expect(p.submitPreset(robinRequest(input))).toBe(false)
   })
 
   it('publishes and saves once, with no writes on file, replay or generated-target failure', () => {
@@ -446,11 +450,11 @@ describe('Robin ordinary-operation batch preset', () => {
     scope.run(() => watch(p.document, (document) => persistence.save(document), { flush: 'sync' }))
     const before = p.document.value
     const result = p.result.value
-    expect(p.submitRobin({ name: 'x'.repeat(300) })).toBe(false)
+    expect(p.submitPreset(robinRequest({ name: 'x'.repeat(300) }))).toBe(false)
     expect(p.document.value).toBe(before)
     expect(p.result.value).toBe(result)
     expect(storage.writes).toBe(0)
-    expect(p.submitRobin(input)).toBe(true)
+    expect(p.submitPreset(robinRequest(input))).toBe(true)
     expect(storage.writes).toBe(1)
     expect(
       allOps(p).every(
@@ -494,7 +498,7 @@ describe('Robin ordinary-operation batch preset', () => {
       let writes = 0
       const failureScope = effectScope()
       failureScope.run(() => watch(q.document, () => writes++, { flush: 'sync' }))
-      expect(q.submitRobin(input)).toBe(false)
+      expect(q.submitPreset(robinRequest(input))).toBe(false)
       expect(q.document.value).toBe(previous)
       expect(q.result.value).toBe(previousResult)
       expect(q.invalid.value).toEqual(['form'])
@@ -518,13 +522,13 @@ describe('Robin ordinary-operation batch preset', () => {
       },
     ]
     const p = planner(document)
-    p.submitRobin(input)
+    p.submitPreset(robinRequest(input))
     expect(spawn(p).id).not.toBe('editor-1')
     const firstSpawn = spawn(p)
     const firstTrigger = trigger(p)
     p.select(firstTrigger)
     p.edit()
-    expect(p.submitRobin(input)).toBe(true)
+    expect(p.submitPreset(robinRequest(input))).toBe(true)
     expect(allOps(p).filter((op) => op.type === 'spawnParticipant')).toHaveLength(2)
     expect(new Set(allOps(p).map((op) => op.id)).size).toBe(allOps(p).length)
     p.select(start)
@@ -549,7 +553,7 @@ describe('Robin ordinary-operation batch preset', () => {
       p.document.value,
     )
     p.cancel()
-    expect(p.submitRobin(input)).toBe(false)
+    expect(p.submitPreset(robinRequest(input))).toBe(false)
   })
 
   it.each(['nodes', 'av'] as const)(
@@ -559,7 +563,7 @@ describe('Robin ordinary-operation batch preset', () => {
       if (budget === 'nodes') document.plan.maxNodes = 1
       else document.plan.maxAV = 1
       const p = planner(document)
-      expect(p.submitRobin(input)).toBe(true)
+      expect(p.submitPreset(robinRequest(input))).toBe(true)
       expect(p.unreached.value).toContainEqual(expect.objectContaining({ anchor: trigger(p) }))
       const imported = parsePlannerDocument(serializePlannerDocument(p.document.value)).document
       imported.plan.maxNodes = 30
@@ -567,7 +571,7 @@ describe('Robin ordinary-operation batch preset', () => {
       const result = simulatePlan(imported.plan)
       expect(result.diagnostics).toEqual([])
       expect(result.records.some((r) => r.kind !== 'cycleBoundary' && r.id === 'r')).toBe(true)
-      expect(robinPresetAvailability(imported, undefined).issue).toBe('context')
+      expect(robinAvailability(imported, undefined).issue).toBe('context')
     },
   )
 })

@@ -228,6 +228,31 @@
       "countdownUnknown": "Until the linked countdown triggers",
       "description": "{effect}; {duration}",
       "nodeDescription": "{node}; Speed modifiers: {effects}"
+    },
+    "presets": {
+      "vonwacq": {
+        "name": "Sprightly Vonwacq",
+        "description": "40%"
+      },
+      "eagle": {
+        "name": "Eagle of Twilight Line",
+        "description": "25%"
+      },
+      "dance": {
+        "name": "Dance! Dance! Dance!",
+        "description": "24%"
+      }
+    },
+    "presetErrors": {
+      "depth": "Preset trigger nesting exceeds four levels.",
+      "operations": "Preset exceeds 128 operations.",
+      "inputs": "Preset exceeds 64 input parameters.",
+      "value-depth": "Preset value nesting exceeds 16 levels.",
+      "onTrigger": "Only scheduled events and countdown effects support trigger operations.",
+      "parameter-reference": "Preset parameter reference is invalid.",
+      "speed": "Calculated value must be finite and valid for the operation.",
+      "character-stat": "Character base speed is unavailable.",
+      "form": "Review preset parameters and targets."
     }
   },
   "ui": {

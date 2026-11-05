@@ -28,6 +28,7 @@
     "validate:game-data": "node --import tsx scripts/validate-game-data.ts",
     "bench:engine": "node --import tsx scripts/benchmark-engine.ts",
     "validate:i18n": "node --import tsx scripts/validate-i18n.ts",
+    "validate:planner-presets": "node --import tsx scripts/validate-planner-presets.ts",
     "validate:planner-templates": "node --import tsx scripts/validate-planner-templates.ts",
     "update:warp-catalog": "node --import tsx scripts/warp-data/cli.ts update-catalog",
     "generate:warp-schema": "node --import tsx scripts/warp-data/cli.ts generate-schema",
