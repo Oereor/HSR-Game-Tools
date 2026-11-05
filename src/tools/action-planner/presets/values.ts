@@ -1,5 +1,5 @@
 import type { CharacterRecord } from '../data/schema'
-import type { TargetedOperation } from '../engine/types'
+import type { ActorDefinition, TargetedOperation } from '../engine/types'
 import {
   PRESET_LIMITS,
   type Input,
@@ -62,6 +62,7 @@ export function valueResolver(
   characters: readonly CharacterRecord[],
   translate: Translate,
   supplied: Record<string, unknown> = {},
+  selfStats?: Pick<ActorDefinition, 'panelSpeed'>,
 ) {
   const inputs = new Map(collectInputs(definition).map((input) => [input.id, input]))
   const parameters = new Map<string, string | number>()
@@ -73,6 +74,12 @@ export function valueResolver(
       return value
     }
     switch (value.type) {
+      case 'self-stat': {
+        const speed = selfStats?.[value.stat]
+        if (!definition.characterId || speed === undefined || !Number.isFinite(speed) || speed <= 0)
+          throw new PresetError('self-stat')
+        return speed
+      }
       case 'character-stat': {
         const speed = characters.find((c) => c.id === value.characterId)?.baseSpeed
         if (speed === undefined || !Number.isFinite(speed) || speed <= 0)
@@ -136,7 +143,7 @@ export function valueResolver(
     if (!value || typeof value !== 'object') return value
     if (
       'type' in value &&
-      ['user-input', 'ref', 'character-stat', 'i18n', 'multiply', 'divide'].includes(
+      ['user-input', 'ref', 'character-stat', 'self-stat', 'i18n', 'multiply', 'divide'].includes(
         String(value.type),
       )
     )

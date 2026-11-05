@@ -86,7 +86,7 @@ function issueMessage(preset: PresetDefinition, issue?: string): string | undefi
     : issue === 'context'
       ? t('ui.contextUnavailable')
       : t(
-          `planner.presetErrors.${['depth', 'operations', 'inputs', 'value-depth', 'onTrigger', 'parameter-reference', 'speed', 'character-stat'].includes(issue) ? issue : 'form'}`,
+          `planner.presetErrors.${['depth', 'operations', 'inputs', 'value-depth', 'onTrigger', 'parameter-reference', 'speed', 'character-stat', 'self-stat'].includes(issue) ? issue : 'form'}`,
         )
 }
 const presetError = computed(() =>

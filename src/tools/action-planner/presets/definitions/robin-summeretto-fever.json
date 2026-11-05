@@ -1,0 +1,74 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "robin-summeretto-fever",
+  "order": 6,
+  "characterId": "1512",
+  "interaction": "batch",
+  "selfPresence": "present",
+  "i18n": {
+    "name": "planner.robinSummeretto.name",
+    "description": "planner.robinSummeretto.description",
+    "unavailable": {
+      "context": "planner.robinSummeretto.unavailable.context",
+      "missing": "planner.robinSummeretto.unavailable.missing",
+      "ambiguous": "planner.robinSummeretto.unavailable.ambiguous",
+      "departed": "planner.robinSummeretto.unavailable.departed",
+      "unavailable": "planner.robinSummeretto.unavailable.unavailable"
+    }
+  },
+  "icon": {
+    "characterId": "1512"
+  },
+  "operations": [
+    {
+      "type": "depart",
+      "target": "self"
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "actor",
+        "camp": "ally",
+        "category": "memosprite",
+        "name": {
+          "type": "i18n",
+          "key": "planner.robinSummeretto.memospriteName"
+        },
+        "baseSpeed": {
+          "type": "multiply",
+          "left": {
+            "type": "self-stat",
+            "stat": "panelSpeed"
+          },
+          "right": 1.8
+        },
+        "panelSpeed": {
+          "type": "multiply",
+          "left": {
+            "type": "self-stat",
+            "stat": "panelSpeed"
+          },
+          "right": 1.8
+        },
+        "actionLimit": null,
+        "initialAG": 10000
+      }
+    },
+    {
+      "type": "spawnParticipant",
+      "participant": {
+        "kind": "actor",
+        "camp": "ally",
+        "category": "custom",
+        "name": {
+          "type": "i18n",
+          "key": "planner.robinSummeretto.nodeName"
+        },
+        "baseSpeed": 140,
+        "panelSpeed": 140,
+        "actionLimit": null,
+        "initialAG": 10000
+      }
+    }
+  ]
+}

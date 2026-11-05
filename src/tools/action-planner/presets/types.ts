@@ -7,6 +7,10 @@ export type Value =
   | null
   | Input
   | {
+      type: 'self-stat'
+      stat: 'panelSpeed'
+    }
+  | {
       type: 'ref'
       id: string
     }

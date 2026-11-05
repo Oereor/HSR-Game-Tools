@@ -313,6 +313,9 @@
           },
           "required": ["type", "left", "right"],
           "additionalProperties": false
+        },
+        {
+          "$ref": "#/definitions/selfStat"
         }
       ]
     },
@@ -458,6 +461,9 @@
           },
           "required": ["type", "left", "right"],
           "additionalProperties": false
+        },
+        {
+          "$ref": "#/definitions/selfStat"
         }
       ]
     },
@@ -935,6 +941,20 @@
           "additionalProperties": false
         }
       ]
+    },
+    "selfStat": {
+      "description": "Out-of-combat panel speed of the unique initial allied actor identified by the preset characterId. Requires runtime self context.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "self-stat"
+        },
+        "stat": {
+          "const": "panelSpeed"
+        }
+      },
+      "required": ["type", "stat"],
+      "additionalProperties": false
     }
   }
 }

@@ -8,7 +8,7 @@ import {
 } from '../engine/queue'
 import { operationTargets, targetIds } from '../engine/targeting'
 import { validateOperations } from '../engine/validation'
-import type { EffectOperation, EventAnchor, PlanEvent, Target } from '../engine/types'
+import type { ActorConfig, EffectOperation, EventAnchor, PlanEvent, Target } from '../engine/types'
 import { metadataValue } from '../model/editor'
 import { referencedIds } from '../model/document-file'
 import type { CharacterRecord } from '../data/schema'
@@ -36,8 +36,8 @@ export function compilePreset(
     if (!context.preview) throw new PresetError('context')
     if (definition.startOnly && context.anchor.kind !== 'start') throw new PresetError('startOnly')
     for (const input of collectInputs(definition)) parameters.add(input.id)
-    const values = valueResolver(definition, characters, context.translate, context.values)
     let self: string | undefined
+    let selfActor: ActorConfig | undefined
     if (definition.characterId) {
       const actors = context.document.plan.actors.filter(
         (actor) =>
@@ -56,7 +56,15 @@ export function compilePreset(
       if (definition.selfPresence === 'departed' && !participant.departed)
         throw new PresetError('unavailable')
       self = participant.id
+      selfActor = actors[0]!
     }
+    const values = valueResolver(
+      definition,
+      characters,
+      context.translate,
+      context.values,
+      selfActor,
+    )
     const snapshots = new Map<string, string[]>()
     for (const [name, spec] of Object.entries(definition.snapshots ?? {})) {
       const ids = targetIds(

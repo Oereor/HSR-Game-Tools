@@ -67,6 +67,7 @@ export function validatePresets(
       if (row.snapshot && !Object.hasOwn(preset.snapshots ?? {}, String(row.snapshot)))
         throw new PresetError('snapshot-reference')
       if (row.target === 'self' && !preset.characterId) throw new PresetError('self-reference')
+      if (row.type === 'self-stat' && !preset.characterId) throw new PresetError('self-reference')
       if (row.type === 'i18n') {
         keys.push(String(row.key))
         for (const locale of messages) {
@@ -117,7 +118,14 @@ export function validatePresets(
         throw new Error(`Missing preset translation: ${key}`)
     // Resolve defaults in both languages, checking reference types and arithmetic.
     for (const locale of messages) {
-      const resolver = valueResolver(definition, game.characters, (key) => messageAt(locale, key)!)
+      // Structural/default checks only: the real panel speed is checked at insertion.
+      const resolver = valueResolver(
+        definition,
+        game.characters,
+        (key) => messageAt(locale, key)!,
+        {},
+        { panelSpeed: 100 },
+      )
       function validateDefaults(ops: PresetDefinition['operations']) {
         for (const op of ops) {
           const { onTrigger } = op

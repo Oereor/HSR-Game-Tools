@@ -252,7 +252,21 @@
       "parameter-reference": "预设参数引用无效。",
       "speed": "计算结果必须是符合操作要求的有限数值。",
       "character-stat": "无法读取角色基础速度。",
-      "form": "请检查预设参数及目标。"
+      "form": "请检查预设参数及目标。",
+      "self-stat": "无法读取预设对应角色的有效战斗外面板速度。"
+    },
+    "robinSummeretto": {
+      "name": "知更鸟·晴歌 Fever 状态",
+      "description": "使知更鸟·晴歌离场，生成「晴空乐手」和气氛值减半节点",
+      "memospriteName": "「晴空乐手」",
+      "nodeName": "【气氛值】减半",
+      "unavailable": {
+        "context": "当前节点无法预览，不能添加 Fever 状态。",
+        "missing": "请先在编队中加入知更鸟·晴歌。",
+        "ambiguous": "编队中存在多个知更鸟·晴歌，无法确定目标。",
+        "departed": "知更鸟·晴歌已离场，不能再次进入 Fever 状态。",
+        "unavailable": "当前节点无法对知更鸟·晴歌应用 Fever 状态。"
+      }
     }
   },
   "ui": {

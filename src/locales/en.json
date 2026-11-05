@@ -252,7 +252,21 @@
       "parameter-reference": "Preset parameter reference is invalid.",
       "speed": "Calculated value must be finite and valid for the operation.",
       "character-stat": "Character base speed is unavailable.",
-      "form": "Review preset parameters and targets."
+      "form": "Review preset parameters and targets.",
+      "self-stat": "Unable to read a valid out-of-combat panel SPD for this preset’s character."
+    },
+    "robinSummeretto": {
+      "name": "Robin • Summeretto: Fever",
+      "description": "Depart Robin • Summeretto. Create Summer Songbirds and Vibe Halving Node",
+      "memospriteName": "Summer Songbirds",
+      "nodeName": "Vibe Halves",
+      "unavailable": {
+        "context": "This node cannot be previewed. Fever cannot be added here.",
+        "missing": "Add Robin • Summeretto to the team first.",
+        "ambiguous": "Multiple Robin • Summeretto actors are configured. The target is ambiguous.",
+        "departed": "Robin • Summeretto has already left the field and cannot enter Fever again.",
+        "unavailable": "Fever cannot be applied to Robin • Summeretto at this node."
+      }
     }
   },
   "ui": {
