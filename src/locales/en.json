@@ -194,7 +194,7 @@
     },
     "robin": {
       "name": "Robin · Ultimate",
-      "description": "Make allies act immediately and create a 90 SPD Concerto countdown",
+      "description": "Make allies act immediately and create Concerto countdown",
       "eventName": "Concerto",
       "unavailable": {
         "context": "The execution context at this insertion point is unavailable. Adjust the horizon or earlier configuration.",
@@ -228,6 +228,45 @@
       "countdownUnknown": "Until the linked countdown triggers",
       "description": "{effect}; {duration}",
       "nodeDescription": "{node}; Speed modifiers: {effects}"
+    },
+    "presets": {
+      "vonwacq": {
+        "name": "Sprightly Vonwacq",
+        "description": "Action Advances by 40%"
+      },
+      "eagle": {
+        "name": "Eagle of Twilight Line",
+        "description": "Action Advances by 25%"
+      },
+      "dance": {
+        "name": "Dance! Dance! Dance!",
+        "description": "Allies' Actions Advance by 24%"
+      }
+    },
+    "presetErrors": {
+      "depth": "Preset trigger nesting exceeds four levels.",
+      "operations": "Preset exceeds 128 operations.",
+      "inputs": "Preset exceeds 64 input parameters.",
+      "value-depth": "Preset value nesting exceeds 16 levels.",
+      "onTrigger": "Only scheduled events and countdown effects support trigger operations.",
+      "parameter-reference": "Preset parameter reference is invalid.",
+      "speed": "Calculated value must be finite and valid for the operation.",
+      "character-stat": "Character base speed is unavailable.",
+      "form": "Review preset parameters and targets.",
+      "self-stat": "Unable to read a valid out-of-combat panel SPD for this preset’s character."
+    },
+    "robinSummeretto": {
+      "name": "Robin • Summeretto: Fever",
+      "description": "Depart Robin • Summeretto. Create Summer Songbirds and Vibe Halving Node",
+      "memospriteName": "Summer Songbirds",
+      "nodeName": "Vibe Halves",
+      "unavailable": {
+        "context": "This node cannot be previewed. Fever cannot be added here.",
+        "missing": "Add Robin • Summeretto to the team first.",
+        "ambiguous": "Multiple Robin • Summeretto actors are configured. The target is ambiguous.",
+        "departed": "Robin • Summeretto has already left the field and cannot enter Fever again.",
+        "unavailable": "Fever cannot be applied to Robin • Summeretto at this node."
+      }
     }
   },
   "ui": {

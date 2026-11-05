@@ -207,7 +207,7 @@
     },
     "firefly": {
       "name": "流萤 · 终结技",
-      "description": "行动提前 100%，获得速度加成及完全燃烧倒计时",
+      "description": "行动提前 100%，速度提高并添加倒计时",
       "speedIncrease": "速度提高",
       "countdownName": "完全燃烧",
       "unavailable": {
@@ -228,6 +228,45 @@
       "countdownUnknown": "持续至关联倒计时触发",
       "description": "{effect}；{duration}",
       "nodeDescription": "{node}；速度效果：{effects}"
+    },
+    "presets": {
+      "vonwacq": {
+        "name": "生命的翁瓦克",
+        "description": "行动提前 40%"
+      },
+      "eagle": {
+        "name": "晨昏交界的翔鹰",
+        "description": "行动提前 25%"
+      },
+      "dance": {
+        "name": "舞！舞！舞！",
+        "description": "我方全体行动提前 24%"
+      }
+    },
+    "presetErrors": {
+      "depth": "预设触发事件嵌套超过四层。",
+      "operations": "预设操作数量超过 128 条。",
+      "inputs": "预设输入参数超过 64 个。",
+      "value-depth": "预设参数值嵌套超过 16 层。",
+      "onTrigger": "仅定时事件和倒计时效果支持触发操作。",
+      "parameter-reference": "预设参数引用无效。",
+      "speed": "计算结果必须是符合操作要求的有限数值。",
+      "character-stat": "无法读取角色基础速度。",
+      "form": "请检查预设参数及目标。",
+      "self-stat": "无法读取预设对应角色的有效战斗外面板速度。"
+    },
+    "robinSummeretto": {
+      "name": "知更鸟·晴歌 Fever 状态",
+      "description": "使知更鸟·晴歌离场，生成「晴空乐手」和气氛值减半节点",
+      "memospriteName": "「晴空乐手」",
+      "nodeName": "【气氛值】减半",
+      "unavailable": {
+        "context": "当前节点无法预览，不能添加 Fever 状态。",
+        "missing": "请先在编队中加入知更鸟·晴歌。",
+        "ambiguous": "编队中存在多个知更鸟·晴歌，无法确定目标。",
+        "departed": "知更鸟·晴歌已离场，不能再次进入 Fever 状态。",
+        "unavailable": "当前节点无法对知更鸟·晴歌应用 Fever 状态。"
+      }
     }
   },
   "ui": {

@@ -1,0 +1,20 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "dance",
+  "order": 2,
+  "interaction": "draft",
+  "i18n": {
+    "name": "planner.presets.dance.name",
+    "description": "planner.presets.dance.description"
+  },
+  "icon": {
+    "assetKey": "preset:dance"
+  },
+  "operations": [
+    {
+      "type": "advance",
+      "target": "allies",
+      "percent": 24
+    }
+  ]
+}

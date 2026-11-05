@@ -36,7 +36,7 @@ Vercel 继续使用已有项目和 Git Integration，Framework Preset 为 Vite�
 Agent 不自行切换到 develop，不擅自 Commit、Push 或执行任何部署；具体权限见 AGENTS.md。
 
 [CI Workflow](../.github/workflows/ci.yml) 在 develop Push 及目标为 develop/main 的 PR 上自动运行一个固定名称为 **Validation** 的 Job。
-使用 Node 24.x、npm Cache 和 `npm ci`，依次执行 type-check、test、lint、validate:i18n、build；安装前确认 Node 满足项目版本范围。
+使用 Node 24.x、npm Cache 和 `npm ci`，依次执行 type-check、test、lint、validate:i18n、validate:planner-presets、build；安装前确认 Node 满足项目版本范围。
 Workflow 只有 contents 读取权限，普通 PR 不访问部署凭证，不运行上游数据更新、Benchmark、浏览器测试或部署。
 format:check、游戏数据和模板校验继续用于本地维护及发布前检查，不自动加入每次 Push 的 CI。
 
@@ -120,6 +120,7 @@ workflow_dispatch 文件必须先存在于默认分支，首次 Bootstrap 合并
 | `npm run format`                                                      | 全仓格式写入，仅在明确需要时执行                                    |
 | `npm run validate:i18n`                                               | 校验双语消息结构、参数与语法                                        |
 | `npm run validate:game-data`                                          | 校验快照、Manifest、来源锁定、文件哈希及图片                        |
+| `npm run validate:planner-presets`                                    | 校验预设 JSON、参数引用、翻译及静态约束                             |
 | `npm run validate:planner-templates`                                  | 校验人工审阅的方案模板和双语介绍                                    |
 | `npm run build`                                                       | 将现有应用和快照构建至 dist，不生成游戏数据                         |
 | `npm run update:game-data`                                            | 显式数据更新；参数和前提见[游戏数据维护](game-data.md#显式更新流程) |
@@ -153,6 +154,17 @@ npm ci --proxy=http://127.0.0.1:7890 --https-proxy=http://127.0.0.1:7890
 ## 验证策略
 
 引擎修改优先运行相关确定性单元测试；保留基础隔离测试与 11 个历史迁移用例。新功能选择少量高价值案例，不新增大量 UI 快照、CSS 断言或逐字绑定可变文案的测试。
+
+### Action Planner 测试边界
+
+JSON 配置是数据源，不是测试中的固定答案。合法修改 preset 的名称、默认数值或操作组合，不应要求同步修改测试预期；不对生产 preset 建立整对象快照。
+
+- 引擎测试保护 AG/AV 数学、排序、生命周期、离场/回场、Aha、轮次与 Trace；固定数值由测试自身的 fixture 声明。
+- `preset-resolver.test.ts` 使用 `tests/fixtures/action-planner/presets.ts` 的独立角色、消息与声明，验证输入、表达式、目标、触发事件和静态校验器正反例。生产 Schema 和双语引用全量检查使用 `validate:planner-presets`、`validate:i18n`，不在各角色测试中重复。
+- `planner-presets.test.ts` 在测试范围内注册 synthetic presets，集中验证草稿、阶段、原子提交、保存恢复、身份安全和可编辑操作。生产目录只运行数据驱动的应用与模拟接线回归，身份、默认值和交互方式取自实际声明，不固定文案、速度、操作数量或事件数量。
+- 方案文件与持久化测试负责版本边界、严格校验、存储保护及冲突处理；不为每个 preset 重复测试迁移和存储故障。轮次测试保留轮次特有兼容规则，旧版存储及模板迁移由现有 Aha 集成测试覆盖。
+
+断言关注输出行为、稳定身份和引用关系，避免依赖临时 ID 的字面值或 Vue 模板字符串。保留有实际风险的失败原子性与文件安全边界，不扩展重复的非法值排列。
 
 定向测试使用已有 npm 入口，例如：
 

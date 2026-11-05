@@ -1,0 +1,21 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "vonwacq",
+  "order": 0,
+  "interaction": "draft",
+  "i18n": {
+    "name": "planner.presets.vonwacq.name",
+    "description": "planner.presets.vonwacq.description"
+  },
+  "icon": {
+    "assetKey": "preset:vonwacq"
+  },
+  "startOnly": true,
+  "operations": [
+    {
+      "type": "advance",
+      "target": "selected",
+      "percent": 40
+    }
+  ]
+}

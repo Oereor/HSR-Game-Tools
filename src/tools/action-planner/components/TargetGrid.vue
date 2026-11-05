@@ -5,7 +5,7 @@ import SelectButton from 'primevue/selectbutton'
 import { Check } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
 import { selectableTargets } from '../engine/targeting'
-import type { ParticipantInfo } from '../engine/types'
+import type { ParticipantInfo, TargetedOperation } from '../engine/types'
 import type { OperationDraft } from '../model/editor'
 const draft = defineModel<OperationDraft>({ required: true })
 const props = defineProps<{
@@ -13,17 +13,21 @@ const props = defineProps<{
   label: (id: string) => string
   image: (id: string) => string | undefined
   invalid: boolean
+  selectionOnly?: boolean
+  operationType?: TargetedOperation['type']
 }>()
 const { t } = useI18n()
 const modes = computed(() =>
   ['participants', 'allies', 'enemies'].map((value) => ({ value, label: t(`ui.${value}`) })),
 )
 const allowed = computed(() =>
-  draft.value.type === 'spawnParticipant'
+  (props.operationType ?? draft.value.type) === 'spawnParticipant'
     ? []
-    : selectableTargets(draft.value.type, props.participants, draft.value.selectedIds).map(
-        (p) => p.id,
-      ),
+    : selectableTargets(
+        (props.operationType ?? draft.value.type) as TargetedOperation['type'],
+        props.participants,
+        draft.value.selectedIds,
+      ).map((p) => p.id),
 )
 const groups = computed(() =>
   ['ally', 'enemy', 'neutral', 'event']
@@ -52,6 +56,7 @@ function toggle(id: string) {
   <fieldset class="target-field" :aria-describedby="invalid ? 'target-error' : undefined">
     <legend>{{ t('ui.targets') }}</legend>
     <SelectButton
+      v-if="!selectionOnly"
       v-model="draft.targetKind"
       size="small"
       :options="modes"
@@ -60,7 +65,7 @@ function toggle(id: string) {
       :allow-empty="false"
       :aria-label="t('ui.targetMode')"
       class="target-modes"
-    /><template v-if="draft.targetKind === 'participants'"
+    /><template v-if="selectionOnly || draft.targetKind === 'participants'"
       ><div v-for="group in groups" :key="group.kind" class="target-group">
         <span class="field-label">{{
           t(group.kind === 'neutral' ? 'planner.navigator.neutral' : `ui.${group.kind}`)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -12,26 +12,14 @@ import TargetGrid from './TargetGrid.vue'
 import EffectFields from './EffectFields.vue'
 import ParticipantFields from './ParticipantFields.vue'
 import { gameData } from '../data/adapters/game-data'
-import type {
-  EffectOperation,
-  EventAnchor,
-  ParticipantInfo,
-  SimulationState,
-} from '../engine/types'
+import type { EventAnchor, ParticipantInfo, SimulationState } from '../engine/types'
 import type { OperationDraft } from '../model/editor'
-import { provisionalOperation, operationDraft } from '../model/editor'
-import { operationName } from '../model/presentation'
-import {
-  canUseVonwacq,
-  presetOperation,
-  type PresetKind,
-  type KhaslanaPresetInput,
-  type RobinPresetInput,
-  type RobinPresetIssue,
-  type FireflyPresetInput,
-  type FireflyPresetIssue,
-} from '../model/presets'
-import { formatNumber } from '../model/presentation'
+import { provisionalOperation } from '../model/editor'
+import { operationName, formatNumber } from '../model/presentation'
+import { presets, presetIcon } from '../presets/catalog'
+import { collectInputs, valueResolver, selectionOperation } from '../presets/values'
+import { operationTargets } from '../engine/targeting'
+import type { Input, PresetDefinition, PresetRequest, Translate } from '../presets/types'
 import type { ToolLocale } from '../../../locales/types'
 const draft = defineModel<OperationDraft>({ required: true })
 const props = defineProps<{
@@ -39,19 +27,13 @@ const props = defineProps<{
   participants: ParticipantInfo[]
   preview?: SimulationState
   invalid: string[]
-  robinPresetIssue?: RobinPresetIssue
-  fireflyPresetIssue?: FireflyPresetIssue
+  presetIssues: Record<string, string | undefined>
   label: (id: string) => string
   image: (id: string) => string | undefined
 }>()
-const emit = defineEmits<{
-  cancel: []
-  submit: []
-  khaslana: [input: KhaslanaPresetInput]
-  robin: [input: RobinPresetInput]
-  firefly: [input: FireflyPresetInput]
-}>()
+const emit = defineEmits<{ cancel: []; submit: []; preset: [request: PresetRequest] }>()
 const { t, locale } = useI18n()
+const translate: Translate = (key, params) => (params ? t(key, params) : t(key))
 const heading = ref<HTMLElement>()
 onMounted(() => heading.value?.focus())
 const types = computed(() =>
@@ -63,10 +45,7 @@ const types = computed(() =>
     'spawnParticipant',
     'depart',
     'returnToField',
-  ].map((value) => ({
-    value,
-    label: t(`ui.${value}`),
-  })),
+  ].map((value) => ({ value, label: t(`ui.${value}`) })),
 )
 const phases = computed(() =>
   ['preAction', 'postAction'].map((value) => ({ value, label: t(`ui.${value}`) })),
@@ -78,25 +57,76 @@ const automaticName = computed(() =>
     : t(`ui.${draft.value.type}`),
 )
 const popover = ref<InstanceType<typeof Popover>>()
-const batchPreset = ref<'khaslana' | 'firefly'>()
-const phainon = gameData.characters.find((character) => character.id === '1408')
-const robin = gameData.characters.find((character) => character.id === '1309')
-const firefly = gameData.characters.find((character) => character.id === '1310')
-const spd = ref<number | undefined>(60)
-const fireflyError = computed(() =>
-  batchPreset.value === 'firefly'
-    ? (props.fireflyPresetIssue ??
-      props.invalid.find((issue) => issue.startsWith('firefly:'))?.slice(8))
+const selectedPreset = ref<PresetDefinition>()
+const values = ref<Record<string, string | number | undefined>>({})
+watch(draft, () => {
+  selectedPreset.value = undefined
+  values.value = {}
+})
+const inputs = computed(() => (selectedPreset.value ? collectInputs(selectedPreset.value) : []))
+const selection = computed(() => selectedPreset.value && selectionOperation(selectedPreset.value))
+const selectionTargets = computed(() =>
+  selection.value?.nested
+    ? [
+        ...operationTargets(props.preview, 'depart'),
+        ...operationTargets(props.preview, 'returnToField'),
+      ]
+    : operationTargets(props.preview, selection.value?.type),
+)
+const numberValue = (id: string) =>
+  typeof values.value[id] === 'number' ? (values.value[id] as number) : undefined
+const stringValue = (id: string) =>
+  typeof values.value[id] === 'string' ? (values.value[id] as string) : undefined
+function issueMessage(preset: PresetDefinition, issue?: string): string | undefined {
+  if (!issue) return undefined
+  if (issue === 'startOnly') return t('ui.startOnly')
+  const key = preset.i18n.unavailable?.[issue]
+  return key
+    ? t(key)
+    : issue === 'context'
+      ? t('ui.contextUnavailable')
+      : t(
+          `planner.presetErrors.${['depth', 'operations', 'inputs', 'value-depth', 'onTrigger', 'parameter-reference', 'speed', 'character-stat', 'self-stat'].includes(issue) ? issue : 'form'}`,
+        )
+}
+const presetError = computed(() =>
+  selectedPreset.value
+    ? issueMessage(
+        selectedPreset.value,
+        props.presetIssues[selectedPreset.value.id] ??
+          props.invalid.find((issue) => !inputs.value.some((input) => input.id === issue)),
+      )
     : undefined,
 )
-const robinError = computed(() =>
-  props.invalid.find((issue) => issue.startsWith('robin:'))?.slice(6),
-)
-const baseSpeed = ref<number | undefined>(phainon?.baseSpeed)
-const inheritancePercent = ref<number | undefined>(60)
-const initialSpeed = computed(
-  () => (baseSpeed.value ?? 0) * ((inheritancePercent.value ?? 0) / 100),
-)
+const summaries = computed(() => {
+  if (!selectedPreset.value) return []
+  try {
+    const resolver = valueResolver(
+      selectedPreset.value,
+      gameData.characters,
+      translate,
+      values.value,
+    )
+    return (selectedPreset.value.previews ?? []).map((preview) =>
+      t(
+        preview.key,
+        Object.fromEntries(
+          Object.entries(preview.params).map(([key, value]) => {
+            const resolved = resolver.resolve(value)
+            return [
+              key,
+              typeof resolved === 'number'
+                ? formatNumber(resolved, locale.value as ToolLocale)
+                : (resolved ?? ''),
+            ]
+          }),
+        ),
+      ),
+    )
+  } catch {
+    return []
+  }
+})
 const eventTarget = computed(
   () =>
     draft.value.type === 'addSpeedModifier' &&
@@ -105,47 +135,34 @@ const eventTarget = computed(
       (p) => p.kind === 'scheduledEvent' && draft.value.selectedIds.includes(p.id),
     ),
 )
-function chooseKhaslana() {
-  batchPreset.value = 'khaslana'
+function choose(preset: PresetDefinition) {
+  if (props.presetIssues[preset.id]) return
   popover.value?.hide()
+  if (preset.interaction === 'draft' && !collectInputs(preset).length) {
+    emit('preset', { id: preset.id, values: {}, translate })
+    return
+  }
+  selectedPreset.value = preset
+  if (!collectInputs(preset).length && !selectionOperation(preset)) {
+    emit('preset', { id: preset.id, values: {}, translate })
+    return
+  }
+  const resolver = valueResolver(preset, gameData.characters, translate)
+  values.value = Object.fromEntries(
+    collectInputs(preset).map((input) => [input.id, resolver.resolve(input) as string | number]),
+  )
 }
-function chooseFirefly() {
-  if (props.fireflyPresetIssue) return
-  batchPreset.value = 'firefly'
-  popover.value?.hide()
-}
-function chooseRobin() {
-  if (props.robinPresetIssue) return
-  popover.value?.hide()
-  emit('robin', { name: t('planner.robin.eventName') })
+function inputError(input: Input) {
+  return input.exclusiveMinimum === 0
+    ? t('ui.positive')
+    : input.minimum === 0
+      ? t('ui.nonnegative')
+      : t('ui.formInvalid')
 }
 function submit() {
-  if (batchPreset.value === 'firefly')
-    emit('firefly', { spd: spd.value, countdownName: t('planner.firefly.countdownName') })
-  else if (!batchPreset.value) emit('submit')
-  else
-    emit('khaslana', {
-      baseSpeed: baseSpeed.value,
-      inheritancePercent: inheritancePercent.value,
-      names: Array.from({ length: 8 }, (_, index) =>
-        index === 7
-          ? t('planner.khaslana.finalName')
-          : t('planner.khaslana.eventName', { index: index + 1 }),
-      ),
-    })
-}
-function preset(kind: PresetKind) {
-  const actor = props.participants.find((p) => p.kind === 'actor')
-  const phase = draft.value.phase
-  const op: EffectOperation = {
-    ...presetOperation(kind, '', actor?.id ?? ''),
-    ...(props.anchor.kind === 'action' ? { phase } : {}),
-  }
-  const next = operationDraft(op)
-  next.id = undefined
-  next.original = undefined
-  draft.value = next
-  popover.value?.hide()
+  if (selectedPreset.value)
+    emit('preset', { id: selectedPreset.value.id, values: values.value, translate })
+  else emit('submit')
 }
 </script>
 <template>
@@ -161,10 +178,10 @@ function preset(kind: PresetKind) {
         ><ArrowLeft :size="18" :stroke-width="1.75"
       /></Button>
       <h2 ref="heading" tabindex="-1">
-        {{ batchPreset ? t(`planner.${batchPreset}.name`) : draft.id ? t('ui.edit') : t('ui.add') }}
+        {{ selectedPreset ? t(selectedPreset.i18n.name) : draft.id ? t('ui.edit') : t('ui.add') }}
       </h2>
       <Button
-        v-if="!draft.id && !batchPreset"
+        v-if="!draft.id && !selectedPreset"
         text
         severity="secondary"
         size="small"
@@ -176,16 +193,11 @@ function preset(kind: PresetKind) {
     <p v-if="invalid.includes('form')" role="alert" class="validation-summary">
       {{ t('ui.formInvalid') }}
     </p>
-    <p v-if="robinError" role="alert" class="validation-summary">
-      {{ t(`planner.robin.unavailable.${robinError}`) }}
-    </p>
-    <p v-if="fireflyError" role="alert" class="validation-summary">
-      {{ t(`planner.firefly.unavailable.${fireflyError}`) }}
-    </p>
+    <p v-if="presetError" role="alert" class="validation-summary">{{ presetError }}</p>
     <p v-if="!preview" class="validation-summary" role="status">{{ t('ui.contextUnavailable') }}</p>
-    <div v-if="!batchPreset" class="field">
-      <span id="type-label" class="field-label">{{ t('ui.type') }}</span
-      ><SelectButton
+    <div v-if="!selectedPreset" class="field">
+      <span id="type-label" class="field-label">{{ t('ui.type') }}</span>
+      <SelectButton
         v-model="draft.type"
         size="small"
         :options="types"
@@ -198,8 +210,8 @@ function preset(kind: PresetKind) {
       />
     </div>
     <div v-if="anchor.kind === 'action'" class="field">
-      <span id="phase-label" class="field-label">{{ t('ui.phase') }}</span
-      ><SelectButton
+      <span id="phase-label" class="field-label">{{ t('ui.phase') }}</span>
+      <SelectButton
         v-model="draft.phase"
         size="small"
         :options="phases"
@@ -209,99 +221,75 @@ function preset(kind: PresetKind) {
         aria-labelledby="phase-label"
       />
     </div>
-    <div v-if="batchPreset === 'firefly'" class="field">
-      <label for="firefly-spd">{{ t('planner.firefly.speedIncrease') }}</label>
-      <InputNumber
-        v-model="spd"
-        input-id="firefly-spd"
-        :locale="locale"
-        :use-grouping="false"
-        :max-fraction-digits="20"
-        :suffix="t('common.speedSuffix')"
-        :invalid="invalid.includes('spd')"
-        :pt="{
-          pcInputText: {
-            root: {
-              'aria-describedby': invalid.includes('spd') ? 'firefly-spd-error' : undefined,
-            },
-          },
-        }"
-        fluid
+    <template v-if="selectedPreset">
+      <TargetGrid
+        v-if="selection"
+        v-model="draft"
+        :participants="selectionTargets"
+        :operation-type="selection.type"
+        selection-only
+        :label="label"
+        :image="image"
+        :invalid="invalid.includes('target')"
       />
-      <small v-if="invalid.includes('spd')" id="firefly-spd-error" class="field-error">{{
-        t('ui.nonnegative')
-      }}</small>
-    </div>
-    <template v-else-if="batchPreset === 'khaslana'">
-      <div class="field">
-        <label for="khaslana-base">{{ t('planner.khaslana.baseSpeed') }}</label>
+      <div v-for="input in inputs" :key="input.id" class="field">
+        <label :for="`preset-input-${input.id}`">{{
+          input.i18n?.label ? t(input.i18n.label) : input.id
+        }}</label>
         <InputNumber
-          v-model="baseSpeed"
-          input-id="khaslana-base"
+          v-if="typeof input.value !== 'string'"
+          :model-value="numberValue(input.id)"
+          @update:model-value="values[input.id] = $event ?? undefined"
+          :input-id="`preset-input-${input.id}`"
           :locale="locale"
           :use-grouping="false"
           :max-fraction-digits="20"
-          :invalid="invalid.includes('baseSpeed')"
+          :suffix="input.i18n?.suffix ? t(input.i18n.suffix) : undefined"
+          :placeholder="input.i18n?.placeholder ? t(input.i18n.placeholder) : undefined"
+          :invalid="invalid.includes(input.id)"
           :pt="{
             pcInputText: {
               root: {
-                'aria-describedby': invalid.includes('baseSpeed')
-                  ? 'khaslana-base-error'
-                  : undefined,
+                'aria-describedby':
+                  [
+                    input.i18n?.hint ? `preset-hint-${input.id}` : '',
+                    invalid.includes(input.id) ? `preset-error-${input.id}` : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined,
               },
             },
           }"
           fluid
         />
-        <small v-if="invalid.includes('baseSpeed')" id="khaslana-base-error" class="field-error">{{
-          t('ui.positive')
+        <InputText
+          v-else
+          :id="`preset-input-${input.id}`"
+          :model-value="stringValue(input.id)"
+          @update:model-value="values[input.id] = $event"
+          :placeholder="input.i18n?.placeholder ? t(input.i18n.placeholder) : undefined"
+          :invalid="invalid.includes(input.id)"
+          :aria-describedby="
+            [
+              input.i18n?.hint ? `preset-hint-${input.id}` : '',
+              invalid.includes(input.id) ? `preset-error-${input.id}` : '',
+            ]
+              .filter(Boolean)
+              .join(' ') || undefined
+          "
+          fluid
+        />
+        <small v-if="input.i18n?.hint" :id="`preset-hint-${input.id}`" class="fine-print">{{
+          t(input.i18n.hint)
         }}</small>
-      </div>
-      <div class="field">
-        <label for="khaslana-ratio">{{ t('planner.khaslana.inheritance') }}</label>
-        <InputNumber
-          v-model="inheritancePercent"
-          input-id="khaslana-ratio"
-          :locale="locale"
-          :use-grouping="false"
-          :max-fraction-digits="20"
-          :suffix="t('common.percentSuffix')"
-          :invalid="invalid.includes('inheritancePercent')"
-          :pt="{
-            pcInputText: {
-              root: {
-                'aria-describedby': invalid.includes('inheritancePercent')
-                  ? 'khaslana-ratio-error khaslana-hint'
-                  : 'khaslana-hint',
-              },
-            },
-          }"
-          fluid
-        />
-        <small id="khaslana-hint" class="fine-print">{{ t('planner.khaslana.hint') }}</small>
         <small
-          v-if="invalid.includes('inheritancePercent')"
-          id="khaslana-ratio-error"
+          v-if="invalid.includes(input.id)"
+          :id="`preset-error-${input.id}`"
           class="field-error"
-          >{{ t('ui.positive') }}</small
+          >{{ inputError(input) }}</small
         >
       </div>
-      <p class="fine-print">
-        {{
-          t('planner.khaslana.initialSpeed', {
-            speed:
-              Number.isFinite(initialSpeed) && initialSpeed > 0
-                ? formatNumber(initialSpeed, locale as ToolLocale)
-                : t('planner.aha.invalidPreview'),
-          })
-        }}
-      </p>
-      <small v-if="invalid.includes('speed')" class="field-error" role="alert">{{
-        t('ui.positive')
-      }}</small>
-      <small v-if="invalid.includes('target')" class="field-error" role="alert">{{
-        t('planner.khaslana.noAllies')
-      }}</small>
+      <p v-for="(summary, index) in summaries" :key="index" class="fine-print">{{ summary }}</p>
     </template>
     <ParticipantFields
       v-else-if="draft.type === 'spawnParticipant'"
@@ -319,7 +307,7 @@ function preset(kind: PresetKind) {
         :invalid="invalid"
         :event-target="eventTarget"
     /></template>
-    <div v-if="!batchPreset" class="field">
+    <div v-if="!selectedPreset" class="field">
       <label for="custom-name">{{ t('ui.customName') }}</label
       ><InputText id="custom-name" v-model="draft.customName" :placeholder="automaticName" fluid />
     </div>
@@ -328,87 +316,42 @@ function preset(kind: PresetKind) {
         <Button text severity="secondary" :label="t('ui.cancel')" @click="emit('cancel')" /><Button
           type="submit"
           :label="t('ui.applyOperation')"
-          :disabled="!preview || (batchPreset === 'firefly' && !!fireflyPresetIssue)"
+          :disabled="!preview || !!(selectedPreset && presetIssues[selectedPreset.id])"
         />
       </div>
     </footer>
     <Popover ref="popover" :pt="{ root: { 'aria-label': t('ui.presets') } }"
       ><div class="preset-list">
-        <button
-          v-for="p in gameData.presets"
-          :key="p.id"
-          type="button"
-          class="preset-option"
-          :disabled="p.kind === 'vonwacq' && !canUseVonwacq(anchor)"
-          :title="p.kind === 'vonwacq' && !canUseVonwacq(anchor) ? t('ui.startOnly') : undefined"
-          @click="preset(p.kind)"
-        >
-          <GameIcon
-            :asset-key="p.assetKey"
-            :name="p.names[locale as ToolLocale]"
-            :fallback="t('planner.imageMissing')"
-          /><span>{{ p.names[locale as ToolLocale] }}</span
-          ><small>{{ p.kind === 'dance' ? '24%' : p.kind === 'vonwacq' ? '40%' : '25%' }}</small>
-        </button>
-        <button type="button" class="preset-option preset-batch" @click="chooseKhaslana">
-          <GameIcon
-            :asset-key="phainon?.assetKey"
-            :name="t('planner.khaslana.name')"
-            :fallback="t('planner.imageMissing')"
-          />
-          <span class="preset-copy"
-            ><span>{{ t('planner.khaslana.name') }}</span
-            ><small>{{ t('planner.khaslana.description') }}</small></span
+        <template v-for="preset in presets" :key="preset.id">
+          <button
+            type="button"
+            class="preset-option"
+            :class="{ 'preset-batch': preset.interaction === 'batch' }"
+            :disabled="!!presetIssues[preset.id]"
+            :title="issueMessage(preset, presetIssues[preset.id])"
+            :aria-describedby="
+              presetIssues[preset.id] ? `preset-unavailable-${preset.id}` : undefined
+            "
+            @click="choose(preset)"
           >
-        </button>
-        <button
-          type="button"
-          class="preset-option preset-batch"
-          :disabled="!!robinPresetIssue"
-          :aria-describedby="robinPresetIssue ? 'robin-preset-unavailable' : undefined"
-          @click="chooseRobin"
-        >
-          <GameIcon
-            :asset-key="robin?.assetKey"
-            :name="t('planner.robin.name')"
-            :fallback="t('planner.imageMissing')"
-          />
-          <span class="preset-copy"
-            ><span>{{ t('planner.robin.name') }}</span
-            ><small>{{ t('planner.robin.description') }}</small></span
+            <GameIcon
+              :asset-key="presetIcon(preset)"
+              :name="t(preset.i18n.name)"
+              :fallback="t('planner.imageMissing')"
+            />
+            <span class="preset-copy"
+              ><span>{{ t(preset.i18n.name) }}</span
+              ><small>{{ t(preset.i18n.description) }}</small></span
+            >
+          </button>
+          <small
+            v-if="presetIssues[preset.id]"
+            :id="`preset-unavailable-${preset.id}`"
+            class="fine-print"
+            role="status"
+            >{{ issueMessage(preset, presetIssues[preset.id]) }}</small
           >
-        </button>
-        <small
-          v-if="robinPresetIssue"
-          id="robin-preset-unavailable"
-          class="fine-print preset-batch"
-          role="status"
-          >{{ t(`planner.robin.unavailable.${robinPresetIssue}`) }}</small
-        >
-        <button
-          type="button"
-          class="preset-option preset-batch"
-          :disabled="!!fireflyPresetIssue"
-          :aria-describedby="fireflyPresetIssue ? 'firefly-preset-unavailable' : undefined"
-          @click="chooseFirefly"
-        >
-          <GameIcon
-            :asset-key="firefly?.assetKey"
-            :name="t('planner.firefly.name')"
-            :fallback="t('planner.imageMissing')"
-          />
-          <span class="preset-copy"
-            ><span>{{ t('planner.firefly.name') }}</span
-            ><small>{{ t('planner.firefly.description') }}</small></span
-          >
-        </button>
-        <small
-          v-if="fireflyPresetIssue"
-          id="firefly-preset-unavailable"
-          class="fine-print preset-batch"
-          role="status"
-          >{{ t(`planner.firefly.unavailable.${fireflyPresetIssue}`) }}</small
-        >
+        </template>
       </div></Popover
     >
   </form>

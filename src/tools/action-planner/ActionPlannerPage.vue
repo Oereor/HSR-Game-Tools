@@ -43,11 +43,8 @@ const {
   edit,
   cancel,
   submit,
-  submitKhaslana,
-  submitRobin,
-  robinPresetIssue,
-  submitFirefly,
-  fireflyPresetIssue,
+  submitPreset,
+  presetIssues,
   remove,
   move,
   deleteEvent,
@@ -96,8 +93,7 @@ const inspectorProps = computed(() => ({
   preview: preview.value,
   targets: targets.value,
   invalid: invalid.value,
-  robinPresetIssue: robinPresetIssue.value,
-  fireflyPresetIssue: fireflyPresetIssue.value,
+  presetIssues: presetIssues.value,
   label,
   image,
   anchorLabel,
@@ -218,9 +214,7 @@ onBeforeUnmount(() => {
                   @move="move"
                   @cancel="cancel"
                   @submit="submit"
-                  @khaslana="submitKhaslana"
-                  @robin="submitRobin"
-                  @firefly="submitFirefly" /></SplitterPanel></Splitter
+                  @preset="submitPreset" /></SplitterPanel></Splitter
             ><template v-else
               ><ActionNavigator
                 v-model:view="view"
@@ -234,9 +228,7 @@ onBeforeUnmount(() => {
                 @move="move"
                 @cancel="cancel"
                 @submit="submit"
-                @khaslana="submitKhaslana"
-                @robin="submitRobin"
-                @firefly="submitFirefly"
+                @preset="submitPreset"
             /></template>
           </div>
           <section v-if="inactive.length" class="unreached-events">

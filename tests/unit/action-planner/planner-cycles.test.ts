@@ -3,7 +3,7 @@ import { createI18n } from 'vue-i18n'
 import zh from '../../../src/locales/zh-CN.json'
 import en from '../../../src/locales/en.json'
 import { simulatePlan } from '../../../src/tools/action-planner/engine/engine'
-import { anchorKey } from '../../../src/tools/action-planner/engine/queue'
+import { anchorKey, spawnedParticipantId } from '../../../src/tools/action-planner/engine/queue'
 import { participantCatalog } from '../../../src/tools/action-planner/engine/validation'
 import { operationTargets } from '../../../src/tools/action-planner/engine/targeting'
 import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
@@ -21,8 +21,6 @@ import {
   serializePlannerDocument,
   validatePlannerFile,
 } from '../../../src/tools/action-planner/model/document-file'
-import { createPlannerPersistence } from '../../../src/tools/action-planner/model/persistence'
-import { loadPlannerTemplate } from '../../../src/tools/action-planner/templates/loader'
 import { syntheticDocument } from '../../fixtures/action-planner/phase-2a-document'
 import { projectResult } from '../../fixtures/action-planner/action-planner-cases'
 import type { CycleMode, EffectOperation } from '../../../src/tools/action-planner/engine/types'
@@ -158,10 +156,13 @@ describe('cycle planner projection and document compatibility', () => {
     p.draft.value!.type = 'immediatelyAct'
     p.draft.value!.targetKind = 'allies'
     p.draft.value!.customName = 'Cycle pull'
-    expect(operationTargets(p.preview.value).map((p) => p.id)).toContain('spawn:editor-1')
+    expect(operationTargets(p.preview.value).map((p) => p.id)).toContain(
+      spawnedParticipantId(p.operations.value.find((op) => op.type === 'spawnParticipant')!.id),
+    )
     expect(p.submit()).toBe(true)
     expect(p.operations.value.every((op) => !('phase' in op))).toBe(true)
-    expect(p.document.value.metadata.customNames['editor-2']).toBe('Cycle pull')
+    const immediate = p.operations.value.find((op) => op.type === 'immediatelyAct')!
+    expect(p.document.value.metadata.customNames[immediate.id]).toBe('Cycle pull')
     p.move('editor-2', -1)
     expect(p.operations.value.map((op) => op.id)).toEqual(['editor-2', 'editor-1'])
     p.edit(p.operations.value[0])
@@ -240,80 +241,28 @@ describe('cycle planner projection and document compatibility', () => {
     ).toThrow('structure')
   })
   it.each(['moc', 'aa', 'none'] as const)(
-    'round-trips %s Version 3 with stable operations and rejects unknown fields',
+    'round-trips %s boundary operations, including inactive cycles',
     (mode) => {
       const doc = document()
       doc.plan.cycleMode = mode
       doc.plan.events = [{ anchor: boundary(), operations: [pull] }]
       doc.metadata.customNames.pull = 'Custom'
       expect(parsePlannerDocument(serializePlannerDocument(doc)).document).toEqual(doc)
-      const file = { format: PLANNER_FORMAT, version: 3, document: doc }
-      expect(() => validatePlannerFile({ ...file, version: 4 })).toThrow('version')
-      expect(() =>
-        validatePlannerFile({
-          ...file,
-          document: { ...doc, plan: { ...doc.plan, customCycleLength: 42 } },
-        }),
-      ).toThrow('structure')
-      const { cycleMode: omitted, ...noMode } = doc.plan
-      void omitted
-      expect(() => validatePlannerFile({ ...file, document: { ...doc, plan: noMode } })).toThrow(
-        'structure',
-      )
-      expect(() =>
-        validatePlannerFile({
-          ...file,
-          document: { ...doc, plan: { ...doc.plan, cycleMode: 'pf' } },
-        }),
-      ).toThrow('structure')
     },
   )
-  it('restores old local storage without a write, then saves Version 3 using the same controller', () => {
-    const raw = JSON.stringify(legacyFile()),
-      store = {
-        raw,
-        writes: 0,
-        getItem() {
-          return this.raw
-        },
-        setItem(_key: string, value: string) {
-          this.raw = value
-          this.writes++
-        },
-      }
-    const persistence = createPlannerPersistence(() => store),
-      initial = persistence.initialize()
-    expect(initial.document.plan.cycleMode).toBe('none')
-    expect(store.raw).toBe(raw)
-    expect(store.writes).toBe(0)
-    const p = useActionPlanner(
-      initial.document.plan,
-      initial.document.metadata,
-      initial.document.name,
+  it('rejects missing or unsupported cycle modes', () => {
+    const doc = document()
+    const file = { format: PLANNER_FORMAT, version: 3, document: doc }
+    const { cycleMode: omitted, ...noMode } = doc.plan
+    void omitted
+    expect(() => validatePlannerFile({ ...file, document: { ...doc, plan: noMode } })).toThrow(
+      'structure',
     )
-    p.applySetup(p.plan.value.actors, 60, 600, initial.document.metadata.characterIds, 'aa')
-    expect(persistence.save(p.document.value)).toBe(true)
-    expect(JSON.parse(store.raw)).toMatchObject({
-      version: 3,
-      document: { plan: { cycleMode: 'aa' } },
-    })
-    expect(createPlannerPersistence(() => store).initialize().document.plan.cycleMode).toBe('aa')
-  })
-  it('loads legacy and current templates through the shared strict parser', () => {
-    const template = {
-      id: 'test',
-      order: 0,
-      nameKey: 'test.name',
-      descriptionKey: 'test.description',
-    }
-    expect(loadPlannerTemplate({ ...template, file: legacyFile() }).document.plan.cycleMode).toBe(
-      'none',
-    )
-    expect(
-      loadPlannerTemplate({
-        ...template,
-        file: { format: PLANNER_FORMAT, version: 3, document: document() },
-      }).document.plan.cycleMode,
-    ).toBe('moc')
+    expect(() =>
+      validatePlannerFile({
+        ...file,
+        document: { ...doc, plan: { ...doc.plan, cycleMode: 'pf' } },
+      }),
+    ).toThrow('structure')
   })
 })

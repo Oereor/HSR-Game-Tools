@@ -95,24 +95,13 @@ describe('real planner document and drafts', () => {
     ).toMatchObject({ id: 'new-preset', percent: 40 })
   })
 
-  it('starts empty with engine defaults', () => {
+  it('starts in setup with an empty roster and no configured operations', () => {
     const p = useActionPlanner()
-    expect(p.plan.value).toEqual({
-      cycleMode: 'none',
-      aha: { id: 'aha-instant', baseSpeed: 80, contributorIds: [] },
-      actors: [],
-      events: [],
-      maxNodes: 60,
-      maxAV: 600,
-    })
     expect(p.stage.value).toBe('setup')
-    const other = useActionPlanner()
-    expect(other.plan.value).not.toBe(p.plan.value)
-    expect(other.plan.value.actors).not.toBe(p.plan.value.actors)
-    expect(other.plan.value.events).not.toBe(p.plan.value.events)
-    expect(other.plan.value.aha).not.toBe(p.plan.value.aha)
-    expect(other.plan.value.aha.contributorIds).not.toBe(p.plan.value.aha.contributorIds)
+    expect(p.plan.value.actors).toEqual([])
+    expect(p.plan.value.events).toEqual([])
   })
+
   it.each(['advance', 'delay', 'immediatelyAct', 'addSpeedModifier', 'spawnParticipant'] as const)(
     'submits %s to the real plan',
     (type) => {

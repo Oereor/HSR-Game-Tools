@@ -52,5 +52,8 @@ jobs:
       - name: Validate Site Messages
         run: npm run validate:i18n
 
+      - name: Validate planner presets
+        run: npm run validate:planner-presets
+
       - name: Production build
         run: npm run build
