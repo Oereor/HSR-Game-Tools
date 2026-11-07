@@ -124,6 +124,8 @@
       "neutral": "Neutral unit"
     },
     "operationName": {
+      "restoreSkillPoints": "Restore {amount} Skill Points",
+      "conditionalRestore": "Conditionally restore {amount} Skill Points",
       "depart": "Make {target} leave the field",
       "returnToField": "Return {target} to the field",
       "advance": "Advance {target} by {percent}%",

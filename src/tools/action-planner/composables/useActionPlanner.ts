@@ -3,7 +3,7 @@ import { computed, ref, shallowReadonly, shallowRef, watch } from 'vue'
 import { simulatePlan, previewOperationState } from '../engine/engine'
 import { anchorKey, spawnedParticipantId, countdownParticipantId } from '../engine/queue'
 import { validatePlan } from '../engine/validation'
-import { operationTargets } from '../engine/targeting'
+import { isTargetedOperationType, operationTargets } from '../engine/targeting'
 import type {
   AhaConfig,
   EffectOperation,
@@ -146,12 +146,11 @@ export function useActionPlanner(
       }),
     ),
   )
-  const targets = computed(() =>
-    operationTargets(
-      preview.value,
-      draft.value?.type === 'spawnParticipant' ? 'advance' : draft.value?.type,
-    ),
-  )
+  const targets = computed(() => {
+    const type = draft.value?.type
+    if (!type || type === 'spawnParticipant') return operationTargets(preview.value)
+    return isTargetedOperationType(type) ? operationTargets(preview.value, type) : []
+  })
   const unreached = computed(() =>
     plan.value.events.filter(
       (e) =>

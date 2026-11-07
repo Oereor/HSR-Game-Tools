@@ -7,6 +7,7 @@ import type {
   ParticipantInfo,
   SimulationState,
   Target,
+  TargetedOperation,
 } from '../engine/types'
 import type { MessageDescriptor } from '../../../locales/types'
 
@@ -29,7 +30,7 @@ export function participantLabels(
   return labels
 }
 export function namingTargets(
-  operation: Exclude<EffectOperation, { type: 'spawnParticipant' }>,
+  operation: TargetedOperation,
   state?: SimulationState,
 ): string[] | undefined {
   if (!state) return undefined
@@ -75,6 +76,11 @@ export function operationNameDescriptor(
               : 'createActor'
     return { key: `planner.operationName.${kind}`, params: { name: p.name } }
   }
+  if (operation.type === 'restoreSkillPoints' || operation.type === 'conditionalRestore')
+    return {
+      key: `planner.operationName.${operation.type}`,
+      params: { amount: operation.amount },
+    }
   const target = targetDescription(operation.target, name, namingTargets(operation, state))
   if (operation.type === 'advance' || operation.type === 'delay')
     return {

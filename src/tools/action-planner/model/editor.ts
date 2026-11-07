@@ -7,6 +7,7 @@ import {
 } from '../engine/engine'
 import { anchorKey, SimulationError } from '../engine/queue'
 import {
+  isTargetedOperation,
   operationTargets,
   targetIds,
   validTargetSelection,
@@ -60,18 +61,15 @@ export interface OperationDraft {
   participant: ParticipantDraft
 }
 export function operationDraft(operation?: EffectOperation, customName = ''): OperationDraft {
+  const target = operation && isTargetedOperation(operation) ? operation.target : undefined
   return {
     id: operation?.id || undefined,
     original: operation?.id ? operation : undefined,
     customName,
     type: operation?.type ?? 'advance',
     phase: operation?.phase ?? (operation?.id ? 'preAction' : 'postAction'),
-    targetKind:
-      operation && operation.type !== 'spawnParticipant' ? operation.target.kind : 'participants',
-    selectedIds:
-      operation && operation.type !== 'spawnParticipant' && operation.target.kind === 'participants'
-        ? [...operation.target.participantIds]
-        : [],
+    targetKind: target?.kind ?? 'participants',
+    selectedIds: target?.kind === 'participants' ? [...target.participantIds] : [],
     percent: operation?.type === 'advance' || operation?.type === 'delay' ? operation.percent : 50,
     mode: operation?.type === 'addSpeedModifier' ? operation.mode : 'flat',
     amount: operation?.type === 'addSpeedModifier' ? operation.amount : 10,
@@ -132,6 +130,9 @@ export function provisionalOperation(
       ? { kind: 'participants', participantIds: [...draft.selectedIds] }
       : { kind: draft.targetKind }
   switch (draft.type) {
+    case 'restoreSkillPoints':
+    case 'conditionalRestore':
+      return undefined
     case 'spawnParticipant':
       return buildParticipantOperation(
         { ...draft.participant, phase: draft.phase },
@@ -174,8 +175,8 @@ export function buildOperation(
       draft.original?.type === 'spawnParticipant' ? draft.original : undefined,
     )
   const invalid: string[] = []
-  const operation = provisionalOperation({ ...draft, id }, anchor)!
-  if (operation.type === 'spawnParticipant') return { invalid: ['form'] }
+  const operation = provisionalOperation({ ...draft, id }, anchor)
+  if (!operation || !isTargetedOperation(operation)) return { invalid: ['form'] }
   const participants = operationTargets(preview, operation.type)
   const ids = targetIds(operation.target, participants)
   const selected = participants.filter((p) => ids.includes(p.id))

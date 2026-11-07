@@ -124,6 +124,8 @@
       "neutral": "中立单位"
     },
     "operationName": {
+      "restoreSkillPoints": "恢复 {amount} 点战技点",
+      "conditionalRestore": "有条件地恢复 {amount} 点战技点",
       "depart": "使 {target} 离场",
       "returnToField": "解除 {target} 的离场状态",
       "advance": "使 {target} 行动提前 {percent}%",

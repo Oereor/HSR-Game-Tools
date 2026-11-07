@@ -58,7 +58,7 @@
 
 `interaction: "batch"` 应用完整预设：有输入时展示统一参数表单，无输入时直接应用。`interaction: "draft"` 只允许一条操作且不带触发事件，选中后预填普通草稿，用户仍可修改目标、参数并确认。`startOnly: true` 将入口限制在战斗开始。
 
-## 七种操作
+## 操作声明
 
 每条操作使用下表字段，不填写运行时 `id` 或 `phase`。顶层操作继承当前阶段，触发事件中的操作不携带阶段。数组顺序就是执行顺序。
 
@@ -75,6 +75,13 @@
 速度持续时间使用 `{"kind":"turns","turns":2}`、`{"kind":"turns","turns":null}` 或 `{"kind":"countdown","name":"计时器","speed":70}`。turns 必须为正整数，null 表示无限。涉及定时事件目标的速度效果只支持无限持续，继续由引擎检查。
 
 Actor 的最小结构是 `{"kind":"actor","name":"单位","camp":"ally","baseSpeed":100,"panelSpeed":120}`。可选 category、actionLimit、initialAG；actionLimit 为正整数或 null。Scheduled Event 使用 `{"kind":"scheduledEvent","name":"事件","speed":90}`，可选独立 baseSpeed 和 initialAG。initialAG 默认 10000，允许零和非负分数。
+
+编译器也接受两类无目标战技点声明，字段均为字面值。
+
+- `restoreSkillPoints` 需要正安全整数 `amount` 和非空 `source`，可选布尔值 `storeOverflow`。插入位置为战斗开始或我方 Actor 的行动。
+- `conditionalRestore` 同样需要 `amount` 和 `source`，还需要 `sourceParticipantId`、`chance`、`cooldownTurns` 和 `outcome`。来源 ID 必须与当前行动锚点一致，`chance` 取 0 到 1，`cooldownTurns` 为非负安全整数，`outcome` 为 `proc` 或 `no-proc`。按引擎规则插入我方 Actor 的 postAction，每次行动最多一条。
+
+两类声明的 `source` 上限为 256 个 UTF-16 码元。编译保留行动原有的战技标注，并将战技点警告及信息保留在模拟结果中。战技点操作的编辑与保存见[战技点分阶段接入说明](architecture/action-order-simulator.md#战技点基础与正式推演分阶段接入)。
 
 ## 目标与事件
 

@@ -7,6 +7,7 @@ import {
   countdownParticipantId,
 } from '../engine/queue'
 import { participantCatalog, validatePlan } from '../engine/validation'
+import { isTargetedOperation } from '../engine/targeting'
 import type { ParticipantDefinition, SimulationPlan } from '../engine/types'
 import type { PlannerDocument } from './editor'
 import { simulatePlan } from '../engine/engine'
@@ -248,7 +249,8 @@ export function validatePlannerFile(value: unknown): {
       for (const op of event.operations) {
         occupied.add(spawnedParticipantId(op.id))
         occupied.add(countdownParticipantId(op.id))
-        if (op.type !== 'spawnParticipant' && op.target.kind === 'participants')
+        if (op.type === 'conditionalRestore') occupied.add(text(op.sourceParticipantId))
+        if (isTargetedOperation(op) && op.target.kind === 'participants')
           list(op.target.participantIds).forEach((id) => occupied.add(text(id)))
       }
     }
@@ -383,7 +385,8 @@ export function referencedIds(plan: SimulationPlan): Set<string> {
       ids.add(op.id)
       ids.add(spawnedParticipantId(op.id))
       ids.add(countdownParticipantId(op.id))
-      if (op.type !== 'spawnParticipant' && op.target.kind === 'participants')
+      if (op.type === 'conditionalRestore') ids.add(op.sourceParticipantId)
+      if (isTargetedOperation(op) && op.target.kind === 'participants')
         op.target.participantIds.forEach((id) => ids.add(id))
     }
   }

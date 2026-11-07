@@ -23,6 +23,7 @@ import OperationEditor from './OperationEditor.vue'
 import OperationTargets from './OperationTargets.vue'
 import { effectiveSpeed } from '../engine/queue'
 import { phaseOperations } from '../engine/effect-config'
+import { isTargetedOperation } from '../engine/targeting'
 import type {
   ParticipantInfo,
   EffectOperation,
@@ -109,9 +110,11 @@ const icon = (o: EffectOperation) =>
             ? LogOut
             : o.type === 'returnToField'
               ? LogIn
-              : o.participant.kind === 'actor'
-                ? UserRoundPlus
-                : Timer
+              : o.type === 'spawnParticipant'
+                ? o.participant.kind === 'actor'
+                  ? UserRoundPlus
+                  : Timer
+                : Plus
 const metadata = computed(
   () =>
     new Map(
@@ -273,7 +276,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
               </div>
             </div>
             <OperationTargets
-              v-if="op.type !== 'spawnParticipant'"
+              v-if="isTargetedOperation(op)"
               :ids="metadataOf(op).targetIds"
               :fallback="renderMessage(metadataOf(op).target!, locale as ToolLocale, t)"
               :participants="metadataOf(op).participants"
