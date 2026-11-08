@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -7,21 +7,13 @@ import InputText from 'primevue/inputtext'
 import { Download, Upload, FilePlus2, UsersRound } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
 import { gameData, assetUrl, characterName } from '../data/adapters/game-data'
-import { DEFAULT_LIMITS } from '../engine/queue'
 import { participantCatalog } from '../engine/validation'
-import {
-  emptyDocument,
-  parsePlannerDocument,
-  serializePlannerDocument,
-  preparePlannerDocument,
-  plannerFilename,
-  FILE_LIMITS,
-  PlannerFileError,
-} from '../model/document-file'
+import { FILE_LIMITS } from '../model/document-file'
 import { plannerTemplates, type PlannerTemplate } from '../templates/catalog'
 import { loadPlannerTemplate } from '../templates/loader'
 import type { useActionPlanner } from '../composables/useActionPlanner'
-import type { createPlannerPersistence, SaveStatus, StorageToken } from '../model/persistence'
+import { usePlannerFiles } from '../composables/usePlannerFiles'
+import type { createPlannerPersistence, SaveStatus } from '../model/persistence'
 import type { ToolLocale } from '../../../locales/types'
 
 const props = defineProps<{
@@ -36,16 +28,29 @@ watch([() => props.planner.document.value.name, () => props.planner.setupRevisio
   nameDraft.value = props.planner.document.value.name
 })
 const fileInput = ref<HTMLInputElement>()
-const busy = ref(false)
-const error = ref<string>()
 const templatesVisible = ref(false)
 const templateList = computed(() => [...plannerTemplates].sort((a, b) => a.order - b.order))
-const pending = shallowRef<{
-  kind: 'replace' | 'overwrite' | 'reload'
-  prepared?: ReturnType<typeof preparePlannerDocument>
-  token?: StorageToken
-  guarded: boolean
-}>()
+const {
+  busy,
+  error,
+  pending,
+  exportFile,
+  backupRaw,
+  newDocument,
+  importFile,
+  useTemplate,
+  reload,
+  overwrite,
+  retry,
+  confirm,
+} = usePlannerFiles(
+  props,
+  () =>
+    nameDraft.value !== props.planner.document.value.name ||
+    props.setupDirty ||
+    !!props.planner.draft.value,
+  download,
+)
 const confirmVisible = computed({
   get: () => !!pending.value,
   set: (value) => {
@@ -59,9 +64,6 @@ const recoveryError = computed(() =>
   props.saveStatus === 'protected' ? props.persistence.failure : undefined,
 )
 const issues = computed(() => props.planner.resourceIssues.value)
-function setError(cause: unknown) {
-  error.value = cause instanceof PlannerFileError ? cause.code : 'read'
-}
 function rename() {
   props.planner.rename(nameDraft.value)
 }
@@ -73,126 +75,14 @@ function download(source: string, filename: string) {
   link.click()
   setTimeout(() => URL.revokeObjectURL(url), 0)
 }
-function exportFile() {
-  try {
-    download(
-      serializePlannerDocument(props.planner.document.value),
-      plannerFilename(props.planner.document.value.name),
-    )
-    error.value = undefined
-  } catch (cause) {
-    setError(cause)
-  }
-}
-function backupRaw() {
-  const token = props.persistence.capture()
-  if (token?.raw !== null && token?.raw !== undefined)
-    download(token.raw, 'action-planner-storage-backup.json')
-}
-function worthKeeping() {
-  const doc = props.planner.document.value
-  return !!(
-    doc.name ||
-    nameDraft.value !== doc.name ||
-    doc.plan.actors.length ||
-    doc.plan.events.some((e) => e.operations.length) ||
-    Object.keys(doc.metadata.customNames).length ||
-    doc.plan.maxNodes !== DEFAULT_LIMITS.maxNodes ||
-    doc.plan.maxAV !== DEFAULT_LIMITS.maxAV ||
-    doc.plan.cycleMode !== 'none' ||
-    doc.plan.aha.baseSpeed !== 80 ||
-    props.setupDirty ||
-    props.planner.draft.value
-  )
-}
-function requestReplacement(
-  prepared: ReturnType<typeof preparePlannerDocument>,
-  kind: 'replace' | 'reload' = 'replace',
-) {
-  const token = props.persistence.capture()
-  pending.value = { kind, prepared, token, guarded: props.persistence.guarded }
-  if (!worthKeeping() && !props.persistence.guarded) confirm()
-}
-function newDocument() {
-  error.value = undefined
-  requestReplacement(preparePlannerDocument(emptyDocument()))
-}
-async function importFile(event: Event) {
+async function onImportFile(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
-  if (!file || busy.value) return
-  busy.value = true
-  error.value = undefined
-  try {
-    if (file.size > FILE_LIMITS.bytes) throw new PlannerFileError('limit')
-    const parsed = parsePlannerDocument(await file.text())
-    requestReplacement(preparePlannerDocument(parsed.document, parsed.issues, parsed.migration))
-  } catch (cause) {
-    setError(cause)
-  } finally {
-    busy.value = false
-  }
+  if (file) await importFile(file)
 }
-function useTemplate(template: PlannerTemplate) {
-  try {
-    const parsed = loadPlannerTemplate(template)
-    const prepared = preparePlannerDocument(parsed.document, parsed.issues, parsed.migration)
-    templatesVisible.value = false
-    error.value = undefined
-    requestReplacement(prepared)
-  } catch (cause) {
-    setError(cause)
-  }
-}
-function reload() {
-  try {
-    const token = props.persistence.capture()
-    if (!token) return
-    const parsed =
-      token.raw === null
-        ? { document: emptyDocument(), issues: [] }
-        : parsePlannerDocument(token.raw)
-    pending.value = {
-      kind: 'reload',
-      prepared: preparePlannerDocument(parsed.document, parsed.issues, parsed.migration),
-      token,
-      guarded: props.persistence.guarded,
-    }
-  } catch (cause) {
-    setError(cause)
-  }
-}
-function overwrite() {
-  const token = props.persistence.capture()
-  if (token) pending.value = { kind: 'overwrite', token, guarded: true }
-}
-function retry() {
-  if (props.persistence.guarded) overwrite()
-  else props.persistence.save(props.planner.document.value)
-}
-function confirm() {
-  const action = pending.value
-  if (!action) return
-  const latest = props.persistence.capture()
-  if (action.token && (!latest || latest.raw !== action.token.raw)) {
-    error.value = 'changed'
-    pending.value = undefined
-    return
-  }
-  if (action.kind === 'overwrite') {
-    if (action.token) props.persistence.overwrite(props.planner.document.value, action.token)
-  } else if (action.kind === 'reload') {
-    props.persistence.reload(
-      () => (action.prepared ? props.planner.restorePrepared(action.prepared) : false),
-      action.token,
-    )
-  } else if (action.prepared) {
-    props.persistence.withoutSaving(() => props.planner.restorePrepared(action.prepared!))
-    if (action.token) props.persistence.overwrite(props.planner.document.value, action.token)
-    else props.persistence.save(props.planner.document.value)
-  }
-  pending.value = undefined
+function onUseTemplate(template: PlannerTemplate) {
+  if (useTemplate(template)) templatesVisible.value = false
 }
 function templateCharacters(template: PlannerTemplate) {
   try {
@@ -238,7 +128,7 @@ defineExpose({ newDocument })
           class="sr-only"
           tabindex="-1"
           :aria-label="t('planner.files.import')"
-          @change="importFile"
+          @change="onImportFile"
         />
         <Button text severity="secondary" :disabled="busy" @click="fileInput?.click()"
           ><Upload :size="16" /><span>{{ t('planner.files.import') }}</span></Button
@@ -349,7 +239,7 @@ defineExpose({ newDocument })
         <Button
           size="small"
           :label="t('planner.files.useTemplate')"
-          @click="useTemplate(template)"
+          @click="onUseTemplate(template)"
         />
       </div>
     </Dialog>

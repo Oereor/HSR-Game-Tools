@@ -183,6 +183,8 @@ Version 1 迁移时补 `cycleMode: none`。Version 1/2 均补冲突安全的 Aha
 普通导入、模板和存档均使用上述解析边界，先校验并准备推演，再确认完整替换；失败或取消不替换当前文档。
 非空方案或未提交输入被替换前确认；新建空方案也会更新当前存档，受保护存档仍需明确覆盖。
 
+[usePlannerFiles](../../src/tools/action-planner/composables/usePlannerFiles.ts)统一处理文件导入、模板替换、导出与存档恢复。导出与存档写入均序列化当前提交的完整文档，存档原文备份则保留捕获的字节。战技点配置和仅含战技标注的事件也属于替换前需要确认的方案内容。
+
 **正式配队模板必须由用户审阅，不得根据截图或角色技能描述自动生成。**当前[正式目录](../../src/tools/action-planner/templates/catalog.ts)为空；测试方案不进入生产目录。
 
 1. 在工具中配置完整方案，导出 Version 9 JSON 并人工审阅。
