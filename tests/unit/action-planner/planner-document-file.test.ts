@@ -5,6 +5,7 @@ import { useActionPlanner } from '../../../src/tools/action-planner/composables/
 import {
   FILE_LIMITS,
   PLANNER_FORMAT,
+  PLANNER_VERSION,
   emptyDocument,
   parsePlannerDocument,
   serializePlannerDocument,
@@ -14,8 +15,12 @@ import {
 } from '../../../src/tools/action-planner/model/document-file'
 import { syntheticDocument } from '../../fixtures/action-planner/phase-2a-document'
 
-const file = (document = syntheticDocument()) => ({ format: PLANNER_FORMAT, version: 3, document })
-describe('Version 3 planner files', () => {
+const file = (document = syntheticDocument()) => ({
+  format: PLANNER_FORMAT,
+  version: PLANNER_VERSION,
+  document,
+})
+describe('current planner files', () => {
   it('round-trips full committed input, precision, names, identities and engine results', () => {
     const input = syntheticDocument()
     const source = serializePlannerDocument(input)
@@ -90,7 +95,9 @@ describe('Version 3 planner files', () => {
   })
   it('rejects invalid JSON, future versions, runtime fields, prototypes and broken metadata', () => {
     expect(() => parsePlannerDocument('{')).toThrow('json')
-    expect(() => validatePlannerFile({ ...file(), version: 4 })).toThrow('version')
+    expect(() => validatePlannerFile({ ...file(), version: PLANNER_VERSION + 1 })).toThrow(
+      'version',
+    )
     expect(() => validatePlannerFile({ ...file(), format: 'other' })).toThrow('format')
     expect(() => validatePlannerFile({ ...file(), runtime: {} })).toThrow('structure')
     const prototype = serializePlannerDocument(syntheticDocument()).replace(

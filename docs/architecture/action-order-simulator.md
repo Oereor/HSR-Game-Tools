@@ -97,7 +97,7 @@ Scheduled Event 触发时，先移除与它关联的到期 Modifier，再记录 
 Aha 与 Actor 共用自然回合、回合 Buff 与倒计时到期规则。它不能被提前、延后或立即行动；自身变速不生成拉条 Trace。
 配置面板的只读速度使用草稿编队，尚未计入开始操作；Apply 将编队、预算、轮次与阿哈一并提交，并保留 Aha ID。
 
-Version 3 的贡献者 ID 是已保存的身份事实，不在导入时随新快照静默重算。明确 Apply 编队时重新识别已知身份；未知且未改变的身份保留已有事实，并报告资源问题。
+Version 3 起，方案保存的贡献者 ID 是身份事实。导入保留这些 ID，明确 Apply 编队时重新识别已知身份。未知且未改变的身份保留已有事实，并报告资源问题。
 额外阿哈时刻、欢愉技、笑点和技能自动触发未实现；“持续到阿哈时刻结束”当前按一个自然回合近似处理，不宣称完整复现游戏机制。
 
 ## 编辑状态与展示时点
@@ -115,7 +115,7 @@ Version 3 的贡献者 ID 是已保存的身份事实，不在导入时随新快
 
 配置格式、限制、复制示例与校验命令见[预设维护指南](../action-planner-presets.md)。装备预设继续预填单条普通操作草稿，角色批量预设通过统一参数界面应用；列表由定义目录自动发现，游戏数据 Catalog 只提供资源适配。解释器不按角色 ID 分支，不向引擎传递预设专属字段。
 
-知更鸟·晴歌 Fever 预设使用角色 ID `1512` 和 `selfPresence: present`，依次生成自身 depart、我方 memosprite Actor「晴空乐手」、我方 custom Actor「气氛值减半节点」。通用 `self-stat.panelSpeed` 表达式从方案初始角色配置读取战斗外面板速度，由编译器在身份及插入预览检查后注入；乐手基础和面板速度均为该值 × 1.8，节点两项速度均为 140。两者初始 AG 为 10000、行动次数无限。计算结果仅在应用时物化为普通操作数值；Version 3 不保存表达式、预设身份或速度联动。节点自然行动不自动计算气氛值或结束 Fever。
+知更鸟·晴歌 Fever 预设使用角色 ID `1512` 和 `selfPresence: present`，依次生成自身 depart、我方 memosprite Actor「晴空乐手」、我方 custom Actor「气氛值减半节点」。通用 `self-stat.panelSpeed` 表达式从方案初始角色配置读取战斗外面板速度，由编译器在身份及插入预览检查后注入；乐手基础和面板速度均为该值 × 1.8，节点两项速度均为 140。两者初始 AG 为 10000、行动次数无限。计算结果仅在应用时物化为普通操作数值。表达式、预设身份和速度联动仅用于预设编译。节点自然行动不自动计算气氛值或结束 Fever。
 
 [presets](../../src/tools/action-planner/presets/) 中的人工 JSON 声明七种原子操作、共享参数、目标快照和 onTrigger 事件。通用解释器解析参数与身份、按声明顺序生成普通 EffectOperation / PlanEvent，并生成候选 PlannerDocument；useActionPlanner 通过统一文件校验和 simulatePlan 重放后一次提交。生成操作出现目标失败警告或候选存在错误时不发布文档、结果或部分存档；预算导致的不可达 Anchor 警告允许保留。ID 由现有分配器预留，失败后不复用已经分配的身份。
 
@@ -127,11 +127,11 @@ Version 3 的贡献者 ID 是已保存的身份事实，不在导入时随新快
 
 预设在所选阶段末尾依次追加显式知更鸟 depart、动态 allies immediatelyAct、创建「协奏」Scheduled Event（speed = 90、initialAG = 10000）。知更鸟已先离场，因此不参与群体立即行动；其他已离场队友也不参与。没有其他在场我方 Actor 时省略群体操作。协奏的稳定 trigger Anchor 下依次追加知更鸟 returnToField、immediatelyAct；回场本身保留 AG，立即行动独立清零。倒计时独立于知更鸟 SPD，首次触发间隔默认 10000 / 90 AV，可继续通过普通操作提前、延后或变速，不保存绝对触发时间。
 
-其他在场队友的 preAction 中，群体立即行动会命中 active-target，因此预设明确拒绝并提示改用 postAction；当前行动者已离场时按真实目标集合判断。知更鸟自身的 preAction / postAction 沿用当前自然回合完整结算及 AG 重置规则，不模拟中断回合。知更鸟与卡厄斯兰那共用内部批量校验与提交函数；生成操作目标失败或完整候选重放错误时均不部分发布。既有 Anchor 操作按原序保留，新操作随后追加。提交后的四或五条操作均可独立编辑、删除；删除协奏创建操作保留孤立回场 Anchor 并诊断，不级联清理。预算外 Anchor 及 Version 3 持久化规则不变，不增加角色专属引擎行为。
+其他在场队友的 preAction 中，群体立即行动会命中 active-target，因此预设明确拒绝并提示改用 postAction；当前行动者已离场时按真实目标集合判断。知更鸟自身的 preAction / postAction 沿用当前自然回合完整结算及 AG 重置规则，不模拟中断回合。知更鸟与卡厄斯兰那共用内部批量校验与提交函数；生成操作目标失败或完整候选重放错误时均不部分发布。既有 Anchor 操作按原序保留，新操作随后追加。提交后的四或五条操作均可独立编辑、删除；删除协奏创建操作保留孤立回场 Anchor 并诊断，不级联清理。预算外 Anchor 按统一的方案文件规则保存。
 
 流萤终结技预设通过 metadata.characterIds 的角色 ID `1310` 识别我方 Actor，并复用所选锚点、阶段末尾的真实 previewOperationState 上下文。身份缺失、歧义、已离场、已移除或上下文不可用时拒绝应用。流萤自身 preAction 中的行动提前会命中 active-target，因此拒绝并提示改用 postAction；提交时再次检查资格并走同一批量候选校验流程。
 
-预设依次追加单目标 addSpeedModifier（mode = flat、amount = 用户输入、duration = countdown）和 advance 100%。固定速度增量默认 60，接受有限非负数，包括 0。倒计时名称在应用时读取当前语言消息「完全燃烧」或「Complete Combustion」，初始速度固定为 70 SPD，初始 AG 使用引擎默认值 10000。速度操作自动创建倒计时，通过其稳定操作 ID 关联效果到期；不额外保存 spawnParticipant 或移除操作。倒计时触发时仅移除关联 Modifier。advance 100% 将剩余 AG 减少 10000 并以 0 为下限，剩余 AG 超过 10000 时仍需等待，不使用 immediatelyAct。生成后的两条普通操作各自独立编辑、删除，保留 Version 3 格式。
+预设依次追加单目标 addSpeedModifier（mode = flat、amount = 用户输入、duration = countdown）和 advance 100%。固定速度增量默认 60，接受有限非负数，包括 0。倒计时名称在应用时读取当前语言消息「完全燃烧」或「Complete Combustion」，初始速度固定为 70 SPD，初始 AG 使用引擎默认值 10000。速度操作自动创建倒计时，通过其稳定操作 ID 关联效果到期；不额外保存 spawnParticipant 或移除操作。倒计时触发时仅移除关联 Modifier。advance 100% 将剩余 AG 减少 10000 并以 0 为下限，剩余 AG 超过 10000 时仍需等待，不使用 immediatelyAct。生成后的两条普通操作各自独立编辑、删除。
 
 [当前队列投影](../../src/tools/action-planner/model/current-queue.ts)在开始位置读取开始操作结算后的初始 Snapshot，其余位置读取 NodeRecord.beforeEffects；引擎 snapshots 保留原本的结算后语义。
 queueCursor 与 Inspector 选择独立，模式切换保留推进锚点；重放后锚点不可达则游标回开始，Inspector 保留原选择用于修复。
@@ -143,17 +143,33 @@ Trace、Tag、目标头像与数值展示约定见 UI 设计规范，不改变�
 
 ```text
 format: "hsr-game-tools/action-planner"
-version: 3
+version: 9
 document: { name, plan, metadata }
 ```
 
 这是字段概览，实际方案使用工具完整导出的 JSON。未知字段、无效结构、重复或不安全身份不会通过放宽校验来兼容。
 上限为 2 MiB、1000 个事件、2000 个操作；其他字符串、目标与嵌套边界以源码 FILE_LIMITS 为准。
-文档保存计划、用户名称、角色映射与 Aha 配置，不保存运行结果、Trace、队列、导航、草稿或迁移通知。
-Version 3 继续使用原格式，支持 Presence Operation 和 Scheduled Event 可选 baseSpeed；departed 与运行时 Modifier 不持久化，由普通操作重放恢复。旧事件省略 baseSpeed 时以 speed 为基数，不补写字段；旧参与者默认在场。Version 1 / 2 迁移、身份保护、未知字段拒绝及存档保护机制继续沿用。
+写入统一使用 Version 9。所有版本均要求 `plan` 包含 `actors`、`events`、`maxNodes`、`maxAV`，`metadata` 包含 `customNames` 和 `characterIds`。读取按源版本验证，下表中的字段从各自版本起可用。
 
-Version 1 严格迁移时补 `cycleMode: none`；Version 1/2 均补冲突安全的 Aha ID 与可确认的初始贡献者，保留原单位 / 操作 ID、锚点和孤立引用。
-新增 Aha 可能改变排序和预算内可达节点，UI 提供升级提示；不支持未来版本，导出统一为 Version 3。
+| 版本 | 字段与操作                                                                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | 原始文件外壳。`document` 必须包含 `name`、`plan` 和 `metadata`。                                                                           |
+| 2    | `plan.cycleMode` 必填，事件可以使用 `cycleBoundary` 锚点。                                                                                 |
+| 3    | `plan.aha` 必填，保存 `id`、`baseSpeed` 和 `contributorIds`。                                                                              |
+| 4    | `plan.skillPoints` 可选，包含可选的 `enabled`、`initial`、`max`。行动事件可选 `skill`。                                                    |
+| 5    | 支持 `restoreSkillPoints`，恢复操作需要 `amount` 和 `source`。                                                                             |
+| 6    | `skillPoints.onInsufficient` 可选。                                                                                                        |
+| 7    | `skillPoints.storedMax` 和 `restoreSkillPoints.storeOverflow` 可选。                                                                       |
+| 8    | `skillPoints.maxModifiers` 可选。每个修正需要 `amount`，可选 `sourceParticipantId`。                                                       |
+| 9    | 支持 `conditionalRestore`，需要 `amount`、`source`、`sourceParticipantId`、`chance`、`cooldownTurns`、`outcome`，阶段必须是 `postAction`。 |
+
+版本门槛源自 `8821cf8`、`237dce5`、`c55c6bc` 和历史战技点读写器 `e1217f1`、`24271fc`、`f7d2bc5`。其中可确认的战技点写入版本为 7 和 9。其余中间版本的字段门槛由历史读取器确认。
+
+两种战技点操作都无 `target`，具体行动来源和数值限制由引擎校验。行动事件可以只包含 `skill` 和空的 `operations`。方案保留字段缺省、显式 `false` 与 `0`。历史写入器能保存 `maxModifiers: null`，因此 Version 8 和 9 保留显式 `null`。重放时缺省、`null` 和空数组均表示无修正。余额、存储状态、冷却状态、运行结果、Trace 和队列由重放生成。导航、草稿和迁移通知属于界面状态。
+
+Version 1 迁移时补 `cycleMode: none`。Version 1/2 均补冲突安全的 Aha ID，并按当前目录识别贡献者。Version 3 起保留已保存的 Aha 身份。Version 4–8 保留各版本允许的战技点字段，默认值在重放时生效。迁移保留原单位、操作 ID、锚点和孤立引用。相同目录下重读规范化导出得到相同文档，升级提示只出现在读取旧版时。超出支持范围的版本返回版本错误。
+
+旧事件省略 `baseSpeed` 时以 `speed` 为基数。参与者离场状态和运行时速度修正由重放恢复。新增 Aha 可能改变排序和预算内可达节点，界面会提示升级。
 导入中的未知 Character ID 保留，非法图片路径移除并报告；图片仅允许资源目录已登记的相对路径。初始敌人以 baseSpeed 统一两项 SPD，保留其他合法字段。
 
 [usePlannerSession](../../src/tools/action-planner/composables/usePlannerSession.ts)先恢复存档，再注册浅提交 watcher；[持久化模块](../../src/tools/action-planner/model/persistence.ts)使用 localStorage 键 `hsr-game-tools/action-planner/current`。
@@ -169,8 +185,8 @@ Version 1 严格迁移时补 `cycleMode: none`；Version 1/2 均补冲突安全�
 
 **正式配队模板必须由用户审阅，不得根据截图或角色技能描述自动生成。**当前[正式目录](../../src/tools/action-planner/templates/catalog.ts)为空；测试方案不进入生产目录。
 
-1. 在工具中配置完整方案，导出 Version 3 JSON 并人工审阅。
-2. 将文件放入 [templates/plans/](../../src/tools/action-planner/templates/plans/)。既有 Version 1/2 模板由统一解析器兼容，不手工省略当前字段。
+1. 在工具中配置完整方案，导出 Version 9 JSON 并人工审阅。
+2. 将文件放入 [templates/plans/](../../src/tools/action-planner/templates/plans/)。旧模板由统一解析器迁移，保留工具导出的字段。
 3. 在 catalog.ts 显式导入 JSON，登记唯一 id、order、nameKey、descriptionKey、file，以及可选 conditionKey / gameVersion。
 4. 在两份 Site Messages 添加同路径的名称、简介和可选条件介绍；头像读取方案角色映射，不另外构造队伍身份。
 5. 按[开发指南](../development.md#验证策略)运行模板与 i18n 校验，以及方案文件相关测试。
@@ -193,7 +209,7 @@ stop 支付不足时整次行动候选不提交，回合、操作、冷却和补
 
 depart / returnToField 在各自候选事务内立即重算有效上限；actionLimit 退出在原自然回合结束处重算。上限变化记录附加到开始、行动、Scheduled Event 或 Cycle Boundary 的对应结果；未知损失仍为 null，存储不变。回合结束补充使用 postAction 后的新上限，先于退出。发生非法上限等运行时异常时不提交当前行动候选。调度数学、同 AV 排序、轮次边界、Trace 和原生命周期顺序保持上游实现。
 
-预览、编辑器、UI 与持久化尚未集成；previewOperationState 保持原实现，不能视为具有正式推演的战技点语义。已有账本、批量 UI 和后续阶段测试文件仍只是部分迁移材料。方案文件保持 Version 3，严格解析器尚不接受新增资源字段／操作；用户交互、存档与版本迁移留待后续阶段。
+共享文件边界按上述版本契约读写战技点输入。预览结算、战技点编辑、批量 UI 与完整交互往返验证属于后续接入阶段。
 
 尚未实现完整技能执行、伤害与能量系统、多波次、角色特殊行为自动推演、额外阿哈时刻、真实敌人数据目录、云同步、账号或多方案库。
 装备预设只创建可编辑的普通操作，不自动判断装备条件。[抽卡模拟器](warp-simulator.md)与[货币战争优化器](../currency-wars.md)已作为独立工具实现，不与排轴引擎共享业务状态；遗器模拟器仍在施工中。

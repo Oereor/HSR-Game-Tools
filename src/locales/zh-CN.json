@@ -179,7 +179,7 @@
       "name": "阿哈时刻",
       "invalidPreview": "请填写有效速度",
       "migratedWithAha": "Version {version} 方案已升级，自动加入阿哈时刻。行动顺序可能变化，请检查不可达操作。",
-      "migrated": "Version {version} 方案已升级至 Version 3。"
+      "migrated": "Version {version} 方案已升级至当前格式。"
     },
     "eventBaseSpeed": "百分比速度基数（留空使用初始速度）",
     "eventUnlimitedOnly": "战斗事件的速度效果只支持无限持续。",

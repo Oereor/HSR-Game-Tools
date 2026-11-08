@@ -179,7 +179,7 @@
       "name": "Aha Instant",
       "invalidPreview": "Enter valid speeds",
       "migratedWithAha": "Version {version} plan upgraded with Aha Instant. Action order may change; review unreachable operations.",
-      "migrated": "Version {version} plan upgraded to Version 3."
+      "migrated": "Version {version} plan upgraded to the current format."
     },
     "eventBaseSpeed": "Percentage speed base (blank uses initial speed)",
     "eventUnlimitedOnly": "Speed modifiers on events only support unlimited duration.",

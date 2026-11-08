@@ -105,7 +105,8 @@ export interface SkillPointsConfig {
   max?: number
   onInsufficient?: 'stop' | 'mark'
   storedMax?: number
-  maxModifiers?: SkillPointMaxModifier[]
+  /** Historical v8/v9 files may explicitly declare no modifiers with null. */
+  maxModifiers?: SkillPointMaxModifier[] | null
 }
 export interface SkillPointEventRecord {
   operationId: string
