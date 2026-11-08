@@ -21,14 +21,17 @@ import SpeedModifierTags from './SpeedModifierTags.vue'
 import { actionSpeedModifierTags, type CountdownSources } from '../model/speed-modifier-tags'
 import OperationEditor from './OperationEditor.vue'
 import OperationTargets from './OperationTargets.vue'
-import { effectiveSpeed } from '../engine/queue'
+import SkillPointsEditor from './SkillPointsEditor.vue'
+import { anchorKey, effectiveSpeed } from '../engine/queue'
 import { phaseOperations } from '../engine/effect-config'
 import { isTargetedOperation } from '../engine/targeting'
 import type {
+  ActionSkill,
   ParticipantInfo,
   EffectOperation,
   EventAnchor,
   SimulationState,
+  SkillPointsRecord,
 } from '../engine/types'
 import { formatAV, formatNumber, renderMessage } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
@@ -42,6 +45,9 @@ const props = defineProps<{
   inactive?: boolean
   operations: EffectOperation[]
   context?: SimulationState
+  canSetSkill: boolean
+  skill?: ActionSkill
+  skillRecord?: SkillPointsRecord
   preview?: SimulationState
   targets: ParticipantInfo[]
   invalid: string[]
@@ -60,8 +66,18 @@ const emit = defineEmits<{
   cancel: []
   submit: []
   preset: [request: PresetRequest]
+  skill: [skill?: ActionSkill]
 }>()
 const { t, locale } = useI18n()
+const resourceAction = computed(() => {
+  const anchor = props.anchor
+  return (
+    anchor.kind === 'action' &&
+    !!props.context?.participants.some(
+      (p) => p.id === anchor.participantId && p.kind === 'actor' && p.camp === 'ally',
+    )
+  )
+})
 const groups = computed(() =>
   props.anchor.kind === 'action'
     ? ['preAction', 'postAction'].map((phase) => ({
@@ -150,6 +166,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       v-model="draft"
       :anchor="anchor"
       :participants="targets"
+      :resource-action="resourceAction"
       :preview="preview"
       :invalid="invalid"
       :preset-issues="presetIssues"
@@ -192,6 +209,13 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       <p v-if="!context" class="validation-summary">
         {{ t(inactive ? 'planner.cycle.disabled' : 'ui.contextUnavailable') }}
       </p>
+      <SkillPointsEditor
+        v-if="canSetSkill"
+        :key="anchorKey(anchor)"
+        :skill="skill"
+        :record="skillRecord"
+        @save="emit('skill', $event)"
+      />
       <div class="operations-heading">
         <h3>
           {{ t('ui.operations') }}

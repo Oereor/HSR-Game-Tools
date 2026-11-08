@@ -218,9 +218,10 @@ describe('positive Skill Point operations', () => {
     expect(planner.result.value.blockedAction).toBeUndefined()
     const operation = planner.plan.value.events[0]!.operations[0]!
     expect(operation).not.toHaveProperty('target')
+    expect(operation).toMatchObject({ amount: 1, source: 'Manual refund' })
     expect(operationMetadata(operation, (id) => id).fields[0]?.message).toMatchObject({
-      key: 'planner.sp.eventLabel',
-      params: { amount: 1, source: 'Manual refund' },
+      key: 'planner.operationName.restoreSkillPoints',
+      params: { amount: 1 },
     })
   })
   it('rejects source and target forgery at the file boundary', () => {

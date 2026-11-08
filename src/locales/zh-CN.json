@@ -269,6 +269,107 @@
         "departed": "知更鸟·晴歌已离场，不能再次进入 Fever 状态。",
         "unavailable": "当前节点无法对知更鸟·晴歌应用 Fever 状态。"
       }
+    },
+    "sp": {
+      "enabled": "战技点校验",
+      "initial": "初始战技点",
+      "max": "战技点上限",
+      "skillLabel": "本次行动技能",
+      "unknown": "SP 未知",
+      "insufficient": "SP 不足",
+      "basic": "普攻（恢复 1）",
+      "skill": "战技（消耗 1）",
+      "custom": "自定义",
+      "cost": "消耗",
+      "recovery": "计划恢复",
+      "save": "应用技能",
+      "balance": "SP {before}→{after}",
+      "overflow": "溢出 {count}",
+      "hint": "仅校验我方行动的战技点；技能效果仍由操作配置。",
+      "onInsufficient": "不足时",
+      "unverified": "未验证",
+      "unknownValue": "未知",
+      "amounts": "实际支付 {paid} · 恢复 {recovery} · 溢出 {overflow}",
+      "storedMax": "存储上限（0 为不存储）",
+      "storeOverflow": "溢出可存储",
+      "maxModifiers": "上限修正",
+      "addModifier": "添加修正",
+      "removeModifier": "移除修正",
+      "modifierAmount": "修正数值",
+      "onlyPresent": "仅当此角色在场",
+      "always": "始终生效",
+      "maxChange": "上限 {beforeMax}→{afterMax}",
+      "clamp": "上限截断 {before}→{after} · 损失 {loss}",
+      "chance": "概率（0–1，仅展示与记录）",
+      "cooldownTurns": "冷却自身回合数",
+      "amount": "恢复数量",
+      "source": "来源",
+      "policy": {
+        "stop": "停止",
+        "mark": "标记并继续"
+      },
+      "outcome": "本次结果",
+      "outcomes": {
+        "proc": "触发",
+        "no-proc": "未触发"
+      },
+      "errors": {
+        "spAmount": "请输入正整数。",
+        "spSource": "请输入来源，最多 256 个字符。",
+        "chance": "请输入 0 到 1 的有限数值。",
+        "cooldownTurns": "请输入非负整数。"
+      },
+      "setup": "战技点设置",
+      "blocked": "编辑{name}的受阻行动",
+      "restoreSkillPoints": "恢复战技点",
+      "conditionalRestore": "条件返还",
+      "invalidSetup": "请检查初始余额、上限、修正数值及其来源。",
+      "invalid": "消耗和恢复量须为非负整数。"
+    },
+    "batch": {
+      "title": "批量设置技能",
+      "scope": "范围",
+      "all": "全部",
+      "after": "当前之后",
+      "participant": "指定角色",
+      "afterLabel": "在「{anchor}」之后（不包含该节点）",
+      "scopeHint": "仅选择当前推演中已显示的我方行动，包含不足停止节点；不扩展推演范围。当前之后以 Inspector 选中节点为界。",
+      "customSummary": "消耗 {cost} · 恢复 {recovery}",
+      "counts": "范围内 {selected} 个节点，将修改 {changed} 个。",
+      "overwrite": "将覆盖其中 {count} 个节点已有的技能标注。",
+      "confirmHint": "确认后一次提交这些标注；重放可能使部分节点不可达，标注仍按原锚点保留。",
+      "noChanges": "没有需要修改的节点。",
+      "back": "返回设置",
+      "review": "预览修改",
+      "confirm": "确认应用",
+      "invalid": {
+        "skill": "自定义消耗和恢复必须是非负整数。",
+        "conditionalSkill": "范围内有条件返还操作，仅允许战技标注；请先处理操作或调整范围。"
+      },
+      "error": {
+        "stale": "方案或推演结果已变化，请重新预览。",
+        "commit": "批量提交失败，方案未修改；请检查方案错误。"
+      }
+    },
+    "ledger": {
+      "title": "每轮战技点账本",
+      "scope": "第 0 轮包含开场操作；边界操作计入新轮。技能恢复、外部回点和回合结束补充分列；存入缓冲不重复计作恢复。仅统计已提交结果，未知轮次不显示完整总量，末轮可能只推演了部分。",
+      "cycle": "轮次",
+      "opening": "起始余额",
+      "cost": "总消耗",
+      "skillRecovery": "技能恢复",
+      "external": "外部恢复",
+      "refill": "回合结束补充",
+      "ending": "期末余额",
+      "stored": "存储余额",
+      "max": "上限变化",
+      "loss": "截断损失",
+      "first": "本轮首个不足",
+      "status": "状态",
+      "all": "全程",
+      "cycleLabel": "第 {cycle} 轮",
+      "stopped": "不足，已停止",
+      "known": "已知"
     }
   },
   "ui": {
@@ -389,7 +490,13 @@
       "missing-target": "操作执行时目标不存在",
       "active-target": "此目标回合内受到的行动提前效果无效",
       "unreached-anchor": "此节点未在当前范围内到达",
-      "no-participants": "尚无队列参与者"
+      "no-participants": "尚无队列参与者",
+      "sp-insufficient": "战技点不足，已在行动前停止。",
+      "sp-unknown": "技能未标注，后续战技点未知；时间轴继续推演。",
+      "sp-overflow": "恢复超过上限，溢出数量见行动记录。",
+      "sp-marked": "战技点不足，已按反事实继续执行；后续结果未验证。",
+      "invalid-sp-max": "有效战技点上限非法（负数或超出安全整数范围），已停止推演。",
+      "sp-cap-loss": "战技点上限降低，超出部分已截断；损失见节点详情。"
     },
     "path": {
       "Elation": "欢愉",

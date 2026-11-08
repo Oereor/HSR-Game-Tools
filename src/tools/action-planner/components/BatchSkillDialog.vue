@@ -7,6 +7,7 @@ import Select from 'primevue/select'
 import SelectButton from 'primevue/selectbutton'
 import InputNumber from 'primevue/inputnumber'
 import { batchSkillCandidates, type BatchSkillFilter } from '../model/batch-skills'
+import { validActionSkill } from '../engine/skill-points'
 import type { useActionPlanner } from '../composables/useActionPlanner'
 import type { ActionSkill, EventAnchor } from '../engine/types'
 const props = defineProps<{
@@ -22,6 +23,7 @@ const kind = ref<ActionSkill['kind']>('basic')
 const cost = ref<number | undefined>(0)
 const recovery = ref<number | undefined>(0)
 const reviewFilter = ref<BatchSkillFilter>()
+const invalidSkill = ref(false)
 const preview = computed(() => props.planner.batchSkillPreview.value)
 const choices = computed(() =>
   ['basic', 'skill', 'custom'].map((value) => ({ value, label: t(`planner.sp.${value}`) })),
@@ -52,6 +54,7 @@ const scopeLabel = computed(() => {
 })
 watch(visible, (open) => {
   props.planner.cancelBatchSkills()
+  invalidSkill.value = false
   reviewFilter.value = undefined
   if (open) {
     scope.value = 'all'
@@ -62,12 +65,17 @@ watch(visible, (open) => {
   }
 })
 function review() {
-  reviewFilter.value = filter()
   const skill =
     kind.value === 'custom'
       ? { kind: 'custom', cost: cost.value, recovery: recovery.value }
       : { kind: kind.value }
-  props.planner.reviewBatchSkills(reviewFilter.value, skill as ActionSkill)
+  if (!validActionSkill(skill)) {
+    invalidSkill.value = true
+    return
+  }
+  invalidSkill.value = false
+  reviewFilter.value = filter()
+  props.planner.reviewBatchSkills(reviewFilter.value, skill)
 }
 function back() {
   props.planner.cancelBatchSkills()
@@ -149,9 +157,12 @@ function confirm() {
             fluid
           />
         </div>
-        <small id="batch-custom-hint" class="fine-print">{{
-          t('planner.batch.invalid.skill')
-        }}</small>
+        <small
+          id="batch-custom-hint"
+          :class="invalidSkill ? 'field-error' : 'fine-print'"
+          :role="invalidSkill ? 'alert' : undefined"
+          >{{ t('planner.batch.invalid.skill') }}</small
+        >
       </div>
     </template>
     <section v-else aria-live="polite">

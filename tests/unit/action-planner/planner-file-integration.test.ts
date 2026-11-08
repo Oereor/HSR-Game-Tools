@@ -5,10 +5,16 @@ import { usePlannerSession } from '../../../src/tools/action-planner/composables
 import { simulatePlan } from '../../../src/tools/action-planner/engine/engine'
 import {
   emptyDocument,
+  parsePlannerDocument,
   PLANNER_FORMAT,
+  preparePlannerDocument,
+  serializePlannerDocument,
 } from '../../../src/tools/action-planner/model/document-file'
+import type { EffectOperation, EventAnchor } from '../../../src/tools/action-planner/engine/types'
 import type { PlannerDocument } from '../../../src/tools/action-planner/model/editor'
 import { STORAGE_KEY } from '../../../src/tools/action-planner/model/persistence'
+import { buildSkillPointLedger } from '../../../src/tools/action-planner/model/skill-point-ledger'
+import { presets } from '../../../src/tools/action-planner/presets/catalog'
 import historical from '../../fixtures/action-planner/historical-documents.json'
 import { syntheticDocument } from '../../fixtures/action-planner/phase-2a-document'
 
@@ -98,6 +104,420 @@ function workspace(raw: string | null = null) {
 afterEach(() => {
   for (const scope of scopes.splice(0)) scope.stop()
   vi.unstubAllGlobals()
+})
+
+type Workspace = ReturnType<typeof workspace>
+type Session = ReturnType<Workspace['open']>
+
+async function verifyRoundTrip(space: Workspace, app: Session, authored: PlannerDocument) {
+  const prepared = preparePlannerDocument(authored)
+  const { document, result } = app.planner
+  expect(document.value).toStrictEqual(prepared.document)
+  expect(result.value).toStrictEqual(prepared.result)
+  const ledger = buildSkillPointLedger(result.value, document.value.plan.cycleMode)
+  app.files.exportFile()
+  const [bytes] = app.download.mock.calls.at(-1)!
+  expect(JSON.parse(bytes)).toStrictEqual(envelope(prepared.document))
+  expect(bytes).toBe(serializePlannerDocument(document.value))
+  expect(space.store.raw).toBe(bytes)
+
+  const writes = space.store.writes
+  app.close()
+  const reopened = space.open()
+  expect(space.store.writes).toBe(writes)
+  expect(reopened.planner.document.value).toStrictEqual(prepared.document)
+  expect(reopened.planner.result.value).toStrictEqual(prepared.result)
+  expect(reopened.planner.migrationNotice.value).toBeUndefined()
+  expect(buildSkillPointLedger(reopened.planner.result.value, authored.plan.cycleMode)).toEqual(
+    ledger,
+  )
+
+  await reopened.files.importFile(upload(bytes))
+  expect(reopened.files.pending.value?.kind).toBe('replace')
+  expect(reopened.files.error.value).toBeUndefined()
+  expect(space.store.writes).toBe(writes)
+  reopened.files.confirm()
+  expect(space.store.writes).toBe(writes + 1)
+  expect(reopened.planner.document.value).toStrictEqual(prepared.document)
+  expect(reopened.planner.result.value).toStrictEqual(prepared.result)
+  reopened.files.exportFile()
+  expect(reopened.download.mock.calls.at(-1)?.[0]).toBe(bytes)
+  expect(space.store.raw).toBe(bytes)
+}
+
+const start: EventAnchor = { kind: 'start' }
+const action = (turn: number, participantId = 'a'): EventAnchor => ({
+  kind: 'action',
+  participantId,
+  turn,
+})
+function resourcePlan() {
+  const doc = emptyDocument()
+  doc.name = 'Skill Point lifecycle'
+  doc.plan.actors = [
+    {
+      id: 'a',
+      name: 'A',
+      kind: 'actor',
+      camp: 'ally',
+      position: 0,
+      baseSpeed: 100,
+      panelSpeed: 100,
+    },
+    { id: 'b', name: 'B', kind: 'actor', camp: 'ally', position: 1, baseSpeed: 10, panelSpeed: 10 },
+  ]
+  doc.plan.maxNodes = 5
+  doc.plan.maxAV = 600
+  return doc
+}
+
+describe('Skill Point document lifecycle', () => {
+  it.each([3, 7, 8])('imports, edits and reopens the archived v%s document', async (version) => {
+    const file = historical.find((entry) => entry.file.version === version)!.file
+    const source = JSON.stringify(file)
+    const parsed = parsePlannerDocument(source)
+    const space = workspace()
+    const app = space.open()
+    await app.files.importFile(upload(source))
+    expect(app.planner.migrationNotice.value).toEqual({ fromVersion: version, ahaAdded: false })
+    expect(app.planner.document.value).toStrictEqual(file.document)
+    expect(app.planner.result.value).toStrictEqual(simulatePlan(parsed.document.plan))
+    expect(space.store.writes).toBe(1)
+
+    const expected = structuredClone(parsed.document)
+    const first = expected.plan.events[0]!.operations[0]!
+    const p = app.planner
+    p.select(start)
+    p.edit(p.operations.value[0])
+    if (first.type === 'advance') {
+      first.percent += 10
+      p.draft.value!.percent = first.percent
+      expect(expected.plan).not.toHaveProperty('skillPoints')
+    } else if (first.type === 'restoreSkillPoints') {
+      first.amount += 1
+      p.draft.value!.amount = first.amount
+      if (version === 7) expect(expected.plan.skillPoints).not.toHaveProperty('maxModifiers')
+    } else {
+      throw new Error('Unexpected historical opening operation')
+    }
+    expect(p.submit()).toBe(true)
+    expect(space.store.writes).toBe(2)
+    await verifyRoundTrip(space, app, expected)
+  })
+
+  it('edits both target-free operations and replays skills, cooldowns, cap changes and storage', async () => {
+    const authored = resourcePlan()
+    authored.plan.skillPoints = {
+      enabled: true,
+      initial: 7,
+      max: 5,
+      storedMax: 4,
+      maxModifiers: [{ amount: 2, sourceParticipantId: 'b' }],
+    }
+    const presence = (id: string, type: 'depart' | 'returnToField'): EffectOperation => ({
+      id,
+      type,
+      phase: 'postAction',
+      target: { kind: 'participants', participantIds: ['b'] },
+    })
+    const depart = presence('leave', 'depart')
+    const returnToField = presence('return', 'returnToField')
+    const leaveAgain = presence('leave-again', 'depart')
+    authored.plan.events = [
+      { anchor: action(1), operations: [depart], skill: { kind: 'skill' } },
+      { anchor: action(2), operations: [returnToField], skill: { kind: 'skill' } },
+      { anchor: action(5), operations: [leaveAgain] },
+    ]
+    const space = workspace()
+    const app = space.open()
+    await app.files.importFile(upload(JSON.stringify(envelope(authored))))
+    const p = app.planner
+    expect(p.document.value).toStrictEqual(authored)
+    p.edit()
+    Object.assign(p.draft.value!, {
+      type: 'restoreSkillPoints',
+      amount: 3,
+      source: 'Opening reserve',
+      storeOverflow: false,
+    })
+    expect(p.submit()).toBe(true)
+    const openingId = p.operations.value[0]!.id
+    p.edit(p.operations.value[0])
+    expect(p.draft.value?.amount).toBe(3)
+    p.draft.value!.amount = 4
+    p.draft.value!.storeOverflow = true
+    expect(p.submit()).toBe(true)
+    const opening: EffectOperation = {
+      id: openingId,
+      type: 'restoreSkillPoints',
+      amount: 4,
+      source: 'Opening reserve',
+      storeOverflow: true,
+    }
+    expect(p.operations.value).toStrictEqual([opening])
+    p.edit()
+    Object.assign(p.draft.value!, { type: 'restoreSkillPoints', amount: 1, source: 'Temporary' })
+    expect(p.submit()).toBe(true)
+    p.remove(p.operations.value[1]!.id)
+    expect(p.operations.value).toStrictEqual([opening])
+
+    const addRefund = (turn: number) => {
+      p.select(action(turn))
+      p.edit()
+      Object.assign(p.draft.value!, {
+        type: 'conditionalRestore',
+        phase: 'preAction',
+        amount: 1,
+        source: 'Manual refund',
+        chance: 0.5,
+        cooldownTurns: 1,
+        outcome: 'proc',
+      })
+      const before = p.document.value
+      const writes = space.store.writes
+      expect(p.submit()).toBe(false)
+      expect(p.document.value).toBe(before)
+      expect(space.store.writes).toBe(writes)
+      p.draft.value!.phase = 'postAction'
+      expect(p.submit()).toBe(true)
+      const operation = p.operations.value.at(-1)!
+      expect(operation).toMatchObject({ type: 'conditionalRestore', sourceParticipantId: 'a' })
+      expect(operation).not.toHaveProperty('target')
+      return operation
+    }
+    const firstRefund = addRefund(1)
+    p.edit(firstRefund)
+    p.draft.value!.chance = 0.75
+    expect(p.submit()).toBe(true)
+    const refund = { ...firstRefund, chance: 0.75 }
+    p.move(firstRefund.id, -1)
+    expect(p.operations.value).toStrictEqual([refund, depart])
+    const secondRefund = addRefund(2)
+    p.select(action(3))
+    expect(p.setSkill({ kind: 'skill' })).toBe(true)
+    const thirdRefund = addRefund(3)
+    p.select(action(4))
+    expect(p.setSkill({ kind: 'skill' })).toBe(true)
+    const temporary = addRefund(4)
+    p.remove(temporary.id)
+    expect(p.skill.value).toStrictEqual({ kind: 'skill' })
+    expect(p.operations.value).toEqual([])
+    expect(p.setSkill({ kind: 'basic' })).toBe(true)
+    expect(p.skill.value).toStrictEqual({ kind: 'basic' })
+    const basic = p.result.value.records[3]
+    expect(basic).toMatchObject({ skillPoints: { paid: 0, recovery: 0 } })
+    const skill = { kind: 'custom', cost: 2, recovery: 1 } as const
+    expect(p.setSkill(skill)).toBe(true)
+
+    authored.plan.events = [
+      { anchor: action(1), operations: [refund, depart], skill: { kind: 'skill' } },
+      { anchor: action(2), operations: [returnToField, secondRefund], skill: { kind: 'skill' } },
+      { anchor: action(5), operations: [leaveAgain] },
+      { anchor: start, operations: [opening] },
+      { anchor: action(3), operations: [thirdRefund], skill: { kind: 'skill' } },
+      { anchor: action(4), operations: [], skill },
+    ]
+    const result = p.result.value
+    expect(result.startSkillPointEvents?.[0]).toMatchObject({ restored: 0, stored: 4 })
+    expect(result.records.map((record) => record.conditionalRestores?.[0]?.status)).toEqual([
+      'proc',
+      'cooldown',
+      'proc',
+      undefined,
+      undefined,
+    ])
+    expect(result.records[0]?.maxChanges?.[0]).toMatchObject({ beforeMax: 7, afterMax: 5, loss: 2 })
+    expect(result.records[1]?.refill).toMatchObject({ amount: 3, storedAfter: 1 })
+    expect(result.records[3]).toMatchObject({
+      skillPoints: { paid: 2, recovery: 1 },
+      refill: { amount: 1, storedAfter: 0 },
+    })
+    expect(result.records[4]?.maxChanges?.[0]).toMatchObject({
+      before: null,
+      after: null,
+      loss: null,
+    })
+    expect(buildSkillPointLedger(result, 'none')).toMatchObject([
+      { openingBalance: 7, endingBalance: null, storedBalance: 0, endingMax: 5, capLoss: null },
+    ])
+    await verifyRoundTrip(space, app, authored)
+  })
+
+  it('keeps a blocked plan editable and preserves null modifiers through setup and reopen', async () => {
+    const authored = resourcePlan()
+    authored.plan.maxNodes = 2
+    authored.plan.skillPoints = { enabled: true, initial: 1, storedMax: 0, maxModifiers: null }
+    const refund: EffectOperation = {
+      id: 'refund',
+      type: 'conditionalRestore',
+      phase: 'postAction',
+      source: 'Manual',
+      sourceParticipantId: 'a',
+      amount: 1,
+      chance: 0.5,
+      cooldownTurns: 1,
+      outcome: 'no-proc',
+    }
+    authored.plan.events = [
+      { anchor: action(1), operations: [refund], skill: { kind: 'skill' } },
+      { anchor: action(2), operations: [], skill: { kind: 'skill' } },
+    ]
+    const space = workspace()
+    const app = space.open()
+    await app.files.importFile(upload(JSON.stringify(envelope(authored))))
+    const p = app.planner
+    expect(p.result.value.blockedAction?.anchor).toEqual(action(2))
+    p.select(action(2))
+    p.edit()
+    Object.assign(p.draft.value!, {
+      type: 'restoreSkillPoints',
+      phase: 'preAction',
+      amount: 1,
+      source: 'Repair',
+      storeOverflow: false,
+    })
+    expect(p.preview.value?.skillPoints?.current).toBe(0)
+    const before = p.document.value
+    const replay = p.result.value
+    const draft = p.draft.value
+    const writes = space.store.writes
+    const bytes = space.store.raw
+    expect(p.replacePlan({ ...authored.plan, maxNodes: 0 })).toBe(false)
+    await app.files.importFile(upload('{'))
+    expect(app.files.error.value).toBe('json')
+    expect(p.document.value).toBe(before)
+    expect(p.result.value).toBe(replay)
+    expect(p.draft.value).toBe(draft)
+    expect(p.selected.value).toEqual(action(2))
+    expect(space.store.raw).toBe(bytes)
+    expect(space.store.writes).toBe(writes)
+
+    expect(p.submit()).toBe(true)
+    expect(p.result.value.blockedAction).toBeUndefined()
+    authored.plan.events[1]!.operations = [
+      {
+        id: p.operations.value[0]!.id,
+        type: 'restoreSkillPoints',
+        phase: 'preAction',
+        amount: 1,
+        source: 'Repair',
+      },
+    ]
+    const config = { ...authored.plan.skillPoints, onInsufficient: 'mark' as const }
+    expect(p.applySetup(authored.plan.actors, 2, 600, {}, 'none', authored.plan.aha, config)).toBe(
+      true,
+    )
+    authored.plan.skillPoints = config
+    expect(p.result.value.skillPointsSummary?.endingBalance).toBe(0)
+    await verifyRoundTrip(space, app, authored)
+  })
+
+  it('commits a reviewed batch once and reopens it with stable operation and event identities', async () => {
+    const authored = resourcePlan()
+    authored.plan.maxNodes = 2
+    authored.plan.skillPoints = { enabled: true }
+    authored.plan.events = [
+      {
+        anchor: action(1),
+        skill: { kind: 'skill' },
+        operations: [
+          {
+            id: 'keep',
+            type: 'advance',
+            phase: 'postAction',
+            percent: 10,
+            target: { kind: 'participants', participantIds: ['b'] },
+          },
+        ],
+      },
+      { anchor: action(99), skill: { kind: 'custom', cost: 0, recovery: 0 }, operations: [] },
+    ]
+    authored.metadata.customNames.keep = 'Keep'
+    const space = workspace()
+    const app = space.open()
+    await app.files.importFile(upload(JSON.stringify(envelope(authored))))
+    const p = app.planner
+    const cancelled = p.reviewBatchSkills({ scope: 'all' }, { kind: 'basic' })
+    p.cancelBatchSkills()
+    expect(p.confirmBatchSkills(cancelled)).toBe(false)
+    expect(space.store.writes).toBe(1)
+    const reviewed = p.reviewBatchSkills({ scope: 'all' }, { kind: 'basic' })
+    expect(reviewed.overwriteCount).toBe(1)
+    expect(reviewed.changes).toStrictEqual([action(1), action(2)])
+    expect(p.confirmBatchSkills(reviewed)).toBe(true)
+    expect(space.store.writes).toBe(2)
+    authored.plan.events[0]!.skill = { kind: 'basic' }
+    authored.plan.events.push({ anchor: action(2), skill: { kind: 'basic' }, operations: [] })
+    expect(p.result.value.skillPointsSummary?.endingBalance).toBe(5)
+    await verifyRoundTrip(space, app, authored)
+  })
+
+  it.each(['robin-summeretto-fever', 'robin-ultimate', 'firefly-ultimate'])(
+    'saves and reopens %s alongside authored SP operations and skills',
+    async (id) => {
+      const preset = presets.find((item) => item.id === id)!
+      const authored = resourcePlan()
+      authored.metadata.characterIds = { a: preset.characterId! }
+      authored.plan.actors[1]!.panelSpeed = 160
+      authored.plan.actors.push({
+        id: 'enemy',
+        name: 'Enemy',
+        kind: 'actor',
+        camp: 'enemy',
+        category: 'enemy',
+        position: 0,
+        baseSpeed: 80,
+        panelSpeed: 80,
+      })
+      authored.plan.skillPoints = { enabled: true, initial: 3, onInsufficient: 'mark' }
+      authored.plan.events = [
+        {
+          anchor: start,
+          operations: [{ id: 'opening', type: 'restoreSkillPoints', source: 'Opening', amount: 1 }],
+        },
+        {
+          anchor: action(1, 'b'),
+          skill: { kind: 'skill' },
+          operations: [
+            {
+              id: 'refund',
+              type: 'conditionalRestore',
+              phase: 'postAction',
+              amount: 1,
+              source: 'Manual',
+              sourceParticipantId: 'b',
+              chance: 0.5,
+              cooldownTurns: 0,
+              outcome: 'proc',
+            },
+          ],
+        },
+      ]
+      const space = workspace()
+      const app = space.open()
+      await app.files.importFile(upload(JSON.stringify(envelope(authored))))
+      const p = app.planner
+      p.edit()
+      expect(p.submitPreset({ id, values: {}, translate: (key) => key })).toBe(true)
+      expect(p.plan.value.events[0]?.operations[0]).toStrictEqual(
+        authored.plan.events[0]!.operations[0],
+      )
+      expect(p.plan.value.events[1]).toStrictEqual(authored.plan.events[1])
+      expect(p.plan.value.events[0]!.operations.length).toBeGreaterThan(1)
+      expect(p.result.value.diagnostics.filter((issue) => issue.severity === 'error')).toEqual([])
+      const timeline = (result: ReturnType<typeof simulatePlan>) =>
+        result.records.map(({ anchor, deltaAV, elapsedAV }) => ({ anchor, deltaAV, elapsedAV }))
+      expect(timeline(p.result.value)).toStrictEqual(
+        timeline(
+          simulatePlan({
+            ...p.plan.value,
+            skillPoints: { enabled: false },
+          }),
+        ),
+      )
+      await verifyRoundTrip(space, app, p.document.value)
+    },
+  )
 })
 
 describe('Action Planner file and session integration', () => {

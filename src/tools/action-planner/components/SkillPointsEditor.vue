@@ -41,7 +41,7 @@ function save() {
     return
   }
   invalid.value = false
-  emit('save', skill as ActionSkill | undefined)
+  emit('save', skill)
 }
 </script>
 <template>

@@ -471,26 +471,53 @@ export function previewOperationState(
   phase: 'preAction' | 'postAction',
   beforeId?: string,
   skill?: ActionSkill,
+  resourceDraft = false,
 ): SimulationState | undefined {
   try {
     let state = cloneState(input)
-    if (anchor.kind === 'action' && phase === 'postAction') {
-      state = applyOperations(state, phaseOperations(operations, 'preAction'), anchor, {
-        skill,
-      }).state
+    const group = anchor.kind === 'action' ? phaseOperations(operations, phase) : operations
+    const index = group.findIndex((op) => op.id === beforeId)
+    const preceding = index < 0 ? group : group.slice(0, index)
+    if (anchor.kind === 'action') {
+      const resource = (op: EffectOperation) => op.type === 'restoreSkillPoints'
+      if (phase === 'preAction' && resourceDraft)
+        return applyOperations(state, preceding.filter(resource), anchor).state
+
+      const preAction = phaseOperations(operations, 'preAction').filter((op) => op.id !== beforeId)
+      state = applyOperations(state, preAction.filter(resource), anchor).state
       const actor = state.participants.find(
+        (participant) => participant.id === anchor.participantId,
+      )
+      if (!actor || !isNaturalParticipant(actor)) return undefined
+      const payment =
+        state.skillPoints && usesSkillPoints(actor)
+          ? paySkillPoints(state.skillPoints, skill)
+          : undefined
+      if (payment?.status === 'insufficient' && state.skillPoints?.onInsufficient !== 'mark')
+        return undefined
+      if (phase === 'preAction')
+        return applyOperations(
+          state,
+          preceding.filter((op) => !resource(op)),
+          anchor,
+          { skill },
+        ).state
+
+      state = applyOperations(
+        state,
+        preAction.filter((op) => !resource(op)),
+        anchor,
+        { skill },
+      ).state
+      const afterPreAction = state.participants.find(
         (participant): participant is NaturalParticipantState =>
           participant.id === anchor.participantId && isNaturalParticipant(participant),
       )
-      if (!actor) return undefined
-      finishNaturalTurn(state, actor)
+      if (!afterPreAction) return undefined
+      finishNaturalTurn(state, afterPreAction)
+      if (payment && state.skillPoints) restoreSkillPoints(state.skillPoints, payment)
     }
-    const group = anchor.kind === 'action' ? phaseOperations(operations, phase) : [...operations]
-    const index =
-      beforeId === undefined ? group.length : group.findIndex((op) => op.id === beforeId)
-    return applyOperations(state, group.slice(0, index < 0 ? group.length : index), anchor, {
-      skill,
-    }).state
+    return applyOperations(state, preceding, anchor, { skill }).state
   } catch (error) {
     if (error instanceof SimulationError) return undefined
     throw error

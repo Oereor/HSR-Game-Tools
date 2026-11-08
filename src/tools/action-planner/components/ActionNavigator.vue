@@ -20,7 +20,12 @@ import {
   type CountdownSources,
 } from '../model/speed-modifier-tags'
 import { anchorKey } from '../engine/queue'
-import type { EventAnchor, NodeRecord, SimulationPlan } from '../engine/types'
+import type {
+  EventAnchor,
+  NodeRecord,
+  ParticipantNodeRecord,
+  SimulationPlan,
+} from '../engine/types'
 import { actionDirections, nodeCamp } from '../model/naming'
 import { operationsAt } from '../model/editor'
 import { formatAV, formatNumber } from '../model/presentation'
@@ -29,6 +34,7 @@ import type { ToolLocale } from '../../../locales/types'
 const props = defineProps<{
   countdownSources: CountdownSources
   records: NodeRecord[]
+  blockedAction?: ParticipantNodeRecord
   selected: EventAnchor
   plan: SimulationPlan
   currentQueueView?: CurrentQueueView
@@ -109,6 +115,14 @@ const cardLabel = (card: {
         :aria-label="t('ui.navigationMode')"
       />
     </div>
+    <Button
+      v-if="blockedAction"
+      text
+      severity="danger"
+      size="small"
+      :label="t('planner.sp.blocked', { name: label(blockedAction.id) })"
+      @click="emit('select', blockedAction.anchor)"
+    />
     <div v-if="view === 'queue'" class="queue-controls">
       <Button
         text

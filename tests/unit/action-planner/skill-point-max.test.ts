@@ -184,7 +184,7 @@ describe('generic presence-based Skill Point cap modifiers', () => {
     state.skillPoints!.stored = 4
     const next = applyOperations(state, [presence('depart')], { kind: 'start' })
     expect(next.state.skillPoints).toMatchObject({ max: 5, current: null, stored: 4 })
-    expect(next.maxChanges?.[0]).toMatchObject({ before: null, after: null, loss: 0 })
+    expect(next.maxChanges?.[0]).toMatchObject({ before: null, after: null, loss: null })
   })
   it('rejects negative effective caps at validation and after source departure', () => {
     expect(simulatePlan(document(0, [{ amount: -6 }]).plan).stopReason).toBe('error')
