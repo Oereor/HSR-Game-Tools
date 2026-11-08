@@ -15,6 +15,7 @@ import {
 } from '../engine/targeting'
 import { validateOperations } from '../engine/validation'
 import type {
+  ActionSkill,
   EffectOperation,
   EffectPhase,
   EventAnchor,
@@ -95,8 +96,11 @@ export function contextAt(
     let state = createInitialState(plan)
     if (anchor.kind === 'start') return state
     state = applyOperations(state, operationsAt(plan, { kind: 'start' }), { kind: 'start' }).state
-    for (const done of result.records)
-      state = stepSimulation(state, operationsAt(plan, done.anchor)).state
+    const events = new Map(plan.events.map((event) => [anchorKey(event.anchor), event]))
+    for (const done of result.records) {
+      const event = events.get(anchorKey(done.anchor))
+      state = stepSimulation(state, event?.operations ?? [], event?.skill).state
+    }
     const next = nextSimulationEvent(state)
     return next && anchorKey(next.anchor) === anchorKey(anchor)
       ? stepSimulation(state, []).record.beforeEffects
@@ -111,9 +115,10 @@ export function previewDraft(
   operations: EffectOperation[],
   anchor: EventAnchor,
   draft: OperationDraft,
+  skill?: ActionSkill,
 ): SimulationState | undefined {
   return context
-    ? previewOperationState(context, operations, anchor, draft.phase, draft.id)
+    ? previewOperationState(context, operations, anchor, draft.phase, draft.id, skill)
     : undefined
 }
 /** A provisional value is for naming only; it is never submitted without buildOperation. */

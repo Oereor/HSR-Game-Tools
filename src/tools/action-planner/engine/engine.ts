@@ -470,11 +470,14 @@ export function previewOperationState(
   anchor: EventAnchor,
   phase: 'preAction' | 'postAction',
   beforeId?: string,
+  skill?: ActionSkill,
 ): SimulationState | undefined {
   try {
     let state = cloneState(input)
     if (anchor.kind === 'action' && phase === 'postAction') {
-      state = applyOperations(state, phaseOperations(operations, 'preAction'), anchor).state
+      state = applyOperations(state, phaseOperations(operations, 'preAction'), anchor, {
+        skill,
+      }).state
       const actor = state.participants.find(
         (participant): participant is NaturalParticipantState =>
           participant.id === anchor.participantId && isNaturalParticipant(participant),
@@ -485,7 +488,9 @@ export function previewOperationState(
     const group = anchor.kind === 'action' ? phaseOperations(operations, phase) : [...operations]
     const index =
       beforeId === undefined ? group.length : group.findIndex((op) => op.id === beforeId)
-    return applyOperations(state, group.slice(0, index < 0 ? group.length : index), anchor).state
+    return applyOperations(state, group.slice(0, index < 0 ? group.length : index), anchor, {
+      skill,
+    }).state
   } catch (error) {
     if (error instanceof SimulationError) return undefined
     throw error
