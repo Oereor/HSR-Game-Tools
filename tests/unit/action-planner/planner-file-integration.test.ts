@@ -9,6 +9,7 @@ import {
 } from '../../../src/tools/action-planner/model/document-file'
 import type { PlannerDocument } from '../../../src/tools/action-planner/model/editor'
 import { STORAGE_KEY } from '../../../src/tools/action-planner/model/persistence'
+import historical from '../../fixtures/action-planner/historical-documents.json'
 import { syntheticDocument } from '../../fixtures/action-planner/phase-2a-document'
 
 function skillPointDocument(enabled = false): PlannerDocument {
@@ -191,6 +192,23 @@ describe('Action Planner file and session integration', () => {
     expect(saveStatus.value).toBe('saved')
     files.exportFile()
     expect(JSON.parse(download.mock.calls[0]![0])).toStrictEqual(envelope(expected))
+    expect(space.store.raw).toBe(raw)
+    expect(space.store.writes).toBe(0)
+  })
+
+  it('reloads a historical v8 fixture and keeps its bytes and migration notice', () => {
+    const { file } = historical.find(({ file }) => file.version === 8)!
+    const raw = JSON.stringify(file)
+    const space = workspace(JSON.stringify(envelope(syntheticDocument())))
+    const { files, planner, download, saveStatus } = space.open()
+    space.externalChange(raw)
+    files.reload()
+    files.confirm()
+    expect(planner.document.value).toStrictEqual(file.document)
+    expect(planner.migrationNotice.value).toEqual({ fromVersion: 8, ahaAdded: false })
+    expect(saveStatus.value).toBe('saved')
+    files.exportFile()
+    expect(JSON.parse(download.mock.calls[0]![0])).toStrictEqual({ ...file, version: 9 })
     expect(space.store.raw).toBe(raw)
     expect(space.store.writes).toBe(0)
   })

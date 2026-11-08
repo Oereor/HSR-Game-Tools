@@ -169,6 +169,8 @@ document: { name, plan, metadata }
 
 Version 1 迁移时补 `cycleMode: none`。Version 1/2 均补冲突安全的 Aha ID，并按当前目录识别贡献者。Version 3 起保留已保存的 Aha 身份。Version 4–8 保留各版本允许的战技点字段，默认值在重放时生效。迁移保留原单位、操作 ID、锚点和孤立引用。相同目录下重读规范化导出得到相同文档，升级提示只出现在读取旧版时。超出支持范围的版本返回版本错误。
 
+[历史迁移测试数据](../../tests/fixtures/action-planner/historical-documents.json)记录了各输入的来源提交与历史引擎重放结果。Version 1、2、3、7、9 使用历史写入器导出的测试方案。Version 4、5、6、8 使用历史读取器验证的合成方案。重放对比覆盖行动顺序与 AV、最终队列、诊断和适用的战技点记录。Version 1/2 的目录识别以导入时的快照为准，Version 3 起按已保存的贡献者重放。
+
 旧事件省略 `baseSpeed` 时以 `speed` 为基数。参与者离场状态和运行时速度修正由重放恢复。新增 Aha 可能改变排序和预算内可达节点，界面会提示升级。
 导入中的未知 Character ID 保留，非法图片路径移除并报告；图片仅允许资源目录已登记的相对路径。初始敌人以 baseSpeed 统一两项 SPD，保留其他合法字段。
 

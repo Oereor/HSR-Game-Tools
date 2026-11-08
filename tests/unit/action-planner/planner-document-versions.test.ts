@@ -81,33 +81,36 @@ function documentFor(version: number) {
 }
 
 describe('versioned planner document contract', () => {
-  it.each([1, 2, 3, 4, 5, 6, 7, 8])('migrates v%i to a stable v9 document', (version) => {
-    const expected = documentFor(version)
-    if (version >= 2) expected.plan.cycleMode = 'aa'
-    if (version >= 3)
-      expected.plan.aha = { id: 'saved-aha', baseSpeed: 97, contributorIds: ['editor-1'] }
-    const { aha, cycleMode, ...plan } = expected.plan
-    const input = envelope(version, {
-      ...expected,
-      plan: {
-        ...plan,
-        ...(version >= 2 ? { cycleMode } : {}),
-        ...(version >= 3 ? { aha } : {}),
-      },
-    })
-    const before = structuredClone(input)
-    const parsed = validatePlannerFile(input)
-    expect(parsed.migration).toEqual({ fromVersion: version, ahaAdded: false })
-    expect(parsed.document).toStrictEqual(expected)
-    expect(input).toStrictEqual(before)
-    expect(parsePlannerDocument(JSON.stringify(input))).toEqual(parsed)
-    const source = serializePlannerDocument(parsed.document)
-    expect(JSON.parse(source)).toStrictEqual(envelope(9, expected))
-    const reopened = parsePlannerDocument(source)
-    expect(reopened.migration).toBeUndefined()
-    expect(serializePlannerDocument(reopened.document)).toBe(source)
-    expect(simulatePlan(reopened.document.plan)).toEqual(simulatePlan(expected.plan))
-  })
+  it.each([1, 2, 3, 4, 5, 6, 7, 8])(
+    'migrates a synthetic v%i reader fixture to stable v9',
+    (version) => {
+      const expected = documentFor(version)
+      if (version >= 2) expected.plan.cycleMode = 'aa'
+      if (version >= 3)
+        expected.plan.aha = { id: 'saved-aha', baseSpeed: 97, contributorIds: ['editor-1'] }
+      const { aha, cycleMode, ...plan } = expected.plan
+      const input = envelope(version, {
+        ...expected,
+        plan: {
+          ...plan,
+          ...(version >= 2 ? { cycleMode } : {}),
+          ...(version >= 3 ? { aha } : {}),
+        },
+      })
+      const before = structuredClone(input)
+      const parsed = validatePlannerFile(input)
+      expect(parsed.migration).toEqual({ fromVersion: version, ahaAdded: false })
+      expect(parsed.document).toStrictEqual(expected)
+      expect(input).toStrictEqual(before)
+      expect(parsePlannerDocument(JSON.stringify(input))).toEqual(parsed)
+      const source = serializePlannerDocument(parsed.document)
+      expect(JSON.parse(source)).toStrictEqual(envelope(9, expected))
+      const reopened = parsePlannerDocument(source)
+      expect(reopened.migration).toBeUndefined()
+      expect(serializePlannerDocument(reopened.document)).toBe(source)
+      expect(simulatePlan(reopened.document.plan)).toEqual(simulatePlan(expected.plan))
+    },
+  )
 
   it.each(gates)(
     'accepts v%i %s and rejects the same field in the prior version',
