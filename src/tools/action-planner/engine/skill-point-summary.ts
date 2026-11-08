@@ -1,49 +1,69 @@
-import type { SimulationResult, SkillPointsState, SkillPointsSummary } from './types'
+import { addSkillPointTotal } from './skill-point-arithmetic'
+import type {
+  ParticipantNodeRecord,
+  SimulationResult,
+  SkillPointsState,
+  SkillPointsSummary,
+} from './types'
+
+type SkillPointTotals = Pick<SkillPointsSummary, 'totalCost' | 'totalRecovery' | 'capLoss'>
+type SkillPointContributions = Pick<
+  ParticipantNodeRecord,
+  'skillPoints' | 'refill' | 'skillPointEvents' | 'conditionalRestores' | 'maxChanges'
+>
+
+export const emptySkillPointTotals: Readonly<SkillPointTotals> = {
+  totalCost: 0,
+  totalRecovery: 0,
+  capLoss: 0,
+}
+
+/** A candidate's exact totals are checked before any of its records can commit. */
+export function accumulateSkillPointTotals(
+  totals: SkillPointTotals,
+  change: SkillPointContributions,
+): SkillPointTotals {
+  let { totalCost, totalRecovery, capLoss } = totals
+  const skill = change.skillPoints
+  if (skill) {
+    totalCost = addSkillPointTotal(totalCost, skill.paid === null ? null : (skill.paid ?? 0))
+    totalRecovery = addSkillPointTotal(
+      totalRecovery,
+      skill.recovery === null ? null : (skill.recovery ?? 0),
+    )
+  }
+  if (change.refill) totalRecovery = addSkillPointTotal(totalRecovery, change.refill.amount)
+  for (const event of [...(change.skillPointEvents ?? []), ...(change.conditionalRestores ?? [])])
+    if (event.committed !== false) totalRecovery = addSkillPointTotal(totalRecovery, event.restored)
+  for (const capChange of change.maxChanges ?? [])
+    capLoss = addSkillPointTotal(capLoss, capChange.loss)
+  return { totalCost, totalRecovery, capLoss }
+}
 
 /** Counts committed execution only. Unknown actions make complete totals unknowable. */
 export function summarizeSkillPoints(
   result: SimulationResult,
   state: SkillPointsState,
+  totals = result.records.reduce(
+    accumulateSkillPointTotals,
+    accumulateSkillPointTotals(emptySkillPointTotals, {
+      skillPointEvents: result.startSkillPointEvents,
+      maxChanges: result.startMaxChanges,
+    }),
+  ),
 ): SkillPointsSummary {
-  let totalCost: number | null = 0
-  let totalRecovery: number | null = 0
   const first = [...result.records, ...(result.blockedAction ? [result.blockedAction] : [])].find(
     (record) => record.kind !== 'cycleBoundary' && record.skillPoints?.status === 'insufficient',
   )
-  const events = [...(result.startSkillPointEvents ?? [])]
-  for (const record of result.records) {
-    events.push(...(record.skillPointEvents ?? []), ...(record.conditionalRestores ?? []))
-    if (record.refill && totalRecovery !== null) totalRecovery += record.refill.amount
-    if (record.kind === 'cycleBoundary' || !record.skillPoints) continue
-    const skill = record.skillPoints
-    totalCost = totalCost === null || skill.paid === null ? null : totalCost + (skill.paid ?? 0)
-    totalRecovery =
-      totalRecovery === null || skill.recovery === null
-        ? null
-        : totalRecovery + (skill.recovery ?? 0)
-  }
-  for (const event of events) {
-    if (event.committed === false) continue
-    totalRecovery =
-      totalRecovery === null || event.restored === null ? null : totalRecovery + event.restored
-  }
   return {
     ...(first && first.anchor.kind !== 'cycleBoundary'
       ? { firstInsufficient: { ...first.anchor } }
       : {}),
-    totalCost,
-    totalRecovery,
+    ...totals,
     endingBalance: state.current,
     storedBalance: state.stored,
     baseMax: state.baseMax,
     effectiveMax: state.max,
-    capLoss: [
-      ...(result.startMaxChanges ?? []),
-      ...result.records.flatMap((r) => r.maxChanges ?? []),
-    ].reduce<number | null>(
-      (total, change) => (total === null || change.loss === null ? null : total + change.loss),
-      0,
-    ),
     status: result.blockedAction
       ? 'insufficient'
       : state.current === null

@@ -1,3 +1,4 @@
+import { addSkillPointTotal } from '../engine/skill-point-arithmetic'
 import type {
   CycleMode,
   ParticipantAnchor,
@@ -54,16 +55,21 @@ export function buildSkillPointLedger(
   let row = createRow(mode === 'none' ? null : 0, initial)
   const addChanges = (changes: readonly SkillPointMaxChange[]) => {
     row.capChanges.push(...changes.map((change) => ({ ...change })))
+    if (row.unknown) return
     row.capLoss = changes.reduce<number | null>(
-      (total, change) => (total === null || change.loss === null ? null : total + change.loss),
+      (total, change) => addSkillPointTotal(total, change.loss),
       row.capLoss,
     )
   }
   const addRecovery = (receipts: NonNullable<SimulationResult['startSkillPointEvents']>) => {
+    if (row.unknown) return
     for (const receipt of receipts) {
       if (receipt.committed === false) continue
-      if (receipt.restored === null) row.unknown = true
-      else row.externalRecovery! += receipt.restored
+      if (receipt.restored === null) {
+        row.unknown = true
+        return
+      }
+      row.externalRecovery = addSkillPointTotal(row.externalRecovery, receipt.restored)
     }
   }
   const finish = (balance: number | null, stored: number | null, max: number) => {
@@ -91,15 +97,15 @@ export function buildSkillPointLedger(
       const skill = record.skillPoints
       if (skill.status === 'unknown' || skill.paid === null || skill.recovery === null)
         row.unknown = true
-      else {
-        row.totalCost! += skill.paid ?? 0
-        row.skillRecovery! += skill.recovery ?? 0
+      else if (!row.unknown) {
+        row.totalCost = addSkillPointTotal(row.totalCost, skill.paid ?? 0)
+        row.skillRecovery = addSkillPointTotal(row.skillRecovery, skill.recovery ?? 0)
       }
       if ((skill.status === 'insufficient' || (skill.shortfall ?? 0) > 0) && !row.firstInsufficient)
         row.firstInsufficient = { ...record.anchor }
     }
     addRecovery([...(record.skillPointEvents ?? []), ...(record.conditionalRestores ?? [])])
-    row.refill! += record.refill?.amount ?? 0
+    if (!row.unknown) row.refill = addSkillPointTotal(row.refill, record.refill?.amount ?? 0)
     addChanges(record.maxChanges ?? [])
   }
   if (result.blockedAction) {

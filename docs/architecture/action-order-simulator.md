@@ -120,7 +120,7 @@ Version 3 起，方案保存的贡献者 ID 是身份事实。导入保留这些
 
 知更鸟·晴歌 Fever 预设使用角色 ID `1512` 和 `selfPresence: present`，依次生成自身 depart、我方 memosprite Actor「晴空乐手」、我方 custom Actor「气氛值减半节点」。通用 `self-stat.panelSpeed` 表达式从方案初始角色配置读取战斗外面板速度，由编译器在身份及插入预览检查后注入；乐手基础和面板速度均为该值 × 1.8，节点两项速度均为 140。两者初始 AG 为 10000、行动次数无限。计算结果仅在应用时物化为普通操作数值。表达式、预设身份和速度联动仅用于预设编译。节点自然行动不自动计算气氛值或结束 Fever。
 
-[presets](../../src/tools/action-planner/presets/) 中的人工 JSON 声明七种原子操作、共享参数、目标快照和 onTrigger 事件。通用解释器解析参数与身份、按声明顺序生成普通 EffectOperation / PlanEvent，并生成候选 PlannerDocument；useActionPlanner 通过统一文件校验和 simulatePlan 重放后一次提交。生成操作出现目标失败警告或候选存在错误时不发布文档、结果或部分存档；预算导致的不可达 Anchor 警告允许保留。ID 由现有分配器预留，失败后不复用已经分配的身份。
+[presets](../../src/tools/action-planner/presets/) 中的人工 JSON 支持九种原子操作，包括两种无目标战技点操作，还可声明共享参数、目标快照和 onTrigger 事件。通用解释器解析参数与身份、按声明顺序生成普通 EffectOperation / PlanEvent，并生成候选 PlannerDocument；useActionPlanner 通过统一文件校验和 simulatePlan 重放后一次提交。生成操作出现目标失败警告或候选存在错误时不发布文档、结果或部分存档；预算导致的不可达 Anchor 警告允许保留。ID 由现有分配器预留，失败后不复用已经分配的身份。
 
 卡厄斯兰那预设在所选阶段末尾追加八个 spawnParticipant 与一个显式 depart，另以最后事件的稳定 trigger Anchor 保存 returnToField。离场及回场目标是开始时实际在场的全部我方 Actor ID；没有合法目标时拒绝创建。既有操作与自定义名称保留。
 参数为用户输入的基础速度 B 和继承百分比 r，八个事件设置 `baseSpeed = B`、`speed = B × r / 100`、`initialAG = i × 10000 / 7`（i = 0…7），不舍入。默认基础速度读取白厄快照，继承比例默认 60%；不识别星魂或击杀，不限制比例到 84%。
@@ -190,6 +190,8 @@ Version 1 迁移时补 `cycleMode: none`。Version 1/2 均补冲突安全的 Aha
 
 [usePlannerFiles](../../src/tools/action-planner/composables/usePlannerFiles.ts)统一处理文件导入、模板替换、导出与存档恢复。导出与存档写入均序列化当前提交的完整文档，存档原文备份则保留捕获的字节。战技点配置和仅含战技标注的事件也属于替换前需要确认的方案内容。
 
+文件导入、启动存档与存档重载均要求原文和规范化后的格式化导出不超过 2 MiB。若存档无法按此契约导出，则保留原字节并阻止自动覆盖。
+
 **正式配队模板必须由用户审阅，不得根据截图或角色技能描述自动生成。**当前[正式目录](../../src/tools/action-planner/templates/catalog.ts)为空；测试方案不进入生产目录。
 
 1. 在工具中配置完整方案，导出 Version 9 JSON 并人工审阅。
@@ -213,6 +215,8 @@ Version 1 迁移时补 `cycleMode: none`。Version 1/2 均补冲突安全的 Aha
 Stage 2A 的 stepSimulation 接收可选 ActionSkill；simulatePlan 从稳定 Anchor 对应的 PlanEvent 读取并传入，同一技能上下文用于单步校验和各操作阶段。自然行动依次执行 preAction 显式恢复、技能检查／支付、其余 preAction、原回合推进及 AG 重置、技能恢复、postAction（含条件返还）、符合资格的存储补充、原效果到期和退出。条件返还因此读取来源已经递增的自身回合数。usesSkillPoints 只允许我方非 summon / memosprite Actor 自动支付／恢复／补充；召唤物／忆灵仍可执行手动恢复／返还。未标注的参与角色令余额未知，时间轴继续。
 
 stop 支付不足时整次行动候选不提交，回合、操作、冷却和补充均不推进；preAction 候选恢复保留记录并标 committed=false。blockedAction 保留失败位置和执行前状态，不加入已完成 records / snapshots / 预算计数；其 Anchor 记为 reached，只有后续真正未到达事件报 unreached-anchor。mark 按负余额反事实执行，首个不足及下游未验证标记不因恢复而消失。摘要仅统计已提交记录和最后提交状态，不计 stop 的候选回点。
+
+战技点余额、恢复记录、冷却回合及累计成本、恢复量和损失均使用精确的安全整数。若候选节点（含开始操作）的结果超出范围，推演报错并停止，保留上一次已提交的状态、记录及累计值。带符号的上限修正先精确求和，再检查有效上限能否用安全整数表示。未知值仍以 `null` 表示。
 
 depart / returnToField 在各自候选事务内立即重算有效上限；actionLimit 退出在原自然回合结束处重算。上限变化记录附加到开始、行动、Scheduled Event 或 Cycle Boundary 的对应结果；未知损失仍为 null，存储不变。回合结束补充使用 postAction 后的新上限，先于退出。发生非法上限等运行时异常时不提交当前行动候选。调度数学、同 AV 排序、轮次边界、Trace 和原生命周期顺序保持上游实现。
 

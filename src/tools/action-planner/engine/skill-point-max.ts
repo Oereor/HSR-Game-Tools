@@ -1,19 +1,6 @@
 import { fail } from './queue'
-import type { SimulationState, SkillPointMaxChange, SkillPointMaxModifier } from './types'
-
-export function effectiveSkillPointMax(
-  base: number,
-  modifiers: readonly SkillPointMaxModifier[],
-  present: (id: string) => boolean,
-): number {
-  return modifiers.reduce(
-    (max, modifier) =>
-      !modifier.sourceParticipantId || present(modifier.sourceParticipantId)
-        ? max + modifier.amount
-        : max,
-    base,
-  )
-}
+import { addSkillPoints, effectiveSkillPointMax } from './skill-point-arithmetic'
+import type { SimulationState, SkillPointMaxChange } from './types'
 
 /** Recomputed inside the same candidate transaction as presence/removal. Storage is untouched. */
 export function recomputeSkillPointMax(
@@ -29,13 +16,15 @@ export function recomputeSkillPointMax(
       (p) => p.id === id && p.kind === 'actor' && p.camp === 'ally' && !p.departed,
     ),
   )
-  if (!Number.isSafeInteger(afterMax) || afterMax < 0) fail('invalid-sp-max')
+  if (afterMax === undefined) fail('invalid-sp-max')
   if (reason === 'initial' && sp.current !== null && sp.current > afterMax) fail('invalid-sp-max')
   const beforeMax = sp.max
   if (beforeMax === afterMax) return
   const before = sp.current
+  const after = afterMax < beforeMax && before !== null && before > afterMax ? afterMax : before
+  const loss = before === null || after === null ? null : addSkillPoints(before, -after)
   sp.max = afterMax
-  if (afterMax < beforeMax && sp.current !== null && sp.current > afterMax) sp.current = afterMax
+  sp.current = after
   return {
     reason,
     operationId,
@@ -43,7 +32,7 @@ export function recomputeSkillPointMax(
     beforeMax,
     afterMax,
     before,
-    after: sp.current,
-    loss: before === null || sp.current === null ? null : before - sp.current,
+    after,
+    loss,
   }
 }

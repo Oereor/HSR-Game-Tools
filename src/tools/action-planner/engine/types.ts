@@ -226,6 +226,7 @@ export interface SimulationState {
 }
 export type DiagnosticCode =
   | 'sp-cap-loss'
+  | 'sp-arithmetic'
   | 'invalid-sp-max'
   | 'sp-marked'
   | 'sp-insufficient'

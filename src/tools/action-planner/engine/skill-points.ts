@@ -1,3 +1,9 @@
+import {
+  addSkillPoints,
+  addSkillPointTotal,
+  cappedSkillPointIncrease,
+  effectiveSkillPointMax,
+} from './skill-point-arithmetic'
 import type {
   ActorDefinition,
   ActionSkill,
@@ -60,13 +66,8 @@ export function validSkillPoints(v: unknown): v is SkillPointsConfig {
   )
     return false
   // All initial actors are present before start operations. Source membership is checked by validatePlan.
-  const effectiveMax = (v.max ?? 5) as number
-  const initialMax = modifiers.reduce((max, modifier) => max + modifier.amount, effectiveMax)
-  return (
-    Number.isSafeInteger(initialMax) &&
-    initialMax >= 0 &&
-    ((v.initial ?? 3) as number) <= initialMax
-  )
+  const initialMax = effectiveSkillPointMax((v.max ?? 5) as number, modifiers)
+  return initialMax !== undefined && ((v.initial ?? 3) as number) <= initialMax
 }
 export function validActionSkill(v: unknown): v is ActionSkill {
   return (
@@ -87,7 +88,8 @@ export function paySkillPoints(state: SkillPointsState, skill?: ActionSkill): Sk
   }
   const cost = skill.kind === 'custom' ? skill.cost : skill.kind === 'skill' ? 1 : 0
   const recovery = skill.kind === 'custom' ? skill.recovery : skill.kind === 'basic' ? 1 : 0
-  const shortfall = Math.max(0, cost - before)
+  const afterPayment = addSkillPoints(before, -cost)
+  const shortfall = Math.max(0, -afterPayment)
   if (before < cost && state.onInsufficient !== 'mark')
     return {
       status: 'insufficient',
@@ -102,7 +104,7 @@ export function paySkillPoints(state: SkillPointsState, skill?: ActionSkill): Sk
     }
   const status = state.unverified ? 'unverified' : before < cost ? 'insufficient' : 'known'
   if (before < cost) state.unverified = true
-  state.current = before - cost
+  state.current = afterPayment
   return {
     status,
     before,
@@ -118,11 +120,13 @@ export function paySkillPoints(state: SkillPointsState, skill?: ActionSkill): Sk
 export function restoreSkillPoints(state: SkillPointsState, record: SkillPointsRecord): void {
   if (record.status === 'unknown' || state.current === null) return
   const requested = record.recovery!
-  const actual = Math.min(requested, state.max - state.current)
-  state.current += actual
-  record.after = state.current
+  const actual = cappedSkillPointIncrease(state.current, state.max, requested)
+  const after = addSkillPoints(state.current, actual)
+  const overflow = addSkillPoints(requested, -actual)
+  state.current = after
+  record.after = after
   record.recovery = actual
-  record.overflow = requested - actual
+  record.overflow = overflow
 }
 
 /** Only explicit restoration operations opt into storage; skill restoration still discards overflow. */
@@ -143,10 +147,11 @@ export function storeSkillPointOverflow(
     enabled && state.storedMax > 0
       ? state.stored === null
         ? null
-        : Math.min(overflow, state.storedMax - state.stored)
+        : cappedSkillPointIncrease(state.stored, state.storedMax, overflow)
       : 0
-  if (stored !== null && state.stored !== null) state.stored += stored
-  return { stored, wasted: stored === null ? null : overflow - stored, storedAfter: state.stored }
+  const wasted = stored === null ? null : addSkillPoints(overflow, -stored)
+  state.stored = addSkillPointTotal(state.stored, stored)
+  return { stored, wasted, storedAfter: state.stored }
 }
 export function refillSkillPoints(state: SkillPointsState): SkillPointRefillRecord | undefined {
   if (
@@ -158,10 +163,12 @@ export function refillSkillPoints(state: SkillPointsState): SkillPointRefillReco
     return undefined
   const before = state.current
   const storedBefore = state.stored
-  const amount = Math.min(state.stored, state.max - state.current)
-  state.current += amount
-  state.stored -= amount
-  return { amount, before, after: state.current, storedBefore, storedAfter: state.stored }
+  const amount = cappedSkillPointIncrease(before, state.max, storedBefore)
+  const after = addSkillPoints(before, amount)
+  const storedAfter = addSkillPoints(storedBefore, -amount)
+  state.current = after
+  state.stored = storedAfter
+  return { amount, before, after, storedBefore, storedAfter }
 }
 export function skillPointStorageRecord(
   state: SkillPointsState,
@@ -169,10 +176,7 @@ export function skillPointStorageRecord(
   skillOverflow: number | null = 0,
 ): SkillPointStorageRecord {
   const sum = (field: 'overflow' | 'stored' | 'wasted', initial: number | null) =>
-    events.reduce<number | null>(
-      (total, event) => (total === null || event[field] === null ? null : total + event[field]),
-      initial,
-    )
+    events.reduce<number | null>((total, event) => addSkillPointTotal(total, event[field]), initial)
   return {
     overflow: sum('overflow', skillOverflow),
     stored: sum('stored', 0),

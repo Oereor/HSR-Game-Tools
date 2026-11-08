@@ -81,7 +81,7 @@ Actor 的最小结构是 `{"kind":"actor","name":"单位","camp":"ally","baseSpe
 - `restoreSkillPoints` 需要正安全整数 `amount` 和非空 `source`，可选布尔值 `storeOverflow`。插入位置为战斗开始或我方 Actor 的行动。
 - `conditionalRestore` 同样需要 `amount` 和 `source`，还需要 `sourceParticipantId`、`chance`、`cooldownTurns` 和 `outcome`。来源 ID 必须与当前行动锚点一致，`chance` 取 0 到 1，`cooldownTurns` 为非负安全整数，`outcome` 为 `proc` 或 `no-proc`。按引擎规则插入我方 Actor 的 postAction，每次行动最多一条。
 
-两类声明的 `source` 上限为 256 个 UTF-16 码元。编译保留行动原有的战技标注，并将战技点警告及信息保留在模拟结果中。战技点操作的编辑与保存见[战技点分阶段接入说明](architecture/action-order-simulator.md#战技点基础与正式推演分阶段接入)。
+两类声明的 `source` 上限为 256 个 UTF-16 码元。编译保留行动原有的战技标注，并将战技点警告及信息保留在模拟结果中。战技点操作的编辑与保存见[战技点编辑与推演](architecture/action-order-simulator.md#战技点编辑与推演)。
 
 ## 目标与事件
 

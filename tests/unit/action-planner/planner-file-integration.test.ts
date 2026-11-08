@@ -5,6 +5,7 @@ import { usePlannerSession } from '../../../src/tools/action-planner/composables
 import { simulatePlan } from '../../../src/tools/action-planner/engine/engine'
 import {
   emptyDocument,
+  FILE_LIMITS,
   parsePlannerDocument,
   PLANNER_FORMAT,
   preparePlannerDocument,
@@ -521,6 +522,63 @@ describe('Skill Point document lifecycle', () => {
 })
 
 describe('Action Planner file and session integration', () => {
+  it('protects compact startup bytes when canonical export and import would exceed the limit', async () => {
+    const input = syntheticDocument()
+    input.metadata.customNames = {}
+    const participantId = input.plan.actors[0]!.id
+    const ids = Array.from(
+      { length: FILE_LIMITS.targets },
+      (_, i) => `missing-${String(i).padStart(3, '0')}`,
+    )
+    input.plan.events = Array.from({ length: 500 }, (_, i) => ({
+      anchor: { kind: 'action', participantId, turn: i + 1 },
+      operations: [
+        {
+          id: `advance-${i}`,
+          type: 'advance',
+          phase: 'preAction',
+          percent: 10,
+          target: { kind: 'participants', participantIds: ids },
+        },
+      ],
+    }))
+    const bytes = JSON.stringify(envelope(input))
+    expect(new TextEncoder().encode(bytes).length).toBeLessThan(FILE_LIMITS.bytes)
+    expect(parsePlannerDocument(bytes).document.plan.events).toHaveLength(500)
+    expect(() => serializePlannerDocument(input)).toThrow('limit')
+
+    const space = workspace(bytes)
+    const { planner, persistence, saveStatus, files, download } = space.open()
+    expect(saveStatus.value).toBe('protected')
+    expect(persistence.failure).toBe('limit')
+    expect(planner.document.value).toEqual(emptyDocument())
+    const restore = vi.fn(() => true)
+    expect(persistence.reload(restore)).toBe(false)
+    expect(restore).not.toHaveBeenCalled()
+    expect(persistence.failure).toBe('limit')
+    expect(planner.rename('Local draft')).toBe(true)
+    const before = planner.document.value
+    await files.importFile(upload(bytes))
+    expect(files.error.value).toBe('limit')
+    expect(files.pending.value).toBeUndefined()
+    expect(planner.document.value).toBe(before)
+    expect(space.store.raw).toBe(bytes)
+    expect(space.store.writes).toBe(0)
+    files.backupRaw()
+    expect(download).toHaveBeenCalledWith(bytes, 'action-planner-storage-backup.json')
+    expect(space.store.raw).toBe(bytes)
+
+    const smaller = { ...input, plan: { ...input.plan, events: input.plan.events.slice(0, 100) } }
+    const exportable = serializePlannerDocument(smaller)
+    await files.importFile(upload(exportable))
+    expect(files.pending.value?.kind).toBe('replace')
+    expect(space.store.raw).toBe(bytes)
+    files.confirm()
+    expect(planner.document.value).toStrictEqual(smaller)
+    expect(space.store.raw).toBe(exportable)
+    expect(space.store.writes).toBe(1)
+  })
+
   it('imports v9, exports the committed document, and reopens and autosaves it as v9', async () => {
     const expected = skillPointDocument()
     const space = workspace()

@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyOperations,
   createInitialState,
   simulatePlan,
   stepSimulation,
+  validatePlan,
 } from '../../../src/tools/action-planner/engine/engine'
+import { buildSkillPointLedger } from '../../../src/tools/action-planner/model/skill-point-ledger'
 import {
   anchorKey,
   cloneState,
@@ -86,6 +89,270 @@ const refund = (
   outcome,
   sourceParticipantId,
 })
+
+describe('exact Skill Point arithmetic', () => {
+  const max = Number.MAX_SAFE_INTEGER
+  const custom = (cost: number, recovery = 0): ActionSkill => ({ kind: 'custom', cost, recovery })
+
+  it('rejects the second marked payment before its negative balance can round', () => {
+    const input = plan([custom(max), custom(2)], 0)
+    input.skillPoints!.onInsufficient = 'mark'
+    expect(validatePlan(input)).toEqual([])
+
+    const result = simulatePlan(input)
+    expect(result.stopReason).toBe('error')
+    expect(result.diagnostics).toContainEqual({
+      code: 'sp-arithmetic',
+      severity: 'error',
+      anchor: action(2),
+    })
+    expect(result.records).toHaveLength(1)
+    expect(result.snapshots).toHaveLength(2)
+    expect(result.blockedAction).toBeUndefined()
+    expect(result.skillPointsSummary).toMatchObject({
+      endingBalance: -max,
+      totalCost: max,
+      totalRecovery: 0,
+      status: 'unverified',
+    })
+  })
+
+  it('keeps exact safe limits in mark and stop mode and restores across a wider cap gap', () => {
+    const input = plan([custom(max), custom(0, max)], 0)
+    input.skillPoints = { enabled: true, max, initial: 0, onInsufficient: 'mark' }
+    const marked = simulatePlan(input)
+    expect(marked.stopReason).toBe('nodes')
+    expect(marked.records[1]).toMatchObject({
+      skillPoints: { before: -max, after: 0, recovery: max, overflow: 0 },
+    })
+    expect(marked.skillPointsSummary).toMatchObject({
+      endingBalance: 0,
+      totalCost: max,
+      totalRecovery: max,
+      status: 'unverified',
+    })
+    input.skillPoints.onInsufficient = 'stop'
+    const stopped = simulatePlan(input)
+    expect(stopped.records).toEqual([])
+    expect(stopped.blockedAction?.skillPoints).toMatchObject({
+      before: 0,
+      after: 0,
+      shortfall: max,
+      paid: 0,
+    })
+    expect(stopped.diagnostics.map((diagnostic) => diagnostic.code)).toContain('sp-insufficient')
+    expect(stopped.skillPointsSummary).toMatchObject({
+      endingBalance: 0,
+      totalCost: 0,
+      totalRecovery: 0,
+    })
+  })
+
+  it.each([
+    {
+      name: 'cost',
+      first: custom(max, max),
+      second: custom(1),
+      firstCost: max,
+      policy: 'stop' as const,
+    },
+    {
+      name: 'recovery',
+      first: custom(0, max),
+      second: custom(1, 1),
+      firstCost: 0,
+      policy: 'mark' as const,
+    },
+  ])(
+    'stops before the running $name total overflows despite a safe balance',
+    ({ first, second, firstCost, policy }) => {
+      const input = plan([first, second], firstCost)
+      input.skillPoints = { enabled: true, max, initial: firstCost, onInsufficient: policy }
+      const result = simulatePlan(input)
+      expect(result.stopReason).toBe('error')
+      expect(result.records).toHaveLength(1)
+      expect(result.snapshots).toHaveLength(2)
+      expect(result.diagnostics).toContainEqual({
+        code: 'sp-arithmetic',
+        severity: 'error',
+        anchor: action(2),
+      })
+      expect(result.skillPointsSummary).toMatchObject({
+        endingBalance: max,
+        totalCost: firstCost,
+        totalRecovery: max,
+      })
+      expect(buildSkillPointLedger(result, 'none')).toMatchObject([
+        { endingBalance: max, totalCost: firstCost, skillRecovery: max },
+      ])
+    },
+  )
+
+  it('computes signed cap modifiers exactly and rolls back a departure with an unsafe cap', () => {
+    const input = plan([neutral], max)
+    input.actors.push(actor('b', 1))
+    input.skillPoints = {
+      enabled: true,
+      max,
+      initial: max,
+      maxModifiers: [{ amount: 2 }, { amount: -2, sourceParticipantId: 'b' }],
+    }
+    expect(validatePlan(input)).toEqual([])
+    const state = createInitialState(input)
+    expect(state.skillPoints?.max).toBe(max)
+    const before = structuredClone(state)
+    const depart: EffectOperation = {
+      id: 'leave-b',
+      type: 'depart',
+      target: { kind: 'participants', participantIds: ['b'] },
+    }
+    expect(() => applyOperations(state, [depart], start)).toThrow('invalid-sp-max')
+    expect(state).toStrictEqual(before)
+  })
+
+  it('rolls back a node when individually safe cap losses exceed the running total', () => {
+    const input = plan([neutral], max)
+    input.actors.push(actor('b', 1))
+    input.skillPoints = {
+      enabled: true,
+      max: 0,
+      initial: max,
+      maxModifiers: [{ amount: max, sourceParticipantId: 'b' }],
+    }
+    const target = { kind: 'participants' as const, participantIds: ['b'] }
+    input.events[0]!.operations = [
+      { id: 'leave', type: 'depart', phase: 'postAction', target },
+      { id: 'return', type: 'returnToField', phase: 'postAction', target },
+      restore('gain-one', 1, 'postAction'),
+      { id: 'leave-again', type: 'depart', phase: 'postAction', target },
+    ]
+    const result = simulatePlan(input)
+    expect(result.records).toEqual([])
+    expect(result.snapshots).toHaveLength(1)
+    expect(result.diagnostics).toContainEqual({
+      code: 'sp-arithmetic',
+      severity: 'error',
+      anchor: action(),
+    })
+    expect(result.skillPointsSummary).toMatchObject({
+      endingBalance: max,
+      effectiveMax: max,
+      capLoss: 0,
+      totalRecovery: 0,
+    })
+  })
+
+  it('keeps storage at the positive limit and rolls back an overflowing combined receipt', () => {
+    const input = plan([neutral], 0)
+    input.skillPoints = { enabled: true, max: 0, initial: 0, storedMax: max }
+    const state = createInitialState(input)
+    const before = structuredClone(state)
+    const operations = [
+      restore('store', max - 1, 'postAction', true),
+      restore('more', 1, 'postAction', true),
+    ]
+    const safe = stepSimulation(state, operations, neutral)
+    expect(safe.state.skillPoints).toMatchObject({ current: 0, stored: max })
+    expect(safe.record.skillPointStorage).toEqual({
+      overflow: max,
+      stored: max,
+      wasted: 0,
+      storedAfter: max,
+    })
+
+    const tooMuch = [operations[0]!, restore('more', 3, 'postAction', true)]
+    expect(() => stepSimulation(state, tooMuch, neutral)).toThrow('sp-arithmetic')
+    expect(state).toStrictEqual(before)
+    input.events[0]!.operations = tooMuch
+    const result = simulatePlan(input)
+    expect(result.records).toEqual([])
+    expect(result.skillPointsSummary).toMatchObject({ endingBalance: 0, storedBalance: 0 })
+  })
+
+  it('uses a safe conditional refund across a wide gap and rejects an unsafe cooldown', () => {
+    const input = plan([{ kind: 'skill' }], 0)
+    input.skillPoints = { enabled: true, max, initial: 0, onInsufficient: 'mark' }
+    input.events[0]!.operations = [{ ...refund(1), amount: max, cooldownTurns: max - 2 }]
+    const safe = simulatePlan(input)
+    expect(safe.records[0]?.conditionalRestores?.[0]).toMatchObject({
+      before: -1,
+      after: max - 1,
+      restored: max,
+      overflow: 0,
+      availableFromTurn: max,
+    })
+    input.events[0]!.operations = [{ ...refund(1), amount: max, cooldownTurns: max - 1 }]
+    const invalid = simulatePlan(input)
+    expect(invalid.records).toEqual([])
+    expect(invalid.diagnostics).toContainEqual({
+      code: 'sp-arithmetic',
+      severity: 'error',
+      anchor: action(),
+      operationId: refund(1).id,
+    })
+    expect(invalid.skillPointsSummary).toMatchObject({
+      endingBalance: 0,
+      totalCost: 0,
+      totalRecovery: 0,
+    })
+  })
+
+  it('refills the full safe storage balance after a maximum-sized payment', () => {
+    const input = plan([custom(max)], max)
+    input.skillPoints = { enabled: true, initial: max, max, storedMax: max }
+    const state = createInitialState(input)
+    const stored = applyOperations(state, [restore('reserve', max, undefined, true)], start).state
+    const step = stepSimulation(stored, [], custom(max))
+    expect(step.record.refill).toEqual({
+      amount: max,
+      before: 0,
+      after: max,
+      storedBefore: max,
+      storedAfter: 0,
+    })
+    expect(step.state.skillPoints).toMatchObject({ current: max, stored: 0 })
+  })
+
+  it('keeps an unknown balance and unknown stored overflow distinct from zero', () => {
+    const input = plan([undefined], 0)
+    input.skillPoints = { enabled: true, initial: 0, max, storedMax: max }
+    input.events[0]!.operations = [restore('unknown', max, 'postAction', true)]
+    const result = simulatePlan(input)
+    expect(result.stopReason).toBe('nodes')
+    expect(result.records[0]?.skillPointEvents?.[0]).toMatchObject({
+      before: null,
+      after: null,
+      restored: null,
+      overflow: null,
+      storedAfter: null,
+    })
+    expect(result.skillPointsSummary).toMatchObject({
+      endingBalance: null,
+      storedBalance: null,
+      totalRecovery: null,
+      status: 'unknown',
+    })
+  })
+
+  it('leaves an unknown ledger row incomplete without summing an unrepresentable subtotal', () => {
+    const input = plan([custom(1), undefined], 0)
+    input.skillPoints = { enabled: true, initial: 0, max }
+    input.events.unshift({ anchor: start, operations: [restore('opening', max)] })
+    input.events[2]!.operations = [restore('before-unknown', 1, 'preAction')]
+    const result = simulatePlan(input)
+    expect(result.stopReason).toBe('nodes')
+    expect(result.records[1]?.skillPointEvents?.[0]?.restored).toBe(1)
+    expect(result.skillPointsSummary).toMatchObject({
+      endingBalance: null,
+      totalCost: null,
+      totalRecovery: null,
+    })
+    expect(buildSkillPointLedger(result, 'none')).toMatchObject([
+      { openingBalance: 0, endingBalance: null, externalRecovery: null, unknown: true },
+    ])
+  })
+})
+
 const participantRecord = (
   record: ReturnType<typeof simulatePlan>['records'][number],
 ): ParticipantNodeRecord => {

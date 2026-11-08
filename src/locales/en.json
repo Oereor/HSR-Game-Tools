@@ -496,6 +496,7 @@
       "sp-overflow": "Restoration exceeds the cap. See the action record for overflow.",
       "sp-marked": "Insufficient Skill Points. Counterfactual execution continues; subsequent results are unverified.",
       "invalid-sp-max": "The effective Skill Point cap is negative or outside the safe integer range. Simulation stopped.",
+      "sp-arithmetic": "A Skill Point calculation exceeded the safe integer range. Simulation stopped before applying it.",
       "sp-cap-loss": "The Skill Point cap decreased. Excess points were clamped; see node details for the loss."
     },
     "path": {

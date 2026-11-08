@@ -1,6 +1,10 @@
 import { isNaturalParticipant } from './types'
 import { recomputeSkillPointMax } from './skill-point-max'
-import { summarizeSkillPoints } from './skill-point-summary'
+import {
+  accumulateSkillPointTotals,
+  emptySkillPointTotals,
+  summarizeSkillPoints,
+} from './skill-point-summary'
 import {
   paySkillPoints,
   restoreSkillPoints,
@@ -396,6 +400,8 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
   if (result.diagnostics.length) return result
   result.participants = participantCatalog(plan)
   let finalState: SimulationState | undefined
+  let skillPointTotals = emptySkillPointTotals
+  let candidateAnchor: EventAnchor = { kind: 'start' }
   const reached = new Set<string>()
   const events = new Map(plan.events.map((event) => [anchorKey(event.anchor), event]))
   try {
@@ -403,7 +409,9 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
     finalState = state
     result.startState = cloneState(state)
     reached.add('start')
-    const initial = applyOperations(state, events.get('start')?.operations ?? [], { kind: 'start' })
+    const initial = applyOperations(state, events.get('start')?.operations ?? [], candidateAnchor)
+    if (initial.state.skillPoints)
+      skillPointTotals = accumulateSkillPointTotals(skillPointTotals, initial)
     state = initial.state
     finalState = state
     if (initial.skillPointEvents) result.startSkillPointEvents = initial.skillPointEvents
@@ -424,6 +432,7 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
         break
       }
       const anchor = next.anchor
+      candidateAnchor = anchor
       const planned = events.get(anchorKey(anchor))
       const step = stepSimulation(state, planned?.operations ?? [], planned?.skill)
       if (step.blocked) {
@@ -434,6 +443,8 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
         break
       }
       const snapshot = queueSnapshot(step.state)
+      if (step.state.skillPoints)
+        skillPointTotals = accumulateSkillPointTotals(skillPointTotals, step.record)
       state = step.state
       finalState = state
       reached.add(anchorKey(anchor))
@@ -445,10 +456,19 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
   } catch (error) {
     if (!(error instanceof SimulationError)) throw error
     result.stopReason = 'error'
-    result.diagnostics.push(error.diagnostic)
+    const { diagnostic } = error
+    result.diagnostics.push(
+      diagnostic.code === 'sp-arithmetic' && !diagnostic.anchor
+        ? { ...diagnostic, anchor: candidateAnchor }
+        : diagnostic,
+    )
   }
   if (finalState?.skillPoints)
-    result.skillPointsSummary = summarizeSkillPoints(result, finalState.skillPoints)
+    result.skillPointsSummary = summarizeSkillPoints(
+      result,
+      finalState.skillPoints,
+      skillPointTotals,
+    )
   for (const event of plan.events)
     if (
       (event.operations.length || event.skill) &&

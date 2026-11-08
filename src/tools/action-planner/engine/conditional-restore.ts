@@ -1,4 +1,4 @@
-import { fail } from './queue'
+import { addSkillPoints, cappedSkillPointIncrease } from './skill-point-arithmetic'
 import type {
   ConditionalRestoreOperation,
   ConditionalRestoreRecord,
@@ -35,22 +35,24 @@ export function conditionalRestore(
     return record
   }
   if (operation.outcome === 'no-proc') return record
-  const availableFromTurn = turn + operation.cooldownTurns + 1
-  if (!Number.isSafeInteger(availableFromTurn)) fail('invalid-input')
-  state.conditionalCooldowns.set(operation.sourceParticipantId, availableFromTurn)
+  const availableFromTurn = addSkillPoints(addSkillPoints(turn, operation.cooldownTurns), 1)
   record.status = 'proc'
   record.availableFromTurn = availableFromTurn
   if (state.current === null) {
+    state.conditionalCooldowns.set(operation.sourceParticipantId, availableFromTurn)
     Object.assign(record, { restored: null, overflow: null, stored: null, wasted: null })
     return record
   }
-  const restored = Math.min(operation.amount, state.max - state.current)
-  state.current += restored
+  const restored = cappedSkillPointIncrease(state.current, state.max, operation.amount)
+  const after = addSkillPoints(state.current, restored)
+  const overflow = addSkillPoints(operation.amount, -restored)
+  state.conditionalCooldowns.set(operation.sourceParticipantId, availableFromTurn)
+  state.current = after
   Object.assign(record, {
-    after: state.current,
+    after,
     restored,
-    overflow: operation.amount - restored,
-    wasted: operation.amount - restored,
+    overflow,
+    wasted: overflow,
   })
   return record
 }

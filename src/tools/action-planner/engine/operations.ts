@@ -20,6 +20,7 @@ import {
 } from './targeting'
 import { validateOperations } from './validation'
 import { conditionalRestore } from './conditional-restore'
+import { addSkillPoints, cappedSkillPointIncrease } from './skill-point-arithmetic'
 import { storeSkillPointOverflow } from './skill-points'
 import { recomputeSkillPointMax } from './skill-point-max'
 import type {
@@ -113,9 +114,12 @@ export function applyOperations(
           } else {
             const before = next.skillPoints.current
             const restored =
-              before === null ? null : Math.min(op.amount, next.skillPoints.max - before)
-            const overflow = restored === null ? null : op.amount - restored
-            if (before !== null && restored !== null) next.skillPoints.current = before + restored
+              before === null
+                ? null
+                : cappedSkillPointIncrease(before, next.skillPoints.max, op.amount)
+            const overflow = restored === null ? null : addSkillPoints(op.amount, -restored)
+            if (before !== null && restored !== null)
+              next.skillPoints.current = addSkillPoints(before, restored)
             skillPointEvents.push({
               operationId: op.id,
               source: op.source,

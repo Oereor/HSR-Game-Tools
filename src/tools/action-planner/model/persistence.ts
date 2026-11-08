@@ -16,6 +16,13 @@ export interface StorageToken {
   raw: string | null
 }
 
+function parseStoredDocument(source: string) {
+  const parsed = parsePlannerDocument(source)
+  // Storage and file import both require a document the canonical writer can export.
+  serializePlannerDocument(parsed.document)
+  return parsed
+}
+
 /** Storage ownership only: the planner remains the sole owner of the edited document. */
 export function createPlannerPersistence(
   storage: () => PlannerStorage,
@@ -45,7 +52,7 @@ export function createPlannerPersistence(
     baseline = token.raw
     if (token.raw === null) return { document: emptyDocument(), issues: [], migration: undefined }
     try {
-      const parsed = parsePlannerDocument(token.raw)
+      const parsed = parseStoredDocument(token.raw)
       setStatus('saved')
       return parsed
     } catch (error) {
@@ -112,7 +119,7 @@ export function createPlannerPersistence(
       const parsed =
         current.raw === null
           ? { document: emptyDocument(), issues: [], migration: undefined }
-          : parsePlannerDocument(current.raw)
+          : parseStoredDocument(current.raw)
       if (!withoutSaving(() => restore(parsed.document))) return false
       baseline = current.raw
       blocked = false
