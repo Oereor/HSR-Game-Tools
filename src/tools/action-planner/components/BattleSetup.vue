@@ -24,6 +24,7 @@ import type {
   CycleMode,
   AhaConfig,
   SkillPointsConfig,
+  SkillPointMaxModifier,
 } from '../engine/types'
 import type { ToolLocale } from '../../../locales/types'
 import type { CharacterRecord } from '../data/schema'
@@ -131,6 +132,26 @@ const spSources = computed(() => [
     .filter((slot) => slot.id)
     .map((slot) => ({ value: slot.id, label: slotLabel(slot) })),
 ])
+function setSpEnabled(value: boolean) {
+  sp.value.enabled = value
+  dirty.value = true
+}
+function setSpPolicy(value: SkillPointsConfig['onInsufficient']) {
+  sp.value.onInsufficient = value
+  dirty.value = true
+}
+function setSpField(key: (typeof spFields)[number]['key'], value: number | null | undefined) {
+  sp.value[key] = value ?? undefined
+  dirty.value = true
+}
+function setSpModifierAmount(modifier: SkillPointMaxModifier, value: number | null | undefined) {
+  modifier.amount = value ?? 0
+  dirty.value = true
+}
+function setSpModifierSource(modifier: SkillPointMaxModifier, value: string | null | undefined) {
+  modifier.sourceParticipantId = value || undefined
+  dirty.value = true
+}
 function addSpModifier() {
   const modifiers = (sp.value.maxModifiers ??= [])
   modifiers.push({ amount: 2 })
@@ -476,10 +497,7 @@ function apply() {
         <ToggleSwitch
           input-id="sp-enabled"
           :model-value="sp.enabled ?? false"
-          @update:model-value="
-            sp.enabled = $event
-            dirty = true
-          "
+          @update:model-value="setSpEnabled"
         />
       </div>
       <div class="field">
@@ -491,10 +509,7 @@ function apply() {
           option-value="value"
           :allow-empty="false"
           aria-labelledby="sp-policy-label"
-          @update:model-value="
-            sp.onInsufficient = $event
-            dirty = true
-          "
+          @update:model-value="setSpPolicy"
         />
       </div>
       <div class="form-grid">
@@ -511,10 +526,7 @@ function apply() {
                 root: { 'aria-describedby': errors.includes('sp') ? 'sp-setup-error' : undefined },
               },
             }"
-            @update:model-value="
-              sp[key] = $event ?? undefined
-              dirty = true
-            "
+            @update:model-value="setSpField(key, $event)"
           />
         </div>
       </div>
@@ -536,10 +548,7 @@ function apply() {
                 root: { 'aria-describedby': errors.includes('sp') ? 'sp-setup-error' : undefined },
               },
             }"
-            @update:model-value="
-              modifier.amount = $event ?? 0
-              dirty = true
-            "
+            @update:model-value="setSpModifierAmount(modifier, $event)"
           />
         </div>
         <div class="field">
@@ -552,10 +561,7 @@ function apply() {
             option-value="value"
             :invalid="errors.includes('sp')"
             :aria-describedby="errors.includes('sp') ? 'sp-setup-error' : undefined"
-            @update:model-value="
-              modifier.sourceParticipantId = $event || undefined
-              dirty = true
-            "
+            @update:model-value="setSpModifierSource(modifier, $event)"
           />
         </div>
         <Button
@@ -563,8 +569,10 @@ function apply() {
           size="small"
           :label="t('planner.sp.removeModifier')"
           @click="
-            sp.maxModifiers?.splice(index, 1)
-            dirty = true
+            () => {
+              sp.maxModifiers?.splice(index, 1)
+              dirty = true
+            }
           "
         />
       </div>
