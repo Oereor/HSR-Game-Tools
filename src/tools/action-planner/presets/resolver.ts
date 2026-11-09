@@ -17,14 +17,7 @@ import type { ActorConfig, EffectOperation, EventAnchor, PlanEvent, Target } fro
 import { metadataValue, operationsAt } from '../model/editor'
 import { referencedIds } from '../model/document-file'
 import type { CharacterRecord } from '../data/schema'
-import {
-  collectInputs,
-  isCharacterEffectPreset,
-  PresetError,
-  reusableSkillPointCosts,
-  supportsSkillPointCostReuse,
-  valueResolver,
-} from './values'
+import { collectInputs, isCharacterEffectPreset, PresetError, valueResolver } from './values'
 import {
   PRESET_LIMITS,
   type PresetContext,
@@ -44,18 +37,13 @@ export function compilePreset(
   let operationIndex: number | undefined, semanticTarget: PresetTarget | undefined
   const parameters = new Set<string>()
   try {
-    const { anchor: insertionAnchor, beforeEffects, reuseSkillPointCostId } = context
+    const { anchor: insertionAnchor, beforeEffects, phase } = context
     const existing = operationsAt(context.document.plan, insertionAnchor)
     const characterPreset = isCharacterEffectPreset(definition)
-    const costs = supportsSkillPointCostReuse(definition) ? reusableSkillPointCosts(existing) : []
-    const reusedCost = costs.find((op) => op.id === reuseSkillPointCostId)
-    const phase = reusedCost?.phase ?? context.phase
     const preview =
       characterPreset && beforeEffects
         ? previewOperationState(beforeEffects, existing, insertionAnchor, phase, undefined, true)
-        : phase === context.phase
-          ? context.preview
-          : undefined
+        : context.preview
     if (!preview) throw new PresetError('context')
     if (characterPreset && !preview.skillPoints) throw new PresetError('skillPointTracking')
     if (definition.startOnly && insertionAnchor.kind !== 'start') throw new PresetError('startOnly')
@@ -90,8 +78,6 @@ export function compilePreset(
       (insertionAnchor.kind !== 'action' || insertionAnchor.participantId !== self)
     )
       throw new PresetError('characterEffectAnchor')
-    if ((costs.length || reuseSkillPointCostId !== undefined) && !reusedCost)
-      throw new PresetError('skillPointCost')
     const values = valueResolver(
       definition,
       characters,
@@ -153,7 +139,6 @@ export function compilePreset(
         if (++count > PRESET_LIMITS.operations) throw new PresetError('operations')
         operationIndex = count - 1
         semanticTarget = declaration.target
-        if (root && reusedCost && declaration === definition.operations[0]) continue
         const { onTrigger, onEmpty, target: operationTarget } = declaration
         const operation = values.resolveOperation(
           declaration,

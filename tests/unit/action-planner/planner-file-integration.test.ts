@@ -37,6 +37,61 @@ const envelope = (document: unknown, version: number = PLANNER_VERSION) => ({
   version,
   document,
 })
+function retiredEffectDocument(version: 11 | 12) {
+  const kept = skillPointDocument(true)
+  const actorId = kept.plan.actors[0]!.id
+  kept.metadata.characterIds[actorId] = '1101'
+  kept.metadata.customNames.spend = 'Manual cost'
+  if (version === 12) {
+    kept.plan.actors.push({ ...kept.plan.actors[0]!, id: 'sparxie', position: 1 })
+    kept.metadata.characterIds.sparxie = '1501'
+    kept.plan.aha.contributorIds.push('sparxie')
+  }
+  const refund = {
+    id: 'old-refund',
+    type: 'characterEffect',
+    effectId: 'bronya.e1.refund',
+    sourceParticipantId: actorId,
+    phase: 'postAction',
+  }
+  const retired = [refund, { ...refund, id: 'old-cooldown-repeat' }]
+  const oldUltimate = {
+    id: 'old-ultimate',
+    type: 'characterEffect',
+    effectId: 'sparxie.ultimate',
+    sourceParticipantId: 'sparxie',
+    traceUnlocked: true,
+  }
+  const [start, action] = kept.plan.events
+  const file = envelope(
+    {
+      ...kept,
+      plan: {
+        ...kept.plan,
+        events: [
+          version === 12 ? { ...start, operations: [...start!.operations, oldUltimate] } : start,
+          { ...action, operations: [...action!.operations, ...retired] },
+          {
+            anchor: { kind: 'action', participantId: 'old-bronya', turn: 99 },
+            operations: [{ ...refund, id: 'old-orphan', sourceParticipantId: 'old-bronya' }],
+          },
+        ],
+      },
+      metadata: {
+        ...kept.metadata,
+        customNames: {
+          ...kept.metadata.customNames,
+          'old-refund': 'E1 refund',
+          'old-cooldown-repeat': 'Cooldown repeat',
+          'old-orphan': 'Unreached refund',
+          ...(version === 12 ? { 'old-ultimate': 'Thrill gain' } : {}),
+        },
+      },
+    },
+    version,
+  )
+  return { raw: JSON.stringify(file), kept, file, oldUltimate }
+}
 const upload = (source: string) => new File([source], 'plan.json', { type: 'application/json' })
 const scopes: EffectScope[] = []
 
@@ -495,6 +550,63 @@ describe('Action Planner file and session integration', () => {
     files.confirm()
     expect(planner.document.value).toEqual(parsePlannerDocument(raw).document)
     expect(space.store.raw).toBe(serializePlannerDocument(planner.document.value))
+  })
+
+  it.each([11, 12] as const)(
+    'requires review of retired v%s effects and preserves manual operations',
+    async (version) => {
+      const { raw, kept } = retiredEffectDocument(version)
+      const space = workspace()
+      const { files, planner, download } = space.open()
+      await files.importFile(upload(raw))
+      expect(space.store.raw).toBeNull()
+      expect(planner.document.value).toEqual(emptyDocument())
+      expect(files.migrationReview.value?.losses).toEqual({
+        bronyaEffects: 3,
+        ...(version === 12 ? { sparxieEffects: 1 } : {}),
+      })
+      files.backupMigrationSource()
+      expect(download.mock.calls[0]?.[0]).toBe(raw)
+      files.pending.value = undefined
+      expect(space.store.writes).toBe(0)
+      await files.importFile(upload(raw))
+      files.confirm()
+      const expected = preparePlannerDocument(kept)
+      expect(planner.document.value).toEqual(expected.document)
+      expect(planner.result.value).toEqual(expected.result)
+      expect(space.store.raw).toBe(serializePlannerDocument(expected.document))
+    },
+  )
+
+  it('protects a v12 local save until confirmed and validates retired fields before removal', () => {
+    const { raw, kept, file, oldUltimate } = retiredEffectDocument(12)
+    expect(() => parsePlannerDocument(JSON.stringify({ ...file, version: 13 }))).toThrow(
+      'structure',
+    )
+    expect(() =>
+      parsePlannerDocument(
+        raw.replace(
+          JSON.stringify(oldUltimate),
+          JSON.stringify({
+            ...oldUltimate,
+            traceUnlocked: 'true',
+          }),
+        ),
+      ),
+    ).toThrow('structure')
+    const space = workspace(raw)
+    const { files, planner, persistence } = space.open()
+    expect(persistence.failure).toBe('migrationRequired')
+    files.reload()
+    space.store.failWrite = true
+    files.confirm()
+    expect(files.error.value).toBe('migrationWrite')
+    expect(space.store.raw).toBe(raw)
+    expect(planner.document.value).toEqual(emptyDocument())
+    space.store.failWrite = false
+    files.confirm()
+    expect(space.store.raw).toBe(serializePlannerDocument(kept))
+    expect(space.store.writes).toBe(1)
   })
 
   it('loads a current template through the confirmed replacement and storage path', () => {

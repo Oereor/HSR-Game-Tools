@@ -21,8 +21,8 @@ import {
 } from './legacy-skill-points'
 
 export const PLANNER_FORMAT = 'hsr-game-tools/action-planner'
-export const PLANNER_VERSION = 12
-const READABLE_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, PLANNER_VERSION] as const
+export const PLANNER_VERSION = 13
+const READABLE_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, PLANNER_VERSION] as const
 type DocumentVersion = (typeof READABLE_VERSIONS)[number]
 export const FILE_LIMITS = {
   bytes: 2 * 1024 * 1024,
@@ -146,6 +146,19 @@ function checkDefinition(value: unknown, initialVersion?: DocumentVersion) {
   )
   text(p.name, FILE_LIMITS.displayName)
 }
+function retiredEffectLoss(op: Record<string, unknown>, version: DocumentVersion) {
+  if (op.type !== 'characterEffect') return
+  switch (op.effectId) {
+    case 'bronya.e1.refund':
+      if (version !== 11 && version !== 12) return fail('structure')
+      return 'bronyaEffects'
+    case 'sparxie.ultimate':
+    case 'sparxie.elationSkill':
+    case 'sparxie.interaction':
+      if (version !== 12) return fail('structure')
+      return 'sparxieEffects'
+  }
+}
 function operationFields(op: Record<string, unknown>, version: DocumentVersion): string[] {
   switch (op.type) {
     case 'advance':
@@ -173,6 +186,8 @@ function operationFields(op: Record<string, unknown>, version: DocumentVersion):
         return fail('structure')
       if (op.effectId === 'imbibitorLunae.enhancedBasic')
         return ['effectId', 'sourceParticipantId', 'cost']
+      if (op.effectId === 'sparxie.ultimate')
+        return ['effectId', 'sourceParticipantId', 'traceUnlocked']
       return ['effectId', 'sourceParticipantId']
     default:
       return fail('structure')
@@ -230,6 +245,8 @@ export function validatePlannerFile(value: unknown): {
     fail('limit')
   let count = 0
   const opIds = new Set<string>()
+  const retiredIds = new Set<string>()
+  const retiredLosses: SkillPointMigration['losses'] = {}
   const requiredEventFields = ['anchor', 'operations']
   const eventFields =
     version >= 4 && version < 10 ? [...requiredEventFields, 'skill'] : requiredEventFields
@@ -251,6 +268,7 @@ export function validatePlannerFile(value: unknown): {
     for (const value of ops) {
       const op = object(value)
       const legacy = legacyOperationFields(op.type, version)
+      const retired = retiredEffectLoss(op, version)
       const requiredOperationFields = [
         'id',
         'type',
@@ -268,7 +286,20 @@ export function validatePlannerFile(value: unknown): {
       if (op.type === 'spawnParticipant') checkDefinition(op.participant)
       else if (legacy) text(op.source, FILE_LIMITS.displayName)
       else if (op.type === 'characterEffect') {
-        if (forbidden.has(text(op.sourceParticipantId))) fail('identity')
+        const sourceId = text(op.sourceParticipantId)
+        if (forbidden.has(sourceId)) fail('identity')
+        if (retired) {
+          if (
+            !sourceId.trim() ||
+            (a.kind === 'action'
+              ? op.phase !== 'preAction' && op.phase !== 'postAction'
+              : op.phase !== undefined) ||
+            (op.effectId === 'sparxie.ultimate' && typeof op.traceUnlocked !== 'boolean')
+          )
+            fail('structure')
+          retiredIds.add(id)
+          retiredLosses[retired] = (retiredLosses[retired] ?? 0) + 1
+        }
       } else if (op.type !== 'changeSkillPoints') {
         const target = object(op.target)
         fields(target, target.kind === 'participants' ? ['kind', 'participantIds'] : ['kind'])
@@ -357,23 +388,37 @@ export function validatePlannerFile(value: unknown): {
       : undefined
   const sourceEvents = plan.events
   if (migrated) plan = migrated.plan
+  if (retiredIds.size)
+    plan = {
+      ...plan,
+      events: plan.events.map((event) => ({
+        ...event,
+        operations: event.operations.filter((op) => !retiredIds.has(op.id)),
+      })),
+    }
   if (validatePlan(plan).length) fail('structure')
-  if (migrated)
+  if (migrated || retiredIds.size)
     plan.events = plan.events.filter((event, index) => {
       const source = sourceEvents[index]
       return event.operations.length || (!source.operations.length && !('skill' in source))
     })
+  const skillPointMigration =
+    migrated?.notice ?? (retiredIds.size ? { losses: retiredLosses } : undefined)
   const migration: MigrationNotice | undefined =
     version === PLANNER_VERSION
       ? undefined
       : {
           fromVersion: version,
           ahaAdded: version < 3 && plan.aha.contributorIds.length > 0,
-          ...(migrated?.notice ? { skillPoints: migrated.notice } : {}),
+          ...(skillPointMigration ? { skillPoints: skillPointMigration } : {}),
         }
   // A fresh JSON tree also removes optional undefined properties from internal drafts.
   const document = JSON.parse(JSON.stringify(doc)) as PlannerDocument
   if (migrated) document.metadata.customNames = { ...migrated.customNames }
+  if (retiredIds.size)
+    document.metadata.customNames = Object.fromEntries(
+      Object.entries(document.metadata.customNames).filter(([id]) => !retiredIds.has(id)),
+    )
   document.plan = JSON.parse(JSON.stringify(plan)) as SimulationPlan
   if (version >= 3) {
     const resolved = resolveElationContributors(

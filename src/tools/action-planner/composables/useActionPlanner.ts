@@ -366,7 +366,6 @@ export function useActionPlanner(
         selectedIds: draft.value.selectedIds,
         values: request.values,
         translate: request.translate,
-        reuseSkillPointCostId: request.reuseSkillPointCostId,
       },
       gameData.characters,
       definition.interaction === 'draft' ? temporaryIds() : nextId,

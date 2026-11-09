@@ -262,18 +262,3 @@ export function valueResolver(
 }
 export const isCharacterEffectPreset = (definition: PresetDefinition): boolean =>
   definition.operations.some((op) => op.type === 'characterEffect')
-
-export function supportsSkillPointCostReuse(definition: PresetDefinition): boolean {
-  const [cost, refund] = definition.operations
-  return (
-    definition.operations.length === 2 &&
-    cost?.type === 'changeSkillPoints' &&
-    cost.amount === -1 &&
-    refund?.type === 'characterEffect' &&
-    refund.effectId === 'bronya.e1.refund'
-  )
-}
-
-export function reusableSkillPointCosts(operations: readonly EffectOperation[]) {
-  return operations.filter((op) => op.type === 'changeSkillPoints' && op.amount === -1)
-}

@@ -163,11 +163,7 @@ const details = computed(
                 resource: t(`planner.characterEffects.resource.${resource.kind}`),
                 actual: format(payment.actualSpCost),
               })
-            : result.availableFromTurn
-              ? t('planner.characterEffects.cooldownUntil', {
-                  turn: format(result.availableFromTurn),
-                })
-              : undefined
+            : undefined
         return [
           op.id,
           {

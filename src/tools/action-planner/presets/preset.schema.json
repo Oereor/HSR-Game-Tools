@@ -672,7 +672,6 @@
               "enum": [
                 "archer.ultimateCharge",
                 "archer.followUp",
-                "bronya.e1.refund",
                 "imbibitorLunae.ultimate",
                 "imbibitorLunae.ultimateE2"
               ]

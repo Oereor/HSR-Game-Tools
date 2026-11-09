@@ -116,7 +116,6 @@ export interface PresetRequest {
   id: string
   values: Record<string, unknown>
   translate: Translate
-  reuseSkillPointCostId?: string
 }
 export interface PresetContext {
   document: PlannerDocument
@@ -127,7 +126,6 @@ export interface PresetContext {
   selectedIds?: string[]
   values?: Record<string, unknown>
   translate: Translate
-  reuseSkillPointCostId?: string
 }
 export interface PresetResult {
   document?: PlannerDocument

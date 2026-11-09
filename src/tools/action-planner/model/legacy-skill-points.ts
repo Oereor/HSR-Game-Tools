@@ -8,7 +8,14 @@ import type {
 } from '../engine/types'
 import type { PlannerMetadata } from './editor'
 
-type Loss = 'dynamicMax' | 'storage' | 'conditionalRestore' | 'policy' | 'inactiveSkill'
+type Loss =
+  | 'dynamicMax'
+  | 'storage'
+  | 'conditionalRestore'
+  | 'policy'
+  | 'inactiveSkill'
+  | 'bronyaEffects'
+  | 'sparxieEffects'
 export type SkillPointMigration = { losses: Partial<Record<Loss, number>> }
 
 const record = (value: unknown): value is Record<string, unknown> =>

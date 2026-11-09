@@ -96,7 +96,10 @@
       "migrationTitle": "Convert legacy skill point settings",
       "migrationReview": "Convertible operations will carry over. The settings below will change or be omitted. You can download the original before continuing.",
       "migrationSemantics": "Legacy skill points now use explicit operations. Unconfigured nodes leave the balance unchanged, and negative balances allow the timeline to continue.",
+      "retiredEffectMigration": "Retired character effects were removed. The original manual skill point operations are preserved.",
       "migrationLoss": {
+        "bronyaEffects": "{count} Bronya E1 refund operation(s) and their custom names will be removed.",
+        "sparxieEffects": "{count} Sparxie Thrill operation(s) and their custom names will be removed.",
         "dynamicMax": "{count} dynamic cap modifier(s) will become part of the fixed starting cap.",
         "storage": "{count} storage setting(s) will be omitted. Recovery amounts carry over.",
         "conditionalRestore": "{count} conditional recovery operation(s) will be omitted.",
@@ -288,7 +291,6 @@
     "characterEffects": {
       "archer_ultimateCharge": "Archer Ultimate",
       "archer_followUp": "Archer follow-up refund",
-      "bronya_e1_refund": "Bronya E1 refund",
       "imbibitorLunae_ultimate": "Imbibitor Lunae Ultimate",
       "imbibitorLunae_ultimateE2": "Imbibitor Lunae E2 Ultimate · Squama Sacrosancta",
       "lunaeUltimateE2Name": "Imbibitor Lunae Ultimate (E2)",
@@ -309,21 +311,15 @@
       "resourceBalance": "{name} · {resource} {before} → {after}",
       "resourceChange": "{resource} {before} → {after}",
       "payment": "Nominal cost {nominal} · {substitute} {resource} used · {actual} SP spent",
-      "bronyaPresetName": "Bronya Skill (E1 refund)",
       "ultimatePreset": "Gain 2 Charge, up to the cap of 4.",
       "followUpPreset": "Spend 1 Charge and recover up to 1 SP.",
-      "bronyaPreset": "Spend 1 SP on the Skill and record a successful E1 trigger if it is ready.",
       "initialCharge": "Archer starting Charge",
       "initialChargeHelp": "Choose a starting value from 0 to {max}. The unlocked bonus ability and Technique can each grant 1 Charge.",
       "chargeDelta": "Charge {amount}",
-      "cooldownUntil": "On cooldown until turn {turn}",
       "effect": "Character effect",
       "source": "Source character",
       "presets": "Character presets",
-      "ambiguous": "More than one participant matches this character. Choose a source in the operation editor.",
-      "reuseCost": "Select the existing −1 SP operation that paid for this Skill.",
-      "costOption": "{index}. {name} · {phase}",
-      "refundDeclaration": "Add this effect when you want to record an E1 trigger on Bronya’s Skill. Add the Skill cost separately."
+      "ambiguous": "More than one participant matches this character. Choose a source in the operation editor."
     },
     "sp": {
       "setup": "Skill points",
@@ -482,8 +478,7 @@
       "sp-negative": "Skill points are negative after spending.",
       "character-effect-source": "The required character is missing or off the field.",
       "character-effect-anchor": "This effect must be placed on the source character’s own action.",
-      "archer-no-charge": "Archer has no Charge for a follow-up.",
-      "bronya-e1-cooldown": "Bronya’s E1 is still on cooldown."
+      "archer-no-charge": "Archer has no Charge for a follow-up."
     },
     "path": {
       "Elation": "Elation",

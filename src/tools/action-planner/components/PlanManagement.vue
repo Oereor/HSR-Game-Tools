@@ -188,7 +188,13 @@ defineExpose({ newDocument })
       }}
     </p>
     <p v-if="planner.migrationNotice.value?.skillPoints" class="fine-print" role="status">
-      {{ t('planner.files.migrationSemantics') }}
+      {{
+        t(
+          planner.migrationNotice.value.fromVersion < 10
+            ? 'planner.files.migrationSemantics'
+            : 'planner.files.retiredEffectMigration',
+        )
+      }}
     </p>
     <details v-if="issues.length" class="resource-diagnostics">
       <summary>{{ t('planner.files.resources', { count: issues.length }) }}</summary>

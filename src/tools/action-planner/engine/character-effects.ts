@@ -13,7 +13,6 @@ import type {
 } from './types'
 
 export const ARCHER_CHARACTER_ID = '1015'
-export const BRONYA_CHARACTER_ID = '1101'
 export const IMBIBITOR_LUNAE_CHARACTER_ID = '1213'
 export const ARCHER_CHARGE_CAP = 4
 export const SQUAMA_CAP = 3
@@ -21,7 +20,6 @@ export const ENHANCED_BASIC_COSTS = [1, 2, 3] as const
 const characterKinds = {
   'archer.ultimateCharge': 'archer',
   'archer.followUp': 'archer',
-  'bronya.e1.refund': 'bronya',
   'imbibitorLunae.ultimate': 'imbibitorLunae',
   'imbibitorLunae.ultimateE2': 'imbibitorLunae',
   'imbibitorLunae.enhancedBasic': 'imbibitorLunae',
@@ -29,14 +27,13 @@ const characterKinds = {
 export const CHARACTER_EFFECT_IDS = Object.keys(characterKinds) as CharacterEffectId[]
 const characterIdsByKind = {
   archer: ARCHER_CHARACTER_ID,
-  bronya: BRONYA_CHARACTER_ID,
   imbibitorLunae: IMBIBITOR_LUNAE_CHARACTER_ID,
 }
 
 export const effectCharacterId = (id: CharacterEffectId) => characterIdsByKind[characterKinds[id]]
 
 export const characterEffectRequiresOwnAction = (id: CharacterEffectId) =>
-  id === 'bronya.e1.refund' || id === 'imbibitorLunae.enhancedBasic'
+  id === 'imbibitorLunae.enhancedBasic'
 
 export function validEnhancedBasicCost(cost: unknown): cost is EnhancedBasicCost {
   return ENHANCED_BASIC_COSTS.some((value) => value === cost)
@@ -58,7 +55,6 @@ export function initialCharacterEffects(
     const id = characterIds[actor.id]
     if (id === ARCHER_CHARACTER_ID)
       effects.set(actor.id, { kind: 'archer', charge: actor.initialArcherCharge ?? 0 })
-    if (id === BRONYA_CHARACTER_ID) effects.set(actor.id, { kind: 'bronya', availableFromTurn: {} })
     if (id === IMBIBITOR_LUNAE_CHARACTER_ID)
       effects.set(actor.id, {
         kind: 'imbibitorLunae',
@@ -69,18 +65,7 @@ export function initialCharacterEffects(
 }
 
 export function cloneCharacterEffects(effects: ReadonlyMap<string, CharacterEffectState>) {
-  return new Map(
-    Array.from(
-      effects,
-      ([id, effect]) =>
-        [
-          id,
-          effect.kind === 'bronya'
-            ? { ...effect, availableFromTurn: { ...effect.availableFromTurn } }
-            : { ...effect },
-        ] as const,
-    ),
-  )
+  return new Map(Array.from(effects, ([id, effect]) => [id, { ...effect }] as const))
 }
 
 function resolveCharacterEffectSource(
@@ -157,19 +142,12 @@ export function settleCharacterEffect(
     outcome.resource = { kind: 'squama', before, after: effect.squama }
     return outcome
   }
-  if (effect.kind === 'archer') {
-    if (effectId === 'archer.followUp' && effect.charge === 0) return 'archer-no-charge'
-    const before = effect.charge
-    effect.charge =
-      effectId === 'archer.ultimateCharge' ? Math.min(before + 2, ARCHER_CHARGE_CAP) : before - 1
-    outcome.charge = { before, after: effect.charge }
-    if (effectId === 'archer.ultimateCharge') return outcome
-  } else {
-    if (anchor.kind !== 'action') return 'character-effect-anchor'
-    if (anchor.turn < (effect.availableFromTurn[effectId] ?? 0)) return 'bronya-e1-cooldown'
-    outcome.availableFromTurn = anchor.turn + 2
-    effect.availableFromTurn[effectId] = outcome.availableFromTurn
-  }
+  if (effectId === 'archer.followUp' && effect.charge === 0) return 'archer-no-charge'
+  const before = effect.charge
+  effect.charge =
+    effectId === 'archer.ultimateCharge' ? Math.min(before + 2, ARCHER_CHARGE_CAP) : before - 1
+  outcome.charge = { before, after: effect.charge }
+  if (effectId === 'archer.ultimateCharge') return outcome
   sp.current = skillPointBalance(sp, 1)
   outcome.skillPoints.after = sp.current
   return outcome

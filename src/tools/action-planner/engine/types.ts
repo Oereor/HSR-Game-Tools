@@ -58,7 +58,6 @@ export type CharacterEffectParameters =
       effectId:
         | 'archer.ultimateCharge'
         | 'archer.followUp'
-        | 'bronya.e1.refund'
         | 'imbibitorLunae.ultimate'
         | 'imbibitorLunae.ultimateE2'
       cost?: never
@@ -107,16 +106,13 @@ export interface SkillPointsState {
   max: number
 }
 export type CharacterEffectState =
-  | { kind: 'archer'; charge: number }
-  | { kind: 'bronya'; availableFromTurn: Partial<Record<CharacterEffectId, number>> }
-  | { kind: 'imbibitorLunae'; squama: number }
+  { kind: 'archer'; charge: number } | { kind: 'imbibitorLunae'; squama: number }
 export interface CharacterEffectOutcome {
   operationId: string
   sourceParticipantId: string
   effectId: CharacterEffectId
   skillPoints: { before: bigint; after: bigint }
   charge?: { before: number; after: number }
-  availableFromTurn?: number
   resource?: { kind: 'squama'; before: number; after: number }
   payment?: { nominalCost: number; substituteUsed: number; actualSpCost: number }
 }
@@ -195,7 +191,7 @@ export interface SimulationState {
 }
 export type SkillPointWarning = 'sp-negative-first' | 'sp-negative'
 export type CharacterEffectWarning =
-  'character-effect-source' | 'character-effect-anchor' | 'archer-no-charge' | 'bronya-e1-cooldown'
+  'character-effect-source' | 'character-effect-anchor' | 'archer-no-charge'
 export type DiagnosticCode =
   | SkillPointWarning
   | CharacterEffectWarning

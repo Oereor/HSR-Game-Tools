@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   applyOperations,
-  cloneState,
   previewOperationState,
   simulatePlan,
 } from '../../../src/tools/action-planner/engine/engine'
@@ -55,8 +54,6 @@ const effect = (
 const ult = (id: string, phase?: EffectPhase) =>
   effect(id, 'archer.ultimateCharge', 'archer', phase)
 const chase = (id: string, phase?: EffectPhase) => effect(id, 'archer.followUp', 'archer', phase)
-const refund = (id: string, phase: EffectPhase = 'postAction') =>
-  effect(id, 'bronya.e1.refund', 'bronya', phase)
 const sp = (id: string, amount: number, phase?: EffectPhase): EffectOperation => ({
   id,
   type: 'changeSkillPoints',
@@ -66,10 +63,10 @@ const sp = (id: string, amount: number, phase?: EffectPhase): EffectOperation =>
 
 function fixture() {
   const doc = emptyDocument()
-  doc.plan.actors = [actor('bronya', 0), actor('ally', 1), actor('archer', 2)]
+  doc.plan.actors = [actor('ally', 0), actor('archer', 2)]
   doc.plan.skillPoints = { enabled: true, initial: 4, max: 5 }
   doc.plan.maxNodes = 12
-  doc.metadata.characterIds = { archer: '1015', bronya: '1101' }
+  doc.metadata.characterIds = { archer: '1015' }
   return doc
 }
 
@@ -126,7 +123,7 @@ describe('character skill point effects', () => {
     const doc = fixture()
     doc.plan.events = [
       { anchor: start, operations: [ult('ult'), chase('opening')] },
-      { anchor: action('bronya', 1), operations: [chase('later', 'preAction')] },
+      { anchor: action('ally', 1), operations: [chase('later', 'preAction')] },
     ]
     const planner = useActionPlanner(doc.plan, doc.metadata)
     const original = planner.result.value
@@ -155,99 +152,6 @@ describe('character skill point effects', () => {
     ).toHaveLength(2)
   })
 
-  it('tracks Bronya’s own turns across both phases, an ally’s action and immediate action at the same AV', () => {
-    const doc = fixture()
-    doc.plan.skillPoints!.initial = 5
-    doc.plan.events = [
-      { anchor: action('bronya', 1), operations: [refund('first', 'preAction'), refund('repeat')] },
-      {
-        anchor: action('ally', 1),
-        operations: [
-          refund('wrong-node'),
-          {
-            id: 'pull',
-            type: 'immediatelyAct',
-            phase: 'postAction',
-            target: {
-              kind: 'participants',
-              participantIds: ['bronya'],
-            },
-          },
-        ],
-      },
-      {
-        anchor: action('bronya', 2),
-        operations: [refund('still-cooling', 'preAction'), sp('basic', 1, 'postAction')],
-      },
-      { anchor: action('bronya', 3), operations: [sp('skill', -1, 'preAction'), refund('ready')] },
-    ]
-    const result = run(doc)
-    expect(settled(result, 'first')).toMatchObject({
-      skillPoints: { before: 5n, after: 5n },
-      availableFromTurn: 3,
-    })
-    expect(
-      result.diagnostics
-        .filter((entry) => entry.code === 'bronya-e1-cooldown')
-        .map((entry) => entry.operationId),
-    ).toEqual(['repeat', 'still-cooling'])
-    const firstTurn = doc.plan.events[0]!
-    const postPreview = previewOperationState(
-      result.records[0]!.beforeEffects,
-      firstTurn.operations,
-      firstTurn.anchor,
-      'postAction',
-      'repeat',
-    )!
-    expect(
-      applyOperations(postPreview, [firstTurn.operations[1]!], firstTurn.anchor).diagnostics,
-    ).toEqual(result.diagnostics.filter((entry) => entry.operationId === 'repeat'))
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({
-        code: 'character-effect-anchor',
-        operationId: 'wrong-node',
-      }),
-    )
-    expect(
-      result.records.find(
-        (record) =>
-          record.anchor.kind === 'action' &&
-          record.anchor.participantId === 'bronya' &&
-          record.anchor.turn === 2,
-      )?.elapsedAV,
-    ).toBe(0)
-    expect(settled(result, 'ready')).toMatchObject({
-      skillPoints: { before: 4n, after: 5n },
-      availableFromTurn: 5,
-    })
-
-    const turnTwo = result.records.find(
-      (record) =>
-        record.anchor.kind === 'action' &&
-        record.anchor.participantId === 'bronya' &&
-        record.anchor.turn === 2,
-    )!
-    const copy = cloneState(turnTwo.beforeEffects)
-    const copiedEffect = copy.characterEffects?.get('bronya')
-    if (copiedEffect?.kind !== 'bronya') throw new Error('Bronya missing')
-    delete copiedEffect.availableFromTurn['bronya.e1.refund']
-    expect(
-      applyOperations(copy, [refund('probe', 'preAction')], turnTwo.anchor).diagnostics,
-    ).toEqual([])
-    expect(
-      applyOperations(turnTwo.beforeEffects, [refund('probe', 'preAction')], turnTwo.anchor)
-        .diagnostics,
-    ).toContainEqual(expect.objectContaining({ code: 'bronya-e1-cooldown' }))
-
-    const planner = useActionPlanner(doc.plan, doc.metadata)
-    planner.select(action('bronya', 1))
-    planner.remove('first')
-    expect(settled(planner.result.value, 'repeat')?.availableFromTurn).toBe(3)
-    planner.remove('repeat')
-    expect(settled(planner.result.value, 'still-cooling')?.availableFromTurn).toBe(4)
-    expect(settled(planner.result.value, 'ready')).toBeUndefined()
-  })
-
   it('keeps unavailable sources and orphan anchors, and ignores all SP operations when disabled', () => {
     const doc = fixture()
     const target = { kind: 'participants', participantIds: ['archer'] } as const
@@ -265,7 +169,7 @@ describe('character skill point effects', () => {
           sp('cost', -1),
         ],
       },
-      { anchor: action('bronya', 1), operations: [chase('absent', 'postAction')] },
+      { anchor: action('ally', 1), operations: [chase('absent', 'postAction')] },
       { anchor: action('archer', 1), operations: [chase('orphan', 'postAction')] },
     ]
     const result = run(doc)
@@ -288,7 +192,6 @@ describe('character skill point effects', () => {
     )
     expect(
       planner.applySetup(actors, doc.plan.maxNodes, doc.plan.maxAV, {
-        bronya: '1101',
         replacement: '1015',
       }),
     ).toBe(true)
@@ -305,69 +208,22 @@ describe('character skill point effects', () => {
 })
 
 describe('character effect editor, presets and files', () => {
-  const request = (id: string, reuseSkillPointCostId?: string) => ({
+  const request = (id: string) => ({
     id,
-    reuseSkillPointCostId,
     values: {},
     translate: (key: string) => key,
   })
-  it('applies the Bronya batch once per submission and requires explicit reuse of an existing cost', () => {
-    const doc = fixture()
-    const planner = useActionPlanner(doc.plan, doc.metadata)
-    planner.select(action('bronya', 1))
-    planner.addSkillPoints('preAction')
-    expect(planner.submitPreset(request('bronya-e1-skill'))).toBe(true)
-    expect(planner.operations.value.map((op) => op.type)).toEqual([
-      'changeSkillPoints',
-      'characterEffect',
-    ])
-    expect(planner.result.value.characterEffectOutcomes[0]?.skillPoints).toEqual({
-      before: 3n,
-      after: 4n,
-    })
-
-    const cost = planner.operations.value.find((op) => op.type === 'changeSkillPoints')!
-    planner.addSkillPoints('postAction')
-    planner.draft.value!.amount = -1
-    expect(planner.submit()).toBe(true)
-    const existingCosts = planner.operations.value.filter((op) => op.type === 'changeSkillPoints')
-    planner.addSkillPoints('postAction')
-    const previous = planner.document.value
-    expect(planner.presetIssues.value['bronya-e1-skill']).toBe('skillPointCost')
-    expect(planner.submitPreset(request('bronya-e1-skill'))).toBe(false)
-    expect(planner.submitPreset(request('bronya-e1-skill', 'stale-id'))).toBe(false)
-    expect(planner.document.value).toBe(previous)
-    expect(planner.submitPreset(request('bronya-e1-skill', cost.id))).toBe(true)
-    expect(planner.operations.value.filter((op) => op.type === 'changeSkillPoints')).toEqual(
-      existingCosts,
-    )
-    const last = planner.operations.value.at(-1)!
-    expect(last).toMatchObject({ type: 'characterEffect', phase: cost.phase })
-    expect(planner.result.value.diagnostics).toContainEqual(
-      expect.objectContaining({
-        code: 'bronya-e1-cooldown',
-        operationId: last.id,
-      }),
-    )
-  })
-
   it('round-trips authored effects and charge through export, import and local save', () => {
     const doc = fixture()
-    doc.plan.actors[2]!.initialArcherCharge = 1
+    doc.plan.actors[1]!.initialArcherCharge = 1
     const planner = useActionPlanner(doc.plan, doc.metadata)
     planner.addSkillPoints('postAction')
     expect(planner.submitPreset(request('archer-follow-up'))).toBe(true)
-    planner.select(action('bronya', 1))
-    planner.addSkillPoints('postAction')
-    Object.assign(planner.draft.value!, {
-      type: 'characterEffect',
-      effectId: 'bronya.e1.refund',
-      sourceParticipantId: 'bronya',
-      customName: 'Confirmed E1',
-    })
+    planner.edit(planner.operations.value[0])
+    planner.draft.value!.customName = 'Opening follow-up'
     expect(planner.submit()).toBe(true)
     const current = planner.document.value
-    expect(planner.operations.value.map((op) => op.type)).toEqual(['characterEffect'])
+    expect(planner.plan.value.events[0]?.operations[0]?.type).toBe('characterEffect')
     const exported = serializePlannerDocument(current)
     expect(JSON.parse(exported).version).toBe(PLANNER_VERSION)
     expect(() => validatePlannerFile({ ...JSON.parse(exported), version: 10 })).toThrow('structure')
@@ -389,6 +245,6 @@ describe('character effect editor, presets and files', () => {
     expect(reopened.restoreDocument(persistence().initialize().document)).toBe(true)
     expect(reopened.result.value).toEqual(planner.result.value)
     expect(reopened.document.value.metadata.customNames).toEqual(current.metadata.customNames)
-    expect(reopened.result.value.characterEffectOutcomes).toHaveLength(2)
+    expect(reopened.result.value.characterEffectOutcomes).toHaveLength(1)
   })
 })
