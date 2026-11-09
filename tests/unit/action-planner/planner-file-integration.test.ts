@@ -118,6 +118,7 @@ async function verifyRoundTrip(space: Workspace, app: Session, authored: Planner
   reopened.files.exportFile()
   expect(reopened.download.mock.calls.at(-1)?.[0]).toBe(bytes)
   expect(space.store.raw).toBe(bytes)
+  return reopened
 }
 
 const start: EventAnchor = { kind: 'start' }
@@ -147,7 +148,7 @@ function resourcePlan() {
 }
 
 describe('Skill point document lifecycle', () => {
-  it('edits, reorders and reopens signed changes with stable operation identities', async () => {
+  it('keeps signed changes and their custom names attached to stable IDs across edits and files', async () => {
     const authored = skillPointDocument(true)
     const space = workspace()
     const app = space.open()
@@ -159,6 +160,7 @@ describe('Skill point document lifecycle', () => {
     planner.edit(spend)
     expect(planner.preview.value?.skillPoints?.current).toBe(2n)
     planner.draft.value!.amount = -4
+    planner.draft.value!.customName = ' Opening cost '
     expect(planner.submit()).toBe(true)
     expect(planner.operations.value.find((op) => op.id === spend.id)).toMatchObject({ amount: -4 })
     expect(planner.result.value.diagnostics).toContainEqual(
@@ -172,6 +174,7 @@ describe('Skill point document lifecycle', () => {
     expect(planner.draft.value?.amount).toBe(0)
     expect(planner.preview.value?.skillPoints?.current).toBe(-2n)
     planner.draft.value!.amount = 6
+    planner.draft.value!.customName = 'Recovery'
     expect(planner.submit()).toBe(true)
     const gain = planner.operations.value.find(
       (op) => op.type === 'changeSkillPoints' && op.amount === 6,
@@ -187,7 +190,41 @@ describe('Skill point document lifecycle', () => {
     planner.move(gain.id, -1)
     expect(settled()).toBe(2n)
     expect(planner.result.value.diagnostics.some((d) => d.code === 'sp-negative-first')).toBe(false)
-    await verifyRoundTrip(space, app, planner.document.value)
+    expect(
+      planner.operations.value.filter((op) => op.type === 'changeSkillPoints').map((op) => op.id),
+    ).toEqual([gain.id, spend.id])
+    expect(planner.document.value.metadata.customNames).toMatchObject({
+      [gain.id]: 'Recovery',
+      [spend.id]: 'Opening cost',
+    })
+    planner.addSkillPoints('postAction')
+    planner.draft.value!.customName = 'Intentional zero'
+    expect(planner.submit()).toBe(true)
+    const zero = planner.operations.value.find(
+      (op) => op.type === 'changeSkillPoints' && op.amount === 0,
+    )!
+    const { planner: reopened } = await verifyRoundTrip(space, app, planner.document.value)
+    reopened.select(event.anchor)
+    reopened.edit(reopened.operations.value.find((op) => op.id === zero.id)!)
+    expect(reopened.draft.value).toMatchObject({
+      id: zero.id,
+      amount: 0,
+      customName: 'Intentional zero',
+    })
+
+    const resultBeforeRename = reopened.result.value
+    reopened.draft.value!.customName = '  '
+    expect(reopened.submit()).toBe(true)
+    expect(reopened.result.value).toBe(resultBeforeRename)
+    expect(reopened.document.value.metadata.customNames[zero.id]).toBeUndefined()
+    expect(reopened.operations.value).toContainEqual(zero)
+
+    reopened.remove(gain.id)
+    expect(reopened.operations.value.some((op) => op.id === gain.id)).toBe(false)
+    expect(parsePlannerDocument(space.store.raw!).document.metadata.customNames).toMatchObject({
+      [spend.id]: 'Opening cost',
+    })
+    expect(reopened.document.value.metadata.customNames[gain.id]).toBeUndefined()
   })
 
   it.each(['robin-summeretto-fever', 'robin-ultimate', 'firefly-ultimate'])(

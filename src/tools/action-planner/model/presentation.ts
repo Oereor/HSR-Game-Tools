@@ -1,5 +1,6 @@
 import type { MessageDescriptor, MessageTranslator, ToolLocale } from '../../../locales/types'
-import type { EffectOperation, SimulationState } from '../engine/types'
+import type { EffectOperation, SimulationState, SkillPointsState } from '../engine/types'
+import { skillPointBalance } from '../engine/skill-points'
 import { operationNameDescriptor } from './naming'
 
 export function formatNumber(value: number | bigint, locale: ToolLocale, signed = false): string {
@@ -7,6 +8,20 @@ export function formatNumber(value: number | bigint, locale: ToolLocale, signed 
     maximumFractionDigits: 6,
     signDisplay: signed ? 'exceptZero' : 'auto',
   }).format(Object.is(value, -0) ? 0 : value)
+}
+
+export function formatSkillPointOutcome(
+  before: SkillPointsState | undefined,
+  amount: number | undefined,
+  locale: ToolLocale,
+  t: MessageTranslator,
+): string {
+  if (!before || amount === undefined || !Number.isSafeInteger(amount))
+    return t('planner.sp.unavailable')
+  return t('planner.sp.outcome', {
+    before: formatNumber(before.current, locale),
+    after: formatNumber(skillPointBalance(before, amount), locale),
+  })
 }
 
 export function renderMessage(

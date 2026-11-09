@@ -151,7 +151,9 @@
       "decreaseFlat": "使 {target} 速度降低 {amount} 点",
       "increasePercent": "使 {target} 速度提高 {amount}%",
       "decreasePercent": "使 {target} 速度降低 {amount}%",
-      "changeSkillPoints": "战技点 {amount}"
+      "recoverSkillPoints": "恢复战技点",
+      "spendSkillPoints": "消耗战技点",
+      "unchangedSkillPoints": "无变化"
     },
     "metadata": {
       "depart": "离场，不会出现在行动序列上",
@@ -298,6 +300,7 @@
       "custom": "自定义",
       "add": "添加战技点变化",
       "outcome": "余额 {before} → {after}",
+      "delta": "{amount} SP",
       "noChange": "无变化（0）",
       "invalidAmount": "请输入有效整数，可使用正号或负号。",
       "presetHint": "预设只填写基础战技点变化。",
@@ -413,6 +416,7 @@
     },
     "actionLimit": "最大行动次数",
     "eventSpeed": "事件速度",
+    "changeSkillPoints": "战技点变化",
     "customName": "自定义名称",
     "presets": "预设模板",
     "startOnly": "仅可在「战斗开始」时间节点处添加",

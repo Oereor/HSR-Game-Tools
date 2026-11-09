@@ -73,12 +73,6 @@ const { t, locale } = useI18n()
 const regularOperations = computed(() =>
   props.operations.filter((op) => op.type !== 'changeSkillPoints'),
 )
-const skillPointDraft = computed({
-  get: () => (draft.value?.type === 'changeSkillPoints' ? draft.value : undefined),
-  set: (value) => {
-    draft.value = value
-  },
-})
 const groups = computed(() =>
   props.anchor.kind === 'action'
     ? ['preAction', 'postAction'].map((phase) => ({
@@ -163,13 +157,14 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       <h2>{{ t('ui.inspector') }}</h2>
     </div>
     <OperationEditor
-      v-if="draft && !skillPointDraft"
+      v-if="draft"
       v-model="draft"
       :anchor="anchor"
       :participants="targets"
       :preview="preview"
       :invalid="invalid"
       :preset-issues="presetIssues"
+      :skill-point-warning="skillPointWarning"
       :label="label"
       :image="image"
       @cancel="emit('cancel')"
@@ -212,23 +207,18 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       <SkillPointsEditor
         v-if="trackSkillPoints"
         :key="anchorKey(anchor)"
-        v-model:draft="skillPointDraft"
         :anchor="anchor"
         :operations="operations"
         :editable="!!context"
         :entry-skill-points="entrySkillPoints"
         :settled-skill-points="settledSkillPoints"
-        :preview="preview?.skillPoints"
         :warning="skillPointWarning"
-        :invalid="invalid"
         :title="title"
         :operation-context="operationContext"
         @add="emit('addSkillPoints', $event)"
         @edit="emit('edit', $event)"
         @move="(id, delta) => emit('move', id, delta)"
         @remove="emit('remove', $event)"
-        @cancel="emit('cancel')"
-        @submit="emit('submit')"
       />
       <div class="operations-heading">
         <h3>
@@ -237,7 +227,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
             formatNumber(regularOperations.length, locale as ToolLocale)
           }}</span>
         </h3>
-        <Button size="small" :disabled="!context || !!skillPointDraft" @click="emit('edit')"
+        <Button size="small" :disabled="!context" @click="emit('edit')"
           ><Plus :size="16" :stroke-width="1.75" />{{ t('ui.add') }}</Button
         >
       </div>

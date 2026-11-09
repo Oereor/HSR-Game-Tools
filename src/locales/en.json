@@ -151,7 +151,9 @@
       "decreaseFlat": "Decrease flat speed of {target} by {amount}",
       "increasePercent": "Increase base speed of {target} by {amount}%",
       "decreasePercent": "Decrease base speed of {target} by {amount}%",
-      "changeSkillPoints": "Skill points {amount}"
+      "recoverSkillPoints": "Restore skill points",
+      "spendSkillPoints": "Spend skill points",
+      "unchangedSkillPoints": "No change"
     },
     "metadata": {
       "depart": "Leave the field and retain remaining AG",
@@ -298,6 +300,7 @@
       "custom": "Custom",
       "add": "Add skill point change",
       "outcome": "Balance {before} → {after}",
+      "delta": "{amount} SP",
       "noChange": "No change (0)",
       "invalidAmount": "Enter a safe integer. You can include a plus or minus sign.",
       "presetHint": "Presets fill in the base skill point change.",
@@ -413,6 +416,7 @@
     },
     "actionLimit": "Maximum actions",
     "eventSpeed": "Event speed",
+    "changeSkillPoints": "Skill point change",
     "customName": "Custom name",
     "presets": "Equipment presets",
     "startOnly": "Battle start only",

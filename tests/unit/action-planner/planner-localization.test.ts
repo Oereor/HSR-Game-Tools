@@ -128,6 +128,26 @@ describe('site messages and semantic presentation', () => {
     }
   })
 
+  it('uses localized defaults for signed skill point amounts and preserves custom names', () => {
+    const { global: composer } = makeI18n()
+    for (const locale of ['zh-CN', 'en'] as const) {
+      composer.locale.value = locale
+      for (const [amount, key] of [
+        [1, 'recoverSkillPoints'],
+        [-1, 'spendSkillPoints'],
+        [0, 'unchangedSkillPoints'],
+      ] as const) {
+        const change = { id: 'skill-points', type: 'changeSkillPoints', amount } as const
+        expect(operationName(change, locale, composer.t, (id) => id)).toBe(
+          composer.t(`planner.operationName.${key}`),
+        )
+        expect(operationName(change, locale, composer.t, (id) => id, undefined, '自定义 SP')).toBe(
+          '自定义 SP',
+        )
+      }
+    }
+  })
+
   it('updates localized names, metadata and errors without changing the plan, draft or simulation', async () => {
     const { global: composer } = makeI18n()
     const character = gameData.characters.find((c) => c.names['zh-CN'] !== c.names.en)!

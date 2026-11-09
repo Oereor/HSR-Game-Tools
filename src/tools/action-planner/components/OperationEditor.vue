@@ -6,13 +6,20 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import SelectButton from 'primevue/selectbutton'
 import Popover from 'primevue/popover'
+import Message from 'primevue/message'
 import { ArrowLeft, Layers } from '@lucide/vue'
 import GameIcon from './GameIcon.vue'
 import TargetGrid from './TargetGrid.vue'
 import EffectFields from './EffectFields.vue'
 import ParticipantFields from './ParticipantFields.vue'
+import SkillPointFields from './SkillPointFields.vue'
 import { gameData } from '../data/adapters/game-data'
-import type { EventAnchor, ParticipantInfo, SimulationState } from '../engine/types'
+import type {
+  EventAnchor,
+  ParticipantInfo,
+  SimulationState,
+  SkillPointWarning,
+} from '../engine/types'
 import type { OperationDraft } from '../model/editor'
 import { provisionalOperation } from '../model/editor'
 import { operationName, formatNumber } from '../model/presentation'
@@ -26,6 +33,7 @@ const props = defineProps<{
   anchor: EventAnchor
   participants: ParticipantInfo[]
   preview?: SimulationState
+  skillPointWarning?: SkillPointWarning
   invalid: string[]
   presetIssues: Record<string, string | undefined>
   label: (id: string) => string
@@ -36,21 +44,29 @@ const { t, locale } = useI18n()
 const translate: Translate = (key, params) => (params ? t(key, params) : t(key))
 const heading = ref<HTMLElement>()
 onMounted(() => heading.value?.focus())
+const skillPointDraft = computed(() => draft.value.type === 'changeSkillPoints')
 const types = computed(() =>
-  [
-    'advance',
-    'delay',
-    'immediatelyAct',
-    'addSpeedModifier',
-    'spawnParticipant',
-    'depart',
-    'returnToField',
-  ].map((value) => ({ value, label: t(`ui.${value}`) })),
+  (skillPointDraft.value
+    ? ['changeSkillPoints']
+    : [
+        'advance',
+        'delay',
+        'immediatelyAct',
+        'addSpeedModifier',
+        'spawnParticipant',
+        'depart',
+        'returnToField',
+      ]
+  ).map((value) => ({ value, label: t(`ui.${value}`) })),
 )
 const phases = computed(() =>
   ['preAction', 'postAction'].map((value) => ({ value, label: t(`ui.${value}`) })),
 )
-const provisional = computed(() => provisionalOperation(draft.value, props.anchor))
+const provisional = computed(() =>
+  skillPointDraft.value && !Number.isSafeInteger(draft.value.amount)
+    ? undefined
+    : provisionalOperation(draft.value, props.anchor),
+)
 const automaticName = computed(() =>
   provisional.value
     ? operationName(provisional.value, locale.value as ToolLocale, t, props.label, props.preview)
@@ -159,7 +175,13 @@ function inputError(input: Input) {
       ? t('ui.nonnegative')
       : t('ui.formInvalid')
 }
+const submitDisabled = computed(() =>
+  skillPointDraft.value
+    ? !Number.isSafeInteger(draft.value.amount) || (!props.preview && !draft.value.id)
+    : !props.preview || !!(selectedPreset.value && props.presetIssues[selectedPreset.value.id]),
+)
 function submit() {
+  if (skillPointDraft.value && submitDisabled.value) return
   if (selectedPreset.value)
     emit('preset', { id: selectedPreset.value.id, values: values.value, translate })
   else emit('submit')
@@ -181,7 +203,7 @@ function submit() {
         {{ selectedPreset ? t(selectedPreset.i18n.name) : draft.id ? t('ui.edit') : t('ui.add') }}
       </h2>
       <Button
-        v-if="!draft.id && !selectedPreset"
+        v-if="!skillPointDraft && !draft.id && !selectedPreset"
         text
         severity="secondary"
         size="small"
@@ -190,6 +212,13 @@ function submit() {
         ><Layers :size="16" :stroke-width="1.75" />{{ t('ui.presets') }}</Button
       >
     </div>
+    <Message
+      v-if="skillPointDraft && skillPointWarning"
+      :severity="skillPointWarning === 'sp-negative-first' ? 'warn' : 'secondary'"
+      size="small"
+    >
+      {{ t(`ui.diagnostic.${skillPointWarning}`) }}
+    </Message>
     <p v-if="invalid.includes('form')" role="alert" class="validation-summary">
       {{ t('ui.formInvalid') }}
     </p>
@@ -204,7 +233,7 @@ function submit() {
         option-label="label"
         option-value="value"
         :allow-empty="false"
-        :disabled="draft.original?.type === 'spawnParticipant'"
+        :disabled="skillPointDraft || draft.original?.type === 'spawnParticipant'"
         aria-labelledby="type-label"
         class="type-options"
       />
@@ -291,6 +320,12 @@ function submit() {
       </div>
       <p v-for="(summary, index) in summaries" :key="index" class="fine-print">{{ summary }}</p>
     </template>
+    <SkillPointFields
+      v-else-if="skillPointDraft"
+      v-model:amount="draft.amount"
+      :preview="preview?.skillPoints"
+      :invalid="invalid.includes('spAmount')"
+    />
     <ParticipantFields
       v-else-if="draft.type === 'spawnParticipant'"
       v-model="draft"
@@ -316,11 +351,11 @@ function submit() {
         <Button text severity="secondary" :label="t('ui.cancel')" @click="emit('cancel')" /><Button
           type="submit"
           :label="t('ui.applyOperation')"
-          :disabled="!preview || !!(selectedPreset && presetIssues[selectedPreset.id])"
+          :disabled="submitDisabled"
         />
       </div>
     </footer>
-    <Popover ref="popover" :pt="{ root: { 'aria-label': t('ui.presets') } }"
+    <Popover v-if="!skillPointDraft" ref="popover" :pt="{ root: { 'aria-label': t('ui.presets') } }"
       ><div class="preset-list">
         <template v-for="preset in presets" :key="preset.id">
           <button
