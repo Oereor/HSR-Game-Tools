@@ -1,0 +1,14 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "sparkle-ultimate",
+  "order": 13,
+  "characterId": "1306",
+  "selfPresence": "present",
+  "interaction": "batch",
+  "i18n": {
+    "name": "planner.characterEffects.sparkle_ultimate",
+    "description": "planner.characterEffects.sparkleUltimatePreset"
+  },
+  "icon": { "characterId": "1306" },
+  "operations": [{ "type": "characterEffect", "effectId": "sparkle.ultimate", "target": "self" }]
+}

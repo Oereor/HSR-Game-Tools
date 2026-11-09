@@ -35,6 +35,7 @@ import type {
   EffectPhase,
   SkillPointWarning,
   SkillPointsState,
+  SparkleRefill,
 } from '../engine/types'
 import { formatAV, formatNumber, renderMessage } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
@@ -52,6 +53,7 @@ const props = defineProps<{
   entrySkillPoints?: SkillPointsState
   settledSkillPoints?: SkillPointsState
   settledCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
+  sparkleRefills?: readonly SparkleRefill[]
   effectOutcomes: ReadonlyMap<string, CharacterEffectOutcome>
   operationWarnings: ReadonlyMap<string, DiagnosticCode>
   skillPointWarning?: SkillPointWarning
@@ -221,6 +223,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
         :settled-skill-points="settledSkillPoints"
         :entry-character-effects="context?.characterEffects"
         :settled-character-effects="settledCharacterEffects"
+        :sparkle-refills="sparkleRefills"
         :effect-outcomes="effectOutcomes"
         :operation-warnings="operationWarnings"
         :label="label"

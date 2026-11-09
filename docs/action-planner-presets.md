@@ -83,6 +83,8 @@ Actor 的最小结构是 `{"kind":"actor","name":"单位","camp":"ally","baseSpe
 
 丹恒·饮月的普通终结技与 E2 终结技分开提供。E2 批量追加专属资源操作和目标为 `self` 的 `advance(100)`。自身行动前若无法拉条，预设拒绝整批并提示切换到行动后。强化普攻通过 `cost` 选择 1、2 或 3 点。
 
+花火终结技预设生成一条 `sparkle.ultimate`，由引擎执行普通战技点恢复和溢出储存。后续回合结束的自动补给由推演生成，只读记录显示在 Inspector 中。
+
 ## 目标与事件
 
 - `self`：顶层 `characterId` 对应的唯一初始我方 Actor。缺失、歧义或已移除时拒绝应用；通过身份元数据识别，名称和槽位不影响结果。可选 `selfPresence` 为 present / departed / any，默认 any；流萤、知更鸟配置 present 保留必须在场的限制，回场类预设则可选择 departed。

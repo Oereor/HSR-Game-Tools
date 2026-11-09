@@ -10,12 +10,16 @@ import type {
   EnhancedBasicCost,
   SkillPointsState,
   SimulationState,
+  SparkleRefill,
 } from './types'
 
 export const ARCHER_CHARACTER_ID = '1015'
 export const IMBIBITOR_LUNAE_CHARACTER_ID = '1213'
+export const SPARKLE_CHARACTER_ID = '1306'
 export const ARCHER_CHARGE_CAP = 4
 export const SQUAMA_CAP = 3
+export const SPARKLE_STORAGE_CAP = 10
+const SPARKLE_ULTIMATE_RECOVERY = 6
 export const ENHANCED_BASIC_COSTS = [1, 2, 3] as const
 const characterKinds = {
   'archer.ultimateCharge': 'archer',
@@ -23,11 +27,13 @@ const characterKinds = {
   'imbibitorLunae.ultimate': 'imbibitorLunae',
   'imbibitorLunae.ultimateE2': 'imbibitorLunae',
   'imbibitorLunae.enhancedBasic': 'imbibitorLunae',
+  'sparkle.ultimate': 'sparkle',
 } as const satisfies Record<CharacterEffectId, CharacterEffectState['kind']>
 export const CHARACTER_EFFECT_IDS = Object.keys(characterKinds) as CharacterEffectId[]
 const characterIdsByKind = {
   archer: ARCHER_CHARACTER_ID,
   imbibitorLunae: IMBIBITOR_LUNAE_CHARACTER_ID,
+  sparkle: SPARKLE_CHARACTER_ID,
 }
 
 export const effectCharacterId = (id: CharacterEffectId) => characterIdsByKind[characterKinds[id]]
@@ -60,6 +66,7 @@ export function initialCharacterEffects(
         kind: 'imbibitorLunae',
         squama: actor.imbibitorLunaeTechnique ? 1 : 0,
       })
+    if (id === SPARKLE_CHARACTER_ID) effects.set(actor.id, { kind: 'sparkle', storedSP: 0 })
   }
   return effects
 }
@@ -133,6 +140,17 @@ export function settleCharacterEffect(
     effectId,
     skillPoints: { before: sp.current, after: sp.current },
   }
+  if (effect.kind === 'sparkle') {
+    const before = effect.storedSP
+    sp.current = skillPointBalance(sp, SPARKLE_ULTIMATE_RECOVERY)
+    const restored = Number(sp.current - outcome.skillPoints.before)
+    const overflow = SPARKLE_ULTIMATE_RECOVERY - restored
+    effect.storedSP = Math.min(SPARKLE_STORAGE_CAP, before + overflow)
+    outcome.skillPoints.after = sp.current
+    outcome.resource = { kind: 'storedSP', before, after: effect.storedSP }
+    outcome.wastedSkillPoints = overflow - (effect.storedSP - before)
+    return outcome
+  }
   if (effect.kind === 'imbibitorLunae') {
     const before = effect.squama
     effect.squama =
@@ -151,4 +169,31 @@ export function settleCharacterEffect(
   sp.current = skillPointBalance(sp, 1)
   outcome.skillPoints.after = sp.current
   return outcome
+}
+
+/** Drains stores in initial roster order. Departure preserves the store until removal. */
+export function refillSparkleSkillPoints(state: SimulationState): SparkleRefill[] {
+  const refills: SparkleRefill[] = []
+  const sp = state.skillPoints
+  if (!sp || !state.characterEffects) return refills
+  const cap = BigInt(sp.max)
+  for (const [sourceParticipantId, effect] of state.characterEffects) {
+    if (sp.current >= cap) break
+    if (
+      effect.kind !== 'sparkle' ||
+      !effect.storedSP ||
+      !state.participants.some((participant) => participant.id === sourceParticipantId)
+    )
+      continue
+    const beforeSP = sp.current
+    const beforeStored = effect.storedSP
+    sp.current = skillPointBalance(sp, beforeStored)
+    effect.storedSP -= Number(sp.current - beforeSP)
+    refills.push({
+      sourceParticipantId,
+      skillPoints: { before: beforeSP, after: sp.current },
+      storedSP: { before: beforeStored, after: effect.storedSP },
+    })
+  }
+  return refills
 }

@@ -1,6 +1,6 @@
 import { isNaturalParticipant } from './types'
 import { isSkillPointOperation, orderOperations, phaseOperations } from './effect-config'
-import { initialCharacterEffects } from './character-effects'
+import { initialCharacterEffects, refillSparkleSkillPoints } from './character-effects'
 import { DEFAULT_SKILL_POINTS } from './skill-points'
 import { pendingCycleBoundary } from './cycle'
 import { applyOperations, spawnParticipant, type OperationSettlement } from './operations'
@@ -30,6 +30,7 @@ import type {
   SimulationState,
   ParticipantState,
   ParticipantAnchor,
+  ParticipantNodeRecord,
   PendingCycleBoundary,
 } from './types'
 
@@ -83,7 +84,14 @@ export function createInitialState(
       a.position - b.position ||
       a.id.localeCompare(b.id),
   )
-  for (const actor of actors) spawnParticipant(state, actor.id, actor)
+  for (const actor of actors)
+    spawnParticipant(
+      state,
+      actor.id,
+      actor.camp === 'ally' && actor.category === undefined
+        ? { ...actor, category: 'character' }
+        : actor,
+    )
   if (state.skillPoints) {
     const effects = initialCharacterEffects(actors, characterIds)
     if (effects.size) state.characterEffects = effects
@@ -216,7 +224,7 @@ export function stepSimulation(
   state.activeParticipantId = active.id
   try {
     if (active.kind === 'scheduledEvent') expireCountdown(state, active.id)
-    const record: NodeRecord = {
+    const record: ParticipantNodeRecord = {
       id: active.id,
       kind: active.kind,
       name: active.name,
@@ -240,6 +248,10 @@ export function stepSimulation(
       finishNaturalTurn(state, actor)
       const after = applyOperations(state, phaseOperations(operations, 'postAction'), anchor)
       state = after.state
+      if (active.kind === 'actor' && active.camp === 'ally' && active.category === 'character') {
+        const refills = refillSparkleSkillPoints(state)
+        if (refills.length) record.sparkleRefills = refills
+      }
       settleNaturalParticipant(state, active.id, oldModifiers)
       const warned = before.diagnostics.some((issue) => issue.code === 'sp-negative')
       settlement = {

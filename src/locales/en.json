@@ -291,6 +291,11 @@
     "characterEffects": {
       "archer_ultimateCharge": "Archer Ultimate",
       "archer_followUp": "Archer follow-up refund",
+      "sparkle_ultimate": "Sparkle Ultimate",
+      "sparkleUltimatePreset": "Recover 6 SP and store up to 10 overflow SP for allied character turn ends.",
+      "turnEnd": "Turn end",
+      "sparkleRefill": "{name} automatic refill",
+      "sparkleWaste": "{amount} SP overflow lost",
       "imbibitorLunae_ultimate": "Imbibitor Lunae Ultimate",
       "imbibitorLunae_ultimateE2": "Imbibitor Lunae E2 Ultimate · Squama Sacrosancta",
       "lunaeUltimateE2Name": "Imbibitor Lunae Ultimate (E2)",
@@ -306,7 +311,8 @@
       "enhancement3": "3 enhancements (3 SP)",
       "resource": {
         "charge": "Charge",
-        "squama": "Squama Sacrosancta"
+        "squama": "Squama Sacrosancta",
+        "storedSP": "Stored SP"
       },
       "resourceBalance": "{name} · {resource} {before} → {after}",
       "resourceChange": "{resource} {before} → {after}",
@@ -347,7 +353,7 @@
         "basic": "Basic ATK",
         "skill": "Skill",
         "spendThree": "Spend 3 skill points",
-        "sparkle": "Sparkle Ultimate",
+        "recoverSix": "Recover 6 skill points",
         "rin": "Rin Tohsaka Joint Attack",
         "none": "No change"
       }

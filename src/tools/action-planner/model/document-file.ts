@@ -177,6 +177,7 @@ function operationFields(op: Record<string, unknown>, version: DocumentVersion):
       return ['amount']
     case 'characterEffect':
       if (version < 11) return fail('structure')
+      if (version < 13 && op.effectId === 'sparkle.ultimate') return fail('structure')
       if (
         version === 11 &&
         op.effectId !== 'archer.ultimateCharge' &&

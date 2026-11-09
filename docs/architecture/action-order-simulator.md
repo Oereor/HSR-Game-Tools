@@ -168,7 +168,7 @@ document: { name, plan, metadata }
 | 10   | 使用带符号整数的 `changeSkillPoints`。`skillPoints` 仅接受 `enabled`、`initial`、`max`。                                                   |
 | 11   | 初始 Archer 可配置 `initialArcherCharge`。新增 `characterEffect`，需要 `effectId` 和 `sourceParticipantId`。                               |
 | 12   | 初始饮月可配置 `imbibitorLunaeTechnique`。新增饮月的 Effect ID，强化普攻需要 `cost`。                                                      |
-| 13   | 停用布洛妮娅 E1 和火花爆点的专属操作。                                                                                                     |
+| 13   | 停用布洛妮娅 E1 和火花爆点的专属操作。新增 `sparkle.ultimate`。                                                                            |
 
 版本门槛源自 `8821cf8`、`237dce5`、`c55c6bc` 和历史战技点读写器 `e1217f1`、`24271fc`、`f7d2bc5`。其中可确认的战技点写入版本为 7 和 9。其余中间版本的字段门槛由历史读取器确认。
 
@@ -225,6 +225,12 @@ v11–v12 的布洛妮娅 E1 与火花爆点专属操作须确认后才能移除
 
 专属支付先用对应资源抵扣，再扣普通战技点。运行记录分别保存名义消耗、抵扣量、实际扣点和两种余额的前后值。名义消耗包含视为消耗战技点的逆鳞抵扣部分。只有实际扣除普通战技点且余额为负时才记负余额警告。
 
+花火（`1306`）的强化终结技 `sparkle.ultimate` 恢复 6 点普通战技点，将本次溢出加入独立储存，最多储存 10 点。初始储存为 0。终结技记录普通战技点和储存的实际变化，以及超过储存上限的浪费量。普通回点只影响普通余额。[^sparkle-storage]
+
+引擎在我方角色自然回合的全部 `postAction` 操作之后、行动次数上限移除和快照生成之前执行补给。提前或立即行动产生的角色回合照常结算。召唤物、忆灵、自定义 Actor、敌方、阿哈、倒计时和轮次边界不触发补给。未分类的初始我方 Actor 视为角色，动态 Actor 须明确标为角色。额外回合沿用当前调度的表达边界。
+
+花火暂离时已储存的战技点仍可补给。参与者被移除后停止补给。多个花火实例按初始站位顺序结算。Inspector 从已完成节点读取独立的自动补给记录。配置文件只保存用户添加的操作，储存和补给记录随重放生成。
+
 尚未实现完整技能执行、伤害与能量系统、多波次、角色特殊行为自动推演、额外阿哈时刻、真实敌人数据目录、云同步、账号或多方案库。
 装备预设只创建可编辑的普通操作，不自动判断装备条件。[抽卡模拟器](warp-simulator.md)与[货币战争优化器](../currency-wars.md)已作为独立工具实现，不与排轴引擎共享业务状态；遗器模拟器仍在施工中。
 这些边界描述当前工具实现；机制不确定处保留上述近似和限制，不将静态验证等同于完整游戏验收。
@@ -232,3 +238,5 @@ v11–v12 的布洛妮娅 E1 与火花爆点专属操作须确认后才能移除
 ### 参考文献
 
 [^substitute-skill-config]: HoYoverse. 饮月的正式版技能费用和参数. TurnBasedGameData 4.6 快照 `74a7b96`. [AvatarSkillConfig.json](https://github.com/Oereor/TurnBasedGameData/blob/74a7b96fba32f00cf495a5c00b0311bd02207aaf/ExcelOutput/AvatarSkillConfig.json)
+
+[^sparkle-storage]: HoYoverse. 花火强化终结技的储存标记和回合结束回点配置. TurnBasedGameData 4.6 快照 `74a7b96`. [Avatar_Advanced_Sparkle_00_Ability.json](https://github.com/Oereor/TurnBasedGameData/blob/74a7b96fba32f00cf495a5c00b0311bd02207aaf/Config/ConfigAbility/Avatar/Advanced/Avatar_Advanced_Sparkle_00_Ability.json#L2946)

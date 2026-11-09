@@ -14,7 +14,7 @@ const presets = {
   basic: 1,
   skill: -1,
   spendThree: -3,
-  sparkle: 6,
+  recoverSix: 6,
   rin: 4,
   none: 0,
 } as const

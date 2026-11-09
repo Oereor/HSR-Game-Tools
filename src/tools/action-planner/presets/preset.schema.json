@@ -673,7 +673,8 @@
                 "archer.ultimateCharge",
                 "archer.followUp",
                 "imbibitorLunae.ultimate",
-                "imbibitorLunae.ultimateE2"
+                "imbibitorLunae.ultimateE2",
+                "sparkle.ultimate"
               ]
             },
             "target": { "const": "self" }

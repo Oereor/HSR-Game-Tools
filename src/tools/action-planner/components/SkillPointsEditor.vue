@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import { Diamond, Pencil, Plus, Zap } from '@lucide/vue'
+import { Diamond, Pencil, Plus, Sparkles, Zap } from '@lucide/vue'
 import OperationCardControls from './OperationCardControls.vue'
 import type { ToolLocale } from '../../../locales/types'
 import type {
@@ -17,10 +17,11 @@ import type {
   SkillPointWarning,
   SkillPointsState,
   SkillPointOperation,
+  SparkleRefill,
 } from '../engine/types'
 import { formatNumber, formatSkillPointOutcome } from '../model/presentation'
 import { isSkillPointOperation } from '../engine/effect-config'
-import { ARCHER_CHARGE_CAP, SQUAMA_CAP } from '../engine/character-effects'
+import { ARCHER_CHARGE_CAP, SPARKLE_STORAGE_CAP, SQUAMA_CAP } from '../engine/character-effects'
 
 const props = defineProps<{
   anchor: EventAnchor
@@ -30,6 +31,7 @@ const props = defineProps<{
   settledSkillPoints?: SkillPointsState
   entryCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
   settledCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
+  sparkleRefills?: readonly SparkleRefill[]
   effectOutcomes: ReadonlyMap<string, CharacterEffectOutcome>
   operationWarnings: ReadonlyMap<string, DiagnosticCode>
   warning?: SkillPointWarning
@@ -75,6 +77,8 @@ function resourceValue(effect?: CharacterEffectState) {
       return { kind: 'charge', value: effect.charge, cap: ARCHER_CHARGE_CAP }
     case 'imbibitorLunae':
       return { kind: 'squama', value: effect.squama, cap: SQUAMA_CAP }
+    case 'sparkle':
+      return { kind: 'storedSP', value: effect.storedSP, cap: SPARKLE_STORAGE_CAP }
   }
 }
 const resources = computed(() =>
@@ -153,7 +157,7 @@ const details = computed(
               after: format(resource.after),
             }),
           )
-        if (payment || (!resource && op.effectId !== 'archer.ultimateCharge'))
+        if (payment || op.effectId === 'archer.followUp' || op.effectId === 'sparkle.ultimate')
           changes.push(t('planner.sp.delta', { amount: format(sp, true) }))
         const summary =
           payment && resource
@@ -163,7 +167,11 @@ const details = computed(
                 resource: t(`planner.characterEffects.resource.${resource.kind}`),
                 actual: format(payment.actualSpCost),
               })
-            : undefined
+            : result.wastedSkillPoints
+              ? t('planner.characterEffects.sparkleWaste', {
+                  amount: format(result.wastedSkillPoints),
+                })
+              : undefined
         return [
           op.id,
           {
@@ -281,6 +289,45 @@ const details = computed(
           <Message v-if="details.get(op.id)?.warning" size="small" severity="warn">
             {{ t(`ui.diagnostic.${details.get(op.id)?.warning}`) }}
           </Message>
+        </article>
+      </div>
+    </div>
+    <div v-if="sparkleRefills?.length" class="operation-group">
+      <h3 class="phase-heading">{{ t('planner.characterEffects.turnEnd') }}</h3>
+      <div class="operation-list">
+        <article
+          v-for="refill in sparkleRefills"
+          :key="refill.sourceParticipantId"
+          class="operation-card sp-operation"
+        >
+          <div class="operation-top">
+            <Sparkles :size="18" :stroke-width="1.75" class="advance-color" aria-hidden="true" />
+            <div class="sp-change">
+              <span class="operation-title">
+                {{
+                  t('planner.characterEffects.sparkleRefill', {
+                    name: label(refill.sourceParticipantId),
+                  })
+                }}
+              </span>
+              <span class="advance-color">
+                {{
+                  t('planner.sp.delta', {
+                    amount: format(refill.skillPoints.after - refill.skillPoints.before, true),
+                  })
+                }}
+              </span>
+              <span class="fine-print">
+                {{
+                  t('planner.characterEffects.resourceChange', {
+                    resource: t('planner.characterEffects.resource.storedSP'),
+                    before: format(refill.storedSP.before),
+                    after: format(refill.storedSP.after),
+                  })
+                }}
+              </span>
+            </div>
+          </div>
         </article>
       </div>
     </div>

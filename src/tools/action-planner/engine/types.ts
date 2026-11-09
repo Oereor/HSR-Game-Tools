@@ -60,6 +60,7 @@ export type CharacterEffectParameters =
         | 'archer.followUp'
         | 'imbibitorLunae.ultimate'
         | 'imbibitorLunae.ultimateE2'
+        | 'sparkle.ultimate'
       cost?: never
     }
 export type CharacterEffectId = CharacterEffectParameters['effectId']
@@ -106,15 +107,24 @@ export interface SkillPointsState {
   max: number
 }
 export type CharacterEffectState =
-  { kind: 'archer'; charge: number } | { kind: 'imbibitorLunae'; squama: number }
+  | { kind: 'archer'; charge: number }
+  | { kind: 'imbibitorLunae'; squama: number }
+  | { kind: 'sparkle'; storedSP: number }
 export interface CharacterEffectOutcome {
   operationId: string
   sourceParticipantId: string
   effectId: CharacterEffectId
   skillPoints: { before: bigint; after: bigint }
   charge?: { before: number; after: number }
-  resource?: { kind: 'squama'; before: number; after: number }
+  resource?: { kind: 'squama' | 'storedSP'; before: number; after: number }
   payment?: { nominalCost: number; substituteUsed: number; actualSpCost: number }
+  wastedSkillPoints?: number
+}
+/** Derived from a completed character turn and never stored as an operation. */
+export interface SparkleRefill {
+  sourceParticipantId: string
+  skillPoints: { before: bigint; after: bigint }
+  storedSP: { before: number; after: number }
 }
 export interface AhaConfig {
   id: string
@@ -243,6 +253,7 @@ interface RecordBase {
 export interface ParticipantNodeRecord extends ParticipantInfo, RecordBase {
   anchor: ParticipantAnchor
   effectiveSpeed: number
+  sparkleRefills?: readonly SparkleRefill[]
 }
 export interface CycleNodeRecord extends RecordBase {
   kind: 'cycleBoundary'

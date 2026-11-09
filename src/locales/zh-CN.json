@@ -291,6 +291,11 @@
     "characterEffects": {
       "archer_ultimateCharge": "Archer 终结技",
       "archer_followUp": "Archer 追击回点",
+      "sparkle_ultimate": "花火终结技",
+      "sparkleUltimatePreset": "恢复 6 点战技点，最多储存 10 点溢出量，在我方角色回合结束时自动补充。",
+      "turnEnd": "回合结束",
+      "sparkleRefill": "{name}自动补充",
+      "sparkleWaste": "溢出丢弃 {amount} 点战技点",
       "imbibitorLunae_ultimate": "丹恒·饮月终结技",
       "imbibitorLunae_ultimateE2": "丹恒·饮月 E2 终结技 · 逆鳞",
       "lunaeUltimateE2Name": "丹恒·饮月终结技（E2）",
@@ -306,7 +311,8 @@
       "enhancement3": "强化 3 次（3 战技点）",
       "resource": {
         "charge": "充能",
-        "squama": "逆鳞"
+        "squama": "逆鳞",
+        "storedSP": "储存战技点"
       },
       "resourceBalance": "{name} · {resource} {before} → {after}",
       "resourceChange": "{resource} {before} → {after}",
@@ -347,7 +353,7 @@
         "basic": "普通攻击",
         "skill": "战技",
         "spendThree": "消耗 3 点战技点",
-        "sparkle": "花火终结技",
+        "recoverSix": "恢复 6 点战技点",
         "rin": "远坂凛连携技",
         "none": "无变化"
       }

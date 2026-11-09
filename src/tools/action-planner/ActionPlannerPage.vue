@@ -109,12 +109,13 @@ const selectedSettlement = computed(() => {
   if (selected.value.kind === 'start') return { entry: startState, settled: snapshots[0] }
   const key = anchorKey(selected.value)
   const index = records.findIndex((record) => anchorKey(record.anchor) === key)
-  return index < 0
-    ? undefined
-    : {
-        entry: records[index].beforeEffects,
-        settled: snapshots[index + 1],
-      }
+  const record = records[index]
+  if (!record) return
+  return {
+    entry: record.beforeEffects,
+    settled: snapshots[index + 1],
+    sparkleRefills: record.kind === 'cycleBoundary' ? undefined : record.sparkleRefills,
+  }
 })
 const effectOutcomes = computed(
   () =>
@@ -139,6 +140,7 @@ const inspectorProps = computed(() => ({
   entrySkillPoints: selectedSettlement.value?.entry?.skillPoints,
   settledSkillPoints: selectedSettlement.value?.settled?.skillPoints,
   settledCharacterEffects: selectedSettlement.value?.settled?.characterEffects,
+  sparkleRefills: selectedSettlement.value?.sparkleRefills,
   effectOutcomes: effectOutcomes.value,
   operationWarnings: operationWarnings.value,
   skillPointWarning: skillPointWarnings.value.get(anchorKey(selected.value)),
