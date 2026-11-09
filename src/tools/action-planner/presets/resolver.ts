@@ -91,15 +91,6 @@ export function compilePreset(
     let serial = 0,
       count = 0
     const reserved = referencedIds(context.document.plan)
-    const insertionEvent = context.document.plan.events.find(
-      (event) => anchorKey(event.anchor) === anchorKey(insertionAnchor),
-    )
-    const insertionSource =
-      insertionAnchor.kind === 'action'
-        ? preview.participants.find(
-            (participant) => participant.id === insertionAnchor.participantId,
-          )
-        : undefined
     function probeId() {
       let id: string
       do {
@@ -122,8 +113,6 @@ export function compilePreset(
       const operations: EffectOperation[] = []
       patches.push({ anchor, operations })
       let state = root && definition.interaction === 'batch' ? preview : undefined
-      const existing = root ? insertionEvent : undefined
-      const source = root ? insertionSource : undefined
       for (const declaration of declarations) {
         if (++count > PRESET_LIMITS.operations) throw new PresetError('operations')
         operationIndex = count - 1
@@ -135,16 +124,9 @@ export function compilePreset(
           target,
         )
         if (
-          (operation.type === 'restoreSkillPoints' || operation.type === 'conditionalRestore') &&
-          anchor.kind === 'action' &&
-          (source?.kind !== 'actor' || source.camp !== 'ally')
+          validateOperations([operation], anchor).length ||
+          (definition.interaction === 'draft' && operation.type === 'changeSkillPoints')
         )
-          throw new PresetError('form')
-        const candidate =
-          operation.type === 'conditionalRestore'
-            ? [...(existing?.operations ?? []), ...operations, operation]
-            : [operation]
-        if (validateOperations(candidate, anchor, existing?.skill, source).length)
           throw new PresetError('form')
         if (state && isTargetedOperation(operation)) {
           const ids = targetIds(
@@ -157,7 +139,7 @@ export function compilePreset(
             continue
         }
         if (state) {
-          const applied = applyOperations(state, [operation], anchor, { skill: existing?.skill })
+          const applied = applyOperations(state, [operation], anchor)
           if (applied.diagnostics.some((issue) => issue.severity === 'error'))
             throw new PresetError('form')
           // The engine can continue past unusable targets. Preset insertion is atomic.

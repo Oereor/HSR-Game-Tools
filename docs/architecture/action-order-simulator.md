@@ -120,7 +120,7 @@ Version 3 起，方案保存的贡献者 ID 是身份事实。导入保留这些
 
 知更鸟·晴歌 Fever 预设使用角色 ID `1512` 和 `selfPresence: present`，依次生成自身 depart、我方 memosprite Actor「晴空乐手」、我方 custom Actor「气氛值减半节点」。通用 `self-stat.panelSpeed` 表达式从方案初始角色配置读取战斗外面板速度，由编译器在身份及插入预览检查后注入；乐手基础和面板速度均为该值 × 1.8，节点两项速度均为 140。两者初始 AG 为 10000、行动次数无限。计算结果仅在应用时物化为普通操作数值。表达式、预设身份和速度联动仅用于预设编译。节点自然行动不自动计算气氛值或结束 Fever。
 
-[presets](../../src/tools/action-planner/presets/) 中的人工 JSON 支持九种原子操作，包括两种无目标战技点操作，还可声明共享参数、目标快照和 onTrigger 事件。通用解释器解析参数与身份、按声明顺序生成普通 EffectOperation / PlanEvent，并生成候选 PlannerDocument；useActionPlanner 通过统一文件校验和 simulatePlan 重放后一次提交。生成操作出现目标失败警告或候选存在错误时不发布文档、结果或部分存档；预算导致的不可达 Anchor 警告允许保留。ID 由现有分配器预留，失败后不复用已经分配的身份。
+[presets](../../src/tools/action-planner/presets/) 中的人工 JSON 支持八种原子操作，包括无目标的战技点操作，还可声明共享参数、目标快照和 onTrigger 事件。通用解释器解析参数与身份、按声明顺序生成普通 EffectOperation / PlanEvent，并生成候选 PlannerDocument；useActionPlanner 通过统一文件校验和 simulatePlan 重放后一次提交。生成操作出现目标失败警告或候选存在错误时不发布文档、结果或部分存档；预算导致的不可达 Anchor 警告允许保留。ID 由现有分配器预留，失败后不复用已经分配的身份。
 
 卡厄斯兰那预设在所选阶段末尾追加八个 spawnParticipant 与一个显式 depart，另以最后事件的稳定 trigger Anchor 保存 returnToField。离场及回场目标是开始时实际在场的全部我方 Actor ID；没有合法目标时拒绝创建。既有操作与自定义名称保留。
 参数为用户输入的基础速度 B 和继承百分比 r，八个事件设置 `baseSpeed = B`、`speed = B × r / 100`、`initialAG = i × 10000 / 7`（i = 0…7），不舍入。默认基础速度读取白厄快照，继承比例默认 60%；不识别星魂或击杀，不限制比例到 84%。
@@ -146,13 +146,13 @@ Trace、Tag、目标头像与数值展示约定见 UI 设计规范，不改变�
 
 ```text
 format: "hsr-game-tools/action-planner"
-version: 9
+version: 10
 document: { name, plan, metadata }
 ```
 
 这是字段概览，实际方案使用工具完整导出的 JSON。未知字段、无效结构、重复或不安全身份不会通过放宽校验来兼容。
-上限为 2 MiB、1000 个事件、2000 个操作；其他字符串、目标与嵌套边界以源码 FILE_LIMITS 为准。
-写入统一使用 Version 9。所有版本均要求 `plan` 包含 `actors`、`events`、`maxNodes`、`maxAV`，`metadata` 包含 `customNames` 和 `characterIds`。读取按源版本验证，下表中的字段从各自版本起可用。
+上限为 2 MiB、1000 个事件、4000 个操作。v1–v9 的原文最多可含 2000 个操作。字符串、目标和嵌套边界由 FILE_LIMITS 定义。
+写入统一使用 Version 10。所有版本均要求 `plan` 包含 `actors`、`events`、`maxNodes`、`maxAV`，`metadata` 包含 `customNames` 和 `characterIds`。读取按源版本验证。v4–v9 的旧战技点字段仅用于迁移，v10 使用表中最后一行的战技点格式。
 
 | 版本 | 字段与操作                                                                                                                                 |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -165,14 +165,15 @@ document: { name, plan, metadata }
 | 7    | `skillPoints.storedMax` 和 `restoreSkillPoints.storeOverflow` 可选。                                                                       |
 | 8    | `skillPoints.maxModifiers` 可选。每个修正需要 `amount`，可选 `sourceParticipantId`。                                                       |
 | 9    | 支持 `conditionalRestore`，需要 `amount`、`source`、`sourceParticipantId`、`chance`、`cooldownTurns`、`outcome`，阶段必须是 `postAction`。 |
+| 10   | 使用带符号整数的 `changeSkillPoints`。`skillPoints` 仅接受 `enabled`、`initial`、`max`。                                                   |
 
 版本门槛源自 `8821cf8`、`237dce5`、`c55c6bc` 和历史战技点读写器 `e1217f1`、`24271fc`、`f7d2bc5`。其中可确认的战技点写入版本为 7 和 9。其余中间版本的字段门槛由历史读取器确认。
 
-两种战技点操作都无 `target`，具体行动来源和数值限制由引擎校验。行动事件可以只包含 `skill` 和空的 `operations`。方案保留字段缺省、显式 `false` 与 `0`。历史写入器能保存 `maxModifiers: null`，因此 Version 8 和 9 保留显式 `null`。重放时缺省、`null` 和空数组均表示无修正。余额、存储状态、冷却状态、运行结果、Trace 和队列由重放生成。导航、草稿和迁移通知属于界面状态。
+Version 1 补 `cycleMode: none`。Version 1/2 补冲突安全的 Aha ID，并按当前目录识别贡献者。Version 3 起保留已保存的 Aha 身份。迁移保留排轴、既有通用操作 ID、锚点和孤立引用。
 
-Version 1 迁移时补 `cycleMode: none`。Version 1/2 均补冲突安全的 Aha ID，并按当前目录识别贡献者。Version 3 起保留已保存的 Aha 身份。Version 4–8 保留各版本允许的战技点字段，默认值在重放时生效。迁移保留原单位、操作 ID、锚点和孤立引用。相同目录下重读规范化导出得到相同文档，升级提示只出现在读取旧版时。超出支持范围的版本返回版本错误。
+v4–v9 的技能消耗放在原有 `preAction` 恢复之后，技能恢复放在原有 `postAction` 恢复之前。旧显式恢复保留 ID、阶段和恢复量，优先保留已有自定义名称，否则沿用旧来源名。旧初始有效上限成为固定上限。有动态上限、存储、条件恢复、显式不足策略或未参与结算的技能标注时，转换确认列出受影响的类别和数量，并提供原档下载。本地有损旧档进入存档保护，使用当前原文令牌确认后才写入并发布 v10。其他已启用战技点的旧档会提示结算语义已改变。
 
-[历史迁移测试数据](../../tests/fixtures/action-planner/historical-documents.json)记录了各输入的来源提交与历史引擎重放结果。Version 1、2、3、7、9 使用历史写入器导出的测试方案。Version 4、5、6、8 使用历史读取器验证的合成方案。重放对比覆盖行动顺序与 AV、最终队列、诊断和适用的战技点记录。Version 1/2 的目录识别以导入时的快照为准，Version 3 起按已保存的贡献者重放。
+[历史迁移测试数据](../../tests/fixtures/action-planner/historical-documents.json)记录了各输入的来源提交与历史引擎重放结果。Version 1、2、3、7、9 使用历史写入器导出的测试方案。Version 4、5、6、8 使用历史读取器验证的合成方案。回归测试比较行动顺序与 AV、最终队列及通用诊断，并另行验证战技点转换和存档保护。
 
 旧事件省略 `baseSpeed` 时以 `speed` 为基数。参与者离场状态和运行时速度修正由重放恢复。新增 Aha 可能改变排序和预算内可达节点，界面会提示升级。
 导入中的未知 Character ID 保留，非法图片路径移除并报告；图片仅允许资源目录已登记的相对路径。初始敌人以 baseSpeed 统一两项 SPD，保留其他合法字段。
@@ -188,13 +189,13 @@ Version 1 迁移时补 `cycleMode: none`。Version 1/2 均补冲突安全的 Aha
 普通导入、模板和存档均使用上述解析边界，先校验并准备推演，再确认完整替换；失败或取消不替换当前文档。
 非空方案或未提交输入被替换前确认；新建空方案也会更新当前存档，受保护存档仍需明确覆盖。
 
-[usePlannerFiles](../../src/tools/action-planner/composables/usePlannerFiles.ts)统一处理文件导入、模板替换、导出与存档恢复。导出与存档写入均序列化当前提交的完整文档，存档原文备份则保留捕获的字节。战技点配置和仅含战技标注的事件也属于替换前需要确认的方案内容。
+[usePlannerFiles](../../src/tools/action-planner/composables/usePlannerFiles.ts)统一处理文件导入、模板替换、导出与存档恢复。导出与存档写入均序列化当前提交的完整文档，存档原文备份则保留捕获的字节。战技点配置和仅含战技点操作的事件也属于替换前需要确认的方案内容。
 
 文件导入、启动存档与存档重载均要求原文和规范化后的格式化导出不超过 2 MiB。若存档无法按此契约导出，则保留原字节并阻止自动覆盖。
 
 **正式配队模板必须由用户审阅，不得根据截图或角色技能描述自动生成。**当前[正式目录](../../src/tools/action-planner/templates/catalog.ts)为空；测试方案不进入生产目录。
 
-1. 在工具中配置完整方案，导出 Version 9 JSON 并人工审阅。
+1. 在工具中配置完整方案，导出 Version 10 JSON 并人工审阅。
 2. 将文件放入 [templates/plans/](../../src/tools/action-planner/templates/plans/)。旧模板由统一解析器迁移，保留工具导出的字段。
 3. 在 catalog.ts 显式导入 JSON，登记唯一 id、order、nameKey、descriptionKey、file，以及可选 conditionKey / gameVersion。
 4. 在两份 Site Messages 添加同路径的名称、简介和可选条件介绍；头像读取方案角色映射，不另外构造队伍身份。
@@ -206,23 +207,11 @@ Version 1 迁移时补 `cycleMode: none`。Version 1/2 均补冲突安全的 Aha
 
 ### 战技点编辑与推演
 
-内存引擎已提供可选 `plan.skillPoints` 配置、运行时余额／存储／冷却 Map、上限修正及资源记录类型。缺省关闭；启用时默认初始余额 3、基础上限 5、存储上限 10。初始有效上限按初始在场我方来源计算并校验。`cloneState` 独立复制战技点对象、修正数组及其条目和冷却 Map；未知余额使用 null，与 0 区分。上限变化前后任一余额未知时，loss 为 null；已知且没有实际截断时为 0。摘要／账本累计截断损失时保留未知，不将 null 当作 0。
+可选的 `plan.skillPoints` 默认关闭。启用后，初始余额和固定上限默认分别为 3 和 5。Battle Setup 允许手动修改两者，编队提示只提供参考。运行状态保存余额和上限，余额用 BigInt 精确累计。方案只序列化配置与操作，余额、结果、Trace、队列、草稿与迁移提示均由重放或界面生成。
 
-`applyOperations` 支持队伍级 `restoreSkillPoints` 与 `conditionalRestore`，返回独立恢复记录，并沿用操作列表顺序、目标资格及候选状态提交规则。显式恢复只允许开始或我方 Actor action，召唤物／忆灵同样允许，不使用自动参与资格限制。恢复量按当前上限截断；显式勾选时溢出进入存储，剩余部分记录浪费。未知余额保持未知，存储是否变为未知沿用既有存储辅助函数。
+`changeSkillPoints.amount` 是有符号安全整数。正数逐笔恢复至上限，溢出丢弃。负数直接消耗并可进入负余额，零及未配置节点保持余额。关闭跟踪时，已配置的战技点操作仍保存在方案中。
 
-条件返还只允许来源本人的我方 postAction；普通角色要求调用方提供战技上下文，召唤物／忆灵可手动配置而无需技能标注。调用方提供实际来源回合数与本次结果；复用现有条件返还函数，先检查冷却、再检查 no-proc，未知 proc 仍进入冷却，no-proc 不携带过期冷却字段。单独调用 applyOperations 不递增回合、不支付技能；正式推演由下述自然行动流程提供上下文。
-
-Stage 2A 的 stepSimulation 接收可选 ActionSkill；simulatePlan 从稳定 Anchor 对应的 PlanEvent 读取并传入，同一技能上下文用于单步校验和各操作阶段。自然行动依次执行 preAction 显式恢复、技能检查／支付、其余 preAction、原回合推进及 AG 重置、技能恢复、postAction（含条件返还）、符合资格的存储补充、原效果到期和退出。条件返还因此读取来源已经递增的自身回合数。usesSkillPoints 只允许我方非 summon / memosprite Actor 自动支付／恢复／补充；召唤物／忆灵仍可执行手动恢复／返还。未标注的参与角色令余额未知，时间轴继续。
-
-stop 支付不足时整次行动候选不提交，回合、操作、冷却和补充均不推进；preAction 候选恢复保留记录并标 committed=false。blockedAction 保留失败位置和执行前状态，不加入已完成 records / snapshots / 预算计数；其 Anchor 记为 reached，只有后续真正未到达事件报 unreached-anchor。mark 按负余额反事实执行，首个不足及下游未验证标记不因恢复而消失。摘要仅统计已提交记录和最后提交状态，不计 stop 的候选回点。
-
-战技点余额、恢复记录、冷却回合及累计成本、恢复量和损失均使用精确的安全整数。若候选节点（含开始操作）的结果超出范围，推演报错并停止，保留上一次已提交的状态、记录及累计值。带符号的上限修正先精确求和，再检查有效上限能否用安全整数表示。未知值仍以 `null` 表示。
-
-depart / returnToField 在各自候选事务内立即重算有效上限；actionLimit 退出在原自然回合结束处重算。上限变化记录附加到开始、行动、Scheduled Event 或 Cycle Boundary 的对应结果；未知损失仍为 null，存储不变。回合结束补充使用 postAction 后的新上限，先于退出。发生非法上限等运行时异常时不提交当前行动候选。调度数学、同 AV 排序、轮次边界、Trace 和原生命周期顺序保持上游实现。
-
-战斗设置统一提交战技点开关、初始余额、上限、存储上限、上限修正与不足策略。未编辑的字段保留原有缺省与显式 `null`。检查器可编辑行动标注及两种无目标恢复操作，条件返还来源由当前行动锚点确定。预览按正式推演的顺序执行支付与恢复，在不足停止的位置仍可预览和编辑支付前的显式恢复。
-
-批量标注只选择当前推演中已显示的合资格行动（含受阻行动）。确认必须使用当前文档与结果对应的预览；失效预览不提交，成功确认统一规范化、重放并保存一次。推演账本由提交记录派生。文件集成测试通过导入、编辑、自动保存、导出、重新打开与重放核对文档和账本，保存内容仅包含方案输入。
+每个执行阶段先按原顺序结算战技点操作，再按原顺序结算普通操作。自然行动使用 `preAction` 和 `postAction`，战斗开始、触发和轮次边界使用无阶段列表。预览和正式执行使用同一优先顺序。Inspector 显示节点结算后的余额和单条变化预览。六个快捷预设只填写改变量。每个产生负余额消耗的节点至多记录一条警告，整次推演的第一条警告样式更醒目。
 
 尚未实现完整技能执行、伤害与能量系统、多波次、角色特殊行为自动推演、额外阿哈时刻、真实敌人数据目录、云同步、账号或多方案库。
 装备预设只创建可编辑的普通操作，不自动判断装备条件。[抽卡模拟器](warp-simulator.md)与[货币战争优化器](../currency-wars.md)已作为独立工具实现，不与排轴引擎共享业务状态；遗器模拟器仍在施工中。

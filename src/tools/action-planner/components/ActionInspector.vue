@@ -13,6 +13,7 @@ import {
   Zap,
   UserRoundPlus,
   Flag,
+  Diamond,
   LogOut,
   LogIn,
 } from '@lucide/vue'
@@ -26,12 +27,13 @@ import { anchorKey, effectiveSpeed } from '../engine/queue'
 import { phaseOperations } from '../engine/effect-config'
 import { isTargetedOperation } from '../engine/targeting'
 import type {
-  ActionSkill,
   ParticipantInfo,
   EffectOperation,
   EventAnchor,
   SimulationState,
-  SkillPointsRecord,
+  EffectPhase,
+  SkillPointWarning,
+  SkillPointsState,
 } from '../engine/types'
 import { formatAV, formatNumber, renderMessage } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
@@ -45,9 +47,9 @@ const props = defineProps<{
   inactive?: boolean
   operations: EffectOperation[]
   context?: SimulationState
-  canSetSkill: boolean
-  skill?: ActionSkill
-  skillRecord?: SkillPointsRecord
+  trackSkillPoints: boolean
+  settledSkillPoints?: SkillPointsState
+  skillPointWarning?: SkillPointWarning
   preview?: SimulationState
   targets: ParticipantInfo[]
   invalid: string[]
@@ -66,25 +68,25 @@ const emit = defineEmits<{
   cancel: []
   submit: []
   preset: [request: PresetRequest]
-  skill: [skill?: ActionSkill]
+  addSkillPoints: [phase: EffectPhase]
 }>()
 const { t, locale } = useI18n()
-const resourceAction = computed(() => {
-  const anchor = props.anchor
-  return (
-    anchor.kind === 'action' &&
-    !!props.context?.participants.some(
-      (p) => p.id === anchor.participantId && p.kind === 'actor' && p.camp === 'ally',
-    )
-  )
+const regularOperations = computed(() =>
+  props.operations.filter((op) => op.type !== 'changeSkillPoints'),
+)
+const skillPointDraft = computed({
+  get: () => (draft.value?.type === 'changeSkillPoints' ? draft.value : undefined),
+  set: (value) => {
+    draft.value = value
+  },
 })
 const groups = computed(() =>
   props.anchor.kind === 'action'
     ? ['preAction', 'postAction'].map((phase) => ({
         phase,
-        operations: phaseOperations(props.operations, phase as 'preAction' | 'postAction'),
+        operations: phaseOperations(regularOperations.value, phase as 'preAction' | 'postAction'),
       }))
-    : [{ phase: '', operations: props.operations }],
+    : [{ phase: '', operations: regularOperations.value }],
 )
 const currentSpeed = computed(() => {
   const anchor = props.anchor
@@ -134,7 +136,7 @@ const icon = (o: EffectOperation) =>
 const metadata = computed(
   () =>
     new Map(
-      props.operations.map((operation) => {
+      regularOperations.value.map((operation) => {
         const state = props.operationContext(operation)
         return [
           operation.id,
@@ -160,13 +162,23 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
   <section class="inspector" :aria-label="t('ui.inspector')">
     <div class="pane-heading">
       <h2>{{ t('ui.inspector') }}</h2>
+      <span v-if="trackSkillPoints" class="sp-count fine-print">
+        <Diamond :size="15" aria-hidden="true" />
+        {{
+          settledSkillPoints
+            ? t('planner.sp.settled', {
+                current: formatNumber(settledSkillPoints.current, locale as ToolLocale),
+                max: formatNumber(settledSkillPoints.max, locale as ToolLocale),
+              })
+            : t('planner.sp.unavailable')
+        }}
+      </span>
     </div>
     <OperationEditor
-      v-if="draft"
+      v-if="draft && !skillPointDraft"
       v-model="draft"
       :anchor="anchor"
       :participants="targets"
-      :resource-action="resourceAction"
       :preview="preview"
       :invalid="invalid"
       :preset-issues="presetIssues"
@@ -210,24 +222,36 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
         {{ t(inactive ? 'planner.cycle.disabled' : 'ui.contextUnavailable') }}
       </p>
       <SkillPointsEditor
-        v-if="canSetSkill"
+        v-if="trackSkillPoints"
         :key="anchorKey(anchor)"
-        :skill="skill"
-        :record="skillRecord"
-        @save="emit('skill', $event)"
+        v-model:draft="skillPointDraft"
+        :anchor="anchor"
+        :operations="operations"
+        :editable="!!context"
+        :preview="preview?.skillPoints"
+        :warning="skillPointWarning"
+        :invalid="invalid"
+        :title="title"
+        :operation-context="operationContext"
+        @add="emit('addSkillPoints', $event)"
+        @edit="emit('edit', $event)"
+        @move="(id, delta) => emit('move', id, delta)"
+        @remove="emit('remove', $event)"
+        @cancel="emit('cancel')"
+        @submit="emit('submit')"
       />
       <div class="operations-heading">
         <h3>
           {{ t('ui.operations') }}
           <span class="operation-count">{{
-            formatNumber(operations.length, locale as ToolLocale)
+            formatNumber(regularOperations.length, locale as ToolLocale)
           }}</span>
         </h3>
-        <Button size="small" :disabled="!context" @click="emit('edit')"
+        <Button size="small" :disabled="!context || !!skillPointDraft" @click="emit('edit')"
           ><Plus :size="16" :stroke-width="1.75" />{{ t('ui.add') }}</Button
         >
       </div>
-      <div v-if="!operations.length" class="empty-operations">
+      <div v-if="!regularOperations.length" class="empty-operations">
         <p>{{ t('ui.emptyOperations') }}</p>
       </div>
       <div v-for="group in groups" :key="group.phase" class="operation-group">
@@ -330,3 +354,12 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
     </div>
   </section>
 </template>
+
+<style scoped>
+.sp-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  overflow-wrap: anywhere;
+}
+</style>

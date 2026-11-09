@@ -76,10 +76,10 @@ export function operationNameDescriptor(
               : 'createActor'
     return { key: `planner.operationName.${kind}`, params: { name: p.name } }
   }
-  if (operation.type === 'restoreSkillPoints' || operation.type === 'conditionalRestore')
+  if (operation.type === 'changeSkillPoints')
     return {
       key: `planner.operationName.${operation.type}`,
-      params: { amount: operation.amount },
+      params: { amount: { value: operation.amount, signed: true } },
     }
   const target = targetDescription(operation.target, name, namingTargets(operation, state))
   if (operation.type === 'advance' || operation.type === 'delay')

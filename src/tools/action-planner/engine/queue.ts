@@ -96,15 +96,7 @@ function cloneModifiers(modifiers: readonly SpeedModifierInstance[]): SpeedModif
 export function cloneState(state: SimulationState): SimulationState {
   return {
     ...state,
-    ...(state.skillPoints
-      ? {
-          skillPoints: {
-            ...state.skillPoints,
-            conditionalCooldowns: new Map(state.skillPoints.conditionalCooldowns),
-            maxModifiers: state.skillPoints.maxModifiers.map((modifier) => ({ ...modifier })),
-          },
-        }
-      : {}),
+    ...(state.skillPoints ? { skillPoints: { ...state.skillPoints } } : {}),
     ...(state.cycle ? { cycle: { ...state.cycle } } : {}),
     issuedParticipantIds: new Set(state.issuedParticipantIds),
     participants: state.participants.map((participant) => ({
@@ -145,6 +137,7 @@ export function queueSnapshot(state: SimulationState): QueueSnapshot {
   const boundary = pendingCycleBoundary(state)
   return {
     ...(boundary ? { nextCycleBoundary: boundary } : {}),
+    ...(state.skillPoints ? { skillPoints: { ...state.skillPoints } } : {}),
     elapsedAV: state.elapsedAV,
     completedNodes: state.completedNodes,
     completedActions: state.completedActions,

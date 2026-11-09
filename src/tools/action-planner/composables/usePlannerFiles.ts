@@ -1,10 +1,11 @@
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { DEFAULT_LIMITS } from '../engine/queue'
 import {
   emptyDocument,
   parsePlannerDocument,
   serializePlannerDocument,
   preparePlannerDocument,
+  requiresMigrationReview,
   plannerFilename,
   FILE_LIMITS,
   PlannerFileError,
@@ -16,8 +17,20 @@ import type { useActionPlanner } from './useActionPlanner'
 
 type PreparedDocument = ReturnType<typeof preparePlannerDocument>
 type PendingAction =
-  | { kind: 'replace'; prepared: PreparedDocument; token?: StorageToken; guarded: boolean }
-  | { kind: 'reload'; prepared: PreparedDocument; token: StorageToken; guarded: boolean }
+  | {
+      kind: 'replace'
+      prepared: PreparedDocument
+      token?: StorageToken
+      guarded: boolean
+      original?: string
+    }
+  | {
+      kind: 'reload'
+      prepared: PreparedDocument
+      token: StorageToken
+      guarded: boolean
+      original?: string
+    }
   | { kind: 'overwrite'; token: StorageToken; guarded: true }
 
 /** File and recovery actions share the session's committed document and storage guard. */
@@ -33,6 +46,14 @@ export function usePlannerFiles(
   const busy = ref(false)
   const error = ref<string>()
   const pending = shallowRef<PendingAction>()
+  const migrationReview = computed(() => {
+    const action = pending.value
+    if (!action || action.kind === 'overwrite' || action.original === undefined) return undefined
+    return {
+      original: action.original,
+      losses: action.prepared.migration?.skillPoints?.losses ?? {},
+    }
+  })
 
   function setError(cause: unknown) {
     error.value = cause instanceof PlannerFileError ? cause.code : 'read'
@@ -53,13 +74,17 @@ export function usePlannerFiles(
     const token = persistence.capture()
     if (token && token.raw !== null) download(token.raw, 'action-planner-storage-backup.json')
   }
+  function backupMigrationSource() {
+    if (migrationReview.value)
+      download(migrationReview.value.original, 'action-planner-original.json')
+  }
   function worthKeeping() {
     const doc = planner.document.value
     return !!(
       doc.name ||
       doc.plan.actors.length ||
       doc.plan.skillPoints !== undefined ||
-      doc.plan.events.some((event) => event.operations.length || event.skill !== undefined) ||
+      doc.plan.events.some((event) => event.operations.length) ||
       Object.keys(doc.metadata.customNames).length ||
       doc.plan.maxNodes !== DEFAULT_LIMITS.maxNodes ||
       doc.plan.maxAV !== DEFAULT_LIMITS.maxAV ||
@@ -68,10 +93,10 @@ export function usePlannerFiles(
       hasUncommittedInput()
     )
   }
-  function requestReplacement(prepared: PreparedDocument) {
+  function requestReplacement(prepared: PreparedDocument, original?: string) {
     const token = persistence.capture()
-    pending.value = { kind: 'replace', prepared, token, guarded: persistence.guarded }
-    if (!worthKeeping() && !persistence.guarded) confirm()
+    pending.value = { kind: 'replace', prepared, token, guarded: persistence.guarded, original }
+    if (original === undefined && !worthKeeping() && !persistence.guarded) confirm()
   }
   function newDocument() {
     error.value = undefined
@@ -83,7 +108,12 @@ export function usePlannerFiles(
     error.value = undefined
     try {
       if (file.size > FILE_LIMITS.bytes) throw new PlannerFileError('limit')
-      requestReplacement(prepare(parsePlannerDocument(await file.text())))
+      const original = await file.text()
+      const prepared = prepare(parsePlannerDocument(original))
+      requestReplacement(
+        prepared,
+        requiresMigrationReview(prepared.migration) ? original : undefined,
+      )
     } catch (cause) {
       setError(cause)
     } finally {
@@ -109,7 +139,16 @@ export function usePlannerFiles(
         token.raw === null
           ? preparePlannerDocument(emptyDocument())
           : prepare(parsePlannerDocument(token.raw))
-      pending.value = { kind: 'reload', prepared, token, guarded: persistence.guarded }
+      error.value = undefined
+      pending.value = {
+        kind: 'reload',
+        prepared,
+        token,
+        guarded: persistence.guarded,
+        ...(token.raw !== null && requiresMigrationReview(prepared.migration)
+          ? { original: token.raw }
+          : {}),
+      }
     } catch (cause) {
       setError(cause)
     }
@@ -131,7 +170,17 @@ export function usePlannerFiles(
       pending.value = undefined
       return
     }
-    if (action.kind === 'overwrite') {
+    if (action.kind !== 'overwrite' && action.original !== undefined) {
+      if (
+        !action.token ||
+        !persistence.overwrite(action.prepared.document, action.token, { keepRecoveryStatus: true })
+      ) {
+        error.value = 'migrationWrite'
+        return
+      }
+      persistence.withoutSaving(() => planner.restorePrepared(action.prepared))
+      error.value = undefined
+    } else if (action.kind === 'overwrite') {
       persistence.overwrite(planner.document.value, action.token)
     } else if (action.kind === 'reload') {
       persistence.reload(() => planner.restorePrepared(action.prepared), action.token)
@@ -147,6 +196,8 @@ export function usePlannerFiles(
     busy,
     error,
     pending,
+    migrationReview,
+    backupMigrationSource,
     exportFile,
     backupRaw,
     newDocument,

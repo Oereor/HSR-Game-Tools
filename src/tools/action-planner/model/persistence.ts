@@ -2,6 +2,7 @@ import {
   emptyDocument,
   parsePlannerDocument,
   serializePlannerDocument,
+  requiresMigrationReview,
   PlannerFileError,
 } from './document-file'
 import type { PlannerDocument } from './editor'
@@ -19,6 +20,7 @@ export interface StorageToken {
 function parseStoredDocument(source: string) {
   const parsed = parsePlannerDocument(source)
   // Storage and file import both require a document the canonical writer can export.
+  if (requiresMigrationReview(parsed.migration)) throw new PlannerFileError('migrationRequired')
   serializePlannerDocument(parsed.document)
   return parsed
 }
@@ -61,7 +63,11 @@ export function createPlannerPersistence(
       return { document: emptyDocument(), issues: [], migration: undefined }
     }
   }
-  function write(document: PlannerDocument, token: StorageToken) {
+  function write(
+    document: PlannerDocument,
+    token: StorageToken,
+    options?: { keepRecoveryStatus: boolean },
+  ) {
     try {
       const source = serializePlannerDocument(document)
       const latest = read()
@@ -77,7 +83,7 @@ export function createPlannerPersistence(
       setStatus('saved')
       return true
     } catch {
-      setStatus('failed')
+      if (!blocked || !options?.keepRecoveryStatus) setStatus('failed')
       return false
     }
   }

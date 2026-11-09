@@ -6,10 +6,9 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import SelectButton from 'primevue/selectbutton'
-import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { elationContribution } from '../engine/queue'
-import { validSkillPoints } from '../engine/skill-points'
+import { DEFAULT_SKILL_POINTS, validSkillPoints } from '../engine/skill-points'
 import { resolveElationContributors } from '../model/aha-config'
 import { CYCLE_RULES } from '../engine/cycle'
 import { Plus, Trash2 } from '@lucide/vue'
@@ -24,7 +23,6 @@ import type {
   CycleMode,
   AhaConfig,
   SkillPointsConfig,
-  SkillPointMaxModifier,
 } from '../engine/types'
 import type { ToolLocale } from '../../../locales/types'
 import type { CharacterRecord } from '../data/schema'
@@ -55,14 +53,7 @@ const maxAV = ref<number | undefined>()
 const cycleMode = ref<CycleMode>('none')
 const ahaBaseSpeed = ref<number | undefined>()
 const sp = ref<SkillPointsConfig>({})
-const spFields = [
-  { key: 'initial', defaultValue: 3 },
-  { key: 'max', defaultValue: 5 },
-  { key: 'storedMax', defaultValue: 10 },
-] as const
-const spPolicies = computed(() =>
-  ['stop', 'mark'].map((value) => ({ value, label: t(`planner.sp.policy.${value}`) })),
-)
+const spFields = ['initial', 'max'] as const
 const cycleModes = computed(() =>
   (['none', 'moc', 'aa'] as const).map((value) => ({ value, label: t(`planner.cycle.${value}`) })),
 )
@@ -79,13 +70,7 @@ function load() {
   maxAV.value = props.plan.maxAV
   cycleMode.value = props.plan.cycleMode
   ahaBaseSpeed.value = props.plan.aha.baseSpeed
-  const config = props.plan.skillPoints
-  sp.value = {
-    ...config,
-    ...(Array.isArray(config?.maxModifiers)
-      ? { maxModifiers: config.maxModifiers.map((modifier) => ({ ...modifier })) }
-      : {}),
-  }
+  sp.value = { ...props.plan.skillPoints }
   errors.value = []
   dirty.value = false
 }
@@ -126,35 +111,20 @@ const slotLabel = (slot: Slot) => {
     ? characterName(c, locale.value as ToolLocale)
     : (slot.original?.name ?? t('ui.emptySlot'))
 }
-const spSources = computed(() => [
-  { value: '', label: t('planner.sp.always') },
-  ...slots.value
-    .filter((slot) => slot.id)
-    .map((slot) => ({ value: slot.id, label: slotLabel(slot) })),
-])
+const spCapCharacters = new Set(['1306', '1015', '1508'])
+const spCapHint = computed(() =>
+  new Intl.ListFormat(locale.value).format(
+    slots.value
+      .filter((slot) => slot.characterId && spCapCharacters.has(slot.characterId))
+      .map(slotLabel),
+  ),
+)
 function setSpEnabled(value: boolean) {
   sp.value.enabled = value
   dirty.value = true
 }
-function setSpPolicy(value: SkillPointsConfig['onInsufficient']) {
-  sp.value.onInsufficient = value
-  dirty.value = true
-}
-function setSpField(key: (typeof spFields)[number]['key'], value: number | null | undefined) {
+function setSpField(key: (typeof spFields)[number], value: number | null | undefined) {
   sp.value[key] = value ?? undefined
-  dirty.value = true
-}
-function setSpModifierAmount(modifier: SkillPointMaxModifier, value: number | null | undefined) {
-  modifier.amount = value ?? 0
-  dirty.value = true
-}
-function setSpModifierSource(modifier: SkillPointMaxModifier, value: string | null | undefined) {
-  modifier.sourceParticipantId = value || undefined
-  dirty.value = true
-}
-function addSpModifier() {
-  const modifiers = (sp.value.maxModifiers ??= [])
-  modifiers.push({ amount: 2 })
   dirty.value = true
 }
 const choiceName = (c: CharacterRecord) =>
@@ -233,17 +203,7 @@ function apply() {
     ahaBaseSpeed.value <= 0
   )
     errors.value.push('aha-base')
-  if (
-    !validSkillPoints(sp.value) ||
-    sp.value.maxModifiers?.some(
-      (modifier) =>
-        modifier.sourceParticipantId &&
-        !setup.actors.some(
-          (actor) => actor.id === modifier.sourceParticipantId && actor.camp === 'ally',
-        ),
-    )
-  )
-    errors.value.push('sp')
+  if (!validSkillPoints(sp.value)) errors.value.push('sp')
   if (errors.value.length) return
   emit(
     'apply',
@@ -500,24 +460,14 @@ function apply() {
           @update:model-value="setSpEnabled"
         />
       </div>
-      <div class="field">
-        <span id="sp-policy-label" class="field-label">{{ t('planner.sp.onInsufficient') }}</span>
-        <SelectButton
-          :model-value="sp.onInsufficient ?? 'stop'"
-          :options="spPolicies"
-          option-label="label"
-          option-value="value"
-          :allow-empty="false"
-          aria-labelledby="sp-policy-label"
-          @update:model-value="setSpPolicy"
-        />
-      </div>
       <div class="form-grid">
-        <div v-for="{ key, defaultValue } in spFields" :key="key" class="field">
+        <div v-for="key in spFields" :key="key" class="field">
           <label :for="`sp-setup-${key}`">{{ t(`planner.sp.${key}`) }}</label>
           <InputNumber
             :input-id="`sp-setup-${key}`"
-            :model-value="sp[key] ?? defaultValue"
+            :locale="locale"
+            fluid
+            :model-value="sp[key] ?? DEFAULT_SKILL_POINTS[key]"
             :use-grouping="false"
             :max-fraction-digits="20"
             :invalid="errors.includes('sp')"
@@ -530,52 +480,9 @@ function apply() {
           />
         </div>
       </div>
-      <div class="section-title">
-        <h3>{{ t('planner.sp.maxModifiers') }}</h3>
-        <Button size="small" :label="t('planner.sp.addModifier')" @click="addSpModifier" />
-      </div>
-      <div v-for="(modifier, index) in sp.maxModifiers ?? []" :key="index" class="form-grid">
-        <div class="field">
-          <label :for="`sp-modifier-${index}`">{{ t('planner.sp.modifierAmount') }}</label>
-          <InputNumber
-            :input-id="`sp-modifier-${index}`"
-            :model-value="modifier.amount"
-            :use-grouping="false"
-            :max-fraction-digits="20"
-            :invalid="errors.includes('sp')"
-            :pt="{
-              pcInputText: {
-                root: { 'aria-describedby': errors.includes('sp') ? 'sp-setup-error' : undefined },
-              },
-            }"
-            @update:model-value="setSpModifierAmount(modifier, $event)"
-          />
-        </div>
-        <div class="field">
-          <label :for="`sp-modifier-source-${index}`">{{ t('planner.sp.onlyPresent') }}</label>
-          <Select
-            :input-id="`sp-modifier-source-${index}`"
-            :model-value="modifier.sourceParticipantId ?? ''"
-            :options="spSources"
-            option-label="label"
-            option-value="value"
-            :invalid="errors.includes('sp')"
-            :aria-describedby="errors.includes('sp') ? 'sp-setup-error' : undefined"
-            @update:model-value="setSpModifierSource(modifier, $event)"
-          />
-        </div>
-        <Button
-          text
-          size="small"
-          :label="t('planner.sp.removeModifier')"
-          @click="
-            () => {
-              sp.maxModifiers?.splice(index, 1)
-              dirty = true
-            }
-          "
-        />
-      </div>
+      <p v-if="sp.enabled && spCapHint" class="fine-print">
+        {{ t('planner.sp.capHint', { names: spCapHint }) }}
+      </p>
       <p v-if="errors.includes('sp')" id="sp-setup-error" class="field-error" role="alert">
         {{ t('planner.sp.invalidSetup') }}
       </p>

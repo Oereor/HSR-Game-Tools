@@ -71,21 +71,14 @@ interface PresetSpawnOperation {
       }
   )
 }
-type PresetSkillPointOperation<T extends 'restoreSkillPoints' | 'conditionalRestore'> = Omit<
-  Extract<EffectOperation, { type: T }>,
+type PresetSkillPointOperation = Omit<
+  Extract<EffectOperation, { type: 'changeSkillPoints' }>,
   'id' | 'phase'
 >
 export type PresetOperation =
   | (PresetTargetedOperation & { onTrigger?: PresetOperation[] })
   | (PresetSpawnOperation & { target?: never; onEmpty?: never; onTrigger?: PresetOperation[] })
-  | ((
-      | PresetSkillPointOperation<'restoreSkillPoints'>
-      | PresetSkillPointOperation<'conditionalRestore'>
-    ) & {
-      target?: never
-      onEmpty?: never
-      onTrigger?: never
-    })
+  | (PresetSkillPointOperation & { target?: never; onEmpty?: never; onTrigger?: never })
 export interface PresetDefinition {
   $schema?: string
   id: string

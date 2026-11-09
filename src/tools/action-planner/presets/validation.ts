@@ -3,7 +3,6 @@ import { baseCompile } from '@intlify/message-compiler'
 import schema from './preset.schema.json'
 import type { GameSnapshot } from '../data/schema'
 import { validateOperations } from '../engine/validation'
-import type { EventAnchor } from '../engine/types'
 import { collectInputs, PresetError, valueResolver } from './values'
 import { PRESET_LIMITS, type PresetDefinition, type Value } from './types'
 
@@ -109,7 +108,12 @@ export function validatePresets(
       }
     }
     operations(definition.operations)
-    if (definition.interaction === 'draft' && (count !== 1 || definition.operations[0]!.onTrigger))
+    if (
+      definition.interaction === 'draft' &&
+      (count !== 1 ||
+        definition.operations[0]!.onTrigger ||
+        definition.operations[0]!.type === 'changeSkillPoints')
+    )
       throw new PresetError('draft-operation')
     walk(definition)
     for (const preview of definition.previews ?? []) walk({ type: 'i18n', ...preview })
@@ -126,31 +130,17 @@ export function validatePresets(
         {},
         { panelSpeed: 100 },
       )
-      function validateDefaults(ops: PresetDefinition['operations'], nested = false) {
-        let conditionalSeen = false
+      function validateDefaults(ops: PresetDefinition['operations']) {
         for (const op of ops) {
-          const conditional = op.type === 'conditionalRestore'
-          if (conditional && (nested || preset.startOnly || conditionalSeen))
-            throw new PresetError('operation-default')
-          conditionalSeen ||= conditional
-          // Defaults get a representative anchor. The compiler checks the actual action and skill.
-          const anchor: EventAnchor = conditional
-            ? { kind: 'action', participantId: op.sourceParticipantId, turn: 1 }
-            : nested
-              ? { kind: 'trigger', participantId: 'static-trigger' }
-              : { kind: 'start' }
           const resolved = resolver.resolveOperation(
             op,
-            { id: 'static-check', ...(conditional ? { phase: 'postAction' } : {}) },
+            { id: 'static-check' },
             () => ({ kind: 'participants', participantIds: ['static-target'] }),
             'operation-default',
           )
-          if (
-            validateOperations([resolved], anchor, conditional ? { kind: 'skill' } : undefined)
-              .length
-          )
+          if (validateOperations([resolved], { kind: 'start' }).length)
             throw new PresetError('operation-default')
-          if (op.onTrigger) validateDefaults(op.onTrigger, true)
+          if (op.onTrigger) validateDefaults(op.onTrigger)
         }
       }
       validateDefaults(definition.operations)

@@ -12,14 +12,21 @@ import type { ParticipantDefinition, SimulationPlan } from '../engine/types'
 import type { PlannerDocument } from './editor'
 import { simulatePlan } from '../engine/engine'
 
+import {
+  legacyOperationFields,
+  migrateLegacySkillPoints,
+  skillPointConfigFields,
+  type SkillPointMigration,
+} from './legacy-skill-points'
+
 export const PLANNER_FORMAT = 'hsr-game-tools/action-planner'
-export const PLANNER_VERSION = 9
-const READABLE_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, PLANNER_VERSION] as const
+export const PLANNER_VERSION = 10
+const READABLE_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, PLANNER_VERSION] as const
 type DocumentVersion = (typeof READABLE_VERSIONS)[number]
 export const FILE_LIMITS = {
   bytes: 2 * 1024 * 1024,
   events: 1000,
-  operations: 2000,
+  operations: 4000,
   targets: 256,
   name: 120,
   displayName: 256,
@@ -29,7 +36,15 @@ export const FILE_LIMITS = {
   objects: 50000,
 } as const
 export type FileErrorCode =
-  'json' | 'format' | 'version' | 'structure' | 'limit' | 'identity' | 'metadata' | 'simulation'
+  | 'json'
+  | 'format'
+  | 'version'
+  | 'structure'
+  | 'limit'
+  | 'identity'
+  | 'metadata'
+  | 'simulation'
+  | 'migrationRequired'
 export class PlannerFileError extends Error {
   constructor(public code: FileErrorCode) {
     super(code)
@@ -42,6 +57,10 @@ export type ResourceIssue = {
 export interface MigrationNotice {
   fromVersion: Exclude<DocumentVersion, typeof PLANNER_VERSION>
   ahaAdded: boolean
+  skillPoints?: SkillPointMigration
+}
+export function requiresMigrationReview(migration?: MigrationNotice): boolean {
+  return Object.keys(migration?.skillPoints?.losses ?? {}).length > 0
 }
 export const emptyDocument = (): PlannerDocument => ({
   name: '',
@@ -134,12 +153,9 @@ function operationFields(type: unknown, version: DocumentVersion): string[] {
       return ['target', 'mode', 'amount', 'duration']
     case 'spawnParticipant':
       return ['participant']
-    case 'restoreSkillPoints':
-      if (version < 5) return fail('structure')
-      return ['amount', 'source']
-    case 'conditionalRestore':
-      if (version < 9) return fail('structure')
-      return ['amount', 'chance', 'cooldownTurns', 'outcome', 'sourceParticipantId', 'source']
+    case 'changeSkillPoints':
+      if (version !== PLANNER_VERSION) return fail('structure')
+      return ['amount']
     default:
       return fail('structure')
   }
@@ -175,19 +191,7 @@ export function validatePlannerFile(value: unknown): {
     version >= 4 ? [...requiredPlanFields, 'skillPoints'] : requiredPlanFields,
     requiredPlanFields,
   )
-  if (p.skillPoints !== undefined)
-    fields(
-      p.skillPoints,
-      [
-        'enabled',
-        'initial',
-        'max',
-        ...(version >= 6 ? ['onInsufficient'] : []),
-        ...(version >= 7 ? ['storedMax'] : []),
-        ...(version >= 8 ? ['maxModifiers'] : []),
-      ],
-      [],
-    )
+  if (p.skillPoints !== undefined) fields(p.skillPoints, skillPointConfigFields(version), [])
   const actors = list(p.actors)
   const events = list(p.events)
   if (events.length > FILE_LIMITS.events || actors.length > 9) fail('limit')
@@ -209,7 +213,10 @@ export function validatePlannerFile(value: unknown): {
   let count = 0
   const opIds = new Set<string>()
   const requiredEventFields = ['anchor', 'operations']
-  const eventFields = version >= 4 ? [...requiredEventFields, 'skill'] : requiredEventFields
+  const eventFields =
+    version >= 4 && version < PLANNER_VERSION
+      ? [...requiredEventFields, 'skill']
+      : requiredEventFields
   for (const value of events) {
     const e = fields(value, eventFields, requiredEventFields)
     const a = object(e.anchor)
@@ -224,20 +231,28 @@ export function validatePlannerFile(value: unknown): {
             : ['kind', 'participantId'],
     )
     const ops = list(e.operations)
-    if ((count += ops.length) > FILE_LIMITS.operations) fail('limit')
+    if ((count += ops.length) > (version < PLANNER_VERSION ? 2000 : FILE_LIMITS.operations))
+      fail('limit')
     for (const value of ops) {
       const op = object(value)
-      const requiredOperationFields = ['id', 'type', ...operationFields(op.type, version)]
-      const optionalOperationFields =
-        op.type === 'restoreSkillPoints' && version >= 7 ? ['phase', 'storeOverflow'] : ['phase']
-      fields(op, [...requiredOperationFields, ...optionalOperationFields], requiredOperationFields)
+      const legacy = legacyOperationFields(op.type, version)
+      const requiredOperationFields = [
+        'id',
+        'type',
+        ...(legacy?.required ?? operationFields(op.type, version)),
+      ]
+      fields(
+        op,
+        [...requiredOperationFields, 'phase', ...(legacy?.optional ?? [])],
+        requiredOperationFields,
+      )
       const id = text(op.id, FILE_LIMITS.operationId)
+      if (!id.trim()) fail('structure')
       if (forbidden.has(id) || opIds.has(id) || declaredIds.has(id)) fail('identity')
       opIds.add(id)
       if (op.type === 'spawnParticipant') checkDefinition(op.participant)
-      else if (op.type === 'restoreSkillPoints' || op.type === 'conditionalRestore')
-        text(op.source, FILE_LIMITS.displayName)
-      else {
+      else if (legacy) text(op.source, FILE_LIMITS.displayName)
+      else if (op.type !== 'changeSkillPoints') {
         const target = object(op.target)
         fields(target, target.kind === 'participants' ? ['kind', 'participantIds'] : ['kind'])
         if (
@@ -256,7 +271,7 @@ export function validatePlannerFile(value: unknown): {
       }
     }
   }
-  const plan = {
+  let plan = {
     ...p,
     ...(version === 1 ? { cycleMode: 'none' } : {}),
   } as unknown as SimulationPlan
@@ -290,7 +305,6 @@ export function validatePlannerFile(value: unknown): {
       for (const op of event.operations) {
         occupied.add(spawnedParticipantId(op.id))
         occupied.add(countdownParticipantId(op.id))
-        if (op.type === 'conditionalRestore') occupied.add(text(op.sourceParticipantId))
         if (isTargetedOperation(op) && op.target.kind === 'participants')
           list(op.target.participantIds).forEach((id) => occupied.add(text(id)))
       }
@@ -303,15 +317,37 @@ export function validatePlannerFile(value: unknown): {
     plan.aha = aha
     resolved.unresolvedIds.forEach((id) => issues.push({ kind: 'unknownElation', id }))
   }
+  // Validate source identity before migration can remove an obsolete operation.
+  const participants = participantCatalog(plan)
+  if (participants.some((participant) => opIds.has(participant.id))) fail('identity')
+  const migrated =
+    version >= 4 && version < PLANNER_VERSION
+      ? migrateLegacySkillPoints(
+          plan,
+          customNames as Record<string, string>,
+          referencedIds(plan),
+          () => fail('structure'),
+        )
+      : undefined
+  const sourceEvents = plan.events
+  if (migrated) plan = migrated.plan
   if (validatePlan(plan).length) fail('structure')
+  if (migrated)
+    plan.events = plan.events.filter((event, index) => {
+      const source = sourceEvents[index]
+      return event.operations.length || (!source.operations.length && !('skill' in source))
+    })
   const migration: MigrationNotice | undefined =
     version === PLANNER_VERSION
       ? undefined
-      : { fromVersion: version, ahaAdded: version < 3 && plan.aha.contributorIds.length > 0 }
-  const participants = participantCatalog(plan)
-  if (participants.some((p) => opIds.has(p.id))) fail('identity')
+      : {
+          fromVersion: version,
+          ahaAdded: version < 3 && plan.aha.contributorIds.length > 0,
+          ...(migrated?.notice ? { skillPoints: migrated.notice } : {}),
+        }
   // A fresh JSON tree also removes optional undefined properties from internal drafts.
   const document = JSON.parse(JSON.stringify(doc)) as PlannerDocument
+  if (migrated) document.metadata.customNames = { ...migrated.customNames }
   document.plan = JSON.parse(JSON.stringify(plan)) as SimulationPlan
   if (version >= 3) {
     const resolved = resolveElationContributors(
@@ -429,8 +465,7 @@ export function referencedIds(plan: SimulationPlan): Set<string> {
       ids.add(op.id)
       ids.add(spawnedParticipantId(op.id))
       ids.add(countdownParticipantId(op.id))
-      if (op.type === 'conditionalRestore') ids.add(op.sourceParticipantId)
-      if (isTargetedOperation(op) && op.target.kind === 'participants')
+      if (isTargetedOperation(op) && op.target?.kind === 'participants')
         op.target.participantIds.forEach((id) => ids.add(id))
     }
   }

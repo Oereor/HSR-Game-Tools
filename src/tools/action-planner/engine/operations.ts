@@ -19,15 +19,9 @@ import {
   validSpeedDurationForTargets,
 } from './targeting'
 import { validateOperations } from './validation'
-import { conditionalRestore } from './conditional-restore'
-import { addSkillPoints, cappedSkillPointIncrease } from './skill-point-arithmetic'
-import { storeSkillPointOverflow } from './skill-points'
-import { recomputeSkillPointMax } from './skill-point-max'
+import { orderOperations } from './effect-config'
+import { skillPointBalance } from './skill-points'
 import type {
-  ActionSkill,
-  ConditionalRestoreRecord,
-  SkillPointEventRecord,
-  SkillPointMaxChange,
   Diagnostic,
   ActionChangeTrace,
   EffectOperation,
@@ -64,82 +58,26 @@ export function applyOperations(
   input: SimulationState,
   operations: readonly EffectOperation[],
   anchor: EventAnchor,
-  context?: { skill?: ActionSkill },
-): {
-  state: SimulationState
-  diagnostics: Diagnostic[]
-  skillPointEvents?: SkillPointEventRecord[]
-  conditionalRestores?: ConditionalRestoreRecord[]
-  maxChanges?: SkillPointMaxChange[]
-} {
-  const errors = validateOperations(
-    operations,
-    anchor,
-    context?.skill,
-    anchor.kind === 'action'
-      ? input.participants.find((participant) => participant.id === anchor.participantId)
-      : undefined,
-  )
+): { state: SimulationState; diagnostics: Diagnostic[] } {
+  const errors = validateOperations(operations, anchor)
   if (errors.length) throw new SimulationError(errors[0])
   let state = cloneState(input)
   const diagnostics: Diagnostic[] = []
-  const skillPointEvents: SkillPointEventRecord[] = []
-  const conditionalRestores: ConditionalRestoreRecord[] = []
-  const maxChanges: SkillPointMaxChange[] = []
-  for (const op of operations) {
+  let warned = false
+  for (const op of orderOperations(operations)) {
+    if (op.type === 'changeSkillPoints') {
+      if (state.skillPoints && op.amount !== 0) {
+        state.skillPoints.current = skillPointBalance(state.skillPoints, op.amount)
+        if (!warned && op.amount < 0 && state.skillPoints.current < 0n) {
+          diagnostics.push({ code: 'sp-negative', severity: 'warning', anchor, operationId: op.id })
+          warned = true
+        }
+      }
+      continue
+    }
     const next = cloneState(state)
     try {
-      if (op.type === 'restoreSkillPoints' || op.type === 'conditionalRestore') {
-        const source =
-          anchor.kind === 'action'
-            ? next.participants.find((participant) => participant.id === anchor.participantId)
-            : undefined
-        if (
-          anchor.kind !== 'start' &&
-          (!source || source.kind !== 'actor' || source.camp !== 'ally')
-        )
-          fail('invalid-input')
-        if (next.skillPoints) {
-          if (op.type === 'conditionalRestore') {
-            if (source?.kind !== 'actor') fail('invalid-input')
-            const record = conditionalRestore(next.skillPoints, op, source.turns)
-            conditionalRestores.push(record)
-            if (record.overflow)
-              diagnostics.push({
-                code: 'sp-overflow',
-                severity: 'info',
-                anchor,
-                operationId: op.id,
-              })
-          } else {
-            const before = next.skillPoints.current
-            const restored =
-              before === null
-                ? null
-                : cappedSkillPointIncrease(before, next.skillPoints.max, op.amount)
-            const overflow = restored === null ? null : addSkillPoints(op.amount, -restored)
-            if (before !== null && restored !== null)
-              next.skillPoints.current = addSkillPoints(before, restored)
-            skillPointEvents.push({
-              operationId: op.id,
-              source: op.source,
-              amount: op.amount,
-              before,
-              after: next.skillPoints.current,
-              restored,
-              overflow,
-              ...storeSkillPointOverflow(next.skillPoints, overflow, op.storeOverflow ?? false),
-            })
-            if (overflow)
-              diagnostics.push({
-                code: 'sp-overflow',
-                severity: 'info',
-                anchor,
-                operationId: op.id,
-              })
-          }
-        }
-      } else if (op.type === 'spawnParticipant')
+      if (op.type === 'spawnParticipant')
         spawnParticipant(next, spawnedParticipantId(op.id), op.participant)
       else {
         const eligible = operationTargets(next, op.type)
@@ -172,17 +110,6 @@ export function applyOperations(
         }
         if (op.type === 'depart' || op.type === 'returnToField') {
           for (const participant of targets) participant.departed = op.type === 'depart'
-          const change = recomputeSkillPointMax(next, 'presence', op.id)
-          if (change) {
-            maxChanges.push(change)
-            if (change.loss)
-              diagnostics.push({
-                code: 'sp-cap-loss',
-                severity: 'warning',
-                anchor,
-                operationId: op.id,
-              })
-          }
         } else if (op.type === 'addSpeedModifier') {
           const countdownId = countdownParticipantId(op.id)
           for (const actor of targets) {
@@ -278,11 +205,5 @@ export function applyOperations(
       throw error
     }
   }
-  return {
-    state,
-    diagnostics,
-    ...(skillPointEvents.length ? { skillPointEvents } : {}),
-    ...(conditionalRestores.length ? { conditionalRestores } : {}),
-    ...(maxChanges.length ? { maxChanges } : {}),
-  }
+  return { state, diagnostics }
 }

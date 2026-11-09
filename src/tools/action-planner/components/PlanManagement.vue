@@ -34,6 +34,8 @@ const {
   busy,
   error,
   pending,
+  migrationReview,
+  backupMigrationSource,
   exportFile,
   backupRaw,
   newDocument,
@@ -154,7 +156,18 @@ defineExpose({ newDocument })
           )
         }}
       </p>
-      <Button text size="small" :label="t('planner.files.reload')" @click="reload" />
+      <Button
+        text
+        size="small"
+        :label="
+          t(
+            recoveryError === 'migrationRequired'
+              ? 'planner.files.migrateSaved'
+              : 'planner.files.reload',
+          )
+        "
+        @click="reload"
+      />
       <Button text size="small" :label="t('planner.files.backupRaw')" @click="backupRaw" />
       <Button text size="small" :label="t('planner.files.overwrite')" @click="overwrite" />
     </div>
@@ -174,6 +187,9 @@ defineExpose({ newDocument })
         )
       }}
     </p>
+    <p v-if="planner.migrationNotice.value?.skillPoints" class="fine-print" role="status">
+      {{ t('planner.files.migrationSemantics') }}
+    </p>
     <details v-if="issues.length" class="resource-diagnostics">
       <summary>{{ t('planner.files.resources', { count: issues.length }) }}</summary>
       <p v-for="(issue, index) in issues" :key="index" class="fine-print">
@@ -183,11 +199,28 @@ defineExpose({ newDocument })
     <Dialog
       v-model:visible="confirmVisible"
       modal
-      :header="t('planner.files.confirmTitle')"
+      :header="t(migrationReview ? 'planner.files.migrationTitle' : 'planner.files.confirmTitle')"
       :close-button-props="{ 'aria-label': t('ui.close') }"
       :style="{ width: '440px', maxWidth: 'calc(100vw - 32px)' }"
     >
-      <p>
+      <template v-if="migrationReview">
+        <p>{{ t('planner.files.migrationReview') }}</p>
+        <ul>
+          <li v-for="(count, kind) in migrationReview.losses" :key="kind">
+            {{ t(`planner.files.migrationLoss.${kind}`, { count }) }}
+          </li>
+        </ul>
+        <Button
+          size="small"
+          text
+          :label="t('planner.files.backupRaw')"
+          @click="backupMigrationSource"
+        />
+        <p v-if="error === 'migrationWrite'" class="field-error" role="alert">
+          {{ t('planner.files.error.migrationWrite') }}
+        </p>
+      </template>
+      <p v-else>
         {{
           t(
             pending?.kind === 'overwrite'
@@ -205,7 +238,7 @@ defineExpose({ newDocument })
           severity="secondary"
           :label="t('ui.cancel')"
           @click="pending = undefined" /><Button
-          :label="t('planner.files.confirm')"
+          :label="t(migrationReview ? 'planner.files.migrateSaved' : 'planner.files.confirm')"
           @click="confirm"
       /></template>
     </Dialog>

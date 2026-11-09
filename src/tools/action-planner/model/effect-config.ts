@@ -17,10 +17,12 @@ export function moveOperation(
 ): EffectOperation[] {
   const operation = operations.find((entry) => entry.id === id)
   if (!operation) return [...operations]
-  const group =
-    anchor.kind !== 'action'
-      ? [...operations]
-      : operations.filter((entry) => entry.phase === operation.phase)
+  const skillPoint = operation.type === 'changeSkillPoints'
+  const group = operations.filter(
+    (entry) =>
+      (anchor.kind !== 'action' || entry.phase === operation.phase) &&
+      (entry.type === 'changeSkillPoints') === skillPoint,
+  )
   const neighbor = group[group.findIndex((entry) => entry.id === id) + delta]
   if (!neighbor) return [...operations]
   const next = [...operations]

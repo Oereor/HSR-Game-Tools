@@ -171,8 +171,7 @@ export function valueResolver(
     }
     const { type } = declaration
     switch (type) {
-      case 'restoreSkillPoints':
-      case 'conditionalRestore':
+      case 'changeSkillPoints':
         return { ...declaration, ...common }
       case 'advance':
       case 'delay':

@@ -62,95 +62,25 @@ export type EffectOperation = { id: string; phase?: EffectPhase } & (
       amount: number
       duration: SpeedDuration
     }
-  | {
-      type: 'conditionalRestore'
-      amount: number
-      chance: number
-      cooldownTurns: number
-      outcome: 'proc' | 'no-proc'
-      sourceParticipantId: string
-      source: string
-    }
-  | { type: 'restoreSkillPoints'; amount: number; source: string; storeOverflow?: boolean }
+  | { type: 'changeSkillPoints'; amount: number }
   | { type: 'spawnParticipant'; participant: ParticipantDefinition }
 )
 export type TargetedOperation = Exclude<
   EffectOperation,
-  { type: 'spawnParticipant' | 'restoreSkillPoints' | 'conditionalRestore' }
+  { type: 'spawnParticipant' | 'changeSkillPoints' }
 >
 export interface PlanEvent {
   anchor: EventAnchor
   operations: EffectOperation[]
-  skill?: ActionSkill
-}
-export type ActionSkill =
-  { kind: 'basic' | 'skill' } | { kind: 'custom'; cost: number; recovery: number }
-export interface SkillPointMaxModifier {
-  amount: number
-  sourceParticipantId?: string
-}
-export interface SkillPointMaxChange {
-  reason: 'initial' | 'presence' | 'removal'
-  operationId?: string
-  participantId?: string
-  beforeMax: number
-  afterMax: number
-  before: number | null
-  after: number | null
-  loss: number | null
 }
 export interface SkillPointsConfig {
   enabled?: boolean
   initial?: number
   max?: number
-  onInsufficient?: 'stop' | 'mark'
-  storedMax?: number
-  /** Historical v8/v9 files may explicitly declare no modifiers with null. */
-  maxModifiers?: SkillPointMaxModifier[] | null
-}
-export interface SkillPointEventRecord {
-  operationId: string
-  source: string
-  amount: number
-  before: number | null
-  after: number | null
-  restored: number | null
-  overflow: number | null
-  stored: number | null
-  wasted: number | null
-  storedAfter: number | null
-  committed?: boolean
-}
-export type ConditionalRestoreOperation = Extract<EffectOperation, { type: 'conditionalRestore' }>
-export interface ConditionalRestoreRecord extends SkillPointEventRecord {
-  sourceParticipantId: string
-  chance: number
-  cooldownTurns: number
-  outcome: 'proc' | 'no-proc'
-  status: 'proc' | 'no-proc' | 'cooldown' | 'unknown'
-  availableFromTurn?: number
 }
 export interface SkillPointsState {
-  current: number | null
+  current: bigint
   max: number
-  baseMax: number
-  maxModifiers: SkillPointMaxModifier[]
-  stored: number | null
-  storedMax: number
-  onInsufficient?: 'stop' | 'mark'
-  unverified?: boolean
-  conditionalCooldowns: Map<string, number>
-}
-export interface SkillPointsRecord {
-  status: 'known' | 'unknown' | 'insufficient' | 'unverified'
-  before: number | null
-  after: number | null
-  paid?: number | null
-  cost?: number
-  plannedRecovery?: number
-  recovery?: number | null
-  overflow?: number | null
-  shortfall?: number
 }
 export interface AhaConfig {
   id: string
@@ -224,14 +154,9 @@ export interface SimulationState {
   issuedParticipantIds: Set<string>
   activeParticipantId?: string
 }
+export type SkillPointWarning = 'sp-negative-first' | 'sp-negative'
 export type DiagnosticCode =
-  | 'sp-cap-loss'
-  | 'sp-arithmetic'
-  | 'invalid-sp-max'
-  | 'sp-marked'
-  | 'sp-insufficient'
-  | 'sp-unknown'
-  | 'sp-overflow'
+  | SkillPointWarning
   | 'invalid-input'
   | 'invalid-target'
   | 'duplicate-participant'
@@ -257,6 +182,7 @@ export interface QueueEntry extends ParticipantInfo {
   actionChanges: ActionChangeTrace[]
 }
 export interface QueueSnapshot {
+  skillPoints?: SkillPointsState
   nextCycleBoundary?: PendingCycleBoundary
   elapsedAV: number
   completedNodes: number
@@ -269,45 +195,13 @@ export interface PendingCycleBoundary {
   elapsedAV: number
   remainingAV: number
 }
-export type SkillPointValidation = 'known' | 'unknown' | 'insufficient' | 'unverified'
-export interface SkillPointsSummary {
-  baseMax: number
-  effectiveMax: number
-  capLoss: number | null
-  storedBalance: number | null
-  firstInsufficient?: ParticipantAnchor
-  totalCost: number | null
-  totalRecovery: number | null
-  endingBalance: number | null
-  status: SkillPointValidation
-}
-export interface SkillPointRefillRecord {
-  amount: number
-  before: number
-  after: number
-  storedBefore: number
-  storedAfter: number
-}
-export interface SkillPointStorageRecord {
-  overflow: number | null
-  stored: number | null
-  wasted: number | null
-  storedAfter: number | null
-}
 interface RecordBase {
-  conditionalRestores?: ConditionalRestoreRecord[]
-  maxChanges?: SkillPointMaxChange[]
-  refill?: SkillPointRefillRecord
-  skillPointStorage?: SkillPointStorageRecord
-  spValidation?: SkillPointValidation
-  skillPointEvents?: SkillPointEventRecord[]
   elapsedAV: number
   deltaAV: number
   beforeEffects: SimulationState
   actionChanges: ActionChangeTrace[]
 }
 export interface ParticipantNodeRecord extends ParticipantInfo, RecordBase {
-  skillPoints?: SkillPointsRecord
   anchor: ParticipantAnchor
   effectiveSpeed: number
 }
@@ -317,10 +211,6 @@ export interface CycleNodeRecord extends RecordBase {
 }
 export type NodeRecord = ParticipantNodeRecord | CycleNodeRecord
 export interface SimulationResult {
-  startMaxChanges?: SkillPointMaxChange[]
-  skillPointsSummary?: SkillPointsSummary
-  startSkillPointEvents?: SkillPointEventRecord[]
-  blockedAction?: ParticipantNodeRecord
   records: NodeRecord[]
   snapshots: QueueSnapshot[]
   startState?: SimulationState

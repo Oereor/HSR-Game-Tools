@@ -3,12 +3,11 @@ import { computed, ref, shallowReadonly, shallowRef, watch } from 'vue'
 import { simulatePlan, previewOperationState } from '../engine/engine'
 import { anchorKey, spawnedParticipantId, countdownParticipantId } from '../engine/queue'
 import { validatePlan } from '../engine/validation'
-import { usesSkillPoints } from '../engine/skill-points'
 import { isTargetedOperationType, operationTargets } from '../engine/targeting'
 import type {
   AhaConfig,
-  ActionSkill,
   EffectOperation,
+  EffectPhase,
   EventAnchor,
   CycleMode,
   PlanEvent,
@@ -16,12 +15,6 @@ import type {
   SimulationPlan,
 } from '../engine/types'
 import { saveOperation, moveOperation } from '../model/effect-config'
-import {
-  applyBatchSkillPreview,
-  previewBatchSkills,
-  type BatchSkillFilter,
-  type BatchSkillPreview,
-} from '../model/batch-skills'
 import { buildCurrentQueueView } from '../model/current-queue'
 import { presets } from '../presets/catalog'
 import { compilePreset } from '../presets/resolver'
@@ -87,8 +80,6 @@ export function useActionPlanner(
   const migrationNotice = shallowRef<MigrationNotice>()
   const resourceIssues = shallowRef<ResourceIssue[]>([])
   const setupRevision = ref(0)
-  const batchSkillPreview = shallowRef<BatchSkillPreview>()
-  const batchSkillError = ref<'stale' | 'commit'>()
   let reservedIds = referencedIds(initialPlan)
   const allocatedIds = new Set<string>()
   let serial = 0
@@ -111,24 +102,9 @@ export function useActionPlanner(
   })
   const operations = computed(() => selectedEvent.value?.operations ?? [])
   const context = computed(() => contextAt(plan.value, result.value, selected.value))
-  const canSetSkill = computed(() => {
-    const anchor = selected.value
-    return (
-      anchor.kind === 'action' &&
-      usesSkillPoints(
-        context.value?.participants.find((actor) => actor.id === anchor.participantId),
-      )
-    )
-  })
   const preview = computed(() =>
     draft.value
-      ? previewDraft(
-          context.value,
-          operations.value,
-          selected.value,
-          draft.value,
-          selectedEvent.value?.skill,
-        )
+      ? previewDraft(context.value, operations.value, selected.value, draft.value)
       : undefined,
   )
   function temporaryIds() {
@@ -181,13 +157,9 @@ export function useActionPlanner(
   const unreached = computed(() =>
     plan.value.events.filter(
       (e) =>
-        (e.operations.length || e.skill) &&
+        e.operations.length &&
         e.anchor.kind !== 'start' &&
         !(e.anchor.kind === 'cycleBoundary' && plan.value.cycleMode === 'none') &&
-        !(
-          result.value.blockedAction &&
-          anchorKey(result.value.blockedAction.anchor) === anchorKey(e.anchor)
-        ) &&
         !result.value.records.some((r) => anchorKey(r.anchor) === anchorKey(e.anchor)),
     ),
   )
@@ -302,13 +274,7 @@ export function useActionPlanner(
       operation ? metadataValue(document.value.metadata.customNames, operation.id) : '',
     )
     if (!operation && context.value) {
-      const p = previewDraft(
-        context.value,
-        operations.value,
-        selected.value,
-        next,
-        selectedEvent.value?.skill,
-      )
+      const p = previewDraft(context.value, operations.value, selected.value, next)
       next.selectedIds = operationTargets(p)
         .filter((t) => t.kind === 'actor')
         .slice(0, 1)
@@ -328,7 +294,7 @@ export function useActionPlanner(
     const key = anchorKey(next.anchor)
     const events = [...plan.value.events]
     const index = events.findIndex((event) => anchorKey(event.anchor) === key)
-    if (next.operations.length || next.skill !== undefined) {
+    if (next.operations.length) {
       if (index === -1) events.push(next)
       else events[index] = next
     } else {
@@ -337,50 +303,10 @@ export function useActionPlanner(
     }
     return replacePlan({ ...plan.value, events }, metadata)
   }
-  function setSkill(skill?: ActionSkill) {
-    if (!canSetSkill.value) return false
-    const existing = selectedEvent.value
-    if (
-      !updateEvent({
-        ...existing,
-        anchor: existing?.anchor ?? { ...selected.value },
-        operations: operations.value,
-        skill,
-      })
-    )
-      return false
-    cancel()
-    return true
-  }
-  function cancelBatchSkills() {
-    batchSkillPreview.value = undefined
-    batchSkillError.value = undefined
-  }
-  function reviewBatchSkills(filter: BatchSkillFilter, skill: ActionSkill) {
-    const preview = previewBatchSkills(document.value, result.value, filter, skill)
-    batchSkillPreview.value = preview
-    batchSkillError.value = undefined
-    return preview
-  }
-  function confirmBatchSkills(expected?: BatchSkillPreview) {
-    if (
-      !expected ||
-      expected !== batchSkillPreview.value ||
-      expected.document !== document.value ||
-      expected.result !== result.value
-    ) {
-      batchSkillPreview.value = undefined
-      batchSkillError.value = 'stale'
-      return false
-    }
-    if (expected.invalid || !expected.changes.length) return false
-    if (!replacePlan(applyBatchSkillPreview(expected))) {
-      batchSkillError.value = 'commit'
-      return false
-    }
-    cancelBatchSkills()
-    cancel()
-    return true
+  function addSkillPoints(phase: EffectPhase) {
+    if (!plan.value.skillPoints?.enabled || !context.value) return
+    draft.value = { ...operationDraft(), type: 'changeSkillPoints', amount: 0, phase }
+    invalid.value = []
   }
   function submit() {
     if (!draft.value) return false
@@ -389,8 +315,6 @@ export function useActionPlanner(
       draft.value.id ?? nextId(),
       selected.value,
       preview.value,
-      selectedEvent.value?.skill,
-      operations.value,
     )
     invalid.value = parsed.invalid
     if (!parsed.operation) return false
@@ -574,8 +498,7 @@ export function useActionPlanner(
                 selected.value,
                 operation.phase ?? 'preAction',
                 operation.id,
-                selectedEvent.value?.skill,
-                operation.type === 'restoreSkillPoints',
+                operation.type === 'changeSkillPoints',
               )
             : undefined,
         ]),
@@ -613,14 +536,7 @@ export function useActionPlanner(
     nextId,
     replacePlan,
     applySetup,
-    canSetSkill,
-    skill: computed(() => selectedEvent.value?.skill),
-    setSkill,
-    batchSkillPreview: shallowReadonly(batchSkillPreview),
-    batchSkillError: shallowReadonly(batchSkillError),
-    reviewBatchSkills,
-    confirmBatchSkills,
-    cancelBatchSkills,
+    addSkillPoints,
     select,
     edit,
     cancel,

@@ -6,3 +6,11 @@ export function phaseOperations(
 ): EffectOperation[] {
   return operations.filter((operation) => operation.phase === phase)
 }
+
+/** Stable priority within a single execution group. */
+export function orderOperations(operations: readonly EffectOperation[]): EffectOperation[] {
+  return [
+    ...operations.filter((operation) => operation.type === 'changeSkillPoints'),
+    ...operations.filter((operation) => operation.type !== 'changeSkillPoints'),
+  ]
+}

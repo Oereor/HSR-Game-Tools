@@ -1,7 +1,15 @@
-import { validatePlannerFile } from '../model/document-file'
+import {
+  PlannerFileError,
+  requiresMigrationReview,
+  validatePlannerFile,
+} from '../model/document-file'
 import type { PlannerTemplate } from './catalog'
 
-export const loadPlannerTemplate = (template: PlannerTemplate) => validatePlannerFile(template.file)
+export function loadPlannerTemplate(template: PlannerTemplate) {
+  const parsed = validatePlannerFile(template.file)
+  if (requiresMigrationReview(parsed.migration)) throw new PlannerFileError('migrationRequired')
+  return parsed
+}
 export function validatePlannerTemplates(
   templates: readonly PlannerTemplate[],
   messages: readonly unknown[],

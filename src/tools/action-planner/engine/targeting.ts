@@ -10,9 +10,7 @@ import type {
 export function isTargetedOperationType(
   type: EffectOperation['type'],
 ): type is TargetedOperation['type'] {
-  return (
-    type !== 'spawnParticipant' && type !== 'restoreSkillPoints' && type !== 'conditionalRestore'
-  )
+  return type !== 'spawnParticipant' && type !== 'changeSkillPoints'
 }
 
 export function isTargetedOperation(operation: EffectOperation): operation is TargetedOperation {

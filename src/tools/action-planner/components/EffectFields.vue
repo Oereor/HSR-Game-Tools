@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import SelectButton from 'primevue/selectbutton'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
-import ToggleSwitch from 'primevue/toggleswitch'
 import type { OperationDraft } from '../model/editor'
 import type { SpeedDurationDraft } from '../model/speed-duration-config'
 const draft = defineModel<OperationDraft>({ required: true })
@@ -44,24 +43,6 @@ watch(
   { immediate: true },
 )
 const bad = (key: string) => props.invalid.includes(key)
-const resourceFields = computed(
-  () =>
-    [
-      { key: 'amount', error: 'spAmount' },
-      ...(draft.value.type === 'conditionalRestore'
-        ? ([
-            { key: 'chance', error: 'chance' },
-            { key: 'cooldownTurns', error: 'cooldownTurns' },
-          ] as const)
-        : []),
-    ] as const,
-)
-const outcomes = computed(() =>
-  ['proc', 'no-proc'].map((value) => ({
-    value,
-    label: t(`planner.sp.outcomes.${value}`),
-  })),
-)
 const pt = (key: string) => ({
   pcInputText: {
     root: {
@@ -76,53 +57,6 @@ const pt = (key: string) => ({
 })
 </script>
 <template>
-  <template v-if="draft.type === 'restoreSkillPoints' || draft.type === 'conditionalRestore'">
-    <div class="field">
-      <label for="sp-operation-source">{{ t('planner.sp.source') }}</label>
-      <InputText
-        id="sp-operation-source"
-        v-model="draft.source"
-        maxlength="256"
-        :invalid="bad('spSource')"
-        :aria-describedby="bad('spSource') ? 'error-spSource' : undefined"
-        fluid
-      />
-      <small v-if="bad('spSource')" id="error-spSource" class="field-error">
-        {{ t('planner.sp.errors.spSource') }}
-      </small>
-    </div>
-    <div v-for="{ key, error } in resourceFields" :key="key" class="field">
-      <label :for="`sp-operation-${key}`">{{ t(`planner.sp.${key}`) }}</label>
-      <InputNumber
-        v-model="draft[key]"
-        :input-id="`sp-operation-${key}`"
-        :locale="locale"
-        :use-grouping="false"
-        :max-fraction-digits="20"
-        :invalid="bad(error)"
-        :pt="pt(error)"
-        fluid
-      />
-      <small v-if="bad(error)" :id="`error-${error}`" class="field-error">
-        {{ t(`planner.sp.errors.${error}`) }}
-      </small>
-    </div>
-    <div v-if="draft.type === 'conditionalRestore'" class="field">
-      <span id="sp-outcome-label" class="field-label">{{ t('planner.sp.outcome') }}</span>
-      <SelectButton
-        v-model="draft.outcome"
-        :options="outcomes"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        aria-labelledby="sp-outcome-label"
-      />
-    </div>
-    <div v-else class="field">
-      <label for="sp-store-overflow">{{ t('planner.sp.storeOverflow') }}</label>
-      <ToggleSwitch v-model="draft.storeOverflow" input-id="sp-store-overflow" />
-    </div>
-  </template>
   <div v-if="draft.type === 'advance' || draft.type === 'delay'" class="field">
     <label for="effect-percent">{{ t('ui.percentValue') }}</label
     ><InputNumber

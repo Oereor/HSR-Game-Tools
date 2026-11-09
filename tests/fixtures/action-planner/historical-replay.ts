@@ -19,16 +19,7 @@ export function projectHistoricalReplay(result: SimulationResult) {
     finalQueue: result.snapshots
       .at(-1)
       ?.queue.map((entry) => [anchorKey(entry.anchor), entry.remainingAG, entry.remainingAV]),
-    diagnostics: result.diagnostics,
+    diagnostics: result.diagnostics.filter((issue) => !issue.code.startsWith('sp-')),
     stopReason: result.stopReason,
-    opening: result.startSkillPointEvents ?? [],
-    skills: result.records.flatMap((record) =>
-      record.kind !== 'cycleBoundary' && record.skillPoints ? [record.skillPoints] : [],
-    ),
-    refunds: result.records.flatMap((record) =>
-      record.kind !== 'cycleBoundary' ? (record.conditionalRestores ?? []) : [],
-    ),
-    balance: result.skillPointsSummary?.endingBalance ?? null,
-    stored: result.skillPointsSummary?.storedBalance ?? null,
   }
 }

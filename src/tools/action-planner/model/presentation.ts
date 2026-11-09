@@ -2,7 +2,7 @@ import type { MessageDescriptor, MessageTranslator, ToolLocale } from '../../../
 import type { EffectOperation, SimulationState } from '../engine/types'
 import { operationNameDescriptor } from './naming'
 
-export function formatNumber(value: number, locale: ToolLocale, signed = false): string {
+export function formatNumber(value: number | bigint, locale: ToolLocale, signed = false): string {
   return new Intl.NumberFormat(locale, {
     maximumFractionDigits: 6,
     signDisplay: signed ? 'exceptZero' : 'auto',

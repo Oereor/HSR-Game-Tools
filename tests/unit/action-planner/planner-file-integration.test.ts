@@ -2,58 +2,37 @@ import { effectScope, type EffectScope } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { usePlannerFiles } from '../../../src/tools/action-planner/composables/usePlannerFiles'
 import { usePlannerSession } from '../../../src/tools/action-planner/composables/usePlannerSession'
-import { simulatePlan } from '../../../src/tools/action-planner/engine/engine'
+import { anchorKey, simulatePlan } from '../../../src/tools/action-planner/engine/engine'
 import {
   emptyDocument,
   FILE_LIMITS,
   parsePlannerDocument,
   PLANNER_FORMAT,
+  PLANNER_VERSION,
   preparePlannerDocument,
   serializePlannerDocument,
 } from '../../../src/tools/action-planner/model/document-file'
-import type { EffectOperation, EventAnchor } from '../../../src/tools/action-planner/engine/types'
+import type { EventAnchor } from '../../../src/tools/action-planner/engine/types'
 import type { PlannerDocument } from '../../../src/tools/action-planner/model/editor'
 import { STORAGE_KEY } from '../../../src/tools/action-planner/model/persistence'
-import { buildSkillPointLedger } from '../../../src/tools/action-planner/model/skill-point-ledger'
 import { presets } from '../../../src/tools/action-planner/presets/catalog'
 import historical from '../../fixtures/action-planner/historical-documents.json'
 import { syntheticDocument } from '../../fixtures/action-planner/phase-2a-document'
 
 function skillPointDocument(enabled = false): PlannerDocument {
   const doc = syntheticDocument()
-  doc.plan.skillPoints = { enabled, initial: 0, storedMax: 0, maxModifiers: null }
-  doc.plan.events[0]!.operations.push(
-    { id: 'opening', type: 'restoreSkillPoints', amount: 2, source: 'Opening' },
-    {
-      id: 'no-storage',
-      type: 'restoreSkillPoints',
-      amount: 1,
-      source: 'Manual',
-      storeOverflow: false,
-    },
-  )
-  const action = doc.plan.events[1]!
-  action.skill = { kind: 'skill' }
-  action.operations.push({
-    id: 'refund',
-    type: 'conditionalRestore',
-    phase: 'postAction',
-    amount: 1,
-    source: 'Selected refund',
-    sourceParticipantId: 'editor-1',
-    chance: 0.5,
-    cooldownTurns: 0,
-    outcome: 'no-proc',
-  })
-  doc.plan.events.push({
-    anchor: { kind: 'action', participantId: 'editor-1', turn: 2 },
-    skill: { kind: 'custom', cost: 0, recovery: 0 },
-    operations: [],
+  doc.plan.skillPoints = { enabled, initial: 0, max: 6 }
+  doc.plan.events[0]!.operations.push({ id: 'opening', type: 'changeSkillPoints', amount: 2 })
+  doc.plan.events[1]!.operations.push({
+    id: 'spend',
+    type: 'changeSkillPoints',
+    amount: -3,
+    phase: 'preAction',
   })
   return doc
 }
 
-const envelope = (document: PlannerDocument, version = 9) => ({
+const envelope = (document: unknown, version: number = PLANNER_VERSION) => ({
   format: PLANNER_FORMAT,
   version,
   document,
@@ -115,7 +94,6 @@ async function verifyRoundTrip(space: Workspace, app: Session, authored: Planner
   const { document, result } = app.planner
   expect(document.value).toStrictEqual(prepared.document)
   expect(result.value).toStrictEqual(prepared.result)
-  const ledger = buildSkillPointLedger(result.value, document.value.plan.cycleMode)
   app.files.exportFile()
   const [bytes] = app.download.mock.calls.at(-1)!
   expect(JSON.parse(bytes)).toStrictEqual(envelope(prepared.document))
@@ -129,10 +107,6 @@ async function verifyRoundTrip(space: Workspace, app: Session, authored: Planner
   expect(reopened.planner.document.value).toStrictEqual(prepared.document)
   expect(reopened.planner.result.value).toStrictEqual(prepared.result)
   expect(reopened.planner.migrationNotice.value).toBeUndefined()
-  expect(buildSkillPointLedger(reopened.planner.result.value, authored.plan.cycleMode)).toEqual(
-    ledger,
-  )
-
   await reopened.files.importFile(upload(bytes))
   expect(reopened.files.pending.value?.kind).toBe('replace')
   expect(reopened.files.error.value).toBeUndefined()
@@ -172,289 +146,52 @@ function resourcePlan() {
   return doc
 }
 
-describe('Skill Point document lifecycle', () => {
-  it.each([3, 7, 8])('imports, edits and reopens the archived v%s document', async (version) => {
-    const file = historical.find((entry) => entry.file.version === version)!.file
-    const source = JSON.stringify(file)
-    const parsed = parsePlannerDocument(source)
+describe('Skill point document lifecycle', () => {
+  it('edits, reorders and reopens signed changes with stable operation identities', async () => {
+    const authored = skillPointDocument(true)
     const space = workspace()
     const app = space.open()
-    await app.files.importFile(upload(source))
-    expect(app.planner.migrationNotice.value).toEqual({ fromVersion: version, ahaAdded: false })
-    expect(app.planner.document.value).toStrictEqual(file.document)
-    expect(app.planner.result.value).toStrictEqual(simulatePlan(parsed.document.plan))
-    expect(space.store.writes).toBe(1)
-
-    const expected = structuredClone(parsed.document)
-    const first = expected.plan.events[0]!.operations[0]!
-    const p = app.planner
-    p.select(start)
-    p.edit(p.operations.value[0])
-    if (first.type === 'advance') {
-      first.percent += 10
-      p.draft.value!.percent = first.percent
-      expect(expected.plan).not.toHaveProperty('skillPoints')
-    } else if (first.type === 'restoreSkillPoints') {
-      first.amount += 1
-      p.draft.value!.amount = first.amount
-      if (version === 7) expect(expected.plan.skillPoints).not.toHaveProperty('maxModifiers')
-    } else {
-      throw new Error('Unexpected historical opening operation')
-    }
-    expect(p.submit()).toBe(true)
-    expect(space.store.writes).toBe(2)
-    await verifyRoundTrip(space, app, expected)
-  })
-
-  it('edits both target-free operations and replays skills, cooldowns, cap changes and storage', async () => {
-    const authored = resourcePlan()
-    authored.plan.skillPoints = {
-      enabled: true,
-      initial: 7,
-      max: 5,
-      storedMax: 4,
-      maxModifiers: [{ amount: 2, sourceParticipantId: 'b' }],
-    }
-    const presence = (id: string, type: 'depart' | 'returnToField'): EffectOperation => ({
-      id,
-      type,
-      phase: 'postAction',
-      target: { kind: 'participants', participantIds: ['b'] },
-    })
-    const depart = presence('leave', 'depart')
-    const returnToField = presence('return', 'returnToField')
-    const leaveAgain = presence('leave-again', 'depart')
-    authored.plan.events = [
-      { anchor: action(1), operations: [depart], skill: { kind: 'skill' } },
-      { anchor: action(2), operations: [returnToField], skill: { kind: 'skill' } },
-      { anchor: action(5), operations: [leaveAgain] },
-    ]
-    const space = workspace()
-    const app = space.open()
-    await app.files.importFile(upload(JSON.stringify(envelope(authored))))
-    const p = app.planner
-    expect(p.document.value).toStrictEqual(authored)
-    p.edit()
-    Object.assign(p.draft.value!, {
-      type: 'restoreSkillPoints',
-      amount: 3,
-      source: 'Opening reserve',
-      storeOverflow: false,
-    })
-    expect(p.submit()).toBe(true)
-    const openingId = p.operations.value[0]!.id
-    p.edit(p.operations.value[0])
-    expect(p.draft.value?.amount).toBe(3)
-    p.draft.value!.amount = 4
-    p.draft.value!.storeOverflow = true
-    expect(p.submit()).toBe(true)
-    const opening: EffectOperation = {
-      id: openingId,
-      type: 'restoreSkillPoints',
-      amount: 4,
-      source: 'Opening reserve',
-      storeOverflow: true,
-    }
-    expect(p.operations.value).toStrictEqual([opening])
-    p.edit()
-    Object.assign(p.draft.value!, { type: 'restoreSkillPoints', amount: 1, source: 'Temporary' })
-    expect(p.submit()).toBe(true)
-    p.remove(p.operations.value[1]!.id)
-    expect(p.operations.value).toStrictEqual([opening])
-
-    const addRefund = (turn: number) => {
-      p.select(action(turn))
-      p.edit()
-      Object.assign(p.draft.value!, {
-        type: 'conditionalRestore',
-        phase: 'preAction',
-        amount: 1,
-        source: 'Manual refund',
-        chance: 0.5,
-        cooldownTurns: 1,
-        outcome: 'proc',
-      })
-      const before = p.document.value
-      const writes = space.store.writes
-      expect(p.submit()).toBe(false)
-      expect(p.document.value).toBe(before)
-      expect(space.store.writes).toBe(writes)
-      p.draft.value!.phase = 'postAction'
-      expect(p.submit()).toBe(true)
-      const operation = p.operations.value.at(-1)!
-      expect(operation).toMatchObject({ type: 'conditionalRestore', sourceParticipantId: 'a' })
-      expect(operation).not.toHaveProperty('target')
-      return operation
-    }
-    const firstRefund = addRefund(1)
-    p.edit(firstRefund)
-    p.draft.value!.chance = 0.75
-    expect(p.submit()).toBe(true)
-    const refund = { ...firstRefund, chance: 0.75 }
-    p.move(firstRefund.id, -1)
-    expect(p.operations.value).toStrictEqual([refund, depart])
-    const secondRefund = addRefund(2)
-    p.select(action(3))
-    expect(p.setSkill({ kind: 'skill' })).toBe(true)
-    const thirdRefund = addRefund(3)
-    p.select(action(4))
-    expect(p.setSkill({ kind: 'skill' })).toBe(true)
-    const temporary = addRefund(4)
-    p.remove(temporary.id)
-    expect(p.skill.value).toStrictEqual({ kind: 'skill' })
-    expect(p.operations.value).toEqual([])
-    expect(p.setSkill({ kind: 'basic' })).toBe(true)
-    expect(p.skill.value).toStrictEqual({ kind: 'basic' })
-    const basic = p.result.value.records[3]
-    expect(basic).toMatchObject({ skillPoints: { paid: 0, recovery: 0 } })
-    const skill = { kind: 'custom', cost: 2, recovery: 1 } as const
-    expect(p.setSkill(skill)).toBe(true)
-
-    authored.plan.events = [
-      { anchor: action(1), operations: [refund, depart], skill: { kind: 'skill' } },
-      { anchor: action(2), operations: [returnToField, secondRefund], skill: { kind: 'skill' } },
-      { anchor: action(5), operations: [leaveAgain] },
-      { anchor: start, operations: [opening] },
-      { anchor: action(3), operations: [thirdRefund], skill: { kind: 'skill' } },
-      { anchor: action(4), operations: [], skill },
-    ]
-    const result = p.result.value
-    expect(result.startSkillPointEvents?.[0]).toMatchObject({ restored: 0, stored: 4 })
-    expect(result.records.map((record) => record.conditionalRestores?.[0]?.status)).toEqual([
-      'proc',
-      'cooldown',
-      'proc',
-      undefined,
-      undefined,
-    ])
-    expect(result.records[0]?.maxChanges?.[0]).toMatchObject({ beforeMax: 7, afterMax: 5, loss: 2 })
-    expect(result.records[1]?.refill).toMatchObject({ amount: 3, storedAfter: 1 })
-    expect(result.records[3]).toMatchObject({
-      skillPoints: { paid: 2, recovery: 1 },
-      refill: { amount: 1, storedAfter: 0 },
-    })
-    expect(result.records[4]?.maxChanges?.[0]).toMatchObject({
-      before: null,
-      after: null,
-      loss: null,
-    })
-    expect(buildSkillPointLedger(result, 'none')).toMatchObject([
-      { openingBalance: 7, endingBalance: null, storedBalance: 0, endingMax: 5, capLoss: null },
-    ])
-    await verifyRoundTrip(space, app, authored)
-  })
-
-  it('keeps a blocked plan editable and preserves null modifiers through setup and reopen', async () => {
-    const authored = resourcePlan()
-    authored.plan.maxNodes = 2
-    authored.plan.skillPoints = { enabled: true, initial: 1, storedMax: 0, maxModifiers: null }
-    const refund: EffectOperation = {
-      id: 'refund',
-      type: 'conditionalRestore',
-      phase: 'postAction',
-      source: 'Manual',
-      sourceParticipantId: 'a',
-      amount: 1,
-      chance: 0.5,
-      cooldownTurns: 1,
-      outcome: 'no-proc',
-    }
-    authored.plan.events = [
-      { anchor: action(1), operations: [refund], skill: { kind: 'skill' } },
-      { anchor: action(2), operations: [], skill: { kind: 'skill' } },
-    ]
-    const space = workspace()
-    const app = space.open()
-    await app.files.importFile(upload(JSON.stringify(envelope(authored))))
-    const p = app.planner
-    expect(p.result.value.blockedAction?.anchor).toEqual(action(2))
-    p.select(action(2))
-    p.edit()
-    Object.assign(p.draft.value!, {
-      type: 'restoreSkillPoints',
-      phase: 'preAction',
-      amount: 1,
-      source: 'Repair',
-      storeOverflow: false,
-    })
-    expect(p.preview.value?.skillPoints?.current).toBe(0)
-    const before = p.document.value
-    const replay = p.result.value
-    const draft = p.draft.value
-    const writes = space.store.writes
-    const bytes = space.store.raw
-    expect(p.replacePlan({ ...authored.plan, maxNodes: 0 })).toBe(false)
-    await app.files.importFile(upload('{'))
-    expect(app.files.error.value).toBe('json')
-    expect(p.document.value).toBe(before)
-    expect(p.result.value).toBe(replay)
-    expect(p.draft.value).toBe(draft)
-    expect(p.selected.value).toEqual(action(2))
-    expect(space.store.raw).toBe(bytes)
-    expect(space.store.writes).toBe(writes)
-
-    expect(p.submit()).toBe(true)
-    expect(p.result.value.blockedAction).toBeUndefined()
-    authored.plan.events[1]!.operations = [
-      {
-        id: p.operations.value[0]!.id,
-        type: 'restoreSkillPoints',
-        phase: 'preAction',
-        amount: 1,
-        source: 'Repair',
-      },
-    ]
-    const config = { ...authored.plan.skillPoints, onInsufficient: 'mark' as const }
-    expect(p.applySetup(authored.plan.actors, 2, 600, {}, 'none', authored.plan.aha, config)).toBe(
-      true,
+    await app.files.importFile(upload(serializePlannerDocument(authored)))
+    const planner = app.planner
+    const event = authored.plan.events[1]!
+    planner.select(event.anchor)
+    const spend = planner.operations.value.find((op) => op.id === 'spend')!
+    planner.edit(spend)
+    expect(planner.preview.value?.skillPoints?.current).toBe(2n)
+    planner.draft.value!.amount = -4
+    expect(planner.submit()).toBe(true)
+    expect(planner.operations.value.find((op) => op.id === spend.id)).toMatchObject({ amount: -4 })
+    expect(planner.result.value.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'sp-negative-first',
+        anchor: event.anchor,
+        operationId: spend.id,
+      }),
     )
-    authored.plan.skillPoints = config
-    expect(p.result.value.skillPointsSummary?.endingBalance).toBe(0)
-    await verifyRoundTrip(space, app, authored)
-  })
-
-  it('commits a reviewed batch once and reopens it with stable operation and event identities', async () => {
-    const authored = resourcePlan()
-    authored.plan.maxNodes = 2
-    authored.plan.skillPoints = { enabled: true }
-    authored.plan.events = [
-      {
-        anchor: action(1),
-        skill: { kind: 'skill' },
-        operations: [
-          {
-            id: 'keep',
-            type: 'advance',
-            phase: 'postAction',
-            percent: 10,
-            target: { kind: 'participants', participantIds: ['b'] },
-          },
-        ],
-      },
-      { anchor: action(99), skill: { kind: 'custom', cost: 0, recovery: 0 }, operations: [] },
-    ]
-    authored.metadata.customNames.keep = 'Keep'
-    const space = workspace()
-    const app = space.open()
-    await app.files.importFile(upload(JSON.stringify(envelope(authored))))
-    const p = app.planner
-    const cancelled = p.reviewBatchSkills({ scope: 'all' }, { kind: 'basic' })
-    p.cancelBatchSkills()
-    expect(p.confirmBatchSkills(cancelled)).toBe(false)
-    expect(space.store.writes).toBe(1)
-    const reviewed = p.reviewBatchSkills({ scope: 'all' }, { kind: 'basic' })
-    expect(reviewed.overwriteCount).toBe(1)
-    expect(reviewed.changes).toStrictEqual([action(1), action(2)])
-    expect(p.confirmBatchSkills(reviewed)).toBe(true)
-    expect(space.store.writes).toBe(2)
-    authored.plan.events[0]!.skill = { kind: 'basic' }
-    authored.plan.events.push({ anchor: action(2), skill: { kind: 'basic' }, operations: [] })
-    expect(p.result.value.skillPointsSummary?.endingBalance).toBe(5)
-    await verifyRoundTrip(space, app, authored)
+    planner.addSkillPoints('preAction')
+    expect(planner.draft.value?.amount).toBe(0)
+    expect(planner.preview.value?.skillPoints?.current).toBe(-2n)
+    planner.draft.value!.amount = 6
+    expect(planner.submit()).toBe(true)
+    const gain = planner.operations.value.find(
+      (op) => op.type === 'changeSkillPoints' && op.amount === 6,
+    )!
+    const settled = () => {
+      const result = planner.result.value
+      const index = result.records.findIndex(
+        (node) => anchorKey(node.anchor) === anchorKey(event.anchor),
+      )
+      return result.snapshots[index + 1]?.skillPoints?.current
+    }
+    expect(settled()).toBe(4n)
+    planner.move(gain.id, -1)
+    expect(settled()).toBe(2n)
+    expect(planner.result.value.diagnostics.some((d) => d.code === 'sp-negative-first')).toBe(false)
+    await verifyRoundTrip(space, app, planner.document.value)
   })
 
   it.each(['robin-summeretto-fever', 'robin-ultimate', 'firefly-ultimate'])(
-    'saves and reopens %s alongside authored SP operations and skills',
+    'saves and reopens %s alongside authored SP operations',
     async (id) => {
       const preset = presets.find((item) => item.id === id)!
       const authored = resourcePlan()
@@ -470,26 +207,20 @@ describe('Skill Point document lifecycle', () => {
         baseSpeed: 80,
         panelSpeed: 80,
       })
-      authored.plan.skillPoints = { enabled: true, initial: 3, onInsufficient: 'mark' }
+      authored.plan.skillPoints = { enabled: true, initial: 3 }
       authored.plan.events = [
         {
           anchor: start,
-          operations: [{ id: 'opening', type: 'restoreSkillPoints', source: 'Opening', amount: 1 }],
+          operations: [{ id: 'opening', type: 'changeSkillPoints', amount: 1 }],
         },
         {
           anchor: action(1, 'b'),
-          skill: { kind: 'skill' },
           operations: [
             {
-              id: 'refund',
-              type: 'conditionalRestore',
+              id: 'spend',
+              type: 'changeSkillPoints',
               phase: 'postAction',
-              amount: 1,
-              source: 'Manual',
-              sourceParticipantId: 'b',
-              chance: 0.5,
-              cooldownTurns: 0,
-              outcome: 'proc',
+              amount: -1,
             },
           ],
         },
@@ -579,7 +310,7 @@ describe('Action Planner file and session integration', () => {
     expect(space.store.writes).toBe(1)
   })
 
-  it('imports v9, exports the committed document, and reopens and autosaves it as v9', async () => {
+  it('imports v10, exports the committed document, and reopens and autosaves it', async () => {
     const expected = skillPointDocument()
     const space = workspace()
     const app = space.open()
@@ -623,7 +354,7 @@ describe('Action Planner file and session integration', () => {
       const result = planner.result.value
       planner.edit()
       const draft = planner.draft.value
-      const invalid = error === 'json' ? '{' : JSON.stringify(envelope(skillPointDocument(), 10))
+      const invalid = error === 'json' ? '{' : JSON.stringify(envelope(skillPointDocument(), 11))
       await files.importFile(upload(invalid))
       expect(files.error.value).toBe(error)
       expect(files.pending.value).toBeUndefined()
@@ -648,7 +379,7 @@ describe('Action Planner file and session integration', () => {
     expect(store.writes).toBe(1)
   })
 
-  it('reloads an external v9 plan with reader normalization and leaves its raw bytes intact', () => {
+  it('reloads an external v10 plan with reader normalization and leaves its raw bytes intact', () => {
     const expected = skillPointDocument(true)
     const input = structuredClone(expected)
     input.plan.actors[1]!.panelSpeed = 160
@@ -674,24 +405,61 @@ describe('Action Planner file and session integration', () => {
     expect(space.store.writes).toBe(0)
   })
 
-  it('reloads a historical v8 fixture and keeps its bytes and migration notice', () => {
-    const { file } = historical.find(({ file }) => file.version === 8)!
+  it('protects a lossy local v9 migration through cancel, changed bytes and write failure', () => {
+    const { file } = historical.find(({ file }) => file.version === 9)!
     const raw = JSON.stringify(file)
-    const space = workspace(JSON.stringify(envelope(syntheticDocument())))
-    const { files, planner, download, saveStatus } = space.open()
-    space.externalChange(raw)
+    const space = workspace(raw)
+    const { files, planner, persistence, saveStatus, download } = space.open()
+    expect(saveStatus.value).toBe('protected')
+    expect(persistence.failure).toBe('migrationRequired')
+    const before = planner.document.value
     files.reload()
-    files.confirm()
-    expect(planner.document.value).toStrictEqual(file.document)
-    expect(planner.migrationNotice.value).toEqual({ fromVersion: 8, ahaAdded: false })
-    expect(saveStatus.value).toBe('saved')
-    files.exportFile()
-    expect(JSON.parse(download.mock.calls[0]![0])).toStrictEqual({ ...file, version: 9 })
+    expect(files.migrationReview.value?.losses).toMatchObject({ conditionalRestore: 3 })
+    files.backupMigrationSource()
+    expect(download.mock.calls[0]?.[0]).toBe(raw)
+    files.pending.value = undefined
     expect(space.store.raw).toBe(raw)
+    expect(planner.document.value).toBe(before)
+
+    files.reload()
+    space.externalChange(raw + '\n')
+    files.confirm()
+    expect(files.error.value).toBe('changed')
+    expect(space.store.raw).toBe(raw + '\n')
+    expect(planner.document.value).toBe(before)
+
+    files.reload()
+    space.store.failWrite = true
+    files.confirm()
+    expect(files.error.value).toBe('migrationWrite')
+    expect(planner.document.value).toBe(before)
     expect(space.store.writes).toBe(0)
+    expect(space.store.raw).toBe(raw + '\n')
+    space.store.failWrite = false
+    files.confirm()
+    expect(saveStatus.value).toBe('saved')
+    expect(space.store.writes).toBe(1)
+    expect(planner.migrationNotice.value?.fromVersion).toBe(9)
+    expect(space.store.raw).toBe(serializePlannerDocument(planner.document.value))
   })
 
-  it('loads a v9 template through the confirmed replacement and storage path', () => {
+  it('requires confirmation of lossy file import even in an empty workspace', async () => {
+    const { file } = historical.find(({ file }) => file.version === 8)!
+    const raw = JSON.stringify(file)
+    const space = workspace()
+    const { files, planner, download } = space.open()
+    await files.importFile(upload(raw))
+    expect(space.store.raw).toBeNull()
+    expect(planner.document.value).toEqual(emptyDocument())
+    expect(files.migrationReview.value?.losses).toMatchObject({ dynamicMax: 1, storage: 2 })
+    files.backupMigrationSource()
+    expect(download.mock.calls[0]?.[0]).toBe(raw)
+    files.confirm()
+    expect(planner.document.value).toEqual(parsePlannerDocument(raw).document)
+    expect(space.store.raw).toBe(serializePlannerDocument(planner.document.value))
+  })
+
+  it('loads a v10 template through the confirmed replacement and storage path', () => {
     const space = workspace(JSON.stringify(envelope(syntheticDocument())))
     const { files, planner } = space.open()
     const expected = skillPointDocument()
@@ -713,16 +481,15 @@ describe('Action Planner file and session integration', () => {
     expect(space.store.writes).toBe(1)
   })
 
-  it.each(['settings', 'skill-only event', 'uncommitted input'])(
+  it.each(['settings', 'skill point operation', 'uncommitted input'])(
     'requires confirmation before replacing a plan with %s',
     (content) => {
       const expected = emptyDocument()
       if (content === 'settings') expected.plan.skillPoints = { enabled: false }
-      if (content === 'skill-only event')
+      if (content === 'skill point operation')
         expected.plan.events.push({
           anchor: { kind: 'action', participantId: 'retired-actor', turn: 1 },
-          skill: { kind: 'basic' },
-          operations: [],
+          operations: [{ id: 'sp', type: 'changeSkillPoints', phase: 'postAction', amount: 1 }],
         })
       const raw = JSON.stringify(envelope(expected))
       const { store, open } = workspace(raw)
@@ -739,7 +506,7 @@ describe('Action Planner file and session integration', () => {
     },
   )
 
-  it('retries a failed save with the complete v9 document', () => {
+  it('retries a failed save with the complete v10 document', () => {
     const expected = skillPointDocument()
     const original = JSON.stringify(envelope(expected))
     const { store, open } = workspace(original)
@@ -759,7 +526,7 @@ describe('Action Planner file and session integration', () => {
     const expected = skillPointDocument()
     const space = workspace(JSON.stringify(envelope(expected)))
     const { files, planner, download, saveStatus } = space.open()
-    const future = JSON.stringify(envelope(expected, 10), null, 1) + '\n'
+    const future = JSON.stringify(envelope(expected, 11), null, 1) + '\n'
     space.externalChange(future)
     files.reload()
     expect(files.error.value).toBe('version')

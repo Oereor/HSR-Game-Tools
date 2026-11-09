@@ -58,6 +58,35 @@ function compile(
 }
 
 describe('declarative preset compiler', () => {
+  it('compiles signed changes at start and in a scheduled trigger', () => {
+    const preset = definition([
+      { type: 'changeSkillPoints', amount: 2 },
+      {
+        type: 'spawnParticipant',
+        participant: { kind: 'scheduledEvent', name: 'Test timer', speed: 100, initialAG: 100 },
+        onTrigger: [{ type: 'changeSkillPoints', amount: -6 }],
+      },
+    ])
+    const document = fixture()
+    document.plan.skillPoints = { enabled: true }
+    expect(() => validatePresets([preset], [messages], game)).not.toThrow()
+    const compiled = compile(preset, {}, document)
+    expect(compiled.invalid).toEqual([])
+    const trigger = compiled.document!.plan.events.find((event) => event.anchor.kind === 'trigger')!
+    expect(trigger.operations).toEqual([
+      expect.objectContaining({ type: 'changeSkillPoints', amount: -6 }),
+    ])
+    expect(trigger.operations[0].phase).toBeUndefined()
+    const result = simulatePlan(compiled.document!.plan)
+    expect(result.snapshots[0].skillPoints?.current).toBe(5n)
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        anchor: trigger.anchor,
+        code: 'sp-negative-first',
+      }),
+    )
+  })
+
   it('identifies self from metadata and checks presence at the insertion point', () => {
     const document = fixture()
     const state = createInitialState(document.plan)

@@ -13,19 +13,22 @@ import { SlidersHorizontal, ListOrdered, RotateCcw } from '@lucide/vue'
 import BattleSetup from './components/BattleSetup.vue'
 import ActionNavigator from './components/ActionNavigator.vue'
 import ActionInspector from './components/ActionInspector.vue'
-import BatchSkillDialog from './components/BatchSkillDialog.vue'
-import SkillPointLedger from './components/SkillPointLedger.vue'
 import { usePlannerSession } from './composables/usePlannerSession'
 import PlanManagement from './components/PlanManagement.vue'
 import { usePlannerPresentation } from './composables/usePlannerPresentation'
 import { countdownSources } from './model/speed-modifier-tags'
 import { anchorKey } from './engine/queue'
-import type { ActorConfig, CycleMode, AhaConfig, SkillPointsConfig } from './engine/types'
+import type {
+  ActorConfig,
+  CycleMode,
+  AhaConfig,
+  SkillPointsConfig,
+  SkillPointWarning,
+} from './engine/types'
 const { t, locale } = useI18n()
 const { planner, persistence, saveStatus } = usePlannerSession()
 const planManagement = ref<InstanceType<typeof PlanManagement>>()
 const setupDirty = ref(false)
-const batchSkillsVisible = ref(false)
 const {
   document,
   plan,
@@ -54,6 +57,7 @@ const {
   deleteEvent,
   stepQueue,
   nextId,
+  addSkillPoints,
   operationContext,
   setupRevision,
   documentError,
@@ -81,10 +85,17 @@ function apply(
   }
 }
 const modifierSources = computed(() => countdownSources(plan.value))
+const skillPointWarnings = computed(() => {
+  const warnings = new Map<string, SkillPointWarning>()
+  for (const { anchor, code } of result.value.diagnostics)
+    if (anchor && (code === 'sp-negative-first' || code === 'sp-negative'))
+      warnings.set(anchorKey(anchor), code)
+  return warnings
+})
 const navigatorProps = computed(() => ({
   countdownSources: modifierSources.value,
   records: result.value.records,
-  blockedAction: result.value.blockedAction,
+  skillPointWarnings: skillPointWarnings.value,
   selected: selected.value,
   plan: plan.value,
   currentQueueView: currentQueueView.value,
@@ -92,12 +103,13 @@ const navigatorProps = computed(() => ({
   label,
   image,
 }))
-const selectedSkillRecord = computed(() => {
+const settledSkillPoints = computed(() => {
   const key = anchorKey(selected.value)
-  const blocked = result.value.blockedAction
-  if (blocked && anchorKey(blocked.anchor) === key) return blocked.skillPoints
-  const record = result.value.records.find((record) => anchorKey(record.anchor) === key)
-  return record && record.kind !== 'cycleBoundary' ? record.skillPoints : undefined
+  const index =
+    key === 'start'
+      ? 0
+      : result.value.records.findIndex((record) => anchorKey(record.anchor) === key) + 1
+  return index === 0 && key !== 'start' ? undefined : result.value.snapshots[index]?.skillPoints
 })
 const inspectorProps = computed(() => ({
   countdownSources: modifierSources.value,
@@ -106,9 +118,9 @@ const inspectorProps = computed(() => ({
   inactive: selected.value.kind === 'cycleBoundary' && plan.value.cycleMode === 'none',
   operations: operations.value,
   context: context.value,
-  canSetSkill: planner.canSetSkill.value,
-  skill: planner.skill.value,
-  skillRecord: selectedSkillRecord.value,
+  trackSkillPoints: !!plan.value.skillPoints?.enabled,
+  settledSkillPoints: settledSkillPoints.value,
+  skillPointWarning: skillPointWarnings.value.get(anchorKey(selected.value)),
   preview: preview.value,
   targets: targets.value,
   invalid: invalid.value,
@@ -143,12 +155,6 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div class="planner-page">
-    <BatchSkillDialog
-      v-model="batchSkillsVisible"
-      :planner="planner"
-      :label="label"
-      :anchor-label="anchorLabel"
-    />
     <div class="page-intro functional-intro">
       <h1>{{ t('planner.title') }}</h1>
       <Button
@@ -186,17 +192,6 @@ onBeforeUnmount(() => {
             :next-id="nextId"
             @apply="apply" /></TabPanel
         ><TabPanel value="planning">
-          <Button
-            :label="t('planner.batch.title')"
-            size="small"
-            @click="batchSkillsVisible = true"
-          />
-          <SkillPointLedger
-            :result="result"
-            :cycle-mode="plan.cycleMode"
-            :anchor-label="anchorLabel"
-            @select="select"
-          />
           <p v-if="documentError" class="field-error" role="alert">
             {{ t(`planner.files.error.${documentError}`) }}
           </p>
@@ -250,7 +245,7 @@ onBeforeUnmount(() => {
                   @move="move"
                   @cancel="cancel"
                   @submit="submit"
-                  @skill="planner.setSkill"
+                  @add-skill-points="addSkillPoints"
                   @preset="submitPreset" /></SplitterPanel></Splitter
             ><template v-else
               ><ActionNavigator
@@ -265,7 +260,7 @@ onBeforeUnmount(() => {
                 @move="move"
                 @cancel="cancel"
                 @submit="submit"
-                @skill="planner.setSkill"
+                @add-skill-points="addSkillPoints"
                 @preset="submitPreset"
             /></template>
           </div>
