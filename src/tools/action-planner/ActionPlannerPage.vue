@@ -103,13 +103,18 @@ const navigatorProps = computed(() => ({
   label,
   image,
 }))
-const settledSkillPoints = computed(() => {
+const selectedSkillPoints = computed(() => {
+  const { startState, records, snapshots } = result.value
+  if (selected.value.kind === 'start')
+    return { entry: startState?.skillPoints, settled: snapshots[0]?.skillPoints }
   const key = anchorKey(selected.value)
-  const index =
-    key === 'start'
-      ? 0
-      : result.value.records.findIndex((record) => anchorKey(record.anchor) === key) + 1
-  return index === 0 && key !== 'start' ? undefined : result.value.snapshots[index]?.skillPoints
+  const index = records.findIndex((record) => anchorKey(record.anchor) === key)
+  return index < 0
+    ? undefined
+    : {
+        entry: records[index].beforeEffects.skillPoints,
+        settled: snapshots[index + 1]?.skillPoints,
+      }
 })
 const inspectorProps = computed(() => ({
   countdownSources: modifierSources.value,
@@ -119,7 +124,8 @@ const inspectorProps = computed(() => ({
   operations: operations.value,
   context: context.value,
   trackSkillPoints: !!plan.value.skillPoints?.enabled,
-  settledSkillPoints: settledSkillPoints.value,
+  entrySkillPoints: selectedSkillPoints.value?.entry,
+  settledSkillPoints: selectedSkillPoints.value?.settled,
   skillPointWarning: skillPointWarnings.value.get(anchorKey(selected.value)),
   preview: preview.value,
   targets: targets.value,

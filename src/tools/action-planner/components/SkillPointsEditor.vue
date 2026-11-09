@@ -5,9 +5,9 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
-import { ArrowDown, ArrowUp, Diamond, Pencil, Plus, Trash2 } from '@lucide/vue'
+import { Diamond, Pencil, Plus } from '@lucide/vue'
+import OperationCardControls from './OperationCardControls.vue'
 import type { ToolLocale } from '../../../locales/types'
-import { phaseOperations } from '../engine/effect-config'
 import { skillPointBalance } from '../engine/skill-points'
 import type {
   EffectOperation,
@@ -25,6 +25,8 @@ const props = defineProps<{
   anchor: EventAnchor
   operations: EffectOperation[]
   editable: boolean
+  entrySkillPoints?: SkillPointsState
+  settledSkillPoints?: SkillPointsState
   preview?: SkillPointsState
   warning?: SkillPointWarning
   invalid: string[]
@@ -42,15 +44,16 @@ const emit = defineEmits<{
 }>()
 const { t, locale } = useI18n()
 const phases = ['preAction', 'postAction'] as const
-const changes = (ops: EffectOperation[]) =>
-  ops.filter((op): op is Change => op.type === 'changeSkillPoints')
+const skillPointOperations = computed(() =>
+  props.operations.filter((op): op is Change => op.type === 'changeSkillPoints'),
+)
 const groups = computed(() =>
   props.anchor.kind === 'action'
     ? phases.map((phase) => ({
         phase,
-        operations: changes(phaseOperations(props.operations, phase)),
+        operations: skillPointOperations.value.filter((op) => op.phase === phase),
       }))
-    : [{ phase: undefined, operations: changes(props.operations) }],
+    : [{ phase: undefined, operations: skillPointOperations.value }],
 )
 const presets = {
   basic: 1,
@@ -95,6 +98,16 @@ const tone = (amount: number) =>
   amount > 0 ? 'advance-color' : amount < 0 ? 'delay-color' : 'sp-neutral'
 const format = (value: number | bigint, signed = false) =>
   formatNumber(value, locale.value as ToolLocale, signed)
+const nodeBalance = computed(() => {
+  const entry = props.entrySkillPoints
+  if (!entry) return undefined
+  const settled = props.settledSkillPoints
+  return {
+    before: format(entry.current),
+    after: settled ? format(settled.current) : undefined,
+    max: format(entry.max),
+  }
+})
 function outcome(before: SkillPointsState | undefined, amount: number | undefined) {
   if (!before || amount === undefined) return t('planner.sp.unavailable')
   return t('planner.sp.outcome', {
@@ -105,7 +118,34 @@ function outcome(before: SkillPointsState | undefined, amount: number | undefine
 </script>
 
 <template>
-  <section class="sp-editor" :aria-label="t('planner.sp.setup')">
+  <section :aria-label="t('planner.sp.operations')">
+    <div class="operations-heading">
+      <h3>
+        {{ t('planner.sp.operations') }}
+        <span class="operation-count">{{ format(skillPointOperations.length) }}</span>
+      </h3>
+      <Button
+        size="small"
+        :disabled="!editable || !!draft"
+        :aria-label="t('planner.sp.add')"
+        @click="emit('add', 'postAction')"
+        ><Plus :size="16" :stroke-width="1.75" />{{ t('ui.add') }}</Button
+      >
+    </div>
+    <p v-if="nodeBalance" class="sp-balance">
+      <span class="sr-only">
+        {{
+          t('planner.sp.nodeBalance', {
+            before: nodeBalance.before,
+            after: nodeBalance.after ?? t('planner.sp.settlementUnavailable'),
+            max: nodeBalance.max,
+          })
+        }}
+      </span>
+      <strong aria-hidden="true">{{ nodeBalance.before }} → {{ nodeBalance.after ?? '—' }}</strong>
+      <span class="sp-cap" aria-hidden="true"> / {{ nodeBalance.max }}</span>
+    </p>
+    <p v-else class="sp-balance muted">{{ t('planner.sp.unavailable') }}</p>
     <Message
       v-if="warning"
       :severity="warning === 'sp-negative-first' ? 'warn' : 'secondary'"
@@ -158,7 +198,7 @@ function outcome(before: SkillPointsState | undefined, amount: number | undefine
         t('planner.sp.invalidAmount')
       }}</small>
       <p class="fine-print">{{ t('planner.sp.presetHint') }}</p>
-      <div class="sp-row">
+      <div class="sp-form-actions">
         <span class="fine-print" aria-live="polite">{{ outcome(preview, draft.amount) }}</span>
         <div class="card-controls">
           <Button
@@ -178,72 +218,65 @@ function outcome(before: SkillPointsState | undefined, amount: number | undefine
       </div>
     </form>
     <template v-else>
-      <div v-for="group in groups" :key="group.phase ?? 'event'" class="sp-group">
-        <div class="sp-row">
-          <h3>{{ group.phase ? t(`ui.${group.phase}`) : t('planner.sp.setup') }}</h3>
-          <span v-if="!group.operations.length" class="sp-value sp-neutral">
-            <Diamond :size="14" aria-hidden="true" />{{ t('planner.sp.noChange') }}
-          </span>
-          <Button
-            v-tooltip="t('planner.sp.add')"
-            size="small"
-            text
-            severity="secondary"
-            :disabled="!editable"
-            :aria-label="t('planner.sp.add')"
-            @click="emit('add', group.phase ?? 'postAction')"
-            ><Plus :size="15"
-          /></Button>
-        </div>
-        <div v-for="(op, index) in group.operations" :key="op.id" class="sp-row sp-operation">
-          <div class="sp-description">
-            <span class="sp-value" :class="tone(op.amount)">
-              <Diamond :size="14" aria-hidden="true" />{{ format(op.amount, true) }}
-            </span>
-            <span class="fine-print" :title="title(op)">{{
-              outcome(operationContext(op)?.skillPoints, op.amount)
-            }}</span>
-          </div>
-          <div class="card-controls">
-            <Button
-              v-tooltip="t('ui.moveUp')"
-              size="small"
-              text
-              severity="secondary"
-              :disabled="index === 0"
-              :aria-label="t('ui.moveUp')"
-              @click="emit('move', op.id, -1)"
-              ><ArrowUp :size="15"
-            /></Button>
-            <Button
-              v-tooltip="t('ui.moveDown')"
-              size="small"
-              text
-              severity="secondary"
-              :disabled="index === group.operations.length - 1"
-              :aria-label="t('ui.moveDown')"
-              @click="emit('move', op.id, 1)"
-              ><ArrowDown :size="15"
-            /></Button>
-            <Button
-              v-tooltip="t('ui.edit')"
-              size="small"
-              text
-              severity="secondary"
-              :aria-label="t('planner.accessibility.edit', { name: title(op) })"
-              @click="emit('edit', op)"
-              ><Pencil :size="15"
-            /></Button>
-            <Button
-              v-tooltip="t('ui.remove')"
-              size="small"
-              text
-              severity="secondary"
-              :aria-label="t('planner.accessibility.remove', { name: title(op) })"
-              @click="emit('remove', op.id)"
-              ><Trash2 :size="15"
-            /></Button>
-          </div>
+      <div v-for="group in groups" :key="group.phase ?? 'event'" class="operation-group">
+        <h3 v-if="group.phase" class="phase-heading">{{ t(`ui.${group.phase}`) }}</h3>
+        <div class="operation-list">
+          <article v-if="!group.operations.length" class="operation-card sp-operation">
+            <div class="operation-top">
+              <Diamond :size="18" :stroke-width="1.75" class="sp-neutral" aria-hidden="true" />
+              <span class="sp-change sp-neutral">{{ t('planner.sp.noChange') }}</span>
+              <div class="card-controls">
+                <Button
+                  v-tooltip="t('ui.edit')"
+                  size="small"
+                  text
+                  severity="secondary"
+                  :disabled="!editable"
+                  :aria-label="t('planner.sp.editDefault')"
+                  @click="emit('add', group.phase ?? 'postAction')"
+                  ><Pencil :size="15"
+                /></Button>
+              </div>
+            </div>
+          </article>
+          <article
+            v-for="(op, index) in group.operations"
+            :key="op.id"
+            class="operation-card sp-operation"
+            :data-operation="op.id"
+          >
+            <div class="operation-top">
+              <Diamond
+                :size="18"
+                :stroke-width="1.75"
+                :class="tone(op.amount)"
+                aria-hidden="true"
+              />
+              <div class="sp-change">
+                <button
+                  type="button"
+                  class="operation-title"
+                  :title="title(op)"
+                  @click="emit('edit', op)"
+                >
+                  <span :class="tone(op.amount)">{{
+                    op.amount === 0 ? t('planner.sp.noChange') : format(op.amount, true)
+                  }}</span>
+                </button>
+                <span class="fine-print">{{
+                  outcome(operationContext(op)?.skillPoints, op.amount)
+                }}</span>
+              </div>
+              <OperationCardControls
+                :name="title(op)"
+                :first="index === 0"
+                :last="index === group.operations.length - 1"
+                @move="emit('move', op.id, $event)"
+                @edit="emit('edit', op)"
+                @remove="emit('remove', op.id)"
+              />
+            </div>
+          </article>
         </div>
       </div>
     </template>
@@ -251,38 +284,39 @@ function outcome(before: SkillPointsState | undefined, amount: number | undefine
 </template>
 
 <style scoped>
-.sp-editor {
-  display: grid;
-  gap: 6px;
-  border-block: 1px solid var(--p-content-border-color);
-  padding-block: 8px;
-  margin-bottom: 16px;
+.sp-balance {
+  margin: 0 0 8px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
-.sp-row,
-.sp-value,
-.sp-description {
+.sp-cap {
+  color: var(--color-muted);
+  font-size: 0.875em;
+}
+.sp-operation .operation-top {
+  align-items: center;
+}
+.sp-operation .card-controls {
+  margin-top: 0;
+}
+.sp-change,
+.sp-form-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
-}
-.sp-row {
-  justify-content: space-between;
-}
-.sp-description {
   flex-wrap: wrap;
+  gap: 4px 8px;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.sp-operation {
-  padding-inline-start: 8px;
+.sp-change {
+  font-size: 13px;
 }
-.sp-row h3 {
-  margin: 0;
-  font-size: 0.8125rem;
+.sp-change .operation-title {
+  flex: initial;
+  max-width: 100%;
 }
-.sp-value {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+.sp-form-actions {
+  justify-content: space-between;
 }
 .sp-neutral {
   color: var(--p-yellow-600);
@@ -297,8 +331,5 @@ function outcome(before: SkillPointsState | undefined, amount: number | undefine
 }
 .sp-form p {
   margin-block: 4px;
-}
-.sp-editor .card-controls {
-  flex-shrink: 0;
 }
 </style>

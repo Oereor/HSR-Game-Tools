@@ -4,8 +4,6 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import {
   Plus,
-  Pencil,
-  Trash2,
   ArrowUp,
   ArrowDown,
   Gauge,
@@ -13,13 +11,13 @@ import {
   Zap,
   UserRoundPlus,
   Flag,
-  Diamond,
   LogOut,
   LogIn,
 } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
 import SpeedModifierTags from './SpeedModifierTags.vue'
 import { actionSpeedModifierTags, type CountdownSources } from '../model/speed-modifier-tags'
+import OperationCardControls from './OperationCardControls.vue'
 import OperationEditor from './OperationEditor.vue'
 import OperationTargets from './OperationTargets.vue'
 import SkillPointsEditor from './SkillPointsEditor.vue'
@@ -48,6 +46,7 @@ const props = defineProps<{
   operations: EffectOperation[]
   context?: SimulationState
   trackSkillPoints: boolean
+  entrySkillPoints?: SkillPointsState
   settledSkillPoints?: SkillPointsState
   skillPointWarning?: SkillPointWarning
   preview?: SimulationState
@@ -162,17 +161,6 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
   <section class="inspector" :aria-label="t('ui.inspector')">
     <div class="pane-heading">
       <h2>{{ t('ui.inspector') }}</h2>
-      <span v-if="trackSkillPoints" class="sp-count fine-print">
-        <Diamond :size="15" aria-hidden="true" />
-        {{
-          settledSkillPoints
-            ? t('planner.sp.settled', {
-                current: formatNumber(settledSkillPoints.current, locale as ToolLocale),
-                max: formatNumber(settledSkillPoints.max, locale as ToolLocale),
-              })
-            : t('planner.sp.unavailable')
-        }}
-      </span>
     </div>
     <OperationEditor
       v-if="draft && !skillPointDraft"
@@ -228,6 +216,8 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
         :anchor="anchor"
         :operations="operations"
         :editable="!!context"
+        :entry-skill-points="entrySkillPoints"
+        :settled-skill-points="settledSkillPoints"
         :preview="preview?.skillPoints"
         :warning="skillPointWarning"
         :invalid="invalid"
@@ -280,48 +270,15 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
               /><button class="operation-title" :disabled="!context" @click="emit('edit', op)">
                 {{ title(op, operationContext(op)) }}
               </button>
-              <div class="card-controls">
-                <Button
-                  v-tooltip="t('ui.moveUp')"
-                  text
-                  size="small"
-                  severity="secondary"
-                  :disabled="index === 0"
-                  :aria-label="t('ui.moveUp')"
-                  @click="emit('move', op.id, -1)"
-                  ><ArrowUp :size="15" /></Button
-                ><Button
-                  v-tooltip="t('ui.moveDown')"
-                  text
-                  size="small"
-                  severity="secondary"
-                  :disabled="index === group.operations.length - 1"
-                  :aria-label="t('ui.moveDown')"
-                  @click="emit('move', op.id, 1)"
-                  ><ArrowDown :size="15" /></Button
-                ><Button
-                  v-tooltip="t('ui.edit')"
-                  text
-                  size="small"
-                  severity="secondary"
-                  :disabled="!context"
-                  :aria-label="
-                    t('planner.accessibility.edit', { name: title(op, operationContext(op)) })
-                  "
-                  @click="emit('edit', op)"
-                  ><Pencil :size="15" /></Button
-                ><Button
-                  v-tooltip="t('ui.remove')"
-                  text
-                  size="small"
-                  severity="secondary"
-                  :aria-label="
-                    t('planner.accessibility.remove', { name: title(op, operationContext(op)) })
-                  "
-                  @click="emit('remove', op.id)"
-                  ><Trash2 :size="15"
-                /></Button>
-              </div>
+              <OperationCardControls
+                :name="title(op, operationContext(op))"
+                :first="index === 0"
+                :last="index === group.operations.length - 1"
+                :edit-disabled="!context"
+                @move="emit('move', op.id, $event)"
+                @edit="emit('edit', op)"
+                @remove="emit('remove', op.id)"
+              />
             </div>
             <OperationTargets
               v-if="isTargetedOperation(op)"
@@ -354,12 +311,3 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
     </div>
   </section>
 </template>
-
-<style scoped>
-.sp-count {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  overflow-wrap: anywhere;
-}
-</style>
