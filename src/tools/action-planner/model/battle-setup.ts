@@ -1,4 +1,5 @@
 import { HARD_LIMITS } from '../engine/queue'
+import { ARCHER_CHARACTER_ID, validInitialArcherCharge } from '../engine/character-effects'
 import type { ActorConfig, SimulationPlan } from '../engine/types'
 import type { PlannerMetadata } from './editor'
 import { metadataValue } from './editor'
@@ -10,6 +11,7 @@ export interface AllySlot {
   original?: ActorConfig
   baseSpeed: number | undefined
   panelSpeed: number | undefined
+  initialArcherCharge?: number
 }
 export interface EnemyDraft {
   id: string
@@ -26,6 +28,7 @@ export function setupDraft(plan: SimulationPlan, metadata: PlannerMetadata) {
       original: actor ? { ...actor } : undefined,
       baseSpeed: actor?.baseSpeed,
       panelSpeed: actor?.panelSpeed,
+      initialArcherCharge: actor?.initialArcherCharge,
     }
   })
   const enemies: EnemyDraft[] = plan.actors
@@ -52,6 +55,12 @@ export function buildBattleSetup(
     if (!slot.id) return
     if (!positive(slot.baseSpeed)) invalid.push(`base-${index}`)
     if (!positive(slot.panelSpeed)) invalid.push(`panel-${index}`)
+    if (
+      slot.characterId === ARCHER_CHARACTER_ID &&
+      slot.initialArcherCharge !== undefined &&
+      !validInitialArcherCharge(slot.initialArcherCharge)
+    )
+      invalid.push(`archer-charge-${index}`)
   })
   enemies.forEach((enemy, index) => {
     if (!enemy.name.trim() || enemy.name.length > FILE_LIMITS.displayName)
@@ -74,6 +83,9 @@ export function buildBattleSetup(
                   position,
                   baseSpeed: slot.baseSpeed!,
                   panelSpeed: slot.panelSpeed!,
+                  ...(slot.initialArcherCharge === undefined
+                    ? {}
+                    : { initialArcherCharge: slot.initialArcherCharge }),
                 },
               ]
             : [],

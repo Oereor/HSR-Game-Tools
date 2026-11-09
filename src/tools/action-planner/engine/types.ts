@@ -22,6 +22,7 @@ export type ParticipantDefinition = ActorDefinition | ScheduledEventDefinition
 export interface ActorConfig extends ActorDefinition {
   id: string
   position: number
+  initialArcherCharge?: number
 }
 export type ParticipantAnchor =
   | { kind: 'action'; participantId: string; turn: number }
@@ -49,6 +50,12 @@ export interface ActionChangeTrace {
 }
 export type SpeedDuration =
   { kind: 'turns'; turns: number | null } | { kind: 'countdown'; name: string; speed: number }
+export type CharacterEffectId = 'archer.ultimateCharge' | 'archer.followUp' | 'bronya.e1.refund'
+export interface CharacterEffectOperation {
+  type: 'characterEffect'
+  effectId: CharacterEffectId
+  sourceParticipantId: string
+}
 export type EffectOperation = { id: string; phase?: EffectPhase } & (
   | { type: 'advance'; target: Target; percent: number }
   | { type: 'delay'; target: Target; percent: number }
@@ -63,11 +70,16 @@ export type EffectOperation = { id: string; phase?: EffectPhase } & (
       duration: SpeedDuration
     }
   | { type: 'changeSkillPoints'; amount: number }
+  | CharacterEffectOperation
   | { type: 'spawnParticipant'; participant: ParticipantDefinition }
 )
 export type TargetedOperation = Exclude<
   EffectOperation,
-  { type: 'spawnParticipant' | 'changeSkillPoints' }
+  { type: 'spawnParticipant' | 'changeSkillPoints' | 'characterEffect' }
+>
+export type SkillPointOperation = Extract<
+  EffectOperation,
+  { type: 'changeSkillPoints' | 'characterEffect' }
 >
 export interface PlanEvent {
   anchor: EventAnchor
@@ -81,6 +93,17 @@ export interface SkillPointsConfig {
 export interface SkillPointsState {
   current: bigint
   max: number
+}
+export type CharacterEffectState =
+  | { kind: 'archer'; charge: number }
+  | { kind: 'bronya'; availableFromTurn: Partial<Record<CharacterEffectId, number>> }
+export interface CharacterEffectOutcome {
+  operationId: string
+  sourceParticipantId: string
+  effectId: CharacterEffectId
+  skillPoints: { before: bigint; after: bigint }
+  charge?: { before: number; after: number }
+  availableFromTurn?: number
 }
 export interface AhaConfig {
   id: string
@@ -144,6 +167,7 @@ export interface ParticipantInfo {
 }
 export interface SimulationState {
   skillPoints?: SkillPointsState
+  characterEffects?: Map<string, CharacterEffectState>
   cycle?: { mode: Exclude<CycleMode, 'none'>; nextOrdinal: number; maxAV: number }
   participants: ParticipantState[]
   elapsedAV: number
@@ -155,8 +179,11 @@ export interface SimulationState {
   activeParticipantId?: string
 }
 export type SkillPointWarning = 'sp-negative-first' | 'sp-negative'
+export type CharacterEffectWarning =
+  'character-effect-source' | 'character-effect-anchor' | 'archer-no-charge' | 'bronya-e1-cooldown'
 export type DiagnosticCode =
   | SkillPointWarning
+  | CharacterEffectWarning
   | 'invalid-input'
   | 'invalid-target'
   | 'duplicate-participant'
@@ -183,6 +210,7 @@ export interface QueueEntry extends ParticipantInfo {
 }
 export interface QueueSnapshot {
   skillPoints?: SkillPointsState
+  characterEffects?: Map<string, CharacterEffectState>
   nextCycleBoundary?: PendingCycleBoundary
   elapsedAV: number
   completedNodes: number
@@ -216,5 +244,6 @@ export interface SimulationResult {
   startState?: SimulationState
   participants: ParticipantInfo[]
   diagnostics: Diagnostic[]
+  characterEffectOutcomes: CharacterEffectOutcome[]
   stopReason: 'nodes' | 'av' | 'error' | 'empty'
 }

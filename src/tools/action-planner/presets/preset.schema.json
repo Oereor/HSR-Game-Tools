@@ -633,6 +633,18 @@
         {
           "type": "object",
           "properties": {
+            "type": { "const": "characterEffect" },
+            "effectId": {
+              "enum": ["archer.ultimateCharge", "archer.followUp", "bronya.e1.refund"]
+            },
+            "target": { "const": "self" }
+          },
+          "required": ["type", "effectId", "target"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
             "type": {
               "description": "Operation or declarative value discriminator.",
               "const": "advance"

@@ -1,5 +1,7 @@
 import { applyOperations } from '../engine/operations'
-import { simulatePlan } from '../engine/engine'
+import { previewOperationState, simulatePlan } from '../engine/engine'
+import { characterEffectSourceIssue } from '../engine/character-effects'
+import { isSkillPointOperation } from '../engine/effect-config'
 import {
   anchorKey,
   countdownParticipantId,
@@ -9,10 +11,17 @@ import {
 import { isTargetedOperation, operationTargets, targetIds } from '../engine/targeting'
 import { validateOperations } from '../engine/validation'
 import type { ActorConfig, EffectOperation, EventAnchor, PlanEvent, Target } from '../engine/types'
-import { metadataValue } from '../model/editor'
+import { metadataValue, operationsAt } from '../model/editor'
 import { referencedIds } from '../model/document-file'
 import type { CharacterRecord } from '../data/schema'
-import { collectInputs, PresetError, valueResolver } from './values'
+import {
+  collectInputs,
+  isCharacterEffectPreset,
+  PresetError,
+  reusableSkillPointCosts,
+  supportsSkillPointCostReuse,
+  valueResolver,
+} from './values'
 import {
   PRESET_LIMITS,
   type PresetContext,
@@ -32,8 +41,20 @@ export function compilePreset(
   let operationIndex: number | undefined, semanticTarget: PresetTarget | undefined
   const parameters = new Set<string>()
   try {
-    const { anchor: insertionAnchor, preview } = context
+    const { anchor: insertionAnchor, beforeEffects, reuseSkillPointCostId } = context
+    const existing = operationsAt(context.document.plan, insertionAnchor)
+    const characterPreset = isCharacterEffectPreset(definition)
+    const costs = supportsSkillPointCostReuse(definition) ? reusableSkillPointCosts(existing) : []
+    const reusedCost = costs.find((op) => op.id === reuseSkillPointCostId)
+    const phase = reusedCost?.phase ?? context.phase
+    const preview =
+      characterPreset && beforeEffects
+        ? previewOperationState(beforeEffects, existing, insertionAnchor, phase, undefined, true)
+        : phase === context.phase
+          ? context.preview
+          : undefined
     if (!preview) throw new PresetError('context')
+    if (characterPreset && !preview.skillPoints) throw new PresetError('skillPointTracking')
     if (definition.startOnly && insertionAnchor.kind !== 'start') throw new PresetError('startOnly')
     for (const input of collectInputs(definition)) parameters.add(input.id)
     let self: string | undefined
@@ -58,6 +79,16 @@ export function compilePreset(
       self = participant.id
       selfActor = actors[0]!
     }
+    const bronyaRefund = definition.operations.some(
+      (op) => op.type === 'characterEffect' && op.effectId === 'bronya.e1.refund',
+    )
+    if (
+      bronyaRefund &&
+      (insertionAnchor.kind !== 'action' || insertionAnchor.participantId !== self)
+    )
+      throw new PresetError('characterEffectAnchor')
+    if ((costs.length || reuseSkillPointCostId !== undefined) && !reusedCost)
+      throw new PresetError('skillPointCost')
     const values = valueResolver(
       definition,
       characters,
@@ -117,15 +148,16 @@ export function compilePreset(
         if (++count > PRESET_LIMITS.operations) throw new PresetError('operations')
         operationIndex = count - 1
         semanticTarget = declaration.target
+        if (root && reusedCost && declaration === definition.operations[0]) continue
         const { onTrigger, onEmpty, target: operationTarget } = declaration
         const operation = values.resolveOperation(
           declaration,
-          { id: probeId(), ...(anchor.kind === 'action' ? { phase: context.phase } : {}) },
+          { id: probeId(), ...(anchor.kind === 'action' ? { phase } : {}) },
           target,
         )
         if (
           validateOperations([operation], anchor).length ||
-          (definition.interaction === 'draft' && operation.type === 'changeSkillPoints')
+          (definition.interaction === 'draft' && isSkillPointOperation(operation))
         )
           throw new PresetError('form')
         if (state && isTargetedOperation(operation)) {
@@ -139,6 +171,13 @@ export function compilePreset(
             continue
         }
         if (state) {
+          if (operation.type === 'characterEffect') {
+            const issue = characterEffectSourceIssue(state, operation, anchor)
+            if (issue)
+              throw new PresetError(
+                issue === 'character-effect-anchor' ? 'characterEffectAnchor' : 'unavailable',
+              )
+          }
           const applied = applyOperations(state, [operation], anchor)
           if (applied.diagnostics.some((issue) => issue.severity === 'error'))
             throw new PresetError('form')
@@ -185,7 +224,7 @@ export function compilePreset(
         else events.push({ anchor: patch.anchor, operations: [...patch.operations] })
       }
       const empty = new Set(
-        simulatePlan({ ...context.document.plan, events })
+        simulatePlan({ ...context.document.plan, events }, context.document.metadata.characterIds)
           .diagnostics.filter(
             (issue) =>
               issue.code === 'missing-target' &&

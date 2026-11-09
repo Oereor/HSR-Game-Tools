@@ -103,19 +103,30 @@ const navigatorProps = computed(() => ({
   label,
   image,
 }))
-const selectedSkillPoints = computed(() => {
+const selectedSettlement = computed(() => {
   const { startState, records, snapshots } = result.value
-  if (selected.value.kind === 'start')
-    return { entry: startState?.skillPoints, settled: snapshots[0]?.skillPoints }
+  if (selected.value.kind === 'start') return { entry: startState, settled: snapshots[0] }
   const key = anchorKey(selected.value)
   const index = records.findIndex((record) => anchorKey(record.anchor) === key)
   return index < 0
     ? undefined
     : {
-        entry: records[index].beforeEffects.skillPoints,
-        settled: snapshots[index + 1]?.skillPoints,
+        entry: records[index].beforeEffects,
+        settled: snapshots[index + 1],
       }
 })
+const effectOutcomes = computed(
+  () =>
+    new Map(result.value.characterEffectOutcomes.map((outcome) => [outcome.operationId, outcome])),
+)
+const operationWarnings = computed(
+  () =>
+    new Map(
+      result.value.diagnostics.flatMap(({ operationId, code }) =>
+        operationId ? [[operationId, code] as const] : [],
+      ),
+    ),
+)
 const inspectorProps = computed(() => ({
   countdownSources: modifierSources.value,
   ahaId: plan.value.aha.id,
@@ -124,8 +135,11 @@ const inspectorProps = computed(() => ({
   operations: operations.value,
   context: context.value,
   trackSkillPoints: !!plan.value.skillPoints?.enabled,
-  entrySkillPoints: selectedSkillPoints.value?.entry,
-  settledSkillPoints: selectedSkillPoints.value?.settled,
+  entrySkillPoints: selectedSettlement.value?.entry?.skillPoints,
+  settledSkillPoints: selectedSettlement.value?.settled?.skillPoints,
+  settledCharacterEffects: selectedSettlement.value?.settled?.characterEffects,
+  effectOutcomes: effectOutcomes.value,
+  operationWarnings: operationWarnings.value,
   skillPointWarning: skillPointWarnings.value.get(anchorKey(selected.value)),
   preview: preview.value,
   targets: targets.value,

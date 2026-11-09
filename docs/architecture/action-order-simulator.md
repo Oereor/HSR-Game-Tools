@@ -146,13 +146,13 @@ Trace、Tag、目标头像与数值展示约定见 UI 设计规范，不改变�
 
 ```text
 format: "hsr-game-tools/action-planner"
-version: 10
+version: 11
 document: { name, plan, metadata }
 ```
 
 这是字段概览，实际方案使用工具完整导出的 JSON。未知字段、无效结构、重复或不安全身份不会通过放宽校验来兼容。
 上限为 2 MiB、1000 个事件、4000 个操作。v1–v9 的原文最多可含 2000 个操作。字符串、目标和嵌套边界由 FILE_LIMITS 定义。
-写入统一使用 Version 10。所有版本均要求 `plan` 包含 `actors`、`events`、`maxNodes`、`maxAV`，`metadata` 包含 `customNames` 和 `characterIds`。读取按源版本验证。v4–v9 的旧战技点字段仅用于迁移，v10 使用表中最后一行的战技点格式。
+写入统一使用 Version 11。所有版本均要求 `plan` 包含 `actors`、`events`、`maxNodes`、`maxAV`，`metadata` 包含 `customNames` 和 `characterIds`。读取按源版本验证。v4–v9 的旧战技点字段仅用于迁移，v10 可无损读取。
 
 | 版本 | 字段与操作                                                                                                                                 |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -166,12 +166,13 @@ document: { name, plan, metadata }
 | 8    | `skillPoints.maxModifiers` 可选。每个修正需要 `amount`，可选 `sourceParticipantId`。                                                       |
 | 9    | 支持 `conditionalRestore`，需要 `amount`、`source`、`sourceParticipantId`、`chance`、`cooldownTurns`、`outcome`，阶段必须是 `postAction`。 |
 | 10   | 使用带符号整数的 `changeSkillPoints`。`skillPoints` 仅接受 `enabled`、`initial`、`max`。                                                   |
+| 11   | 初始 Archer 可配置 `initialArcherCharge`。新增 `characterEffect`，需要 `effectId` 和 `sourceParticipantId`。                               |
 
 版本门槛源自 `8821cf8`、`237dce5`、`c55c6bc` 和历史战技点读写器 `e1217f1`、`24271fc`、`f7d2bc5`。其中可确认的战技点写入版本为 7 和 9。其余中间版本的字段门槛由历史读取器确认。
 
 Version 1 补 `cycleMode: none`。Version 1/2 补冲突安全的 Aha ID，并按当前目录识别贡献者。Version 3 起保留已保存的 Aha 身份。迁移保留排轴、既有通用操作 ID、锚点和孤立引用。
 
-v4–v9 的技能消耗放在原有 `preAction` 恢复之后，技能恢复放在原有 `postAction` 恢复之前。旧显式恢复保留 ID、阶段和恢复量，优先保留已有自定义名称，否则沿用旧来源名。旧初始有效上限成为固定上限。有动态上限、存储、条件恢复、显式不足策略或未参与结算的技能标注时，转换确认列出受影响的类别和数量，并提供原档下载。本地有损旧档进入存档保护，使用当前原文令牌确认后才写入并发布 v10。其他已启用战技点的旧档会提示结算语义已改变。
+v4–v9 的技能消耗放在原有 `preAction` 恢复之后，技能恢复放在原有 `postAction` 恢复之前。旧显式恢复保留 ID、阶段和恢复量，优先保留已有自定义名称，否则沿用旧来源名。旧初始有效上限成为固定上限。有动态上限、存储、条件恢复、显式不足策略或未参与结算的技能标注时，转换确认列出受影响的类别和数量，并提供原档下载。本地有损旧档进入存档保护，使用当前原文令牌确认后才写入并发布当前版本。其他已启用战技点的 v4–v9 旧档会提示结算语义已改变。
 
 [历史迁移测试数据](../../tests/fixtures/action-planner/historical-documents.json)记录了各输入的来源提交与历史引擎重放结果。Version 1、2、3、7、9 使用历史写入器导出的测试方案。Version 4、5、6、8 使用历史读取器验证的合成方案。回归测试比较行动顺序与 AV、最终队列及通用诊断，并另行验证战技点转换和存档保护。
 
@@ -195,7 +196,7 @@ v4–v9 的技能消耗放在原有 `preAction` 恢复之后，技能恢复放�
 
 **正式配队模板必须由用户审阅，不得根据截图或角色技能描述自动生成。**当前[正式目录](../../src/tools/action-planner/templates/catalog.ts)为空；测试方案不进入生产目录。
 
-1. 在工具中配置完整方案，导出 Version 10 JSON 并人工审阅。
+1. 在工具中配置完整方案，导出 Version 11 JSON 并人工审阅。
 2. 将文件放入 [templates/plans/](../../src/tools/action-planner/templates/plans/)。旧模板由统一解析器迁移，保留工具导出的字段。
 3. 在 catalog.ts 显式导入 JSON，登记唯一 id、order、nameKey、descriptionKey、file，以及可选 conditionKey / gameVersion。
 4. 在两份 Site Messages 添加同路径的名称、简介和可选条件介绍；头像读取方案角色映射，不另外构造队伍身份。
@@ -211,8 +212,17 @@ v4–v9 的技能消耗放在原有 `preAction` 恢复之后，技能恢复放�
 
 `changeSkillPoints.amount` 是有符号安全整数。正数逐笔恢复至上限，溢出丢弃。负数直接消耗并可进入负余额，零及未配置节点保持余额。关闭跟踪时，已配置的战技点操作仍保存在方案中。
 
-每个执行阶段先按原顺序结算战技点操作，再按原顺序结算普通操作。自然行动使用 `preAction` 和 `postAction`，战斗开始、触发和轮次边界使用无阶段列表。预览和正式执行使用同一优先顺序。Inspector 从节点进入状态和结算快照读取汇总余额，单条操作展示其自身的结算前后余额。六个快捷预设只填写改变量。每个产生负余额消耗的节点至多记录一条警告，整次推演的第一条警告样式更醒目。
+每个执行阶段先按卡片顺序结算 `changeSkillPoints` 和 `characterEffect`，随后按原顺序结算普通操作。自然行动使用 `preAction` 和 `postAction`，战斗开始、触发和轮次边界使用无阶段列表。预览和正式执行使用同一优先顺序。Inspector 从节点进入状态和结算快照读取汇总余额，单条操作展示实际结算。每个产生负余额消耗的节点至多记录一条警告，整次推演的第一条警告样式更醒目。
+
+角色专属操作通过 `sourceParticipantId` 和 `metadata.characterIds` 绑定初始我方角色。引擎按参与者 ID 管理充能，并按参与者 ID 和 Effect ID 管理冷却。关闭战技点跟踪会暂停角色效果的结算。已失效的来源引用保留原 ID，便于重放诊断和历史修复。
+
+- Archer（`1015`）的初始充能在 Battle Setup 配置，取 0–4 的整数，默认 0。`archer.ultimateCharge` 加 2 层，最多 4 层。`archer.followUp` 消耗 1 层并恢复最多 1 点战技点。用户指定追击发生的位置。无充能时记录警告，后续操作照常结算。
+- 布洛妮娅（`1101`）的 `bronya.e1.refund` 记录用户声明的一次战技回点，只在她的自身行动节点结算。第 $n$ 回合触发后，第 $n+2$ 回合起可再次触发。行动前后使用相同的回合号，普攻和提前到来的自身回合照常计数。游戏数据中的 E1 冷却由施法者身上的一回合标记实现[^bronya-e1]。冷却中的操作保留并显示警告，合法触发即使实际恢复 0 也会启动冷却。
 
 尚未实现完整技能执行、伤害与能量系统、多波次、角色特殊行为自动推演、额外阿哈时刻、真实敌人数据目录、云同步、账号或多方案库。
 装备预设只创建可编辑的普通操作，不自动判断装备条件。[抽卡模拟器](warp-simulator.md)与[货币战争优化器](../currency-wars.md)已作为独立工具实现，不与排轴引擎共享业务状态；遗器模拟器仍在施工中。
 这些边界描述当前工具实现；机制不确定处保留上述近似和限制，不将静态验证等同于完整游戏验收。
+
+### 参考文献
+
+[^bronya-e1]: HoYoverse. 布洛妮娅战技的 E1 回点及冷却配置. TurnBasedGameData 快照 `74a7b96`. [Avatar_Bronya_00_Ability.json](https://github.com/Oereor/TurnBasedGameData/blob/74a7b96fba32f00cf495a5c00b0311bd02207aaf/Config/ConfigAbility/Avatar/Avatar_Bronya_00_Ability.json#L370-L437)

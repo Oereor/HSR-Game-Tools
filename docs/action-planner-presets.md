@@ -1,6 +1,6 @@
 # 行动序列预设维护
 
-预设是人工维护的声明式配置。运行时解释器将其转换为普通操作和事件，再经完整校验与模拟一次提交。Version 10 方案文件保存编译后的计划数据。预设身份、参数引用、目标快照和嵌套声明仅用于编译。引擎语义和文件格式见[模拟器架构](architecture/action-order-simulator.md)。
+预设是人工维护的声明式配置。运行时解释器将其转换为操作和事件，再经完整校验与模拟一次提交。Version 11 方案文件保存编译后的计划数据。预设身份、参数引用、目标快照和嵌套声明仅用于编译。引擎语义和文件格式见[模拟器架构](architecture/action-order-simulator.md)。
 
 ## 新增预设
 
@@ -60,23 +60,26 @@
 
 ## 操作声明
 
-每条操作使用下表字段，不填写运行时 `id` 或 `phase`。顶层操作继承当前阶段，触发事件中的操作不携带阶段。数组顺序就是执行顺序。
+每条操作使用下表字段，不填写运行时 `id` 或 `phase`。顶层操作继承当前阶段，触发事件中的操作不携带阶段。引擎按执行分组保留各组内的声明顺序。
 
-| type               | 必填字段                               | 说明                                                          |
-| ------------------ | -------------------------------------- | ------------------------------------------------------------- |
-| `advance`          | `target`, `percent`                    | 减少 `10000 × percent / 100` AG，最低为零；percent 有限且非负 |
-| `delay`            | `target`, `percent`                    | 增加相同比例的 AG；percent 有限且非负                         |
-| `immediatelyAct`   | `target`                               | 将 AG 归零并形成新的零 AV 插入批次，与 advance 100% 不同      |
-| `addSpeedModifier` | `target`, `mode`, `amount`, `duration` | mode 为 flat / percent；amount 为有限数，允许减速             |
-| `spawnParticipant` | `participant`                          | 创建 Actor 或 Scheduled Event                                 |
-| `depart`           | `target`                               | 离场冻结 AG                                                   |
-| `returnToField`    | `target`                               | 仅恢复离场目标的调度，保留 AG                                 |
+| type               | 必填字段                               | 说明                                                           |
+| ------------------ | -------------------------------------- | -------------------------------------------------------------- |
+| `advance`          | `target`, `percent`                    | 减少 `10000 × percent / 100` AG，最低为零；percent 有限且非负  |
+| `delay`            | `target`, `percent`                    | 增加相同比例的 AG；percent 有限且非负                          |
+| `immediatelyAct`   | `target`                               | 将 AG 归零并形成新的零 AV 插入批次，与 advance 100% 不同       |
+| `addSpeedModifier` | `target`, `mode`, `amount`, `duration` | mode 为 flat / percent；amount 为有限数，允许减速              |
+| `spawnParticipant` | `participant`                          | 创建 Actor 或 Scheduled Event                                  |
+| `depart`           | `target`                               | 离场冻结 AG                                                    |
+| `returnToField`    | `target`                               | 仅恢复离场目标的调度，保留 AG                                  |
+| `characterEffect`  | `effectId`, `target`                   | 限批量预设顶层操作，目标为 `self`，角色身份须与 Effect ID 匹配 |
 
 速度持续时间使用 `{"kind":"turns","turns":2}`、`{"kind":"turns","turns":null}` 或 `{"kind":"countdown","name":"计时器","speed":70}`。turns 必须为正整数，null 表示无限。涉及定时事件目标的速度效果只支持无限持续，继续由引擎检查。
 
 Actor 的最小结构是 `{"kind":"actor","name":"单位","camp":"ally","baseSpeed":100,"panelSpeed":120}`。可选 category、actionLimit、initialAG；actionLimit 为正整数或 null。Scheduled Event 使用 `{"kind":"scheduledEvent","name":"事件","speed":90}`，可选独立 baseSpeed 和 initialAG。initialAG 默认 10000，允许零和非负分数。
 
 批量预设可声明无目标的 `changeSkillPoints`，包括在 `onTrigger` 事件中声明。唯一业务参数 `amount` 是有符号安全整数字面值。编译后的操作可在战技点区编辑，负余额警告随重放保留。结算顺序见[战技点编辑与推演](architecture/action-order-simulator.md#战技点编辑与推演)。
+
+启用战技点跟踪后，可从战技点编辑器使用 Archer 终结技、Archer 追击回点和布洛妮娅战技（E1 回点）预设。编译将 `self` 保存为 `sourceParticipantId`。布洛妮娅预设先声明 `changeSkillPoints(-1)`，再声明 `bronya.e1.refund`。节点已有手动扣点时，用户须选定本次战技的扣点，预设只在其阶段追加回点。充能不足与冷却中的回点仍可记录为操作，实际结算由引擎给出警告。
 
 ## 目标与事件
 

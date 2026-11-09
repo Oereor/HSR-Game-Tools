@@ -351,7 +351,7 @@ describe('Action Planner file and session integration', () => {
     const expected = skillPointDocument()
     const space = workspace()
     const app = space.open()
-    await app.files.importFile(upload(JSON.stringify(envelope(expected))))
+    await app.files.importFile(upload(JSON.stringify(envelope(expected, 10))))
     expect(app.files.error.value).toBeUndefined()
     expect(app.planner.document.value).toStrictEqual(expected)
     expect(app.planner.result.value).toEqual(simulatePlan(expected.plan))
@@ -391,7 +391,8 @@ describe('Action Planner file and session integration', () => {
       const result = planner.result.value
       planner.edit()
       const draft = planner.draft.value
-      const invalid = error === 'json' ? '{' : JSON.stringify(envelope(skillPointDocument(), 11))
+      const invalid =
+        error === 'json' ? '{' : JSON.stringify(envelope(skillPointDocument(), PLANNER_VERSION + 1))
       await files.importFile(upload(invalid))
       expect(files.error.value).toBe(error)
       expect(files.pending.value).toBeUndefined()
@@ -422,7 +423,7 @@ describe('Action Planner file and session integration', () => {
     input.plan.actors[1]!.panelSpeed = 160
     const spawn = input.plan.events[0]!.operations.find((op) => op.type === 'spawnParticipant')!
     spawn.participant.iconUrl = 'https://example.invalid/icon'
-    const raw = JSON.stringify(envelope(input))
+    const raw = JSON.stringify(envelope(input, 10))
     const space = workspace(JSON.stringify(envelope(syntheticDocument())))
     const { planner, files, download, saveStatus } = space.open()
     const before = planner.document.value
@@ -496,7 +497,7 @@ describe('Action Planner file and session integration', () => {
     expect(space.store.raw).toBe(serializePlannerDocument(planner.document.value))
   })
 
-  it('loads a v10 template through the confirmed replacement and storage path', () => {
+  it('loads a current template through the confirmed replacement and storage path', () => {
     const space = workspace(JSON.stringify(envelope(syntheticDocument())))
     const { files, planner } = space.open()
     const expected = skillPointDocument()
@@ -543,7 +544,7 @@ describe('Action Planner file and session integration', () => {
     },
   )
 
-  it('retries a failed save with the complete v10 document', () => {
+  it('retries a failed save with the complete current document', () => {
     const expected = skillPointDocument()
     const original = JSON.stringify(envelope(expected))
     const { store, open } = workspace(original)
@@ -563,7 +564,7 @@ describe('Action Planner file and session integration', () => {
     const expected = skillPointDocument()
     const space = workspace(JSON.stringify(envelope(expected)))
     const { files, planner, download, saveStatus } = space.open()
-    const future = JSON.stringify(envelope(expected, 11), null, 1) + '\n'
+    const future = JSON.stringify(envelope(expected, PLANNER_VERSION + 1), null, 1) + '\n'
     space.externalChange(future)
     files.reload()
     expect(files.error.value).toBe('version')

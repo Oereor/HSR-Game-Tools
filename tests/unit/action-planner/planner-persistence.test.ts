@@ -11,6 +11,7 @@ import {
 import {
   emptyDocument,
   PLANNER_FORMAT,
+  PLANNER_VERSION,
   serializePlannerDocument,
   parsePlannerDocument,
 } from '../../../src/tools/action-planner/model/document-file'
@@ -117,10 +118,14 @@ describe('single-document persistence', () => {
     expect(unavailable.initialize().document).toEqual(emptyDocument())
     expect(unavailable.status).toBe('unavailable')
   })
-  it('protects a future save with a valid v10 body and keeps the active plan on reload', () => {
+  it('protects a future save with a valid current body and keeps the active plan on reload', () => {
     const input = syntheticDocument()
     expect(parsePlannerDocument(serializePlannerDocument(input)).document).toEqual(input)
-    const raw = JSON.stringify({ format: PLANNER_FORMAT, version: 11, document: input })
+    const raw = JSON.stringify({
+      format: PLANNER_FORMAT,
+      version: PLANNER_VERSION + 1,
+      document: input,
+    })
     const store = memory(raw)
     const persistence = createPlannerPersistence(() => store)
     const planner = useActionPlanner(input.plan, input.metadata, 'Active plan')

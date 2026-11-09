@@ -22,9 +22,12 @@ import OperationEditor from './OperationEditor.vue'
 import OperationTargets from './OperationTargets.vue'
 import SkillPointsEditor from './SkillPointsEditor.vue'
 import { anchorKey, effectiveSpeed } from '../engine/queue'
-import { phaseOperations } from '../engine/effect-config'
+import { isSkillPointOperation, phaseOperations } from '../engine/effect-config'
 import { isTargetedOperation } from '../engine/targeting'
 import type {
+  CharacterEffectOutcome,
+  CharacterEffectState,
+  DiagnosticCode,
   ParticipantInfo,
   EffectOperation,
   EventAnchor,
@@ -48,6 +51,9 @@ const props = defineProps<{
   trackSkillPoints: boolean
   entrySkillPoints?: SkillPointsState
   settledSkillPoints?: SkillPointsState
+  settledCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
+  effectOutcomes: ReadonlyMap<string, CharacterEffectOutcome>
+  operationWarnings: ReadonlyMap<string, DiagnosticCode>
   skillPointWarning?: SkillPointWarning
   preview?: SimulationState
   targets: ParticipantInfo[]
@@ -71,7 +77,7 @@ const emit = defineEmits<{
 }>()
 const { t, locale } = useI18n()
 const regularOperations = computed(() =>
-  props.operations.filter((op) => op.type !== 'changeSkillPoints'),
+  props.operations.filter((op) => !isSkillPointOperation(op)),
 )
 const groups = computed(() =>
   props.anchor.kind === 'action'
@@ -160,6 +166,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       v-if="draft"
       v-model="draft"
       :anchor="anchor"
+      :operations="operations"
       :participants="targets"
       :preview="preview"
       :invalid="invalid"
@@ -167,6 +174,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       :skill-point-warning="skillPointWarning"
       :label="label"
       :image="image"
+      :title="title"
       @cancel="emit('cancel')"
       @submit="emit('submit')"
       @preset="emit('preset', $event)"
@@ -212,6 +220,11 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
         :editable="!!context"
         :entry-skill-points="entrySkillPoints"
         :settled-skill-points="settledSkillPoints"
+        :entry-character-effects="context?.characterEffects"
+        :settled-character-effects="settledCharacterEffects"
+        :effect-outcomes="effectOutcomes"
+        :operation-warnings="operationWarnings"
+        :label="label"
         :warning="skillPointWarning"
         :title="title"
         :operation-context="operationContext"

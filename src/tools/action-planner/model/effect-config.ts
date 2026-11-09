@@ -1,4 +1,5 @@
 import type { EffectOperation, EventAnchor } from '../engine/types'
+import { isSkillPointOperation } from '../engine/effect-config'
 export function saveOperation(
   operations: readonly EffectOperation[],
   operation: EffectOperation,
@@ -17,11 +18,11 @@ export function moveOperation(
 ): EffectOperation[] {
   const operation = operations.find((entry) => entry.id === id)
   if (!operation) return [...operations]
-  const skillPoint = operation.type === 'changeSkillPoints'
+  const skillPoint = isSkillPointOperation(operation)
   const group = operations.filter(
     (entry) =>
       (anchor.kind !== 'action' || entry.phase === operation.phase) &&
-      (entry.type === 'changeSkillPoints') === skillPoint,
+      isSkillPointOperation(entry) === skillPoint,
   )
   const neighbor = group[group.findIndex((entry) => entry.id === id) + delta]
   if (!neighbor) return [...operations]

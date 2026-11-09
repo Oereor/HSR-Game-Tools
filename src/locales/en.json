@@ -284,6 +284,27 @@
         "unavailable": "Fever cannot be applied to Robin • Summeretto at this node."
       }
     },
+    "characterEffects": {
+      "archer_ultimateCharge": "Archer Ultimate",
+      "archer_followUp": "Archer follow-up refund",
+      "bronya_e1_refund": "Bronya E1 refund",
+      "bronyaPresetName": "Bronya Skill (E1 refund)",
+      "ultimatePreset": "Gain 2 Charge, up to the cap of 4.",
+      "followUpPreset": "Spend 1 Charge and recover up to 1 SP.",
+      "bronyaPreset": "Spend 1 SP on the Skill and record a successful E1 trigger if it is ready.",
+      "initialCharge": "Archer starting Charge",
+      "initialChargeHelp": "Choose a starting value from 0 to {max}. The unlocked bonus ability and Technique can each grant 1 Charge.",
+      "chargeBalance": "{name} Charge {before} → {after} / {max}",
+      "chargeDelta": "Charge {amount}",
+      "cooldownUntil": "On cooldown until turn {turn}",
+      "effect": "Character effect",
+      "source": "Source character",
+      "presets": "Character presets",
+      "ambiguous": "More than one participant matches this character. Choose a source in the operation editor.",
+      "reuseCost": "Select the existing −1 SP operation that paid for this Skill.",
+      "costOption": "{index}. {name} · {phase}",
+      "refundDeclaration": "Add this effect when you want to record an E1 trigger on Bronya’s Skill. Add the Skill cost separately."
+    },
     "sp": {
       "setup": "Skill points",
       "enabled": "Track skill points",
@@ -298,7 +319,7 @@
       "unavailable": "Skill point balance unavailable",
       "amount": "Skill point change",
       "custom": "Custom",
-      "add": "Add skill point change",
+      "add": "Add skill point operation",
       "outcome": "Balance {before} → {after}",
       "delta": "{amount} SP",
       "noChange": "No change (0)",
@@ -417,6 +438,7 @@
     "actionLimit": "Maximum actions",
     "eventSpeed": "Event speed",
     "changeSkillPoints": "Skill point change",
+    "characterEffect": "Character effect",
     "customName": "Custom name",
     "presets": "Equipment presets",
     "startOnly": "Battle start only",
@@ -437,7 +459,11 @@
       "unreached-anchor": "Node was not reached within the current horizon",
       "no-participants": "No participants in the queue",
       "sp-negative-first": "Skill points dropped below zero for the first time. The timeline continues.",
-      "sp-negative": "Skill points are negative after spending."
+      "sp-negative": "Skill points are negative after spending.",
+      "character-effect-source": "The required character is missing or off the field.",
+      "character-effect-anchor": "Bronya’s E1 refund belongs on her own action.",
+      "archer-no-charge": "Archer has no Charge for a follow-up.",
+      "bronya-e1-cooldown": "Bronya’s E1 is still on cooldown."
     },
     "path": {
       "Elation": "Elation",

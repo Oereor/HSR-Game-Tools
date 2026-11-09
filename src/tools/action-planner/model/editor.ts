@@ -6,6 +6,8 @@ import {
   previewOperationState,
 } from '../engine/engine'
 import { anchorKey, SimulationError } from '../engine/queue'
+import { isSkillPointOperationType } from '../engine/effect-config'
+import { characterEffectSourceIssue } from '../engine/character-effects'
 import {
   isTargetedOperation,
   operationTargets,
@@ -15,6 +17,7 @@ import {
 } from '../engine/targeting'
 import { validateOperations } from '../engine/validation'
 import type {
+  CharacterEffectId,
   EffectOperation,
   EffectPhase,
   EventAnchor,
@@ -59,6 +62,8 @@ export interface OperationDraft {
   amount: number | undefined
   duration: SpeedDurationDraft
   participant: ParticipantDraft
+  effectId?: CharacterEffectId
+  sourceParticipantId?: string
 }
 export function operationDraft(operation?: EffectOperation, customName = ''): OperationDraft {
   const target = operation && isTargetedOperation(operation) ? operation.target : undefined
@@ -77,6 +82,9 @@ export function operationDraft(operation?: EffectOperation, customName = ''): Op
       operation?.type === 'addSpeedModifier' ? operation.duration : undefined,
     ),
     participant: participantDraft(operation?.type === 'spawnParticipant' ? operation : undefined),
+    ...(operation?.type === 'characterEffect'
+      ? { effectId: operation.effectId, sourceParticipantId: operation.sourceParticipantId }
+      : {}),
   }
 }
 export function operationsAt(plan: SimulationPlan, anchor: EventAnchor): EffectOperation[] {
@@ -87,12 +95,13 @@ export function contextAt(
   plan: SimulationPlan,
   result: SimulationResult,
   anchor: EventAnchor,
+  characterIds: Readonly<Record<string, string>> = {},
 ): SimulationState | undefined {
   if (anchor.kind === 'start' && result.startState) return result.startState
   const record = result.records.find((r) => anchorKey(r.anchor) === anchorKey(anchor))
   if (record) return record.beforeEffects
   try {
-    let state = createInitialState(plan)
+    let state = createInitialState(plan, characterIds)
     if (anchor.kind === 'start') return state
     state = applyOperations(state, operationsAt(plan, { kind: 'start' }), { kind: 'start' }).state
     const events = new Map(plan.events.map((event) => [anchorKey(event.anchor), event]))
@@ -122,7 +131,7 @@ export function previewDraft(
         anchor,
         draft.phase,
         draft.id,
-        draft.type === 'changeSkillPoints',
+        isSkillPointOperationType(draft.type),
       )
     : undefined
 }
@@ -142,6 +151,15 @@ export function provisionalOperation(
   switch (draft.type) {
     case 'changeSkillPoints':
       return { ...common, type: draft.type, amount: draft.amount ?? NaN }
+    case 'characterEffect':
+      return draft.effectId && draft.sourceParticipantId
+        ? {
+            ...common,
+            type: draft.type,
+            effectId: draft.effectId,
+            sourceParticipantId: draft.sourceParticipantId,
+          }
+        : undefined
     case 'spawnParticipant':
       return buildParticipantOperation(
         { ...draft.participant, phase: draft.phase },
@@ -178,6 +196,21 @@ export function buildOperation(
     return validateOperations([operation], anchor).length
       ? { invalid: ['spAmount'] }
       : { operation, invalid: [] }
+  }
+  if (draft.type === 'characterEffect') {
+    const operation = provisionalOperation({ ...draft, id }, anchor)
+    if (operation?.type !== 'characterEffect' || validateOperations([operation], anchor).length)
+      return { invalid: ['characterEffect'] }
+    const unchangedSource =
+      draft.original?.type === 'characterEffect' &&
+      draft.original.effectId === operation.effectId &&
+      draft.original.sourceParticipantId === operation.sourceParticipantId
+    if (
+      !unchangedSource &&
+      (!preview?.skillPoints || characterEffectSourceIssue(preview, operation, anchor))
+    )
+      return { invalid: ['characterEffect'] }
+    return { operation, invalid: [] }
   }
   if (!preview) return { invalid: ['context'] }
   if (draft.original?.type === 'spawnParticipant' && draft.type !== 'spawnParticipant')

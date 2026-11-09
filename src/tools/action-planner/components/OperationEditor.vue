@@ -5,6 +5,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import SelectButton from 'primevue/selectbutton'
+import Select from 'primevue/select'
 import Popover from 'primevue/popover'
 import Message from 'primevue/message'
 import { ArrowLeft, Layers } from '@lucide/vue'
@@ -15,6 +16,8 @@ import ParticipantFields from './ParticipantFields.vue'
 import SkillPointFields from './SkillPointFields.vue'
 import { gameData } from '../data/adapters/game-data'
 import type {
+  CharacterEffectId,
+  EffectOperation,
   EventAnchor,
   ParticipantInfo,
   SimulationState,
@@ -23,14 +26,25 @@ import type {
 import type { OperationDraft } from '../model/editor'
 import { provisionalOperation } from '../model/editor'
 import { operationName, formatNumber } from '../model/presentation'
+import { characterEffectNameKey } from '../model/naming'
+import { CHARACTER_EFFECT_IDS, characterEffectSourceIssue } from '../engine/character-effects'
+import { isSkillPointOperationType } from '../engine/effect-config'
 import { presets, presetIcon } from '../presets/catalog'
-import { collectInputs, valueResolver, selectionOperation } from '../presets/values'
+import {
+  collectInputs,
+  isCharacterEffectPreset,
+  reusableSkillPointCosts,
+  selectionOperation,
+  supportsSkillPointCostReuse,
+  valueResolver,
+} from '../presets/values'
 import { operationTargets } from '../engine/targeting'
 import type { Input, PresetDefinition, PresetRequest, Translate } from '../presets/types'
 import type { ToolLocale } from '../../../locales/types'
 const draft = defineModel<OperationDraft>({ required: true })
 const props = defineProps<{
   anchor: EventAnchor
+  operations: readonly EffectOperation[]
   participants: ParticipantInfo[]
   preview?: SimulationState
   skillPointWarning?: SkillPointWarning
@@ -38,16 +52,58 @@ const props = defineProps<{
   presetIssues: Record<string, string | undefined>
   label: (id: string) => string
   image: (id: string) => string | undefined
+  title: (operation: EffectOperation) => string
 }>()
 const emit = defineEmits<{ cancel: []; submit: []; preset: [request: PresetRequest] }>()
 const { t, locale } = useI18n()
 const translate: Translate = (key, params) => (params ? t(key, params) : t(key))
 const heading = ref<HTMLElement>()
 onMounted(() => heading.value?.focus())
-const skillPointDraft = computed(() => draft.value.type === 'changeSkillPoints')
+const skillPointDraft = computed(() => isSkillPointOperationType(draft.value.type))
+const manualDraft = computed(() => draft.value.type === 'changeSkillPoints')
+const presetLabel = computed(() =>
+  t(skillPointDraft.value ? 'planner.characterEffects.presets' : 'ui.presets'),
+)
+const effectSources = computed(() => {
+  const state = props.preview
+  return CHARACTER_EFFECT_IDS.map((effectId) => ({
+    effectId,
+    sources: state?.skillPoints
+      ? [...(state.characterEffects?.keys() ?? [])].filter(
+          (sourceParticipantId) =>
+            !characterEffectSourceIssue(
+              state,
+              { type: 'characterEffect', effectId, sourceParticipantId },
+              props.anchor,
+            ),
+        )
+      : [],
+  }))
+})
+const effectOptions = computed(() =>
+  effectSources.value
+    .filter(({ effectId, sources }) => sources.length || effectId === draft.value.effectId)
+    .map(({ effectId }) => ({ value: effectId, label: t(characterEffectNameKey(effectId)) })),
+)
+const sourceOptions = computed(() => {
+  const sources = effectSources.value.find(({ effectId }) => effectId === draft.value.effectId)
+  const ids = sources?.sources ?? []
+  const current = draft.value.sourceParticipantId
+  return [
+    ...ids.map((value) => ({ value, label: props.label(value), disabled: false })),
+    ...(current && !ids.includes(current)
+      ? [{ value: current, label: props.label(current), disabled: true }]
+      : []),
+  ]
+})
+function selectEffect(effectId?: CharacterEffectId) {
+  draft.value.effectId = effectId
+  const sources = effectSources.value.find((item) => item.effectId === effectId)?.sources
+  draft.value.sourceParticipantId = sources?.length === 1 ? sources[0] : undefined
+}
 const types = computed(() =>
   (skillPointDraft.value
-    ? ['changeSkillPoints']
+    ? ['changeSkillPoints', ...(effectOptions.value.length ? ['characterEffect'] : [])]
     : [
         'advance',
         'delay',
@@ -63,7 +119,7 @@ const phases = computed(() =>
   ['preAction', 'postAction'].map((value) => ({ value, label: t(`ui.${value}`) })),
 )
 const provisional = computed(() =>
-  skillPointDraft.value && !Number.isSafeInteger(draft.value.amount)
+  manualDraft.value && !Number.isSafeInteger(draft.value.amount)
     ? undefined
     : provisionalOperation(draft.value, props.anchor),
 )
@@ -75,10 +131,49 @@ const automaticName = computed(() =>
 const popover = ref<InstanceType<typeof Popover>>()
 const selectedPreset = ref<PresetDefinition>()
 const values = ref<Record<string, string | number | undefined>>({})
+const reuseSkillPointCostId = ref<string>()
 watch(draft, () => {
   selectedPreset.value = undefined
   values.value = {}
+  reuseSkillPointCostId.value = undefined
 })
+const costOptions = computed(() =>
+  selectedPreset.value && supportsSkillPointCostReuse(selectedPreset.value)
+    ? reusableSkillPointCosts(props.operations).map((operation, index) => ({
+        id: operation.id,
+        phase: operation.phase,
+        label: t('planner.characterEffects.costOption', {
+          index: index + 1,
+          name: props.title(operation),
+          phase: operation.phase ? t(`ui.${operation.phase}`) : '',
+        }),
+      }))
+    : [],
+)
+function selectCost(id?: string) {
+  reuseSkillPointCostId.value = id
+  const phase = costOptions.value.find((option) => option.id === id)?.phase
+  if (phase) draft.value.phase = phase
+}
+const availablePresets = computed(() =>
+  presets.filter((preset) => {
+    if (!isCharacterEffectPreset(preset)) return !skillPointDraft.value
+    const issue = props.presetIssues[preset.id]
+    return (
+      skillPointDraft.value &&
+      (!issue ||
+        issue === 'skillPointCost' ||
+        (issue === 'ambiguous' &&
+          effectSources.value.some(
+            ({ effectId, sources }) =>
+              sources.length &&
+              preset.operations.some(
+                (op) => op.type === 'characterEffect' && op.effectId === effectId,
+              ),
+          )))
+    )
+  }),
+)
 const inputs = computed(() => (selectedPreset.value ? collectInputs(selectedPreset.value) : []))
 const selection = computed(() => selectedPreset.value && selectionOperation(selectedPreset.value))
 const selectionTargets = computed(() =>
@@ -96,6 +191,9 @@ const stringValue = (id: string) =>
 function issueMessage(preset: PresetDefinition, issue?: string): string | undefined {
   if (!issue) return undefined
   if (issue === 'startOnly') return t('ui.startOnly')
+  if (issue === 'skillPointCost') return t('planner.characterEffects.reuseCost')
+  if (issue === 'ambiguous' && isCharacterEffectPreset(preset))
+    return t('planner.characterEffects.ambiguous')
   const key = preset.i18n.unavailable?.[issue]
   return key
     ? t(key)
@@ -109,7 +207,9 @@ const presetError = computed(() =>
   selectedPreset.value
     ? issueMessage(
         selectedPreset.value,
-        props.presetIssues[selectedPreset.value.id] ??
+        (props.presetIssues[selectedPreset.value.id] === 'skillPointCost'
+          ? undefined
+          : props.presetIssues[selectedPreset.value.id]) ??
           props.invalid.find((issue) => !inputs.value.some((input) => input.id === issue)),
       )
     : undefined,
@@ -152,14 +252,16 @@ const eventTarget = computed(
     ),
 )
 function choose(preset: PresetDefinition) {
-  if (props.presetIssues[preset.id]) return
+  const issue = props.presetIssues[preset.id]
+  if (issue && issue !== 'skillPointCost') return
   popover.value?.hide()
+  reuseSkillPointCostId.value = undefined
   if (preset.interaction === 'draft' && !collectInputs(preset).length) {
     emit('preset', { id: preset.id, values: {}, translate })
     return
   }
   selectedPreset.value = preset
-  if (!collectInputs(preset).length && !selectionOperation(preset)) {
+  if (!collectInputs(preset).length && !selectionOperation(preset) && !costOptions.value.length) {
     emit('preset', { id: preset.id, values: {}, translate })
     return
   }
@@ -176,14 +278,27 @@ function inputError(input: Input) {
       : t('ui.formInvalid')
 }
 const submitDisabled = computed(() =>
-  skillPointDraft.value
-    ? !Number.isSafeInteger(draft.value.amount) || (!props.preview && !draft.value.id)
-    : !props.preview || !!(selectedPreset.value && props.presetIssues[selectedPreset.value.id]),
+  selectedPreset.value
+    ? !props.preview ||
+      (!!props.presetIssues[selectedPreset.value.id] &&
+        props.presetIssues[selectedPreset.value.id] !== 'skillPointCost') ||
+      (costOptions.value.length > 0 &&
+        !costOptions.value.some((option) => option.id === reuseSkillPointCostId.value))
+    : manualDraft.value
+      ? !Number.isSafeInteger(draft.value.amount) || (!props.preview && !draft.value.id)
+      : draft.value.type === 'characterEffect'
+        ? !provisional.value || (!props.preview && !draft.value.id)
+        : !props.preview,
 )
 function submit() {
-  if (skillPointDraft.value && submitDisabled.value) return
+  if (submitDisabled.value) return
   if (selectedPreset.value)
-    emit('preset', { id: selectedPreset.value.id, values: values.value, translate })
+    emit('preset', {
+      id: selectedPreset.value.id,
+      values: values.value,
+      translate,
+      reuseSkillPointCostId: reuseSkillPointCostId.value,
+    })
   else emit('submit')
 }
 </script>
@@ -203,13 +318,13 @@ function submit() {
         {{ selectedPreset ? t(selectedPreset.i18n.name) : draft.id ? t('ui.edit') : t('ui.add') }}
       </h2>
       <Button
-        v-if="!skillPointDraft && !draft.id && !selectedPreset"
+        v-if="availablePresets.length && !draft.id && !selectedPreset"
         text
         severity="secondary"
         size="small"
         class="preset-trigger"
         @click="popover?.toggle($event)"
-        ><Layers :size="16" :stroke-width="1.75" />{{ t('ui.presets') }}</Button
+        ><Layers :size="16" :stroke-width="1.75" />{{ presetLabel }}</Button
       >
     </div>
     <Message
@@ -233,12 +348,16 @@ function submit() {
         option-label="label"
         option-value="value"
         :allow-empty="false"
-        :disabled="skillPointDraft || draft.original?.type === 'spawnParticipant'"
+        :disabled="
+          types.length === 1 ||
+          (skillPointDraft && !!draft.id) ||
+          draft.original?.type === 'spawnParticipant'
+        "
         aria-labelledby="type-label"
         class="type-options"
       />
     </div>
-    <div v-if="anchor.kind === 'action'" class="field">
+    <div v-if="anchor.kind === 'action' && !costOptions.length" class="field">
       <span id="phase-label" class="field-label">{{ t('ui.phase') }}</span>
       <SelectButton
         v-model="draft.phase"
@@ -251,6 +370,20 @@ function submit() {
       />
     </div>
     <template v-if="selectedPreset">
+      <div v-if="costOptions.length" class="field">
+        <span id="preset-sp-cost-label" class="field-label">{{
+          t('planner.characterEffects.reuseCost')
+        }}</span>
+        <Select
+          aria-labelledby="preset-sp-cost-label"
+          :model-value="reuseSkillPointCostId"
+          :options="costOptions"
+          option-label="label"
+          option-value="id"
+          fluid
+          @update:model-value="selectCost"
+        />
+      </div>
       <TargetGrid
         v-if="selection"
         v-model="draft"
@@ -321,11 +454,49 @@ function submit() {
       <p v-for="(summary, index) in summaries" :key="index" class="fine-print">{{ summary }}</p>
     </template>
     <SkillPointFields
-      v-else-if="skillPointDraft"
+      v-else-if="manualDraft"
       v-model:amount="draft.amount"
       :preview="preview?.skillPoints"
       :invalid="invalid.includes('spAmount')"
     />
+    <template v-else-if="draft.type === 'characterEffect'">
+      <div class="field">
+        <span id="character-effect-label" class="field-label">{{
+          t('planner.characterEffects.effect')
+        }}</span>
+        <Select
+          aria-labelledby="character-effect-label"
+          :model-value="draft.effectId"
+          :options="effectOptions"
+          option-label="label"
+          option-value="value"
+          :invalid="invalid.includes('characterEffect')"
+          fluid
+          @update:model-value="selectEffect"
+        />
+        <small v-if="draft.effectId === 'bronya.e1.refund'" class="fine-print">
+          {{ t('planner.characterEffects.refundDeclaration') }}
+        </small>
+      </div>
+      <div v-if="draft.effectId" class="field">
+        <span id="character-effect-source-label" class="field-label">{{
+          t('planner.characterEffects.source')
+        }}</span>
+        <Select
+          aria-labelledby="character-effect-source-label"
+          v-model="draft.sourceParticipantId"
+          :options="sourceOptions"
+          option-label="label"
+          option-value="value"
+          option-disabled="disabled"
+          :invalid="invalid.includes('characterEffect')"
+          fluid
+        />
+      </div>
+      <p v-if="invalid.includes('characterEffect')" role="alert" class="validation-summary">
+        {{ t('ui.diagnostic.character-effect-source') }}
+      </p>
+    </template>
     <ParticipantFields
       v-else-if="draft.type === 'spawnParticipant'"
       v-model="draft"
@@ -355,14 +526,17 @@ function submit() {
         />
       </div>
     </footer>
-    <Popover v-if="!skillPointDraft" ref="popover" :pt="{ root: { 'aria-label': t('ui.presets') } }"
+    <Popover
+      v-if="availablePresets.length"
+      ref="popover"
+      :pt="{ root: { 'aria-label': presetLabel } }"
       ><div class="preset-list">
-        <template v-for="preset in presets" :key="preset.id">
+        <template v-for="preset in availablePresets" :key="preset.id">
           <button
             type="button"
             class="preset-option"
             :class="{ 'preset-batch': preset.interaction === 'batch' }"
-            :disabled="!!presetIssues[preset.id]"
+            :disabled="!!presetIssues[preset.id] && presetIssues[preset.id] !== 'skillPointCost'"
             :title="issueMessage(preset, presetIssues[preset.id])"
             :aria-describedby="
               presetIssues[preset.id] ? `preset-unavailable-${preset.id}` : undefined

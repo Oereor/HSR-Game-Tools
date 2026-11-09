@@ -3,41 +3,49 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import { Diamond, Pencil, Plus } from '@lucide/vue'
+import { Diamond, Pencil, Plus, Zap } from '@lucide/vue'
 import OperationCardControls from './OperationCardControls.vue'
 import type { ToolLocale } from '../../../locales/types'
 import type {
+  CharacterEffectOutcome,
+  CharacterEffectState,
+  DiagnosticCode,
   EffectOperation,
   EffectPhase,
   EventAnchor,
   SimulationState,
   SkillPointWarning,
   SkillPointsState,
+  SkillPointOperation,
 } from '../engine/types'
 import { formatNumber, formatSkillPointOutcome } from '../model/presentation'
+import { isSkillPointOperation } from '../engine/effect-config'
+import { ARCHER_CHARGE_CAP } from '../engine/character-effects'
 
-type Change = Extract<EffectOperation, { type: 'changeSkillPoints' }>
 const props = defineProps<{
   anchor: EventAnchor
   operations: EffectOperation[]
   editable: boolean
   entrySkillPoints?: SkillPointsState
   settledSkillPoints?: SkillPointsState
+  entryCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
+  settledCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
+  effectOutcomes: ReadonlyMap<string, CharacterEffectOutcome>
+  operationWarnings: ReadonlyMap<string, DiagnosticCode>
   warning?: SkillPointWarning
   title: (operation: EffectOperation) => string
+  label: (id: string) => string
   operationContext: (operation: EffectOperation) => SimulationState | undefined
 }>()
 const emit = defineEmits<{
   add: [phase: EffectPhase]
-  edit: [operation: Change]
+  edit: [operation: SkillPointOperation]
   move: [id: string, delta: -1 | 1]
   remove: [id: string]
 }>()
 const { t, locale } = useI18n()
 const phases = ['preAction', 'postAction'] as const
-const skillPointOperations = computed(() =>
-  props.operations.filter((op): op is Change => op.type === 'changeSkillPoints'),
-)
+const skillPointOperations = computed(() => props.operations.filter(isSkillPointOperation))
 const groups = computed(() =>
   props.anchor.kind === 'action'
     ? phases.map((phase) => ({
@@ -46,7 +54,7 @@ const groups = computed(() =>
       }))
     : [{ phase: undefined, operations: skillPointOperations.value }],
 )
-const tone = (amount: number) =>
+const tone = (amount: number | bigint) =>
   amount > 0 ? 'advance-color' : amount < 0 ? 'delay-color' : 'sp-neutral'
 const format = (value: number | bigint, signed = false) =>
   formatNumber(value, locale.value as ToolLocale, signed)
@@ -60,6 +68,85 @@ const nodeBalance = computed(() => {
     max: format(entry.max),
   }
 })
+const charges = computed(() =>
+  [...(props.entryCharacterEffects ?? [])].flatMap(([id, effect]) => {
+    const anchor = props.anchor
+    if (
+      effect.kind !== 'archer' ||
+      (anchor.kind !== 'start' &&
+        !(anchor.kind === 'action' && anchor.participantId === id) &&
+        !skillPointOperations.value.some(
+          (op) => op.type === 'characterEffect' && op.sourceParticipantId === id,
+        ))
+    )
+      return []
+    const settled = props.settledCharacterEffects?.get(id)
+    return [
+      {
+        id,
+        name: props.label(id),
+        before: format(effect.charge),
+        after: settled?.kind === 'archer' ? format(settled.charge) : '—',
+        max: format(ARCHER_CHARGE_CAP),
+      },
+    ]
+  }),
+)
+interface CardDetails {
+  tone: ReturnType<typeof tone>
+  delta?: string
+  summary?: string
+  warning?: DiagnosticCode
+}
+const details = computed(
+  () =>
+    new Map<string, CardDetails>(
+      skillPointOperations.value.map((op) => {
+        if (op.type === 'changeSkillPoints')
+          return [
+            op.id,
+            {
+              tone: tone(op.amount),
+              delta: t('planner.sp.delta', { amount: format(op.amount, true) }),
+              summary: formatSkillPointOutcome(
+                props.operationContext(op)?.skillPoints,
+                op.amount,
+                locale.value as ToolLocale,
+                t,
+              ),
+            },
+          ] as const
+        const result = props.effectOutcomes.get(op.id)
+        if (!result)
+          return [
+            op.id,
+            {
+              tone: 'sp-neutral',
+              warning: props.operationWarnings.get(op.id),
+            },
+          ] as const
+        const sp = result.skillPoints.after - result.skillPoints.before
+        const charge = result.charge ? result.charge.after - result.charge.before : 0
+        const changes = []
+        if (result.charge)
+          changes.push(t('planner.characterEffects.chargeDelta', { amount: format(charge, true) }))
+        if (op.effectId !== 'archer.ultimateCharge')
+          changes.push(t('planner.sp.delta', { amount: format(sp, true) }))
+        return [
+          op.id,
+          {
+            tone: tone(sp || charge),
+            delta: changes.join(' · '),
+            summary: result.availableFromTurn
+              ? t('planner.characterEffects.cooldownUntil', {
+                  turn: format(result.availableFromTurn),
+                })
+              : undefined,
+          },
+        ] as const
+      }),
+    ),
+)
 </script>
 
 <template>
@@ -91,6 +178,9 @@ const nodeBalance = computed(() => {
       <span class="sp-cap" aria-hidden="true"> / {{ nodeBalance.max }}</span>
     </p>
     <p v-else class="sp-balance muted">{{ t('planner.sp.unavailable') }}</p>
+    <p v-for="charge in charges" :key="charge.id" class="sp-balance">
+      {{ t('planner.characterEffects.chargeBalance', charge) }}
+    </p>
     <Message
       v-if="warning"
       :severity="warning === 'sp-negative-first' ? 'warn' : 'secondary'"
@@ -126,7 +216,13 @@ const nodeBalance = computed(() => {
           :data-operation="op.id"
         >
           <div class="operation-top">
-            <Diamond :size="18" :stroke-width="1.75" :class="tone(op.amount)" aria-hidden="true" />
+            <component
+              :is="op.type === 'characterEffect' ? Zap : Diamond"
+              :size="18"
+              :stroke-width="1.75"
+              :class="details.get(op.id)?.tone"
+              aria-hidden="true"
+            />
             <div class="sp-change">
               <button
                 type="button"
@@ -136,17 +232,12 @@ const nodeBalance = computed(() => {
               >
                 {{ title(op) }}
               </button>
-              <span :class="tone(op.amount)">{{
-                t('planner.sp.delta', { amount: format(op.amount, true) })
-              }}</span>
-              <span class="fine-print">{{
-                formatSkillPointOutcome(
-                  operationContext(op)?.skillPoints,
-                  op.amount,
-                  locale as ToolLocale,
-                  t,
-                )
-              }}</span>
+              <span v-if="details.get(op.id)?.delta" :class="details.get(op.id)?.tone">
+                {{ details.get(op.id)?.delta }}
+              </span>
+              <span v-if="details.get(op.id)?.summary" class="fine-print">
+                {{ details.get(op.id)?.summary }}
+              </span>
             </div>
             <OperationCardControls
               :name="title(op)"
@@ -157,6 +248,9 @@ const nodeBalance = computed(() => {
               @remove="emit('remove', op.id)"
             />
           </div>
+          <Message v-if="details.get(op.id)?.warning" size="small" severity="warn">
+            {{ t(`ui.diagnostic.${details.get(op.id)?.warning}`) }}
+          </Message>
         </article>
       </div>
     </div>

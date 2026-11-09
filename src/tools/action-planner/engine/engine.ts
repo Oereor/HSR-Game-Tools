@@ -1,8 +1,9 @@
 import { isNaturalParticipant } from './types'
-import { orderOperations, phaseOperations } from './effect-config'
+import { isSkillPointOperation, orderOperations, phaseOperations } from './effect-config'
+import { initialCharacterEffects } from './character-effects'
 import { DEFAULT_SKILL_POINTS } from './skill-points'
 import { pendingCycleBoundary } from './cycle'
-import { applyOperations, spawnParticipant } from './operations'
+import { applyOperations, spawnParticipant, type OperationSettlement } from './operations'
 import {
   advanceTime,
   assertState,
@@ -21,7 +22,6 @@ import {
 import { participantCatalog, validateOperations, validatePlan } from './validation'
 import type {
   NaturalParticipantState,
-  Diagnostic,
   EffectOperation,
   EventAnchor,
   NodeRecord,
@@ -51,7 +51,10 @@ export {
 } from './queue'
 export { participantCatalog, validateOperations, validatePlan } from './validation'
 
-export function createInitialState(plan: SimulationPlan): SimulationState {
+export function createInitialState(
+  plan: SimulationPlan,
+  characterIds: Readonly<Record<string, string>> = {},
+): SimulationState {
   const errors = validatePlan(plan)
   if (errors.length) throw new SimulationError(errors[0])
   const state: SimulationState = {
@@ -81,6 +84,10 @@ export function createInitialState(plan: SimulationPlan): SimulationState {
       a.id.localeCompare(b.id),
   )
   for (const actor of actors) spawnParticipant(state, actor.id, actor)
+  if (state.skillPoints) {
+    const effects = initialCharacterEffects(actors, characterIds)
+    if (effects.size) state.characterEffects = effects
+  }
   state.issuedParticipantIds.add(plan.aha.id)
   if (plan.aha.contributorIds.length)
     state.participants.push({
@@ -167,7 +174,7 @@ export function nextSimulationEvent(state: SimulationState):
 export function stepSimulation(
   input: SimulationState,
   operations: readonly EffectOperation[],
-): { state: SimulationState; record: NodeRecord; diagnostics: Diagnostic[] } {
+): OperationSettlement & { record: NodeRecord } {
   let state = cloneState(input)
   const event = nextSimulationEvent(state)
   if (!event) fail('invalid-input')
@@ -189,7 +196,7 @@ export function stepSimulation(
       state = applied.state
       state.cycle!.nextOrdinal++
       state.completedNodes++
-      return { state, record, diagnostics: applied.diagnostics }
+      return { ...applied, state, record }
     } catch (error) {
       if (error instanceof SimulationError)
         throw new SimulationError({ ...error.diagnostic, anchor })
@@ -222,7 +229,7 @@ export function stepSimulation(
       actionChanges,
       beforeEffects: cloneState(state),
     }
-    let diagnostics: Diagnostic[]
+    let settlement: OperationSettlement
     if (isNaturalParticipant(active)) {
       const before = applyOperations(state, phaseOperations(operations, 'preAction'), anchor)
       state = before.state
@@ -235,30 +242,41 @@ export function stepSimulation(
       state = after.state
       settleNaturalParticipant(state, active.id, oldModifiers)
       const warned = before.diagnostics.some((issue) => issue.code === 'sp-negative')
-      diagnostics = [
-        ...before.diagnostics,
-        ...after.diagnostics.filter((issue) => issue.code !== 'sp-negative' || !warned),
-      ]
+      settlement = {
+        state,
+        diagnostics: [
+          ...before.diagnostics,
+          ...after.diagnostics.filter((issue) => issue.code !== 'sp-negative' || !warned),
+        ],
+        characterEffectOutcomes: [
+          ...before.characterEffectOutcomes,
+          ...after.characterEffectOutcomes,
+        ],
+      }
     } else {
       const triggered = applyOperations(state, operations, anchor)
       state = triggered.state
       state.participants = state.participants.filter((participant) => participant.id !== active.id)
       delete state.activeParticipantId
-      diagnostics = triggered.diagnostics
+      settlement = triggered
     }
     state.completedNodes++
-    return { state, record, diagnostics }
+    return { ...settlement, record }
   } catch (error) {
     if (error instanceof SimulationError) throw new SimulationError({ ...error.diagnostic, anchor })
     throw error
   }
 }
-export function simulatePlan(plan: SimulationPlan): SimulationResult {
+export function simulatePlan(
+  plan: SimulationPlan,
+  characterIds: Readonly<Record<string, string>> = {},
+): SimulationResult {
   const result: SimulationResult = {
     records: [],
     snapshots: [],
     participants: [],
     diagnostics: validatePlan(plan),
+    characterEffectOutcomes: [],
     stopReason: 'error',
   }
   if (result.diagnostics.length) return result
@@ -266,12 +284,13 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
   const reached = new Set<string>()
   const events = new Map(plan.events.map((event) => [anchorKey(event.anchor), event]))
   try {
-    let state = createInitialState(plan)
+    let state = createInitialState(plan, characterIds)
     result.startState = cloneState(state)
     reached.add('start')
     const initial = applyOperations(state, events.get('start')?.operations ?? [], { kind: 'start' })
     state = initial.state
     result.diagnostics.push(...initial.diagnostics)
+    result.characterEffectOutcomes.push(...initial.characterEffectOutcomes)
     result.snapshots.push(queueSnapshot(state))
     result.stopReason = 'nodes'
     if (!state.participants.length)
@@ -295,6 +314,7 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
       result.records.push(step.record)
       result.snapshots.push(snapshot)
       result.diagnostics.push(...step.diagnostics)
+      result.characterEffectOutcomes.push(...step.characterEffectOutcomes)
     }
     if (!state.participants.length && !pendingCycleBoundary(state)) result.stopReason = 'empty'
   } catch (error) {
@@ -337,7 +357,7 @@ export function previewOperationState(
       index >= 0
         ? group.slice(0, index)
         : skillPointDraft
-          ? group.filter((op) => op.type === 'changeSkillPoints')
+          ? group.filter(isSkillPointOperation)
           : group
     if (anchor.kind === 'action' && phase === 'postAction') {
       const preAction = phaseOperations(operations, 'preAction').filter((op) => op.id !== beforeId)

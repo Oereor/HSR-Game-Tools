@@ -284,6 +284,27 @@
         "unavailable": "当前节点无法对知更鸟·晴歌应用 Fever 状态。"
       }
     },
+    "characterEffects": {
+      "archer_ultimateCharge": "Archer 终结技",
+      "archer_followUp": "Archer 追击回点",
+      "bronya_e1_refund": "布洛妮娅 E1 回点",
+      "bronyaPresetName": "布洛妮娅战技（E1 回点）",
+      "ultimatePreset": "获得 2 层充能，最多 4 层。",
+      "followUpPreset": "消耗 1 层充能，最多恢复 1 点战技点。",
+      "bronyaPreset": "扣除 1 点战技点，并在 E1 可触发时记录一次回点。",
+      "initialCharge": "Archer 初始充能",
+      "initialChargeHelp": "可设置为 0 至 {max} 层。解锁的额外能力和秘技各可提供 1 层充能。",
+      "chargeBalance": "{name} 充能 {before} → {after} / {max}",
+      "chargeDelta": "充能 {amount}",
+      "cooldownUntil": "冷却中，第 {turn} 回合起可触发",
+      "effect": "角色专属效果",
+      "source": "来源角色",
+      "presets": "角色预设",
+      "ambiguous": "有多个参与者匹配此角色，请在操作编辑器中选择来源。",
+      "reuseCost": "请选择本次战技已使用的 −1 战技点操作。",
+      "costOption": "{index}. {name} · {phase}",
+      "refundDeclaration": "确认布洛妮娅本次战技触发 E1 时添加此效果。战技消耗需单独配置。"
+    },
     "sp": {
       "setup": "战技点",
       "enabled": "跟踪战技点",
@@ -417,6 +438,7 @@
     "actionLimit": "最大行动次数",
     "eventSpeed": "事件速度",
     "changeSkillPoints": "战技点变化",
+    "characterEffect": "角色专属效果",
     "customName": "自定义名称",
     "presets": "预设模板",
     "startOnly": "仅可在「战斗开始」时间节点处添加",
@@ -437,7 +459,11 @@
       "unreached-anchor": "此节点未在当前范围内到达",
       "no-participants": "尚无队列参与者",
       "sp-negative-first": "本次推演首次消耗至负战技点，排轴继续。",
-      "sp-negative": "消耗后战技点为负。"
+      "sp-negative": "消耗后战技点为负。",
+      "character-effect-source": "所需角色缺失、身份不符或已离场。",
+      "character-effect-anchor": "布洛妮娅 E1 回点只能放在她自己的行动节点。",
+      "archer-no-charge": "Archer 充能不足，无法追击。",
+      "bronya-e1-cooldown": "布洛妮娅 E1 仍在冷却中。"
     },
     "path": {
       "Elation": "欢愉",

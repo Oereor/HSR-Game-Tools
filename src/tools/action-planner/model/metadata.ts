@@ -43,7 +43,7 @@ export function operationMetadata(
     }
     return { fields }
   }
-  if (operation.type === 'changeSkillPoints')
+  if (operation.type === 'changeSkillPoints' || operation.type === 'characterEffect')
     return { fields: [{ kind: 'effect', message: operationNameDescriptor(operation, name) }] }
   const targetIds = namingTargets(operation, state)
   const target = targetDescription(operation.target, name, targetIds)

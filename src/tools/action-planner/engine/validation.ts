@@ -1,6 +1,12 @@
 import { anchorKey, countdownParticipantId, HARD_LIMITS, spawnedParticipantId } from './queue'
-import { targetIds, validTargetSelection, validSpeedDurationForTargets } from './targeting'
+import {
+  isTargetedOperation,
+  targetIds,
+  validTargetSelection,
+  validSpeedDurationForTargets,
+} from './targeting'
 import { validSkillPoints } from './skill-points'
+import { CHARACTER_EFFECT_IDS, validInitialArcherCharge } from './character-effects'
 import type {
   Diagnostic,
   EffectOperation,
@@ -73,6 +79,11 @@ export function validateOperations(
       return invalid(op.id)
     if (op.type === 'changeSkillPoints') {
       if (!Number.isSafeInteger(op.amount)) return invalid(op.id)
+      continue
+    }
+    if (op.type === 'characterEffect') {
+      if (!oneOf(op.effectId, CHARACTER_EFFECT_IDS) || !identity(op.sourceParticipantId))
+        return invalid(op.id)
       continue
     }
     if (op.type === 'spawnParticipant') {
@@ -181,6 +192,8 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
       !validDefinition(actor) ||
       actor.kind !== 'actor' ||
       !identity(actor.id) ||
+      (actor.initialArcherCharge !== undefined &&
+        (actor.camp !== 'ally' || !validInitialArcherCharge(actor.initialArcherCharge))) ||
       !Number.isSafeInteger(actor.position) ||
       actor.position < 0
     )
@@ -221,7 +234,7 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
         return invalid()
     }
     for (const op of event.operations) {
-      if (op.type === 'spawnParticipant' || op.type === 'changeSkillPoints') continue
+      if (!isTargetedOperation(op)) continue
       const ids = targetIds(op.target, catalog)
       const known = ids.flatMap((id) => (participants.get(id) ? [participants.get(id)!] : []))
       if (

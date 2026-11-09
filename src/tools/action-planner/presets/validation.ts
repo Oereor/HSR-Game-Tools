@@ -3,6 +3,7 @@ import { baseCompile } from '@intlify/message-compiler'
 import schema from './preset.schema.json'
 import type { GameSnapshot } from '../data/schema'
 import { validateOperations } from '../engine/validation'
+import { effectCharacterId } from '../engine/character-effects'
 import { collectInputs, PresetError, valueResolver } from './values'
 import { PRESET_LIMITS, type PresetDefinition, type Value } from './types'
 
@@ -102,6 +103,14 @@ export function validatePresets(
       if (depth > PRESET_LIMITS.depth) throw new PresetError('depth')
       for (const op of ops) {
         if (++count > PRESET_LIMITS.operations) throw new PresetError('operations')
+        if (
+          op.type === 'characterEffect' &&
+          (depth !== 0 ||
+            preset.interaction !== 'batch' ||
+            preset.characterId !== effectCharacterId(op.effectId) ||
+            (preset.startOnly && op.effectId === 'bronya.e1.refund'))
+        )
+          throw new PresetError('character-effect')
         if (op.onEmpty && op.target !== 'allies' && op.target !== 'enemies')
           throw new PresetError('onEmpty')
         if (op.onTrigger) operations(op.onTrigger, depth + 1)

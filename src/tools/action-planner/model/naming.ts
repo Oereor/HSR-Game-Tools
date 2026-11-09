@@ -2,6 +2,7 @@ import { anchorKey, orderedParticipants } from '../engine/queue'
 import { operationTargets, targetIds } from '../engine/targeting'
 import type {
   ActionChangeTrace,
+  CharacterEffectId,
   EffectOperation,
   EventAnchor,
   ParticipantInfo,
@@ -62,6 +63,8 @@ export function operationNameDescriptor(
   name: (id: string) => string,
   state?: SimulationState,
 ): MessageDescriptor {
+  if (operation.type === 'characterEffect')
+    return { key: characterEffectNameKey(operation.effectId) }
   if (operation.type === 'spawnParticipant') {
     const p = operation.participant
     const kind =
@@ -104,6 +107,8 @@ export function operationNameDescriptor(
     params: { target, amount: Math.abs(operation.amount) },
   }
 }
+export const characterEffectNameKey = (id: CharacterEffectId) =>
+  `planner.characterEffects.${id.replaceAll('.', '_')}`
 export function actionDirections(
   anchor: EventAnchor,
   changes: readonly ActionChangeTrace[],

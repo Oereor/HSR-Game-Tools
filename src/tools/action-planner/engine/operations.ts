@@ -21,14 +21,22 @@ import {
 import { validateOperations } from './validation'
 import { orderOperations } from './effect-config'
 import { skillPointBalance } from './skill-points'
+import { settleCharacterEffect } from './character-effects'
 import type {
   Diagnostic,
   ActionChangeTrace,
+  CharacterEffectOutcome,
   EffectOperation,
   EventAnchor,
   ParticipantDefinition,
   SimulationState,
 } from './types'
+
+export interface OperationSettlement {
+  state: SimulationState
+  diagnostics: Diagnostic[]
+  characterEffectOutcomes: CharacterEffectOutcome[]
+}
 
 /** The single creation path, also used by speed-duration countdowns. */
 export function spawnParticipant(
@@ -58,11 +66,12 @@ export function applyOperations(
   input: SimulationState,
   operations: readonly EffectOperation[],
   anchor: EventAnchor,
-): { state: SimulationState; diagnostics: Diagnostic[] } {
+): OperationSettlement {
   const errors = validateOperations(operations, anchor)
   if (errors.length) throw new SimulationError(errors[0])
   let state = cloneState(input)
   const diagnostics: Diagnostic[] = []
+  const characterEffectOutcomes: CharacterEffectOutcome[] = []
   let warned = false
   for (const op of orderOperations(operations)) {
     if (op.type === 'changeSkillPoints') {
@@ -73,6 +82,19 @@ export function applyOperations(
           warned = true
         }
       }
+      continue
+    }
+    if (op.type === 'characterEffect') {
+      const outcome = settleCharacterEffect(state, op, anchor)
+      if (typeof outcome === 'string')
+        diagnostics.push({
+          code: outcome,
+          severity: 'warning',
+          anchor,
+          operationId: op.id,
+          participantId: op.sourceParticipantId,
+        })
+      else if (outcome) characterEffectOutcomes.push(outcome)
       continue
     }
     const next = cloneState(state)
@@ -205,5 +227,5 @@ export function applyOperations(
       throw error
     }
   }
-  return { state, diagnostics }
+  return { state, diagnostics, characterEffectOutcomes }
 }

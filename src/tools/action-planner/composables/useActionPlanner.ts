@@ -4,6 +4,7 @@ import { simulatePlan, previewOperationState } from '../engine/engine'
 import { anchorKey, spawnedParticipantId, countdownParticipantId } from '../engine/queue'
 import { validatePlan } from '../engine/validation'
 import { isTargetedOperationType, operationTargets } from '../engine/targeting'
+import { isSkillPointOperation } from '../engine/effect-config'
 import type {
   AhaConfig,
   EffectOperation,
@@ -68,7 +69,7 @@ export function useActionPlanner(
     metadata: initialMetadata,
   })
   const plan = computed(() => document.value.plan)
-  const result = shallowRef(simulatePlan(initialPlan))
+  const result = shallowRef(simulatePlan(initialPlan, initialMetadata.characterIds))
   const selected = ref<EventAnchor>({ kind: 'start' })
   const stage = ref<'setup' | 'planning'>('setup')
   const view = ref<'future' | 'queue'>('future')
@@ -101,7 +102,9 @@ export function useActionPlanner(
     return plan.value.events.find((event) => anchorKey(event.anchor) === key)
   })
   const operations = computed(() => selectedEvent.value?.operations ?? [])
-  const context = computed(() => contextAt(plan.value, result.value, selected.value))
+  const context = computed(() =>
+    contextAt(plan.value, result.value, selected.value, document.value.metadata.characterIds),
+  )
   const preview = computed(() =>
     draft.value
       ? previewDraft(context.value, operations.value, selected.value, draft.value)
@@ -133,6 +136,7 @@ export function useActionPlanner(
             anchor: selected.value,
             phase: draft.value?.phase ?? 'postAction',
             preview: preview.value,
+            beforeEffects: context.value,
             selectedIds: draft.value?.selectedIds,
             translate: (key) => key,
           },
@@ -358,9 +362,11 @@ export function useActionPlanner(
         anchor: selected.value,
         phase: draft.value.phase,
         preview: preview.value,
+        beforeEffects: context.value,
         selectedIds: draft.value.selectedIds,
         values: request.values,
         translate: request.translate,
+        reuseSkillPointCostId: request.reuseSkillPointCostId,
       },
       gameData.characters,
       definition.interaction === 'draft' ? temporaryIds() : nextId,
@@ -498,7 +504,7 @@ export function useActionPlanner(
                 selected.value,
                 operation.phase ?? 'preAction',
                 operation.id,
-                operation.type === 'changeSkillPoints',
+                isSkillPointOperation(operation),
               )
             : undefined,
         ]),

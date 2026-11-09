@@ -9,6 +9,7 @@ import SelectButton from 'primevue/selectbutton'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { elationContribution } from '../engine/queue'
 import { DEFAULT_SKILL_POINTS, validSkillPoints } from '../engine/skill-points'
+import { ARCHER_CHARACTER_ID, ARCHER_CHARGE_CAP } from '../engine/character-effects'
 import { resolveElationContributors } from '../model/aha-config'
 import { CYCLE_RULES } from '../engine/cycle'
 import { Plus, Trash2 } from '@lucide/vue'
@@ -111,7 +112,7 @@ const slotLabel = (slot: Slot) => {
     ? characterName(c, locale.value as ToolLocale)
     : (slot.original?.name ?? t('ui.emptySlot'))
 }
-const spCapCharacters = new Set(['1306', '1015', '1508'])
+const spCapCharacters = new Set(['1306', ARCHER_CHARACTER_ID, '1508'])
 const spCapHint = computed(() =>
   new Intl.ListFormat(locale.value).format(
     slots.value
@@ -125,6 +126,10 @@ function setSpEnabled(value: boolean) {
 }
 function setSpField(key: (typeof spFields)[number], value: number | null | undefined) {
   sp.value[key] = value ?? undefined
+  dirty.value = true
+}
+function setInitialCharge(slot: Slot, value: number | null | undefined) {
+  slot.initialArcherCharge = value ?? 0
   dirty.value = true
 }
 const choiceName = (c: CharacterRecord) =>
@@ -480,6 +485,28 @@ function apply() {
           />
         </div>
       </div>
+      <template v-for="(slot, index) in slots" :key="slot.id || index">
+        <div v-if="sp.enabled && slot.characterId === ARCHER_CHARACTER_ID" class="field">
+          <label :for="`archer-charge-${index}`">{{
+            t('planner.characterEffects.initialCharge')
+          }}</label>
+          <InputNumber
+            :input-id="`archer-charge-${index}`"
+            :model-value="slot.initialArcherCharge ?? 0"
+            :locale="locale"
+            :min="0"
+            :max="ARCHER_CHARGE_CAP"
+            :max-fraction-digits="0"
+            :invalid="errors.includes(`archer-charge-${index}`)"
+            :pt="{ pcInputText: { root: { 'aria-describedby': `archer-charge-help-${index}` } } }"
+            fluid
+            @update:model-value="setInitialCharge(slot, $event)"
+          />
+          <small :id="`archer-charge-help-${index}`" class="fine-print">
+            {{ t('planner.characterEffects.initialChargeHelp', { max: ARCHER_CHARGE_CAP }) }}
+          </small>
+        </div>
+      </template>
       <p v-if="sp.enabled && spCapHint" class="fine-print">
         {{ t('planner.sp.capHint', { names: spCapHint }) }}
       </p>

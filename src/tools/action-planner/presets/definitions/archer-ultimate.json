@@ -1,0 +1,16 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "archer-ultimate",
+  "order": 7,
+  "characterId": "1015",
+  "selfPresence": "present",
+  "interaction": "batch",
+  "i18n": {
+    "name": "planner.characterEffects.archer_ultimateCharge",
+    "description": "planner.characterEffects.ultimatePreset"
+  },
+  "icon": { "characterId": "1015" },
+  "operations": [
+    { "type": "characterEffect", "effectId": "archer.ultimateCharge", "target": "self" }
+  ]
+}

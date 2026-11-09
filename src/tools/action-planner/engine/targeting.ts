@@ -1,3 +1,4 @@
+import { isSkillPointOperationType } from './effect-config'
 import type {
   EffectOperation,
   ParticipantInfo,
@@ -10,7 +11,7 @@ import type {
 export function isTargetedOperationType(
   type: EffectOperation['type'],
 ): type is TargetedOperation['type'] {
-  return type !== 'spawnParticipant' && type !== 'changeSkillPoints'
+  return type !== 'spawnParticipant' && !isSkillPointOperationType(type)
 }
 
 export function isTargetedOperation(operation: EffectOperation): operation is TargetedOperation {

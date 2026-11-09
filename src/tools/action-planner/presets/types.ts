@@ -1,4 +1,10 @@
-import type { EffectOperation, EventAnchor, EffectPhase, SimulationState } from '../engine/types'
+import type {
+  CharacterEffectId,
+  EffectOperation,
+  EventAnchor,
+  EffectPhase,
+  SimulationState,
+} from '../engine/types'
 import type { PlannerDocument } from '../model/editor'
 
 export type Value =
@@ -79,6 +85,13 @@ export type PresetOperation =
   | (PresetTargetedOperation & { onTrigger?: PresetOperation[] })
   | (PresetSpawnOperation & { target?: never; onEmpty?: never; onTrigger?: PresetOperation[] })
   | (PresetSkillPointOperation & { target?: never; onEmpty?: never; onTrigger?: never })
+  | {
+      type: 'characterEffect'
+      effectId: CharacterEffectId
+      target: 'self'
+      onEmpty?: never
+      onTrigger?: never
+    }
 export interface PresetDefinition {
   $schema?: string
   id: string
@@ -98,15 +111,18 @@ export interface PresetRequest {
   id: string
   values: Record<string, unknown>
   translate: Translate
+  reuseSkillPointCostId?: string
 }
 export interface PresetContext {
   document: PlannerDocument
   anchor: EventAnchor
   phase: EffectPhase
   preview?: SimulationState
+  beforeEffects?: SimulationState
   selectedIds?: string[]
   values?: Record<string, unknown>
   translate: Translate
+  reuseSkillPointCostId?: string
 }
 export interface PresetResult {
   document?: PlannerDocument
