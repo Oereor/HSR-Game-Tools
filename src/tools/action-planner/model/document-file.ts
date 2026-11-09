@@ -8,7 +8,7 @@ import {
 } from '../engine/queue'
 import { participantCatalog, validatePlan } from '../engine/validation'
 import { isTargetedOperation } from '../engine/targeting'
-import { ARCHER_CHARACTER_ID } from '../engine/character-effects'
+import { ARCHER_CHARACTER_ID, IMBIBITOR_LUNAE_CHARACTER_ID } from '../engine/character-effects'
 import type { ParticipantDefinition, SimulationPlan } from '../engine/types'
 import type { PlannerDocument } from './editor'
 import { simulatePlan } from '../engine/engine'
@@ -21,8 +21,8 @@ import {
 } from './legacy-skill-points'
 
 export const PLANNER_FORMAT = 'hsr-game-tools/action-planner'
-export const PLANNER_VERSION = 11
-const READABLE_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, PLANNER_VERSION] as const
+export const PLANNER_VERSION = 12
+const READABLE_VERSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, PLANNER_VERSION] as const
 type DocumentVersion = (typeof READABLE_VERSIONS)[number]
 export const FILE_LIMITS = {
   bytes: 2 * 1024 * 1024,
@@ -130,7 +130,7 @@ const definitionFields = [
   'panelSpeed',
   'actionLimit',
 ]
-function checkDefinition(value: unknown, initial = false, allowInitialCharge = false) {
+function checkDefinition(value: unknown, initialVersion?: DocumentVersion) {
   const p = object(value)
   fields(
     p,
@@ -138,15 +138,16 @@ function checkDefinition(value: unknown, initial = false, allowInitialCharge = f
       ? ['kind', 'name', 'iconUrl', 'initialAG', 'speed', 'baseSpeed']
       : [
           ...definitionFields,
-          ...(initial ? ['id', 'position'] : []),
-          ...(allowInitialCharge ? ['initialArcherCharge'] : []),
+          ...(initialVersion ? ['id', 'position'] : []),
+          ...((initialVersion ?? 0) >= 11 ? ['initialArcherCharge'] : []),
+          ...((initialVersion ?? 0) >= 12 ? ['imbibitorLunaeTechnique'] : []),
         ],
     ['kind', 'name'],
   )
   text(p.name, FILE_LIMITS.displayName)
 }
-function operationFields(type: unknown, version: DocumentVersion): string[] {
-  switch (type) {
+function operationFields(op: Record<string, unknown>, version: DocumentVersion): string[] {
+  switch (op.type) {
     case 'advance':
     case 'delay':
       return ['target', 'percent']
@@ -163,6 +164,15 @@ function operationFields(type: unknown, version: DocumentVersion): string[] {
       return ['amount']
     case 'characterEffect':
       if (version < 11) return fail('structure')
+      if (
+        version === 11 &&
+        op.effectId !== 'archer.ultimateCharge' &&
+        op.effectId !== 'archer.followUp' &&
+        op.effectId !== 'bronya.e1.refund'
+      )
+        return fail('structure')
+      if (op.effectId === 'imbibitorLunae.enhancedBasic')
+        return ['effectId', 'sourceParticipantId', 'cost']
       return ['effectId', 'sourceParticipantId']
     default:
       return fail('structure')
@@ -205,7 +215,7 @@ export function validatePlannerFile(value: unknown): {
   if (events.length > FILE_LIMITS.events || actors.length > 9) fail('limit')
   const declaredIds = new Set<string>()
   for (const value of actors) {
-    checkDefinition(value, true, version >= 11)
+    checkDefinition(value, version)
     const a = object(value)
     const id = text(a.id)
     if (forbidden.has(id) || declaredIds.has(id)) fail('identity')
@@ -244,7 +254,7 @@ export function validatePlannerFile(value: unknown): {
       const requiredOperationFields = [
         'id',
         'type',
-        ...(legacy?.required ?? operationFields(op.type, version)),
+        ...(legacy?.required ?? operationFields(op, version)),
       ]
       fields(
         op,
@@ -285,9 +295,15 @@ export function validatePlannerFile(value: unknown): {
   const m = fields(doc.metadata, ['customNames', 'characterIds'])
   const customNames = object(m.customNames)
   const characterIds = object(m.characterIds)
-  for (const actor of plan.actors)
+  for (const actor of plan.actors) {
     if (actor.initialArcherCharge !== undefined && characterIds[actor.id] !== ARCHER_CHARACTER_ID)
       fail('metadata')
+    if (
+      actor.imbibitorLunaeTechnique !== undefined &&
+      characterIds[actor.id] !== IMBIBITOR_LUNAE_CHARACTER_ID
+    )
+      fail('metadata')
+  }
   for (const [id, name] of Object.entries(customNames)) {
     if (!opIds.has(id)) fail('metadata')
     text(name, FILE_LIMITS.displayName)

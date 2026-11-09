@@ -69,6 +69,7 @@ const draft = defineModel<OperationDraft>('draft')
 const emit = defineEmits<{
   edit: [operation?: EffectOperation]
   remove: [id: string]
+  duplicate: [id: string]
   move: [id: string, delta: -1 | 1]
   cancel: []
   submit: []
@@ -232,6 +233,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
         @edit="emit('edit', $event)"
         @move="(id, delta) => emit('move', id, delta)"
         @remove="emit('remove', $event)"
+        @duplicate="emit('duplicate', $event)"
       />
       <div class="operations-heading">
         <h3>

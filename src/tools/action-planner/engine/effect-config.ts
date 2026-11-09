@@ -20,9 +20,11 @@ export function phaseOperations(
 }
 
 /** Stable priority within a single execution group. */
-export function orderOperations(operations: readonly EffectOperation[]): EffectOperation[] {
+export function orderOperations<T extends Pick<EffectOperation, 'type'>>(
+  operations: readonly T[],
+): T[] {
   return [
-    ...operations.filter(isSkillPointOperation),
-    ...operations.filter((operation) => !isSkillPointOperation(operation)),
+    ...operations.filter((operation) => isSkillPointOperationType(operation.type)),
+    ...operations.filter((operation) => !isSkillPointOperationType(operation.type)),
   ]
 }

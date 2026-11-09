@@ -3,7 +3,7 @@ import { baseCompile } from '@intlify/message-compiler'
 import schema from './preset.schema.json'
 import type { GameSnapshot } from '../data/schema'
 import { validateOperations } from '../engine/validation'
-import { effectCharacterId } from '../engine/character-effects'
+import { characterEffectRequiresOwnAction, effectCharacterId } from '../engine/character-effects'
 import { collectInputs, PresetError, valueResolver } from './values'
 import { PRESET_LIMITS, type PresetDefinition, type Value } from './types'
 
@@ -56,6 +56,12 @@ export function validatePresets(
       ...Object.values(definition.i18n.unavailable ?? {}),
     ]
     const inputs = collectInputs(definition)
+    for (const input of inputs) {
+      if (!input.options) continue
+      if (new Set(input.options.map((option) => option.value)).size !== input.options.length)
+        throw new PresetError('parameter-conflict')
+      keys.push(...input.options.map((option) => option.labelKey))
+    }
     const parameterIds = new Set(inputs.map((i) => i.id))
     let count = 0
     function walk(value: unknown, depth = 0) {
@@ -108,7 +114,7 @@ export function validatePresets(
           (depth !== 0 ||
             preset.interaction !== 'batch' ||
             preset.characterId !== effectCharacterId(op.effectId) ||
-            (preset.startOnly && op.effectId === 'bronya.e1.refund'))
+            (preset.startOnly && characterEffectRequiresOwnAction(op.effectId)))
         )
           throw new PresetError('character-effect')
         if (op.onEmpty && op.target !== 'allies' && op.target !== 'enemies')

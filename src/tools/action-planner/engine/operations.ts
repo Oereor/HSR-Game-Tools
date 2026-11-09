@@ -73,14 +73,17 @@ export function applyOperations(
   const diagnostics: Diagnostic[] = []
   const characterEffectOutcomes: CharacterEffectOutcome[] = []
   let warned = false
+  function warnNegativeSpend(operationId: string, cost: number) {
+    if (!warned && cost > 0 && state.skillPoints && state.skillPoints.current < 0n) {
+      diagnostics.push({ code: 'sp-negative', severity: 'warning', anchor, operationId })
+      warned = true
+    }
+  }
   for (const op of orderOperations(operations)) {
     if (op.type === 'changeSkillPoints') {
       if (state.skillPoints && op.amount !== 0) {
         state.skillPoints.current = skillPointBalance(state.skillPoints, op.amount)
-        if (!warned && op.amount < 0 && state.skillPoints.current < 0n) {
-          diagnostics.push({ code: 'sp-negative', severity: 'warning', anchor, operationId: op.id })
-          warned = true
-        }
+        warnNegativeSpend(op.id, -op.amount)
       }
       continue
     }
@@ -94,7 +97,10 @@ export function applyOperations(
           operationId: op.id,
           participantId: op.sourceParticipantId,
         })
-      else if (outcome) characterEffectOutcomes.push(outcome)
+      else if (outcome) {
+        characterEffectOutcomes.push(outcome)
+        warnNegativeSpend(op.id, outcome.payment?.actualSpCost ?? 0)
+      }
       continue
     }
     const next = cloneState(state)

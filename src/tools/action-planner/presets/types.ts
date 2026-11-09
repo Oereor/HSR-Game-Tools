@@ -42,6 +42,7 @@ export interface Input {
   i18n?: { label?: string; hint?: string; placeholder?: string; suffix?: string }
   minimum?: number
   exclusiveMinimum?: number
+  options?: { value: number; labelKey: string }[]
 }
 export type PresetTarget = 'self' | 'allies' | 'enemies' | 'selected' | { snapshot: string }
 interface TargetOptions {
@@ -85,13 +86,17 @@ export type PresetOperation =
   | (PresetTargetedOperation & { onTrigger?: PresetOperation[] })
   | (PresetSpawnOperation & { target?: never; onEmpty?: never; onTrigger?: PresetOperation[] })
   | (PresetSkillPointOperation & { target?: never; onEmpty?: never; onTrigger?: never })
-  | {
+  | ({
       type: 'characterEffect'
-      effectId: CharacterEffectId
       target: 'self'
       onEmpty?: never
       onTrigger?: never
-    }
+    } & (
+      | { effectId: 'imbibitorLunae.enhancedBasic'; cost: Value }
+      | {
+          effectId: Exclude<CharacterEffectId, 'imbibitorLunae.enhancedBasic'>
+        }
+    ))
 export interface PresetDefinition {
   $schema?: string
   id: string

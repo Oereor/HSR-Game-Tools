@@ -7,7 +7,7 @@ import {
 } from '../engine/engine'
 import { anchorKey, SimulationError } from '../engine/queue'
 import { isSkillPointOperationType } from '../engine/effect-config'
-import { characterEffectSourceIssue } from '../engine/character-effects'
+import { characterEffectSourceIssue, validEnhancedBasicCost } from '../engine/character-effects'
 import {
   isTargetedOperation,
   operationTargets,
@@ -18,6 +18,7 @@ import {
 import { validateOperations } from '../engine/validation'
 import type {
   CharacterEffectId,
+  EnhancedBasicCost,
   EffectOperation,
   EffectPhase,
   EventAnchor,
@@ -63,6 +64,7 @@ export interface OperationDraft {
   duration: SpeedDurationDraft
   participant: ParticipantDraft
   effectId?: CharacterEffectId
+  effectCost?: EnhancedBasicCost
   sourceParticipantId?: string
 }
 export function operationDraft(operation?: EffectOperation, customName = ''): OperationDraft {
@@ -83,7 +85,11 @@ export function operationDraft(operation?: EffectOperation, customName = ''): Op
     ),
     participant: participantDraft(operation?.type === 'spawnParticipant' ? operation : undefined),
     ...(operation?.type === 'characterEffect'
-      ? { effectId: operation.effectId, sourceParticipantId: operation.sourceParticipantId }
+      ? {
+          effectId: operation.effectId,
+          sourceParticipantId: operation.sourceParticipantId,
+          effectCost: operation.cost,
+        }
       : {}),
   }
 }
@@ -151,15 +157,16 @@ export function provisionalOperation(
   switch (draft.type) {
     case 'changeSkillPoints':
       return { ...common, type: draft.type, amount: draft.amount ?? NaN }
-    case 'characterEffect':
-      return draft.effectId && draft.sourceParticipantId
-        ? {
-            ...common,
-            type: draft.type,
-            effectId: draft.effectId,
-            sourceParticipantId: draft.sourceParticipantId,
-          }
-        : undefined
+    case 'characterEffect': {
+      const { effectId, sourceParticipantId } = draft
+      if (!effectId || !sourceParticipantId) return
+      const effect = { ...common, type: 'characterEffect' as const, sourceParticipantId }
+      if (effectId === 'imbibitorLunae.enhancedBasic')
+        return validEnhancedBasicCost(draft.effectCost)
+          ? { ...effect, effectId, cost: draft.effectCost }
+          : undefined
+      return { ...effect, effectId }
+    }
     case 'spawnParticipant':
       return buildParticipantOperation(
         { ...draft.participant, phase: draft.phase },

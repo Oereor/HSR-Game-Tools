@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
-import { ArrowDown, ArrowUp, Pencil, Trash2 } from '@lucide/vue'
+import { ArrowDown, ArrowUp, Copy, Pencil, Trash2 } from '@lucide/vue'
 
 defineProps<{
   name: string
   first: boolean
   last: boolean
   editDisabled?: boolean
+  copyable?: boolean
 }>()
-const emit = defineEmits<{ move: [delta: -1 | 1]; edit: []; remove: [] }>()
+const emit = defineEmits<{ move: [delta: -1 | 1]; edit: []; remove: []; duplicate: [] }>()
 const { t } = useI18n()
 </script>
 
@@ -44,6 +45,16 @@ const { t } = useI18n()
       :aria-label="t('planner.accessibility.edit', { name })"
       @click="emit('edit')"
       ><Pencil :size="15"
+    /></Button>
+    <Button
+      v-if="copyable"
+      v-tooltip="t('planner.accessibility.duplicate', { name })"
+      text
+      size="small"
+      severity="secondary"
+      :aria-label="t('planner.accessibility.duplicate', { name })"
+      @click="emit('duplicate')"
+      ><Copy :size="15"
     /></Button>
     <Button
       v-tooltip="t('ui.remove')"

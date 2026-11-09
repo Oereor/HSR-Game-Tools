@@ -23,6 +23,7 @@ export interface ActorConfig extends ActorDefinition {
   id: string
   position: number
   initialArcherCharge?: number
+  imbibitorLunaeTechnique?: boolean
 }
 export type ParticipantAnchor =
   | { kind: 'action'; participantId: string; turn: number }
@@ -50,10 +51,21 @@ export interface ActionChangeTrace {
 }
 export type SpeedDuration =
   { kind: 'turns'; turns: number | null } | { kind: 'countdown'; name: string; speed: number }
-export type CharacterEffectId = 'archer.ultimateCharge' | 'archer.followUp' | 'bronya.e1.refund'
-export interface CharacterEffectOperation {
+export type EnhancedBasicCost = 1 | 2 | 3
+export type CharacterEffectParameters =
+  | { effectId: 'imbibitorLunae.enhancedBasic'; cost: EnhancedBasicCost }
+  | {
+      effectId:
+        | 'archer.ultimateCharge'
+        | 'archer.followUp'
+        | 'bronya.e1.refund'
+        | 'imbibitorLunae.ultimate'
+        | 'imbibitorLunae.ultimateE2'
+      cost?: never
+    }
+export type CharacterEffectId = CharacterEffectParameters['effectId']
+export type CharacterEffectOperation = CharacterEffectParameters & {
   type: 'characterEffect'
-  effectId: CharacterEffectId
   sourceParticipantId: string
 }
 export type EffectOperation = { id: string; phase?: EffectPhase } & (
@@ -97,6 +109,7 @@ export interface SkillPointsState {
 export type CharacterEffectState =
   | { kind: 'archer'; charge: number }
   | { kind: 'bronya'; availableFromTurn: Partial<Record<CharacterEffectId, number>> }
+  | { kind: 'imbibitorLunae'; squama: number }
 export interface CharacterEffectOutcome {
   operationId: string
   sourceParticipantId: string
@@ -104,6 +117,8 @@ export interface CharacterEffectOutcome {
   skillPoints: { before: bigint; after: bigint }
   charge?: { before: number; after: number }
   availableFromTurn?: number
+  resource?: { kind: 'squama'; before: number; after: number }
+  payment?: { nominalCost: number; substituteUsed: number; actualSpCost: number }
 }
 export interface AhaConfig {
   id: string

@@ -7,7 +7,7 @@ import {
 } from '../../../src/tools/action-planner/engine/engine'
 import type {
   ActorConfig,
-  CharacterEffectId,
+  CharacterEffectParameters,
   EffectOperation,
   EffectPhase,
   EventAnchor,
@@ -42,7 +42,7 @@ const actor = (id: string, position: number): ActorConfig => ({
 })
 const effect = (
   id: string,
-  effectId: CharacterEffectId,
+  effectId: Extract<CharacterEffectParameters, { cost?: never }>['effectId'],
   sourceParticipantId: string,
   phase?: EffectPhase,
 ): EffectOperation => ({
@@ -371,6 +371,7 @@ describe('character effect editor, presets and files', () => {
     const exported = serializePlannerDocument(current)
     expect(JSON.parse(exported).version).toBe(PLANNER_VERSION)
     expect(() => validatePlannerFile({ ...JSON.parse(exported), version: 10 })).toThrow('structure')
+    expect(validatePlannerFile({ ...JSON.parse(exported), version: 11 }).document).toEqual(current)
     const imported = parsePlannerDocument(exported).document
     expect(imported).toEqual(current)
     let saved: string | null = null

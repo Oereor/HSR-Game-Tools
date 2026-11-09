@@ -432,6 +432,26 @@ export function useActionPlanner(
   function move(id: string, delta: -1 | 1) {
     if (updateOperations(moveOperation(operations.value, id, delta, selected.value))) cancel()
   }
+  function duplicateCharacterEffect(id: string) {
+    const index = operations.value.findIndex((operation) => operation.id === id)
+    const operation = operations.value[index]
+    if (operation?.type !== 'characterEffect') return false
+    const copy = { ...operation, id: nextId() }
+    const next = [...operations.value]
+    next.splice(index + 1, 0, copy)
+    const metadata = document.value.metadata
+    const name = metadataValue(metadata.customNames, id)
+    if (
+      !updateOperations(next, {
+        ...metadata,
+        customNames:
+          name === undefined ? metadata.customNames : { ...metadata.customNames, [copy.id]: name },
+      })
+    )
+      return false
+    cancel()
+    return true
+  }
   function deleteEvent(anchor: EventAnchor) {
     if (
       replacePlan({
@@ -550,6 +570,7 @@ export function useActionPlanner(
     submitPreset,
     remove,
     move,
+    duplicateCharacterEffect,
     deleteEvent,
     stepQueue,
     reset,

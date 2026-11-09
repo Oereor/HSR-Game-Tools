@@ -1,7 +1,10 @@
 import { applyOperations } from '../engine/operations'
 import { previewOperationState, simulatePlan } from '../engine/engine'
-import { characterEffectSourceIssue } from '../engine/character-effects'
-import { isSkillPointOperation } from '../engine/effect-config'
+import {
+  characterEffectRequiresOwnAction,
+  characterEffectSourceIssue,
+} from '../engine/character-effects'
+import { isSkillPointOperation, orderOperations } from '../engine/effect-config'
 import {
   anchorKey,
   countdownParticipantId,
@@ -79,11 +82,11 @@ export function compilePreset(
       self = participant.id
       selfActor = actors[0]!
     }
-    const bronyaRefund = definition.operations.some(
-      (op) => op.type === 'characterEffect' && op.effectId === 'bronya.e1.refund',
+    const requiresOwnAction = definition.operations.some(
+      (op) => op.type === 'characterEffect' && characterEffectRequiresOwnAction(op.effectId),
     )
     if (
-      bronyaRefund &&
+      requiresOwnAction &&
       (insertionAnchor.kind !== 'action' || insertionAnchor.participantId !== self)
     )
       throw new PresetError('characterEffectAnchor')
@@ -144,7 +147,9 @@ export function compilePreset(
       const operations: EffectOperation[] = []
       patches.push({ anchor, operations })
       let state = root && definition.interaction === 'batch' ? preview : undefined
-      for (const declaration of declarations) {
+      let ordinaryGroup = false
+      const ordered = root && characterPreset ? orderOperations(declarations) : declarations
+      for (const declaration of ordered) {
         if (++count > PRESET_LIMITS.operations) throw new PresetError('operations')
         operationIndex = count - 1
         semanticTarget = declaration.target
@@ -160,6 +165,19 @@ export function compilePreset(
           (definition.interaction === 'draft' && isSkillPointOperation(operation))
         )
           throw new PresetError('form')
+        // A mixed character batch appends its first ordinary operation after the
+        // existing ordinary operations, with the complete SP group already settled.
+        if (
+          root &&
+          characterPreset &&
+          beforeEffects &&
+          !ordinaryGroup &&
+          !isSkillPointOperation(operation)
+        ) {
+          state = previewOperationState(beforeEffects, [...existing, ...operations], anchor, phase)
+          if (!state) throw new PresetError('context')
+          ordinaryGroup = true
+        }
         if (state && isTargetedOperation(operation)) {
           const ids = targetIds(
             operation.target,

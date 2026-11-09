@@ -54,6 +54,7 @@ const {
   presetIssues,
   remove,
   move,
+  duplicateCharacterEffect,
   deleteEvent,
   stepQueue,
   nextId,
@@ -262,6 +263,7 @@ onBeforeUnmount(() => {
                   v-bind="inspectorProps"
                   @edit="edit"
                   @remove="remove"
+                  @duplicate="duplicateCharacterEffect"
                   @move="move"
                   @cancel="cancel"
                   @submit="submit"
@@ -277,6 +279,7 @@ onBeforeUnmount(() => {
                 v-bind="inspectorProps"
                 @edit="edit"
                 @remove="remove"
+                @duplicate="duplicateCharacterEffect"
                 @move="move"
                 @cancel="cancel"
                 @submit="submit"

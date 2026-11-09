@@ -13,7 +13,7 @@ const { t, locale } = useI18n()
 const presets = {
   basic: 1,
   skill: -1,
-  imbibitorLunae: -3,
+  spendThree: -3,
   sparkle: 6,
   rin: 4,
   none: 0,

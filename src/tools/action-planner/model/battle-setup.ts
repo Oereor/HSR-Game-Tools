@@ -12,6 +12,7 @@ export interface AllySlot {
   baseSpeed: number | undefined
   panelSpeed: number | undefined
   initialArcherCharge?: number
+  imbibitorLunaeTechnique?: boolean
 }
 export interface EnemyDraft {
   id: string
@@ -29,6 +30,7 @@ export function setupDraft(plan: SimulationPlan, metadata: PlannerMetadata) {
       baseSpeed: actor?.baseSpeed,
       panelSpeed: actor?.panelSpeed,
       initialArcherCharge: actor?.initialArcherCharge,
+      imbibitorLunaeTechnique: actor?.imbibitorLunaeTechnique,
     }
   })
   const enemies: EnemyDraft[] = plan.actors
@@ -86,6 +88,9 @@ export function buildBattleSetup(
                   ...(slot.initialArcherCharge === undefined
                     ? {}
                     : { initialArcherCharge: slot.initialArcherCharge }),
+                  ...(slot.imbibitorLunaeTechnique === undefined
+                    ? {}
+                    : { imbibitorLunaeTechnique: slot.imbibitorLunaeTechnique }),
                 },
               ]
             : [],

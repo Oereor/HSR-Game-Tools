@@ -11,6 +11,7 @@ import {
 } from '../../../src/tools/action-planner/model/document-file'
 import { operationsAt } from '../../../src/tools/action-planner/model/editor'
 import { simulatePlan } from '../../../src/tools/action-planner/engine/engine'
+import { characterEffectRequiresOwnAction } from '../../../src/tools/action-planner/engine/character-effects'
 import { spawnedParticipantId } from '../../../src/tools/action-planner/engine/queue'
 import type {
   PresetDefinition,
@@ -297,7 +298,9 @@ describe('production preset catalog wiring', () => {
         { anchor: start, operations: [{ id: 'depart', type: 'depart', target: target('a') }] },
       ]
     const p = planner(document)
-    if (characterEffects.some((operation) => operation.effectId === 'bronya.e1.refund')) {
+    if (
+      characterEffects.some((operation) => characterEffectRequiresOwnAction(operation.effectId))
+    ) {
       p.select({ kind: 'action', participantId: 'a', turn: 1 })
       p.addSkillPoints('postAction')
     }

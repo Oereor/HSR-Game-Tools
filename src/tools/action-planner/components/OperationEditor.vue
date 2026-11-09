@@ -27,7 +27,11 @@ import type { OperationDraft } from '../model/editor'
 import { provisionalOperation } from '../model/editor'
 import { operationName, formatNumber } from '../model/presentation'
 import { characterEffectNameKey } from '../model/naming'
-import { CHARACTER_EFFECT_IDS, characterEffectSourceIssue } from '../engine/character-effects'
+import {
+  CHARACTER_EFFECT_IDS,
+  ENHANCED_BASIC_COSTS,
+  characterEffectSourceIssue,
+} from '../engine/character-effects'
 import { isSkillPointOperationType } from '../engine/effect-config'
 import { presets, presetIcon } from '../presets/catalog'
 import {
@@ -71,11 +75,7 @@ const effectSources = computed(() => {
     sources: state?.skillPoints
       ? [...(state.characterEffects?.keys() ?? [])].filter(
           (sourceParticipantId) =>
-            !characterEffectSourceIssue(
-              state,
-              { type: 'characterEffect', effectId, sourceParticipantId },
-              props.anchor,
-            ),
+            !characterEffectSourceIssue(state, { effectId, sourceParticipantId }, props.anchor),
         )
       : [],
   }))
@@ -97,10 +97,19 @@ const sourceOptions = computed(() => {
   ]
 })
 function selectEffect(effectId?: CharacterEffectId) {
+  if (effectId !== draft.value.effectId) {
+    draft.value.effectCost = effectId === 'imbibitorLunae.enhancedBasic' ? 1 : undefined
+  }
   draft.value.effectId = effectId
   const sources = effectSources.value.find((item) => item.effectId === effectId)?.sources
   draft.value.sourceParticipantId = sources?.length === 1 ? sources[0] : undefined
 }
+const enhancements = computed(() =>
+  ENHANCED_BASIC_COSTS.map((value) => ({
+    value,
+    label: t(`planner.characterEffects.enhancement${value}`),
+  })),
+)
 const types = computed(() =>
   (skillPointDraft.value
     ? ['changeSkillPoints', ...(effectOptions.value.length ? ['characterEffect'] : [])]
@@ -163,6 +172,7 @@ const availablePresets = computed(() =>
       skillPointDraft.value &&
       (!issue ||
         issue === 'skillPointCost' ||
+        issue === 'activeTarget' ||
         (issue === 'ambiguous' &&
           effectSources.value.some(
             ({ effectId, sources }) =>
@@ -395,11 +405,24 @@ function submit() {
         :invalid="invalid.includes('target')"
       />
       <div v-for="input in inputs" :key="input.id" class="field">
-        <label :for="`preset-input-${input.id}`">{{
+        <label :id="`preset-label-${input.id}`" :for="`preset-input-${input.id}`">{{
           input.i18n?.label ? t(input.i18n.label) : input.id
         }}</label>
+        <Select
+          v-if="input.options"
+          :input-id="`preset-input-${input.id}`"
+          :aria-labelledby="`preset-label-${input.id}`"
+          :model-value="numberValue(input.id)"
+          :options="input.options.map(({ value, labelKey }) => ({ value, label: t(labelKey) }))"
+          option-value="value"
+          option-label="label"
+          :invalid="invalid.includes(input.id)"
+          :aria-describedby="invalid.includes(input.id) ? `preset-error-${input.id}` : undefined"
+          fluid
+          @update:model-value="values[input.id] = $event"
+        />
         <InputNumber
-          v-if="typeof input.value !== 'string'"
+          v-else-if="typeof input.value !== 'string'"
           :model-value="numberValue(input.id)"
           @update:model-value="values[input.id] = $event ?? undefined"
           :input-id="`preset-input-${input.id}`"
@@ -490,6 +513,19 @@ function submit() {
           option-value="value"
           option-disabled="disabled"
           :invalid="invalid.includes('characterEffect')"
+          fluid
+        />
+      </div>
+      <div v-if="draft.effectId === 'imbibitorLunae.enhancedBasic'" class="field">
+        <span id="effect-cost-label" class="field-label">{{
+          t('planner.characterEffects.enhancement')
+        }}</span>
+        <Select
+          v-model="draft.effectCost"
+          aria-labelledby="effect-cost-label"
+          :options="enhancements"
+          option-label="label"
+          option-value="value"
           fluid
         />
       </div>

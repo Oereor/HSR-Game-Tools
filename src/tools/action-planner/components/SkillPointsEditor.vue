@@ -20,7 +20,7 @@ import type {
 } from '../engine/types'
 import { formatNumber, formatSkillPointOutcome } from '../model/presentation'
 import { isSkillPointOperation } from '../engine/effect-config'
-import { ARCHER_CHARGE_CAP } from '../engine/character-effects'
+import { ARCHER_CHARGE_CAP, SQUAMA_CAP } from '../engine/character-effects'
 
 const props = defineProps<{
   anchor: EventAnchor
@@ -42,6 +42,7 @@ const emit = defineEmits<{
   edit: [operation: SkillPointOperation]
   move: [id: string, delta: -1 | 1]
   remove: [id: string]
+  duplicate: [id: string]
 }>()
 const { t, locale } = useI18n()
 const phases = ['preAction', 'postAction'] as const
@@ -68,11 +69,20 @@ const nodeBalance = computed(() => {
     max: format(entry.max),
   }
 })
-const charges = computed(() =>
+function resourceValue(effect?: CharacterEffectState) {
+  switch (effect?.kind) {
+    case 'archer':
+      return { kind: 'charge', value: effect.charge, cap: ARCHER_CHARGE_CAP }
+    case 'imbibitorLunae':
+      return { kind: 'squama', value: effect.squama, cap: SQUAMA_CAP }
+  }
+}
+const resources = computed(() =>
   [...(props.entryCharacterEffects ?? [])].flatMap(([id, effect]) => {
     const anchor = props.anchor
+    const entry = resourceValue(effect)
     if (
-      effect.kind !== 'archer' ||
+      !entry ||
       (anchor.kind !== 'start' &&
         !(anchor.kind === 'action' && anchor.participantId === id) &&
         !skillPointOperations.value.some(
@@ -80,14 +90,17 @@ const charges = computed(() =>
         ))
     )
       return []
-    const settled = props.settledCharacterEffects?.get(id)
+    const settled = resourceValue(props.settledCharacterEffects?.get(id))
+    const balance = t('planner.characterEffects.resourceBalance', {
+      name: props.label(id),
+      resource: t(`planner.characterEffects.resource.${entry.kind}`),
+      before: format(entry.value),
+      after: settled?.kind === entry.kind ? format(settled.value) : '—',
+    })
     return [
       {
         id,
-        name: props.label(id),
-        before: format(effect.charge),
-        after: settled?.kind === 'archer' ? format(settled.charge) : '—',
-        max: format(ARCHER_CHARGE_CAP),
+        label: entry.cap === undefined ? balance : `${balance} / ${format(entry.cap)}`,
       },
     ]
   }),
@@ -127,21 +140,40 @@ const details = computed(
           ] as const
         const sp = result.skillPoints.after - result.skillPoints.before
         const charge = result.charge ? result.charge.after - result.charge.before : 0
+        const resource = result.resource
+        const payment = result.payment
         const changes = []
         if (result.charge)
           changes.push(t('planner.characterEffects.chargeDelta', { amount: format(charge, true) }))
-        if (op.effectId !== 'archer.ultimateCharge')
+        if (resource)
+          changes.push(
+            t('planner.characterEffects.resourceChange', {
+              resource: t(`planner.characterEffects.resource.${resource.kind}`),
+              before: format(resource.before),
+              after: format(resource.after),
+            }),
+          )
+        if (payment || (!resource && op.effectId !== 'archer.ultimateCharge'))
           changes.push(t('planner.sp.delta', { amount: format(sp, true) }))
-        return [
-          op.id,
-          {
-            tone: tone(sp || charge),
-            delta: changes.join(' · '),
-            summary: result.availableFromTurn
+        const summary =
+          payment && resource
+            ? t('planner.characterEffects.payment', {
+                nominal: format(payment.nominalCost),
+                substitute: format(payment.substituteUsed),
+                resource: t(`planner.characterEffects.resource.${resource.kind}`),
+                actual: format(payment.actualSpCost),
+              })
+            : result.availableFromTurn
               ? t('planner.characterEffects.cooldownUntil', {
                   turn: format(result.availableFromTurn),
                 })
-              : undefined,
+              : undefined
+        return [
+          op.id,
+          {
+            tone: tone(sp || charge || (resource ? resource.after - resource.before : 0)),
+            delta: changes.join(' · '),
+            summary,
           },
         ] as const
       }),
@@ -178,8 +210,8 @@ const details = computed(
       <span class="sp-cap" aria-hidden="true"> / {{ nodeBalance.max }}</span>
     </p>
     <p v-else class="sp-balance muted">{{ t('planner.sp.unavailable') }}</p>
-    <p v-for="charge in charges" :key="charge.id" class="sp-balance">
-      {{ t('planner.characterEffects.chargeBalance', charge) }}
+    <p v-for="resource in resources" :key="resource.id" class="sp-balance">
+      {{ resource.label }}
     </p>
     <Message
       v-if="warning"
@@ -243,8 +275,10 @@ const details = computed(
               :name="title(op)"
               :first="index === 0"
               :last="index === group.operations.length - 1"
+              :copyable="op.type === 'characterEffect'"
               @move="emit('move', op.id, $event)"
               @edit="emit('edit', op)"
+              @duplicate="emit('duplicate', op.id)"
               @remove="emit('remove', op.id)"
             />
           </div>

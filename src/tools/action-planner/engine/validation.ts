@@ -6,7 +6,11 @@ import {
   validSpeedDurationForTargets,
 } from './targeting'
 import { validSkillPoints } from './skill-points'
-import { CHARACTER_EFFECT_IDS, validInitialArcherCharge } from './character-effects'
+import {
+  CHARACTER_EFFECT_IDS,
+  validEnhancedBasicCost,
+  validInitialArcherCharge,
+} from './character-effects'
 import type {
   Diagnostic,
   EffectOperation,
@@ -82,7 +86,13 @@ export function validateOperations(
       continue
     }
     if (op.type === 'characterEffect') {
-      if (!oneOf(op.effectId, CHARACTER_EFFECT_IDS) || !identity(op.sourceParticipantId))
+      if (
+        !oneOf(op.effectId, CHARACTER_EFFECT_IDS) ||
+        !identity(op.sourceParticipantId) ||
+        (op.effectId === 'imbibitorLunae.enhancedBasic'
+          ? !validEnhancedBasicCost(op.cost)
+          : op.cost !== undefined)
+      )
         return invalid(op.id)
       continue
     }
@@ -194,6 +204,8 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
       !identity(actor.id) ||
       (actor.initialArcherCharge !== undefined &&
         (actor.camp !== 'ally' || !validInitialArcherCharge(actor.initialArcherCharge))) ||
+      (actor.imbibitorLunaeTechnique !== undefined &&
+        (actor.camp !== 'ally' || typeof actor.imbibitorLunaeTechnique !== 'boolean')) ||
       !Number.isSafeInteger(actor.position) ||
       actor.position < 0
     )

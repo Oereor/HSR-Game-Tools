@@ -1,4 +1,5 @@
 import type { CharacterRecord } from '../data/schema'
+import { validEnhancedBasicCost } from '../engine/character-effects'
 import type { ActorDefinition, EffectOperation, Target, TargetedOperation } from '../engine/types'
 import {
   PRESET_LIMITS,
@@ -102,6 +103,7 @@ export function valueResolver(
         if (
           typeof result !== typeof fallback ||
           (typeof result !== 'string' && typeof result !== 'number') ||
+          (input.options && !input.options.some((option) => option.value === result)) ||
           (typeof result === 'number' &&
             (!Number.isFinite(result) ||
               (input.minimum !== undefined && result < input.minimum) ||
@@ -177,12 +179,18 @@ export function valueResolver(
         const source = resolveTarget(declaration.target)
         if (source.kind !== 'participants' || source.participantIds.length !== 1)
           throw new PresetError(invalid)
-        return {
+        const effect = {
           ...common,
-          type,
-          effectId: declaration.effectId,
+          type: 'characterEffect' as const,
           sourceParticipantId: source.participantIds[0]!,
         }
+        const { effectId } = declaration
+        if (effectId === 'imbibitorLunae.enhancedBasic') {
+          const cost = number(declaration.cost)
+          if (!validEnhancedBasicCost(cost)) throw new PresetError(invalid)
+          return { ...effect, effectId, cost }
+        }
+        return { ...effect, effectId }
       }
       case 'advance':
       case 'delay':

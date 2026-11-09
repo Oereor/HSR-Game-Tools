@@ -1,6 +1,6 @@
 # 行动序列预设维护
 
-预设是人工维护的声明式配置。运行时解释器将其转换为操作和事件，再经完整校验与模拟一次提交。Version 11 方案文件保存编译后的计划数据。预设身份、参数引用、目标快照和嵌套声明仅用于编译。引擎语义和文件格式见[模拟器架构](architecture/action-order-simulator.md)。
+预设是人工维护的声明式配置。运行时解释器将其转换为操作和事件，再经完整校验与模拟一次提交。Version 12 方案文件保存编译后的计划数据。预设身份、参数引用、目标快照和嵌套声明仅用于编译。引擎语义和文件格式见[模拟器架构](architecture/action-order-simulator.md)。
 
 ## 新增预设
 
@@ -81,6 +81,8 @@ Actor 的最小结构是 `{"kind":"actor","name":"单位","camp":"ally","baseSpe
 
 启用战技点跟踪后，可从战技点编辑器使用 Archer 终结技、Archer 追击回点和布洛妮娅战技（E1 回点）预设。编译将 `self` 保存为 `sourceParticipantId`。布洛妮娅预设先声明 `changeSkillPoints(-1)`，再声明 `bronya.e1.refund`。节点已有手动扣点时，用户须选定本次战技的扣点，预设只在其阶段追加回点。充能不足与冷却中的回点仍可记录为操作，实际结算由引擎给出警告。
 
+丹恒·饮月的普通终结技与 E2 终结技分开提供。E2 批量追加专属资源操作和目标为 `self` 的 `advance(100)`。自身行动前若无法拉条，预设拒绝整批并提示切换到行动后。强化普攻通过 `cost` 选择 1、2 或 3 点。
+
 ## 目标与事件
 
 - `self`：顶层 `characterId` 对应的唯一初始我方 Actor。缺失、歧义或已移除时拒绝应用；通过身份元数据识别，名称和槽位不影响结果。可选 `selfPresence` 为 present / departed / any，默认 any；流萤、知更鸟配置 present 保留必须在场的限制，回场类预设则可选择 departed。
@@ -99,6 +101,8 @@ Scheduled Event 的 spawnParticipant 可携带 `onTrigger`，countdown 类型的
 `user-input.value` 为数字、字符串或角色基础速度查询。数字生成 InputNumber，字符串生成 InputText；用户没有修改时使用默认值。`i18n` 可包含 label、hint、placeholder、suffix，全部填写翻译 key。minimum 为包含下界，exclusiveMinimum 为不包含下界；具体操作合法性仍由 TypeScript 和引擎检查。
 
 参数在整份 JSON 中自动收集。多个相同声明只生成一个输入框；同 ID 的不一致声明报错。后续位置推荐使用 `{"type":"ref","id":"speed"}` 引用，允许引用出现在声明之前。
+
+数值型 `user-input` 可声明 `options` 列表。每项包含唯一的数值 `value` 和双语消息键 `labelKey`，默认值和用户提交值均须属于选项。表单使用 Select。
 
 基础速度默认值可写为：
 

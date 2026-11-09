@@ -1,6 +1,6 @@
 # 正式配队方案
 
-这里只放用户人工审阅后的普通导出方案。新模板使用 Version 11 JSON，解析器可读取无需有损确认的 Version 1–10 方案。当前正式目录为空，测试方案不得加入。
+这里只放用户人工审阅后的普通导出方案。新模板使用 Version 12 JSON，解析器可读取无需有损确认的 Version 1–11 方案。当前正式目录为空，测试方案不得加入。
 
 完整审阅、导出、Catalog 登记、Site Messages 和校验流程见[方案与模板维护](../../../../../docs/architecture/action-order-simulator.md#方案与模板维护)。
 目录登记见 [catalog.ts](../catalog.ts)，不根据截图或角色技能描述自动生成配队。

@@ -9,7 +9,11 @@ import SelectButton from 'primevue/selectbutton'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { elationContribution } from '../engine/queue'
 import { DEFAULT_SKILL_POINTS, validSkillPoints } from '../engine/skill-points'
-import { ARCHER_CHARACTER_ID, ARCHER_CHARGE_CAP } from '../engine/character-effects'
+import {
+  ARCHER_CHARACTER_ID,
+  ARCHER_CHARGE_CAP,
+  IMBIBITOR_LUNAE_CHARACTER_ID,
+} from '../engine/character-effects'
 import { resolveElationContributors } from '../model/aha-config'
 import { CYCLE_RULES } from '../engine/cycle'
 import { Plus, Trash2 } from '@lucide/vue'
@@ -130,6 +134,10 @@ function setSpField(key: (typeof spFields)[number], value: number | null | undef
 }
 function setInitialCharge(slot: Slot, value: number | null | undefined) {
   slot.initialArcherCharge = value ?? 0
+  dirty.value = true
+}
+function setLunaeTechnique(slot: Slot, value: boolean) {
+  slot.imbibitorLunaeTechnique = value
   dirty.value = true
 }
 const choiceName = (c: CharacterRecord) =>
@@ -505,6 +513,16 @@ function apply() {
           <small :id="`archer-charge-help-${index}`" class="fine-print">
             {{ t('planner.characterEffects.initialChargeHelp', { max: ARCHER_CHARGE_CAP }) }}
           </small>
+        </div>
+        <div v-if="sp.enabled && slot.characterId === IMBIBITOR_LUNAE_CHARACTER_ID" class="field">
+          <label :for="`lunae-technique-${index}`">
+            {{ t('planner.characterEffects.lunaeTechnique') }}
+          </label>
+          <ToggleSwitch
+            :input-id="`lunae-technique-${index}`"
+            :model-value="slot.imbibitorLunaeTechnique ?? false"
+            @update:model-value="setLunaeTechnique(slot, $event)"
+          />
         </div>
       </template>
       <p v-if="sp.enabled && spCapHint" class="fine-print">
