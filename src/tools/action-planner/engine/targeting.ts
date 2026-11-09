@@ -1,10 +1,23 @@
 import type {
+  EffectOperation,
   ParticipantInfo,
   SimulationState,
   SpeedDuration,
   Target,
   TargetedOperation,
 } from './types'
+
+export function isTargetedOperationType(
+  type: EffectOperation['type'],
+): type is TargetedOperation['type'] {
+  return (
+    type !== 'spawnParticipant' && type !== 'restoreSkillPoints' && type !== 'conditionalRestore'
+  )
+}
+
+export function isTargetedOperation(operation: EffectOperation): operation is TargetedOperation {
+  return isTargetedOperationType(operation.type)
+}
 
 export function targetIds(target: Target, participants: readonly ParticipantInfo[]): string[] {
   return target.kind === 'participants'

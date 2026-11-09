@@ -1,4 +1,18 @@
 import { isNaturalParticipant } from './types'
+import { recomputeSkillPointMax } from './skill-point-max'
+import {
+  accumulateSkillPointTotals,
+  emptySkillPointTotals,
+  summarizeSkillPoints,
+} from './skill-point-summary'
+import {
+  paySkillPoints,
+  restoreSkillPoints,
+  refillSkillPoints,
+  skillPointStorageRecord,
+  usesSkillPoints,
+  validActionSkill,
+} from './skill-points'
 import { phaseOperations } from './effect-config'
 import { pendingCycleBoundary } from './cycle'
 import { applyOperations, spawnParticipant } from './operations'
@@ -19,6 +33,9 @@ import {
 } from './queue'
 import { participantCatalog, validateOperations, validatePlan } from './validation'
 import type {
+  ActionSkill,
+  ParticipantNodeRecord,
+  SkillPointMaxChange,
   NaturalParticipantState,
   Diagnostic,
   EffectOperation,
@@ -57,6 +74,22 @@ export function createInitialState(plan: SimulationPlan): SimulationState {
     ...(plan.cycleMode === 'none'
       ? {}
       : { cycle: { mode: plan.cycleMode, nextOrdinal: 1, maxAV: plan.maxAV } }),
+    ...(plan.skillPoints?.enabled
+      ? {
+          skillPoints: {
+            current: plan.skillPoints.initial ?? 3,
+            baseMax: plan.skillPoints.max ?? 5,
+            max: plan.skillPoints.max ?? 5,
+            stored: 0,
+            storedMax: plan.skillPoints.storedMax ?? 10,
+            onInsufficient: plan.skillPoints.onInsufficient ?? 'stop',
+            maxModifiers: (plan.skillPoints.maxModifiers ?? []).map((modifier) => ({
+              ...modifier,
+            })),
+            conditionalCooldowns: new Map<string, number>(),
+          },
+        }
+      : {}),
     participants: [],
     elapsedAV: 0,
     completedNodes: 0,
@@ -89,6 +122,7 @@ export function createInitialState(plan: SimulationPlan): SimulationState {
       zeroOrder: 0,
       pendingActionChanges: [],
     })
+  recomputeSkillPointMax(state, 'initial')
   return state
 }
 /** Shared by execution and post-action previews; expiry follows the complete post-action phase. */
@@ -103,7 +137,7 @@ function settleNaturalParticipant(
   state: SimulationState,
   id: string,
   oldModifiers: ReadonlySet<string>,
-): void {
+): SkillPointMaxChange | undefined {
   const natural = state.participants.find(
     (participant): participant is NaturalParticipantState =>
       participant.id === id && isNaturalParticipant(participant),
@@ -123,6 +157,7 @@ function settleNaturalParticipant(
     state.participants = state.participants.filter((participant) => participant.id !== id)
   assertState(state)
   state.completedActions++
+  return recomputeSkillPointMax(state, 'removal', undefined, id)
 }
 function expireCountdown(state: SimulationState, id: string): void {
   for (const participant of state.participants)
@@ -158,12 +193,20 @@ export function nextSimulationEvent(state: SimulationState):
 export function stepSimulation(
   input: SimulationState,
   operations: readonly EffectOperation[],
-): { state: SimulationState; record: NodeRecord; diagnostics: Diagnostic[] } {
+  skill?: ActionSkill,
+): { state: SimulationState; record: NodeRecord; diagnostics: Diagnostic[]; blocked?: boolean } {
   let state = cloneState(input)
   const event = nextSimulationEvent(state)
   if (!event) fail('invalid-input')
   const anchor = event.anchor
-  const errors = validateOperations(operations, anchor)
+  if (skill !== undefined && (anchor.kind !== 'action' || !validActionSkill(skill)))
+    fail('invalid-input')
+  const errors = validateOperations(
+    operations,
+    anchor,
+    skill,
+    event.kind === 'participant' ? event.participant : undefined,
+  )
   if (errors.length) throw new SimulationError(errors[0])
   if (event.kind === 'cycleBoundary') {
     try {
@@ -175,9 +218,23 @@ export function stepSimulation(
         deltaAV: event.deltaAV,
         beforeEffects: cloneState(state),
         actionChanges: [],
+        ...(state.skillPoints
+          ? {
+              skillPointStorage: skillPointStorageRecord(state.skillPoints, []),
+              spValidation:
+                state.skillPoints.current === null
+                  ? ('unknown' as const)
+                  : state.skillPoints.unverified
+                    ? ('unverified' as const)
+                    : ('known' as const),
+            }
+          : {}),
       }
       const applied = applyOperations(state, operations, anchor)
       state = applied.state
+      if (applied.maxChanges) record.maxChanges = applied.maxChanges
+      if (state.skillPoints)
+        record.skillPointStorage = skillPointStorageRecord(state.skillPoints, [])
       state.cycle!.nextOrdinal++
       state.completedNodes++
       return { state, record, diagnostics: applied.diagnostics }
@@ -212,27 +269,119 @@ export function stepSimulation(
       effectiveSpeed: speed,
       actionChanges,
       beforeEffects: cloneState(state),
+      ...(state.skillPoints
+        ? {
+            spValidation:
+              state.skillPoints.current === null
+                ? ('unknown' as const)
+                : state.skillPoints.unverified
+                  ? ('unverified' as const)
+                  : ('known' as const),
+          }
+        : {}),
     }
     let diagnostics: Diagnostic[]
     if (isNaturalParticipant(active)) {
-      const before = applyOperations(state, phaseOperations(operations, 'preAction'), anchor)
+      const preResources = applyOperations(
+        state,
+        phaseOperations(operations, 'preAction').filter(
+          (operation) => operation.type === 'restoreSkillPoints',
+        ),
+        anchor,
+        { skill },
+      )
+      state = preResources.state
+      if (preResources.skillPointEvents)
+        record.skillPointEvents = [...preResources.skillPointEvents]
+      if (state.skillPoints && usesSkillPoints(active)) {
+        record.skillPoints = paySkillPoints(state.skillPoints, skill)
+        record.spValidation = record.skillPoints.status
+        if (
+          record.skillPoints.status === 'insufficient' &&
+          state.skillPoints.onInsufficient !== 'mark'
+        ) {
+          if (record.skillPointEvents)
+            record.skillPointEvents = record.skillPointEvents.map((event) => ({
+              ...event,
+              committed: false,
+            }))
+          if (input.skillPoints)
+            record.skillPointStorage = skillPointStorageRecord(input.skillPoints, [])
+          return {
+            state: cloneState(input),
+            record,
+            blocked: true,
+            diagnostics: [
+              ...preResources.diagnostics,
+              { code: 'sp-insufficient', severity: 'error', anchor },
+            ],
+          }
+        }
+      }
+      const before = applyOperations(
+        state,
+        phaseOperations(operations, 'preAction').filter(
+          (operation) => operation.type !== 'restoreSkillPoints',
+        ),
+        anchor,
+        { skill },
+      )
       state = before.state
       const actor = state.participants.find(
         (participant): participant is NaturalParticipantState =>
           participant.id === active.id && isNaturalParticipant(participant),
       )!
       finishNaturalTurn(state, actor)
-      const after = applyOperations(state, phaseOperations(operations, 'postAction'), anchor)
+      if (record.skillPoints && state.skillPoints)
+        restoreSkillPoints(state.skillPoints, record.skillPoints)
+      const after = applyOperations(state, phaseOperations(operations, 'postAction'), anchor, {
+        skill,
+      })
       state = after.state
-      settleNaturalParticipant(state, active.id, oldModifiers)
-      diagnostics = [...before.diagnostics, ...after.diagnostics]
+      if (after.skillPointEvents)
+        record.skillPointEvents = [...(record.skillPointEvents ?? []), ...after.skillPointEvents]
+      if (after.conditionalRestores) record.conditionalRestores = after.conditionalRestores
+      if (state.skillPoints && usesSkillPoints(active)) {
+        const refill = refillSkillPoints(state.skillPoints)
+        if (refill) record.refill = refill
+      }
+      const removalChange = settleNaturalParticipant(state, active.id, oldModifiers)
+      const maxChanges = [
+        ...(before.maxChanges ?? []),
+        ...(after.maxChanges ?? []),
+        ...(removalChange ? [removalChange] : []),
+      ]
+      if (maxChanges.length) record.maxChanges = maxChanges
+      diagnostics = [...preResources.diagnostics, ...before.diagnostics, ...after.diagnostics]
+      if (removalChange?.loss)
+        diagnostics.push({
+          code: 'sp-cap-loss',
+          severity: 'warning',
+          anchor,
+          participantId: active.id,
+        })
     } else {
       const triggered = applyOperations(state, operations, anchor)
       state = triggered.state
+      if (triggered.maxChanges) record.maxChanges = triggered.maxChanges
       state.participants = state.participants.filter((participant) => participant.id !== active.id)
       delete state.activeParticipantId
       diagnostics = triggered.diagnostics
     }
+    if (record.skillPoints) {
+      if (record.skillPoints.status === 'insufficient')
+        diagnostics.push({ code: 'sp-marked', severity: 'warning', anchor })
+      if (record.skillPoints.status === 'unknown' && record.skillPoints.before !== null)
+        diagnostics.push({ code: 'sp-unknown', severity: 'warning', anchor })
+      if (record.skillPoints.overflow)
+        diagnostics.push({ code: 'sp-overflow', severity: 'info', anchor })
+    }
+    if (state.skillPoints)
+      record.skillPointStorage = skillPointStorageRecord(
+        state.skillPoints,
+        [...(record.skillPointEvents ?? []), ...(record.conditionalRestores ?? [])],
+        record.skillPoints ? (record.skillPoints.overflow ?? null) : 0,
+      )
     state.completedNodes++
     return { state, record, diagnostics }
   } catch (error) {
@@ -250,14 +399,23 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
   }
   if (result.diagnostics.length) return result
   result.participants = participantCatalog(plan)
+  let finalState: SimulationState | undefined
+  let skillPointTotals = emptySkillPointTotals
+  let candidateAnchor: EventAnchor = { kind: 'start' }
   const reached = new Set<string>()
-  const events = new Map(plan.events.map((event) => [anchorKey(event.anchor), event.operations]))
+  const events = new Map(plan.events.map((event) => [anchorKey(event.anchor), event]))
   try {
     let state = createInitialState(plan)
+    finalState = state
     result.startState = cloneState(state)
     reached.add('start')
-    const initial = applyOperations(state, events.get('start') ?? [], { kind: 'start' })
+    const initial = applyOperations(state, events.get('start')?.operations ?? [], candidateAnchor)
+    if (initial.state.skillPoints)
+      skillPointTotals = accumulateSkillPointTotals(skillPointTotals, initial)
     state = initial.state
+    finalState = state
+    if (initial.skillPointEvents) result.startSkillPointEvents = initial.skillPointEvents
+    if (initial.maxChanges) result.startMaxChanges = initial.maxChanges
     result.diagnostics.push(...initial.diagnostics)
     result.snapshots.push(queueSnapshot(state))
     result.stopReason = 'nodes'
@@ -274,9 +432,21 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
         break
       }
       const anchor = next.anchor
-      const step = stepSimulation(state, events.get(anchorKey(anchor)) ?? [])
+      candidateAnchor = anchor
+      const planned = events.get(anchorKey(anchor))
+      const step = stepSimulation(state, planned?.operations ?? [], planned?.skill)
+      if (step.blocked) {
+        reached.add(anchorKey(anchor))
+        result.blockedAction = step.record as ParticipantNodeRecord
+        result.diagnostics.push(...step.diagnostics)
+        result.stopReason = 'error'
+        break
+      }
       const snapshot = queueSnapshot(step.state)
+      if (step.state.skillPoints)
+        skillPointTotals = accumulateSkillPointTotals(skillPointTotals, step.record)
       state = step.state
+      finalState = state
       reached.add(anchorKey(anchor))
       result.records.push(step.record)
       result.snapshots.push(snapshot)
@@ -286,11 +456,22 @@ export function simulatePlan(plan: SimulationPlan): SimulationResult {
   } catch (error) {
     if (!(error instanceof SimulationError)) throw error
     result.stopReason = 'error'
-    result.diagnostics.push(error.diagnostic)
+    const { diagnostic } = error
+    result.diagnostics.push(
+      diagnostic.code === 'sp-arithmetic' && !diagnostic.anchor
+        ? { ...diagnostic, anchor: candidateAnchor }
+        : diagnostic,
+    )
   }
+  if (finalState?.skillPoints)
+    result.skillPointsSummary = summarizeSkillPoints(
+      result,
+      finalState.skillPoints,
+      skillPointTotals,
+    )
   for (const event of plan.events)
     if (
-      event.operations.length &&
+      (event.operations.length || event.skill) &&
       !reached.has(anchorKey(event.anchor)) &&
       !(event.anchor.kind === 'cycleBoundary' && plan.cycleMode === 'none')
     )
@@ -309,22 +490,54 @@ export function previewOperationState(
   anchor: EventAnchor,
   phase: 'preAction' | 'postAction',
   beforeId?: string,
+  skill?: ActionSkill,
+  resourceDraft = false,
 ): SimulationState | undefined {
   try {
     let state = cloneState(input)
-    if (anchor.kind === 'action' && phase === 'postAction') {
-      state = applyOperations(state, phaseOperations(operations, 'preAction'), anchor).state
+    const group = anchor.kind === 'action' ? phaseOperations(operations, phase) : operations
+    const index = group.findIndex((op) => op.id === beforeId)
+    const preceding = index < 0 ? group : group.slice(0, index)
+    if (anchor.kind === 'action') {
+      const resource = (op: EffectOperation) => op.type === 'restoreSkillPoints'
+      if (phase === 'preAction' && resourceDraft)
+        return applyOperations(state, preceding.filter(resource), anchor).state
+
+      const preAction = phaseOperations(operations, 'preAction').filter((op) => op.id !== beforeId)
+      state = applyOperations(state, preAction.filter(resource), anchor).state
       const actor = state.participants.find(
+        (participant) => participant.id === anchor.participantId,
+      )
+      if (!actor || !isNaturalParticipant(actor)) return undefined
+      const payment =
+        state.skillPoints && usesSkillPoints(actor)
+          ? paySkillPoints(state.skillPoints, skill)
+          : undefined
+      if (payment?.status === 'insufficient' && state.skillPoints?.onInsufficient !== 'mark')
+        return undefined
+      if (phase === 'preAction')
+        return applyOperations(
+          state,
+          preceding.filter((op) => !resource(op)),
+          anchor,
+          { skill },
+        ).state
+
+      state = applyOperations(
+        state,
+        preAction.filter((op) => !resource(op)),
+        anchor,
+        { skill },
+      ).state
+      const afterPreAction = state.participants.find(
         (participant): participant is NaturalParticipantState =>
           participant.id === anchor.participantId && isNaturalParticipant(participant),
       )
-      if (!actor) return undefined
-      finishNaturalTurn(state, actor)
+      if (!afterPreAction) return undefined
+      finishNaturalTurn(state, afterPreAction)
+      if (payment && state.skillPoints) restoreSkillPoints(state.skillPoints, payment)
     }
-    const group = anchor.kind === 'action' ? phaseOperations(operations, phase) : [...operations]
-    const index =
-      beforeId === undefined ? group.length : group.findIndex((op) => op.id === beforeId)
-    return applyOperations(state, group.slice(0, index < 0 ? group.length : index), anchor).state
+    return applyOperations(state, preceding, anchor, { skill }).state
   } catch (error) {
     if (error instanceof SimulationError) return undefined
     throw error

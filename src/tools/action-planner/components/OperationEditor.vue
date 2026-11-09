@@ -24,6 +24,7 @@ import type { ToolLocale } from '../../../locales/types'
 const draft = defineModel<OperationDraft>({ required: true })
 const props = defineProps<{
   anchor: EventAnchor
+  resourceAction: boolean
   participants: ParticipantInfo[]
   preview?: SimulationState
   invalid: string[]
@@ -45,10 +46,31 @@ const types = computed(() =>
     'spawnParticipant',
     'depart',
     'returnToField',
-  ].map((value) => ({ value, label: t(`ui.${value}`) })),
+    ...(props.resourceAction || props.anchor.kind === 'start' ? ['restoreSkillPoints'] : []),
+    ...(props.resourceAction ? ['conditionalRestore'] : []),
+  ].map((value) => ({
+    value,
+    label: t(
+      value === 'restoreSkillPoints' || value === 'conditionalRestore'
+        ? `planner.sp.${value}`
+        : `ui.${value}`,
+    ),
+  })),
+)
+const resourceOperation = computed(
+  () => draft.value.type === 'restoreSkillPoints' || draft.value.type === 'conditionalRestore',
 )
 const phases = computed(() =>
-  ['preAction', 'postAction'].map((value) => ({ value, label: t(`ui.${value}`) })),
+  (draft.value.type === 'conditionalRestore' ? ['postAction'] : ['preAction', 'postAction']).map(
+    (value) => ({ value, label: t(`ui.${value}`) }),
+  ),
+)
+watch(
+  () => draft.value.type,
+  (type) => {
+    if (type === 'conditionalRestore') draft.value.phase = 'postAction'
+  },
+  { flush: 'sync' },
 )
 const provisional = computed(() => provisionalOperation(draft.value, props.anchor))
 const automaticName = computed(() =>
@@ -298,6 +320,7 @@ function submit() {
     />
     <template v-else
       ><TargetGrid
+        v-if="!resourceOperation"
         v-model="draft"
         :participants="participants"
         :label="label"

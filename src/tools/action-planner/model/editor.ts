@@ -7,6 +7,7 @@ import {
 } from '../engine/engine'
 import { anchorKey, SimulationError } from '../engine/queue'
 import {
+  isTargetedOperation,
   operationTargets,
   targetIds,
   validTargetSelection,
@@ -14,6 +15,7 @@ import {
 } from '../engine/targeting'
 import { validateOperations } from '../engine/validation'
 import type {
+  ActionSkill,
   EffectOperation,
   EffectPhase,
   EventAnchor,
@@ -50,6 +52,11 @@ export interface OperationDraft {
   original?: EffectOperation
   type: EffectOperation['type']
   customName: string
+  source: string
+  chance: number | undefined
+  cooldownTurns: number | undefined
+  outcome: 'proc' | 'no-proc'
+  storeOverflow: boolean
   phase: EffectPhase
   targetKind: Target['kind']
   selectedIds: string[]
@@ -60,21 +67,27 @@ export interface OperationDraft {
   participant: ParticipantDraft
 }
 export function operationDraft(operation?: EffectOperation, customName = ''): OperationDraft {
+  const target = operation && isTargetedOperation(operation) ? operation.target : undefined
   return {
     id: operation?.id || undefined,
     original: operation?.id ? operation : undefined,
     customName,
+    source:
+      operation?.type === 'restoreSkillPoints' || operation?.type === 'conditionalRestore'
+        ? operation.source
+        : '',
+    chance: operation?.type === 'conditionalRestore' ? operation.chance : 0.5,
+    cooldownTurns: operation?.type === 'conditionalRestore' ? operation.cooldownTurns : 1,
+    outcome: operation?.type === 'conditionalRestore' ? operation.outcome : 'no-proc',
+    storeOverflow:
+      operation?.type === 'restoreSkillPoints' ? (operation.storeOverflow ?? false) : false,
     type: operation?.type ?? 'advance',
     phase: operation?.phase ?? (operation?.id ? 'preAction' : 'postAction'),
-    targetKind:
-      operation && operation.type !== 'spawnParticipant' ? operation.target.kind : 'participants',
-    selectedIds:
-      operation && operation.type !== 'spawnParticipant' && operation.target.kind === 'participants'
-        ? [...operation.target.participantIds]
-        : [],
+    targetKind: target?.kind ?? 'participants',
+    selectedIds: target?.kind === 'participants' ? [...target.participantIds] : [],
     percent: operation?.type === 'advance' || operation?.type === 'delay' ? operation.percent : 50,
     mode: operation?.type === 'addSpeedModifier' ? operation.mode : 'flat',
-    amount: operation?.type === 'addSpeedModifier' ? operation.amount : 10,
+    amount: operation && 'amount' in operation ? operation.amount : 10,
     duration: speedDurationDraft(
       operation?.type === 'addSpeedModifier' ? operation.duration : undefined,
     ),
@@ -97,8 +110,11 @@ export function contextAt(
     let state = createInitialState(plan)
     if (anchor.kind === 'start') return state
     state = applyOperations(state, operationsAt(plan, { kind: 'start' }), { kind: 'start' }).state
-    for (const done of result.records)
-      state = stepSimulation(state, operationsAt(plan, done.anchor)).state
+    const events = new Map(plan.events.map((event) => [anchorKey(event.anchor), event]))
+    for (const done of result.records) {
+      const event = events.get(anchorKey(done.anchor))
+      state = stepSimulation(state, event?.operations ?? [], event?.skill).state
+    }
     const next = nextSimulationEvent(state)
     return next && anchorKey(next.anchor) === anchorKey(anchor)
       ? stepSimulation(state, []).record.beforeEffects
@@ -113,9 +129,18 @@ export function previewDraft(
   operations: EffectOperation[],
   anchor: EventAnchor,
   draft: OperationDraft,
+  skill?: ActionSkill,
 ): SimulationState | undefined {
   return context
-    ? previewOperationState(context, operations, anchor, draft.phase, draft.id)
+    ? previewOperationState(
+        context,
+        operations,
+        anchor,
+        draft.phase,
+        draft.id,
+        skill,
+        draft.type === 'restoreSkillPoints',
+      )
     : undefined
 }
 /** A provisional value is for naming only; it is never submitted without buildOperation. */
@@ -132,6 +157,30 @@ export function provisionalOperation(
       ? { kind: 'participants', participantIds: [...draft.selectedIds] }
       : { kind: draft.targetKind }
   switch (draft.type) {
+    case 'restoreSkillPoints':
+      return {
+        ...common,
+        type: draft.type,
+        amount: draft.amount ?? 0,
+        source: draft.source,
+        ...(draft.storeOverflow !== false ||
+        (draft.original?.type === 'restoreSkillPoints' &&
+          draft.original.storeOverflow !== undefined)
+          ? { storeOverflow: draft.storeOverflow }
+          : {}),
+      }
+    case 'conditionalRestore':
+      if (anchor.kind !== 'action') return undefined
+      return {
+        ...common,
+        type: draft.type,
+        amount: draft.amount ?? 0,
+        source: draft.source,
+        sourceParticipantId: anchor.participantId,
+        chance: draft.chance ?? NaN,
+        cooldownTurns: draft.cooldownTurns ?? NaN,
+        outcome: draft.outcome,
+      }
     case 'spawnParticipant':
       return buildParticipantOperation(
         { ...draft.participant, phase: draft.phase },
@@ -162,6 +211,8 @@ export function buildOperation(
   id: string,
   anchor: EventAnchor,
   preview: SimulationState | undefined,
+  skill?: ActionSkill,
+  operations: readonly EffectOperation[] = [],
 ): { operation?: EffectOperation; invalid: string[] } {
   if (!preview) return { invalid: ['context'] }
   if (draft.original?.type === 'spawnParticipant' && draft.type !== 'spawnParticipant')
@@ -174,8 +225,31 @@ export function buildOperation(
       draft.original?.type === 'spawnParticipant' ? draft.original : undefined,
     )
   const invalid: string[] = []
-  const operation = provisionalOperation({ ...draft, id }, anchor)!
-  if (operation.type === 'spawnParticipant') return { invalid: ['form'] }
+  const operation = provisionalOperation({ ...draft, id }, anchor)
+  if (!operation || operation.type === 'spawnParticipant') return { invalid: ['form'] }
+  if (!isTargetedOperation(operation)) {
+    if (!Number.isSafeInteger(operation.amount) || operation.amount <= 0) invalid.push('spAmount')
+    if (!operation.source.trim() || operation.source.length > 256) invalid.push('spSource')
+    const source =
+      anchor.kind === 'action'
+        ? preview.participants.find((participant) => participant.id === anchor.participantId)
+        : undefined
+    if (operation.type === 'conditionalRestore') {
+      if (!Number.isFinite(operation.chance) || operation.chance < 0 || operation.chance > 1)
+        invalid.push('chance')
+      if (!Number.isSafeInteger(operation.cooldownTurns) || operation.cooldownTurns < 0)
+        invalid.push('cooldownTurns')
+      if (operations.some((op) => op.id !== id && op.type === 'conditionalRestore'))
+        invalid.push('form')
+    }
+    if (
+      !invalid.length &&
+      ((anchor.kind !== 'start' && (source?.kind !== 'actor' || source.camp !== 'ally')) ||
+        validateOperations([operation], anchor, skill, source).length)
+    )
+      invalid.push('form')
+    return invalid.length ? { invalid } : { operation, invalid }
+  }
   const participants = operationTargets(preview, operation.type)
   const ids = targetIds(operation.target, participants)
   const selected = participants.filter((p) => ids.includes(p.id))

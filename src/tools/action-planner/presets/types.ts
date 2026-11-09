@@ -1,4 +1,4 @@
-import type { EventAnchor, EffectPhase, SimulationState } from '../engine/types'
+import type { EffectOperation, EventAnchor, EffectPhase, SimulationState } from '../engine/types'
 import type { PlannerDocument } from '../model/editor'
 
 export type Value =
@@ -38,41 +38,54 @@ export interface Input {
   exclusiveMinimum?: number
 }
 export type PresetTarget = 'self' | 'allies' | 'enemies' | 'selected' | { snapshot: string }
-interface OperationOptions {
-  target?: PresetTarget
+interface TargetOptions {
+  target: PresetTarget
   onEmpty?: 'skip'
-  onTrigger?: PresetOperation[]
 }
-export type PresetOperation = OperationOptions &
+type PresetTargetedOperation = TargetOptions &
   (
-    | { type: 'advance' | 'delay'; target: PresetTarget; percent: Value }
-    | { type: 'immediatelyAct' | 'depart' | 'returnToField'; target: PresetTarget }
+    | { type: 'advance' | 'delay'; percent: Value }
+    | { type: 'immediatelyAct' | 'depart' | 'returnToField' }
     | {
         type: 'addSpeedModifier'
-        target: PresetTarget
         mode: 'flat' | 'percent'
         amount: Value
         duration: { kind: 'turns'; turns: Value } | { kind: 'countdown'; name: Value; speed: Value }
       }
+  )
+interface PresetSpawnOperation {
+  type: 'spawnParticipant'
+  participant: {
+    name: Value
+    iconUrl?: Value
+    initialAG?: Value
+  } & (
+    | { kind: 'scheduledEvent'; baseSpeed?: Value; speed: Value }
     | {
-        type: 'spawnParticipant'
-        participant: {
-          name: Value
-          iconUrl?: Value
-          initialAG?: Value
-        } & (
-          | { kind: 'scheduledEvent'; baseSpeed?: Value; speed: Value }
-          | {
-              kind: 'actor'
-              camp: 'ally' | 'enemy'
-              category?: 'character' | 'enemy' | 'summon' | 'memosprite' | 'custom'
-              baseSpeed: Value
-              panelSpeed: Value
-              actionLimit?: Value
-            }
-        )
+        kind: 'actor'
+        camp: 'ally' | 'enemy'
+        category?: 'character' | 'enemy' | 'summon' | 'memosprite' | 'custom'
+        baseSpeed: Value
+        panelSpeed: Value
+        actionLimit?: Value
       }
   )
+}
+type PresetSkillPointOperation<T extends 'restoreSkillPoints' | 'conditionalRestore'> = Omit<
+  Extract<EffectOperation, { type: T }>,
+  'id' | 'phase'
+>
+export type PresetOperation =
+  | (PresetTargetedOperation & { onTrigger?: PresetOperation[] })
+  | (PresetSpawnOperation & { target?: never; onEmpty?: never; onTrigger?: PresetOperation[] })
+  | ((
+      | PresetSkillPointOperation<'restoreSkillPoints'>
+      | PresetSkillPointOperation<'conditionalRestore'>
+    ) & {
+      target?: never
+      onEmpty?: never
+      onTrigger?: never
+    })
 export interface PresetDefinition {
   $schema?: string
   id: string

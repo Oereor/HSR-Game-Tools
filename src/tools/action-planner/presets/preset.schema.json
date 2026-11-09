@@ -620,6 +620,43 @@
         {
           "type": "object",
           "properties": {
+            "type": { "const": "restoreSkillPoints" },
+            "amount": { "$ref": "#/definitions/skillPointAmount" },
+            "source": { "$ref": "#/definitions/skillPointSource" },
+            "storeOverflow": { "type": "boolean" }
+          },
+          "required": ["type", "amount", "source"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "conditionalRestore" },
+            "amount": { "$ref": "#/definitions/skillPointAmount" },
+            "source": { "$ref": "#/definitions/skillPointSource" },
+            "sourceParticipantId": {
+              "description": "Participant ID that must match the selected post-action anchor.",
+              "type": "string",
+              "pattern": "\\S"
+            },
+            "chance": { "type": "number", "minimum": 0, "maximum": 1 },
+            "cooldownTurns": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "outcome": { "enum": ["proc", "no-proc"] }
+          },
+          "required": [
+            "type",
+            "amount",
+            "source",
+            "sourceParticipantId",
+            "chance",
+            "cooldownTurns",
+            "outcome"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
             "type": {
               "description": "Operation or declarative value discriminator.",
               "const": "advance"
@@ -941,6 +978,12 @@
           "additionalProperties": false
         }
       ]
+    },
+    "skillPointAmount": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+    "skillPointSource": {
+      "type": "string",
+      "pattern": "\\S",
+      "maxLength": 256
     },
     "selfStat": {
       "description": "Out-of-combat panel speed of the unique initial allied actor identified by the preset characterId. Requires runtime self context.",

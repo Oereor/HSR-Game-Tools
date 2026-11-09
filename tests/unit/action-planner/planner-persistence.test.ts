@@ -10,6 +10,7 @@ import {
 } from '../../../src/tools/action-planner/model/persistence'
 import {
   emptyDocument,
+  PLANNER_FORMAT,
   serializePlannerDocument,
   parsePlannerDocument,
 } from '../../../src/tools/action-planner/model/document-file'
@@ -115,6 +116,23 @@ describe('single-document persistence', () => {
     })
     expect(unavailable.initialize().document).toEqual(emptyDocument())
     expect(unavailable.status).toBe('unavailable')
+  })
+  it('protects a v10 save with a valid v9 body and keeps the active plan on reload', () => {
+    const input = syntheticDocument()
+    expect(parsePlannerDocument(serializePlannerDocument(input)).document).toEqual(input)
+    const raw = JSON.stringify({ format: PLANNER_FORMAT, version: 10, document: input })
+    const store = memory(raw)
+    const persistence = createPlannerPersistence(() => store)
+    const planner = useActionPlanner(input.plan, input.metadata, 'Active plan')
+    const previous = planner.document.value
+    expect(persistence.initialize().document).toEqual(emptyDocument())
+    expect(persistence.status).toBe('protected')
+    expect(persistence.failure).toBe('version')
+    expect(persistence.reload(planner.restoreDocument)).toBe(false)
+    expect(planner.document.value).toBe(previous)
+    expect(persistence.save(previous)).toBe(false)
+    expect(store.raw).toBe(raw)
+    expect(store.writes).toBe(0)
   })
   it('detects external modifications before writing and requires a current overwrite token', () => {
     const store = memory(serializePlannerDocument(emptyDocument()))

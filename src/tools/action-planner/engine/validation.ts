@@ -1,6 +1,13 @@
 import { anchorKey, countdownParticipantId, HARD_LIMITS, spawnedParticipantId } from './queue'
 import { targetIds, validTargetSelection, validSpeedDurationForTargets } from './targeting'
+import {
+  usesSkillPoints,
+  validActionSkill,
+  validSkillPoints,
+  type SkillPointParticipant,
+} from './skill-points'
 import type {
+  ActionSkill,
   Diagnostic,
   EffectOperation,
   EventAnchor,
@@ -55,12 +62,15 @@ export function validAnchor(value: unknown): value is EventAnchor {
 export function validateOperations(
   operations: readonly EffectOperation[],
   anchor: EventAnchor,
+  skill?: ActionSkill,
+  source?: SkillPointParticipant,
 ): Diagnostic[] {
   const invalid = (operationId?: string): Diagnostic[] => [
     { code: 'invalid-input', severity: 'error', anchor, operationId },
   ]
   if (!Array.isArray(operations)) return invalid()
   const ids = new Set<string>()
+  let conditionalSeen = false
   for (const op of operations) {
     if (!object(op) || !identity(op.id) || ids.has(op.id)) return invalid()
     ids.add(op.id)
@@ -70,6 +80,59 @@ export function validateOperations(
         : op.phase !== undefined
     )
       return invalid(op.id)
+    if (op.type === 'restoreSkillPoints') {
+      if (
+        (anchor.kind !== 'start' && anchor.kind !== 'action') ||
+        !count(op.amount) ||
+        !identity(op.source) ||
+        op.source.length > 256 ||
+        (op.storeOverflow !== undefined && typeof op.storeOverflow !== 'boolean') ||
+        Object.keys(op).some(
+          (key) => !['id', 'type', 'phase', 'amount', 'source', 'storeOverflow'].includes(key),
+        )
+      )
+        return invalid(op.id)
+      continue
+    }
+    if (op.type === 'conditionalRestore') {
+      if (
+        conditionalSeen ||
+        anchor.kind !== 'action' ||
+        op.phase !== 'postAction' ||
+        (skill?.kind !== 'skill' &&
+          !(source?.kind === 'actor' && source.camp === 'ally' && !usesSkillPoints(source))) ||
+        op.sourceParticipantId !== anchor.participantId ||
+        !identity(op.sourceParticipantId) ||
+        !count(op.amount) ||
+        typeof op.chance !== 'number' ||
+        !Number.isFinite(op.chance) ||
+        op.chance < 0 ||
+        op.chance > 1 ||
+        typeof op.cooldownTurns !== 'number' ||
+        !Number.isSafeInteger(op.cooldownTurns) ||
+        op.cooldownTurns < 0 ||
+        !oneOf(op.outcome, ['proc', 'no-proc']) ||
+        !identity(op.source) ||
+        op.source.length > 256 ||
+        Object.keys(op).some(
+          (key) =>
+            ![
+              'id',
+              'type',
+              'phase',
+              'amount',
+              'chance',
+              'cooldownTurns',
+              'outcome',
+              'sourceParticipantId',
+              'source',
+            ].includes(key),
+        )
+      )
+        return invalid(op.id)
+      conditionalSeen = true
+      continue
+    }
     if (op.type === 'spawnParticipant') {
       if (!validDefinition(op.participant)) return invalid(op.id)
       continue
@@ -169,6 +232,7 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
     plan.maxAV > HARD_LIMITS.maxAV
   )
     return invalid()
+  if (plan.skillPoints !== undefined && !validSkillPoints(plan.skillPoints)) return invalid()
   const positions = new Set<string>()
   for (const actor of plan.actors) {
     if (
@@ -184,6 +248,16 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
     positions.add(position)
   }
   if (
+    plan.skillPoints?.maxModifiers?.some(
+      (modifier) =>
+        modifier.sourceParticipantId !== undefined &&
+        !plan.actors.some(
+          (actor) => actor.id === modifier.sourceParticipantId && actor.camp === 'ally',
+        ),
+    )
+  )
+    return invalid()
+  if (
     plan.aha.contributorIds.some((id) => !plan.actors.some((a) => a.id === id && a.camp === 'ally'))
   )
     return invalid()
@@ -192,8 +266,14 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
   for (const event of plan.events) {
     if (!object(event) || !validAnchor(event.anchor) || anchors.has(anchorKey(event.anchor)))
       return invalid()
+    if (
+      event.skill !== undefined &&
+      (event.anchor.kind !== 'action' || !validActionSkill(event.skill))
+    )
+      return invalid()
     anchors.add(anchorKey(event.anchor))
-    const errors = validateOperations(event.operations, event.anchor)
+    // Validate structure before reading spawn definitions. Real skill/source context follows below.
+    const errors = validateOperations(event.operations, event.anchor, { kind: 'skill' })
     if (errors.length) return errors
     for (const op of event.operations) {
       if (operationIds.has(op.id)) return invalid()
@@ -208,13 +288,38 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
       return [{ code: 'duplicate-participant', severity: 'error', participantId: participant.id }]
     participants.set(participant.id, participant)
   }
+  // Definitions supply category only for static validation, never runtime target eligibility.
+  const definitions = new Map<string, ParticipantDefinition>(
+    plan.actors.map((actor) => [actor.id, actor]),
+  )
+  for (const event of plan.events)
+    for (const operation of event.operations)
+      if (operation.type === 'spawnParticipant')
+        definitions.set(spawnedParticipantId(operation.id), operation.participant)
   for (const event of plan.events) {
+    const errors = validateOperations(
+      event.operations,
+      event.anchor,
+      event.skill,
+      event.anchor.kind === 'action' ? definitions.get(event.anchor.participantId) : undefined,
+    )
+    if (errors.length) return errors
     if (event.anchor.kind === 'action' || event.anchor.kind === 'trigger') {
       const source = participants.get(event.anchor.participantId)
       if (source && (source.kind !== 'scheduledEvent') !== (event.anchor.kind === 'action'))
         return invalid()
     }
     for (const op of event.operations) {
+      if (op.type === 'restoreSkillPoints' || op.type === 'conditionalRestore') {
+        const source =
+          event.anchor.kind === 'action' ? participants.get(event.anchor.participantId) : undefined
+        if (
+          event.anchor.kind !== 'start' &&
+          (!source || source.kind !== 'actor' || source.camp !== 'ally')
+        )
+          return invalid()
+        continue
+      }
       if (op.type === 'spawnParticipant') continue
       const ids = targetIds(op.target, catalog)
       const known = ids.flatMap((id) => (participants.get(id) ? [participants.get(id)!] : []))

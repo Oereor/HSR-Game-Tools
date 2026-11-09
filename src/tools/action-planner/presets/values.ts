@@ -1,9 +1,11 @@
 import type { CharacterRecord } from '../data/schema'
-import type { ActorDefinition, TargetedOperation } from '../engine/types'
+import type { ActorDefinition, EffectOperation, Target, TargetedOperation } from '../engine/types'
 import {
   PRESET_LIMITS,
   type Input,
   type PresetDefinition,
+  type PresetOperation,
+  type PresetTarget,
   type Translate,
   type Value,
 } from './types'
@@ -22,8 +24,7 @@ export function selectionOperation(
     nested: boolean,
   ): ReturnType<typeof selectionOperation> {
     for (const operation of operations) {
-      if (operation.target === 'selected' && operation.type !== 'spawnParticipant')
-        return { type: operation.type, nested }
+      if (operation.target === 'selected') return { type: operation.type, nested }
       const child = operation.onTrigger && find(operation.onTrigger, true)
       if (child) return child
     }
@@ -139,17 +140,105 @@ export function valueResolver(
   for (const input of inputs.values()) resolve(input)
   for (const key of Object.keys(supplied))
     if (!inputs.has(key)) throw new PresetError('parameter-reference')
-  function tree(value: unknown): unknown {
-    if (!value || typeof value !== 'object') return value
-    if (
-      'type' in value &&
-      ['user-input', 'ref', 'character-stat', 'self-stat', 'i18n', 'multiply', 'divide'].includes(
-        String(value.type),
-      )
-    )
-      return resolve(value as Value)
-    if (Array.isArray(value)) return value.map(tree)
-    return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, tree(child)]))
+  function resolveOperation(
+    declaration: PresetOperation,
+    common: Pick<EffectOperation, 'id' | 'phase'>,
+    resolveTarget: (target: PresetTarget) => Target,
+    invalid = 'form',
+  ): EffectOperation {
+    function number(value: Value): number {
+      const result = resolve(value)
+      if (typeof result !== 'number') throw new PresetError(invalid)
+      return result
+    }
+    function count(value: Value): number | null {
+      const result = resolve(value)
+      if (result !== null && typeof result !== 'number') throw new PresetError(invalid)
+      return result
+    }
+    function name(value: Value): string {
+      const result = resolve(value)
+      if (typeof result !== 'string' || !result.trim())
+        throw new PresetError(
+          invalid === 'form' &&
+            value &&
+            typeof value === 'object' &&
+            (value.type === 'user-input' || value.type === 'ref')
+            ? value.id
+            : invalid,
+        )
+      return result.trim()
+    }
+    const { type } = declaration
+    switch (type) {
+      case 'restoreSkillPoints':
+      case 'conditionalRestore':
+        return { ...declaration, ...common }
+      case 'advance':
+      case 'delay':
+        return {
+          ...common,
+          type,
+          target: resolveTarget(declaration.target),
+          percent: number(declaration.percent),
+        }
+      case 'depart':
+      case 'returnToField':
+      case 'immediatelyAct':
+        return { ...common, type, target: resolveTarget(declaration.target) }
+      case 'addSpeedModifier': {
+        const { target, mode, amount, duration } = declaration
+        return {
+          ...common,
+          type,
+          target: resolveTarget(target),
+          mode,
+          amount: number(amount),
+          duration:
+            duration.kind === 'turns'
+              ? { kind: 'turns', turns: count(duration.turns) }
+              : { kind: 'countdown', name: name(duration.name), speed: number(duration.speed) },
+        }
+      }
+      case 'spawnParticipant': {
+        const participant = declaration.participant
+        const iconUrl = participant.iconUrl === undefined ? undefined : resolve(participant.iconUrl)
+        if (iconUrl !== undefined && typeof iconUrl !== 'string') throw new PresetError(invalid)
+        const fields = {
+          name: name(participant.name),
+          ...(iconUrl === undefined ? {} : { iconUrl }),
+          ...(participant.initialAG === undefined
+            ? {}
+            : { initialAG: number(participant.initialAG) }),
+        }
+        return {
+          ...common,
+          type,
+          participant:
+            participant.kind === 'scheduledEvent'
+              ? {
+                  ...fields,
+                  kind: 'scheduledEvent',
+                  speed: number(participant.speed),
+                  ...(participant.baseSpeed === undefined
+                    ? {}
+                    : { baseSpeed: number(participant.baseSpeed) }),
+                }
+              : {
+                  ...fields,
+                  kind: 'actor',
+                  camp: participant.camp,
+                  baseSpeed: number(participant.baseSpeed),
+                  panelSpeed: number(participant.panelSpeed),
+                  ...(participant.category === undefined ? {} : { category: participant.category }),
+                  ...(participant.actionLimit === undefined
+                    ? {}
+                    : { actionLimit: count(participant.actionLimit) }),
+                },
+        }
+      }
+    }
+    throw new PresetError(invalid)
   }
-  return { resolve, tree }
+  return { resolve, resolveOperation }
 }

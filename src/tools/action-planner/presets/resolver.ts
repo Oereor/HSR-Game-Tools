@@ -6,7 +6,7 @@ import {
   spawnedParticipantId,
   SimulationError,
 } from '../engine/queue'
-import { operationTargets, targetIds } from '../engine/targeting'
+import { isTargetedOperation, operationTargets, targetIds } from '../engine/targeting'
 import { validateOperations } from '../engine/validation'
 import type { ActorConfig, EffectOperation, EventAnchor, PlanEvent, Target } from '../engine/types'
 import { metadataValue } from '../model/editor'
@@ -20,7 +20,6 @@ import {
   type PresetOperation,
   type PresetResult,
   type PresetTarget,
-  type Value,
 } from './types'
 
 /** No Vue, localization singleton, filesystem or preset identity branches. */
@@ -33,8 +32,9 @@ export function compilePreset(
   let operationIndex: number | undefined, semanticTarget: PresetTarget | undefined
   const parameters = new Set<string>()
   try {
-    if (!context.preview) throw new PresetError('context')
-    if (definition.startOnly && context.anchor.kind !== 'start') throw new PresetError('startOnly')
+    const { anchor: insertionAnchor, preview } = context
+    if (!preview) throw new PresetError('context')
+    if (definition.startOnly && insertionAnchor.kind !== 'start') throw new PresetError('startOnly')
     for (const input of collectInputs(definition)) parameters.add(input.id)
     let self: string | undefined
     let selfActor: ActorConfig | undefined
@@ -47,7 +47,7 @@ export function compilePreset(
       )
       if (!actors.length) throw new PresetError('missing')
       if (actors.length !== 1) throw new PresetError('ambiguous')
-      const participant = context.preview.participants.find(
+      const participant = preview.participants.find(
         (p) => p.id === actors[0]!.id && p.kind === 'actor',
       )
       if (!participant) throw new PresetError('unavailable')
@@ -67,10 +67,7 @@ export function compilePreset(
     )
     const snapshots = new Map<string, string[]>()
     for (const [name, spec] of Object.entries(definition.snapshots ?? {})) {
-      const ids = targetIds(
-        { kind: spec.target },
-        operationTargets(context.preview, spec.operation),
-      )
+      const ids = targetIds({ kind: spec.target }, operationTargets(preview, spec.operation))
       if (!ids.length) throw new PresetError('target')
       snapshots.set(name, ids)
     }
@@ -94,6 +91,15 @@ export function compilePreset(
     let serial = 0,
       count = 0
     const reserved = referencedIds(context.document.plan)
+    const insertionEvent = context.document.plan.events.find(
+      (event) => anchorKey(event.anchor) === anchorKey(insertionAnchor),
+    )
+    const insertionSource =
+      insertionAnchor.kind === 'action'
+        ? preview.participants.find(
+            (participant) => participant.id === insertionAnchor.participantId,
+          )
+        : undefined
     function probeId() {
       let id: string
       do {
@@ -115,43 +121,32 @@ export function compilePreset(
       if (depth > PRESET_LIMITS.depth) throw new PresetError('depth')
       const operations: EffectOperation[] = []
       patches.push({ anchor, operations })
-      let state = root && definition.interaction === 'batch' ? context.preview : undefined
+      let state = root && definition.interaction === 'batch' ? preview : undefined
+      const existing = root ? insertionEvent : undefined
+      const source = root ? insertionSource : undefined
       for (const declaration of declarations) {
         if (++count > PRESET_LIMITS.operations) throw new PresetError('operations')
         operationIndex = count - 1
         semanticTarget = declaration.target
-        const { onTrigger, onEmpty, target: operationTarget, ...fields } = declaration
-        const operation = {
-          ...(values.tree(fields) as object),
-          id: probeId(),
-          ...(operationTarget ? { target: target(operationTarget) } : {}),
-          ...(anchor.kind === 'action' ? { phase: context.phase } : {}),
-        } as EffectOperation
-        function invalidName(name: unknown, source: Value) {
-          if (typeof name !== 'string' || !name.trim())
-            throw new PresetError(
-              source &&
-                typeof source === 'object' &&
-                (source.type === 'user-input' || source.type === 'ref')
-                ? source.id
-                : 'form',
-            )
-        }
-        if (operation.type === 'spawnParticipant' && declaration.type === 'spawnParticipant')
-          invalidName(operation.participant.name, declaration.participant.name)
-        if (
-          operation.type === 'addSpeedModifier' &&
-          operation.duration.kind === 'countdown' &&
-          declaration.type === 'addSpeedModifier' &&
-          declaration.duration.kind === 'countdown'
+        const { onTrigger, onEmpty, target: operationTarget } = declaration
+        const operation = values.resolveOperation(
+          declaration,
+          { id: probeId(), ...(anchor.kind === 'action' ? { phase: context.phase } : {}) },
+          target,
         )
-          invalidName(operation.duration.name, declaration.duration.name)
-        if (validateOperations([operation], anchor).length) throw new PresetError('form')
-        if (operation.type === 'spawnParticipant')
-          operation.participant.name = operation.participant.name.trim()
-        if (operation.type === 'addSpeedModifier' && operation.duration.kind === 'countdown')
-          operation.duration.name = operation.duration.name.trim()
-        if (state && operation.type !== 'spawnParticipant') {
+        if (
+          (operation.type === 'restoreSkillPoints' || operation.type === 'conditionalRestore') &&
+          anchor.kind === 'action' &&
+          (source?.kind !== 'actor' || source.camp !== 'ally')
+        )
+          throw new PresetError('form')
+        const candidate =
+          operation.type === 'conditionalRestore'
+            ? [...(existing?.operations ?? []), ...operations, operation]
+            : [operation]
+        if (validateOperations(candidate, anchor, existing?.skill, source).length)
+          throw new PresetError('form')
+        if (state && isTargetedOperation(operation)) {
           const ids = targetIds(
             operation.target,
             operation.target.kind === 'participants'
@@ -162,13 +157,18 @@ export function compilePreset(
             continue
         }
         if (state) {
-          const applied = applyOperations(state, [operation], anchor)
-          const issue = applied.diagnostics[0]
-          if (issue) {
-            if (issue.code === 'active-target')
-              throw new PresetError(operationTarget === 'self' ? 'activeTarget' : 'activeAlly')
+          const applied = applyOperations(state, [operation], anchor, { skill: existing?.skill })
+          if (applied.diagnostics.some((issue) => issue.severity === 'error'))
+            throw new PresetError('form')
+          // The engine can continue past unusable targets. Preset insertion is atomic.
+          if (applied.diagnostics.some((issue) => issue.code === 'active-target'))
+            throw new PresetError(operationTarget === 'self' ? 'activeTarget' : 'activeAlly')
+          if (
+            applied.diagnostics.some(
+              (issue) => issue.code === 'missing-target' || issue.code === 'invalid-target',
+            )
+          )
             throw new PresetError('target')
-          }
           state = applied.state
         }
         operations.push(operation)
@@ -185,15 +185,18 @@ export function compilePreset(
         }
       }
     }
-    expand(definition.operations, context.anchor, 0, true)
+    expand(definition.operations, insertionAnchor, 0, true)
+    const copyEvents = () =>
+      context.document.plan.events.map((event) => ({
+        ...event,
+        anchor: { ...event.anchor },
+        operations: [...event.operations],
+      }))
     // Future optional groups are inspected with the same replay used for actual
     // submission. Outside the replay budget they remain ordinary no-op-capable
     // group operations; no future target set is guessed from today's roster.
     if (optional.size) {
-      const events = context.document.plan.events.map((event) => ({
-        anchor: event.anchor,
-        operations: [...event.operations],
-      }))
+      const events = copyEvents()
       for (const patch of patches) {
         const existing = events.find((event) => anchorKey(event.anchor) === anchorKey(patch.anchor))
         if (existing) existing.operations.push(...patch.operations)
@@ -240,10 +243,7 @@ export function compilePreset(
       participantIds.set(spawnedParticipantId(old), spawnedParticipantId(id))
       participantIds.set(countdownParticipantId(old), countdownParticipantId(id))
     }
-    const events = context.document.plan.events.map((event) => ({
-      anchor: { ...event.anchor },
-      operations: [...event.operations],
-    }))
+    const events = copyEvents()
     for (const patch of patches) {
       const anchor =
         patch.anchor.kind === 'trigger'

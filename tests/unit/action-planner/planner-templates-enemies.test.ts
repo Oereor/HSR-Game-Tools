@@ -11,6 +11,7 @@ import { buildBattleSetup, setupDraft } from '../../../src/tools/action-planner/
 import {
   emptyDocument,
   PLANNER_FORMAT,
+  PLANNER_VERSION,
   serializePlannerDocument,
   parsePlannerDocument,
 } from '../../../src/tools/action-planner/model/document-file'
@@ -40,7 +41,10 @@ describe('reviewed template registry', () => {
     expect(() => validatePlannerTemplates([template(), template()], [messages])).toThrow()
     expect(() => validatePlannerTemplates([template()], [{}])).toThrow()
     expect(() =>
-      loadPlannerTemplate({ ...template(), file: { ...(template().file as object), version: 4 } }),
+      loadPlannerTemplate({
+        ...template(),
+        file: { ...(template().file as object), version: PLANNER_VERSION + 1 },
+      }),
     ).toThrow('version')
   })
   it('loads independently, replaces rather than merges, and keeps invalid templates atomic', () => {

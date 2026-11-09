@@ -1,7 +1,15 @@
 import { ordinaryNode } from '../../fixtures/action-planner/ordinary-node'
 import { describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, watch } from 'vue'
 import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
+import {
+  FILE_LIMITS,
+  PLANNER_FORMAT,
+  PLANNER_VERSION,
+  parsePlannerDocument,
+  serializePlannerDocument,
+  validatePlannerFile,
+} from '../../../src/tools/action-planner/model/document-file'
 import {
   contextAt,
   operationDraft,
@@ -28,11 +36,14 @@ import {
   selectableTargets,
 } from '../../../src/tools/action-planner/engine/targeting'
 import type {
+  ActionSkill,
   EffectOperation,
   EventAnchor,
+  SkillPointsConfig,
   SimulationPlan,
 } from '../../../src/tools/action-planner/engine/types'
 const a: EventAnchor = { kind: 'action', participantId: 'a', turn: 1 }
+const b: EventAnchor = { kind: 'action', participantId: 'b', turn: 1 }
 const start: EventAnchor = { kind: 'start' }
 const target = (...participantIds: string[]) => ({ kind: 'participants' as const, participantIds })
 const plan = (): SimulationPlan => ({
@@ -151,6 +162,324 @@ describe('real planner document and drafts', () => {
     p.remove('x')
     expect(p.document.value.metadata.customNames).toEqual({})
   })
+  const annotations: ActionSkill[] = [
+    { kind: 'basic' },
+    { kind: 'skill' },
+    { kind: 'custom', cost: 2, recovery: 0 },
+  ]
+  it.each(annotations)('preserves $kind through replacement, insertion and reordering', (skill) => {
+    const input = plan()
+    const op: EffectOperation = {
+      id: 'x',
+      type: 'advance',
+      target: target('b'),
+      percent: 30,
+      phase: 'postAction',
+    }
+    const otherEvent = { anchor: b, operations: [], skill: { kind: 'basic' as const } }
+    input.events = [{ anchor: a, operations: [op], skill }, otherEvent]
+    const metadata = { customNames: { x: 'Custom' }, characterIds: { a: '1001' } }
+    const p = useActionPlanner(input, metadata)
+    p.select(a)
+    p.edit(op)
+    p.draft.value!.percent = 50
+    expect(p.submit()).toBe(true)
+    expect(p.plan.value.events).toStrictEqual([
+      { anchor: a, operations: [{ ...op, percent: 50 }], skill },
+      otherEvent,
+    ])
+
+    p.edit()
+    p.draft.value!.selectedIds = ['b']
+    expect(p.submit()).toBe(true)
+    const inserted = p.operations.value[1]!
+    expect(inserted.id).not.toBe(op.id)
+    p.move(inserted.id, -1)
+    expect(p.plan.value.events).toStrictEqual([
+      { anchor: a, operations: [inserted, { ...op, percent: 50 }], skill },
+      otherEvent,
+    ])
+    expect(p.document.value.metadata).toStrictEqual(metadata)
+  })
+
+  it('retains a skill-only event in place after removing its last operation', () => {
+    const input = plan()
+    const skill: ActionSkill = { kind: 'custom', cost: 0, recovery: 2 }
+    const otherEvent = { anchor: b, operations: [], skill: { kind: 'basic' as const } }
+    input.events = [
+      {
+        anchor: a,
+        operations: [
+          { id: 'x', type: 'advance', percent: 20, phase: 'postAction', target: target('b') },
+        ],
+        skill,
+      },
+      otherEvent,
+    ]
+    const p = useActionPlanner(input, { customNames: { x: 'Custom' }, characterIds: {} })
+    p.select(a)
+    p.remove('x')
+    p.remove('absent')
+    expect(p.plan.value.events).toStrictEqual([{ anchor: a, operations: [], skill }, otherEvent])
+    expect(p.document.value.metadata.customNames).toStrictEqual({})
+  })
+
+  it('sets and clears a skill only on the explicitly selected action', () => {
+    const input = plan()
+    const op: EffectOperation = {
+      id: 'x',
+      type: 'advance',
+      target: target('b'),
+      percent: 20,
+      phase: 'postAction',
+    }
+    const otherEvent = { anchor: b, operations: [], skill: { kind: 'basic' as const } }
+    input.events = [{ anchor: a, operations: [op], skill: { kind: 'skill' } }, otherEvent]
+    const metadata = { customNames: { x: 'Custom' }, characterIds: {} }
+    const p = useActionPlanner(input, metadata)
+    p.select(a)
+    const skill: ActionSkill = { kind: 'custom', cost: 0, recovery: 2 }
+    expect(p.setSkill(skill)).toBe(true)
+    expect(p.plan.value.events).toStrictEqual([{ anchor: a, operations: [op], skill }, otherEvent])
+    expect(p.setSkill()).toBe(true)
+    expect(p.plan.value.events).toStrictEqual([{ anchor: a, operations: [op] }, otherEvent])
+
+    const later: EventAnchor = { kind: 'action', participantId: 'a', turn: 2 }
+    p.select(later)
+    expect(p.setSkill({ kind: 'basic' })).toBe(true)
+    expect(p.plan.value.events.at(-1)).toStrictEqual({
+      anchor: later,
+      operations: [],
+      skill: { kind: 'basic' },
+    })
+    expect(p.setSkill()).toBe(true)
+    expect(p.plan.value.events).toStrictEqual([{ anchor: a, operations: [op] }, otherEvent])
+    expect(p.document.value.metadata).toStrictEqual(metadata)
+    expect(p.result.value).toStrictEqual(simulatePlan(p.plan.value))
+  })
+
+  const conditionalRefund: EffectOperation = {
+    id: 'refund',
+    type: 'conditionalRestore',
+    phase: 'postAction',
+    amount: 1,
+    source: 'Refund',
+    sourceParticipantId: 'a',
+    chance: 1,
+    cooldownTurns: 0,
+    outcome: 'proc',
+  }
+  it('edits an ordinary operation after a conditional refund at the same action', () => {
+    const input = plan()
+    const op: EffectOperation = {
+      id: 'x',
+      type: 'advance',
+      target: target('b'),
+      percent: 20,
+      phase: 'postAction',
+    }
+    input.events = [{ anchor: a, skill: { kind: 'skill' }, operations: [conditionalRefund, op] }]
+    const p = useActionPlanner(input)
+    p.select(a)
+    expect(p.operationContext(op)).toBeDefined()
+    p.edit(op)
+    p.draft.value!.percent = 30
+    expect(p.submit()).toBe(true)
+    expect(p.plan.value.events).toStrictEqual([
+      {
+        anchor: a,
+        skill: { kind: 'skill' },
+        operations: [conditionalRefund, { ...op, percent: 30 }],
+      },
+    ])
+  })
+
+  it('keeps the committed annotation and draft when a skill change invalidates a refund', () => {
+    const input = plan()
+    input.events = [{ anchor: a, skill: { kind: 'skill' }, operations: [conditionalRefund] }]
+    const p = useActionPlanner(input)
+    p.select(a)
+    p.edit()
+    const before = [p.document.value, p.result.value, p.draft.value]
+    expect(p.setSkill({ kind: 'basic' })).toBe(false)
+    expect(p.documentError.value).toBe('structure')
+    expect(p.document.value).toBe(before[0])
+    expect(p.result.value).toBe(before[1])
+    expect(p.draft.value).toBe(before[2])
+  })
+
+  it('recovers a blocked action after replaying a preceding skill with a conditional refund', () => {
+    const input = plan()
+    input.actors[1]!.panelSpeed = 150
+    input.skillPoints = { enabled: true, initial: 1, onInsufficient: 'stop' }
+    input.events = [
+      {
+        anchor: a,
+        operations: [{ ...conditionalRefund, outcome: 'no-proc' }],
+        skill: { kind: 'skill' },
+      },
+      { anchor: b, operations: [], skill: { kind: 'skill' } },
+    ]
+    const p = useActionPlanner(input)
+    expect(p.result.value.blockedAction?.anchor).toEqual(b)
+    p.select(b)
+    expect(p.context.value?.skillPoints?.current).toBe(0)
+    expect(p.setSkill({ kind: 'basic' })).toBe(true)
+    expect(p.result.value.blockedAction).toBeUndefined()
+    expect(p.plan.value.events[0]).toStrictEqual(input.events[0])
+  })
+
+  it('publishes and replays the canonical plan and exports stable bytes on repeated replacement', () => {
+    const input = plan()
+    input.actors.push({
+      id: 'enemy',
+      name: 'Enemy',
+      kind: 'actor',
+      camp: 'enemy',
+      baseSpeed: 80,
+      panelSpeed: 300,
+      position: 2,
+      iconUrl: 'https://example.test/enemy.png',
+    })
+    if (spawn.type !== 'spawnParticipant') throw new Error('expected spawn operation')
+    input.events = [
+      {
+        anchor: b,
+        operations: [
+          {
+            ...spawn,
+            phase: 'postAction',
+            participant: { ...spawn.participant, iconUrl: 'https://example.test/summon.png' },
+          },
+        ],
+      },
+    ]
+    const p = useActionPlanner(plan())
+    const atPublication: unknown[] = []
+    const stop = watch(
+      p.document,
+      () => atPublication.push([p.result.value, p.resourceIssues.value]),
+      { flush: 'sync' },
+    )
+    expect(p.replacePlan(input)).toBe(true)
+    stop()
+    const exported = serializePlannerDocument(p.document.value)
+    expect(parsePlannerDocument(exported).document).toStrictEqual(p.document.value)
+    expect(p.plan.value.actors[2]).toMatchObject({ panelSpeed: 80, category: 'enemy' })
+    expect(p.plan.value.actors[2]).not.toHaveProperty('iconUrl')
+    expect(input.actors[2]).toMatchObject({ panelSpeed: 300, iconUrl: expect.any(String) })
+    expect(ordinaryNode(p.result.value.records[0]!).id).toBe('a')
+    expect(p.result.value).toStrictEqual(simulatePlan(p.plan.value))
+    expect(p.resourceIssues.value).toContainEqual({
+      kind: 'unsafeImage',
+      id: spawnedParticipantId(spawn.id),
+    })
+    expect(atPublication).toStrictEqual([[p.result.value, p.resourceIssues.value]])
+    expect(p.replacePlan(p.plan.value)).toBe(true)
+    expect(serializePlannerDocument(p.document.value)).toBe(exported)
+    expect(p.result.value).toStrictEqual(simulatePlan(p.plan.value))
+  })
+
+  it('leaves the committed document and editor state intact on invalid replacement', () => {
+    const p = useActionPlanner(plan())
+    p.stepQueue(1)
+    p.edit()
+    const before = [p.document.value, p.result.value, p.resourceIssues.value, p.draft.value]
+    const invalidPlan = plan()
+    invalidPlan.actors[0]!.panelSpeed = 0
+    expect(p.replacePlan(invalidPlan)).toBe(false)
+    expect(p.documentError.value).toBe('structure')
+    expect(p.document.value).toBe(before[0])
+    expect(p.result.value).toBe(before[1])
+    expect(p.resourceIssues.value).toBe(before[2])
+    expect(p.draft.value).toBe(before[3])
+    expect(p.selected.value).toEqual(a)
+    expect(p.queueIndex.value).toBe(1)
+  })
+
+  it('keeps editor state if setup passes validation but exceeds the canonical export limit', () => {
+    const input = plan()
+    const ids = Array.from(
+      { length: FILE_LIMITS.targets },
+      (_, i) => `missing-${String(i).padStart(3, '0')}`,
+    )
+    input.events = Array.from({ length: 500 }, (_, i) => ({
+      anchor: { kind: 'action', participantId: 'b', turn: i + 1 },
+      operations: [
+        {
+          id: `advance-${i}`,
+          type: 'advance',
+          percent: 10,
+          phase: 'postAction',
+          target: target(...ids),
+        },
+      ],
+    }))
+    const p = useActionPlanner(input)
+    expect(
+      validatePlannerFile({
+        format: PLANNER_FORMAT,
+        version: PLANNER_VERSION,
+        document: p.document.value,
+      }).document.plan.events,
+    ).toHaveLength(500)
+    p.stepQueue(1)
+    p.edit()
+    const before = [p.document.value, p.result.value, p.resourceIssues.value, p.draft.value]
+    expect(p.applySetup(input.actors, input.maxNodes, input.maxAV, {})).toBe(false)
+    expect(p.documentError.value).toBe('limit')
+    expect(p.document.value).toBe(before[0])
+    expect(p.result.value).toBe(before[1])
+    expect(p.resourceIssues.value).toBe(before[2])
+    expect(p.draft.value).toBe(before[3])
+    expect(p.selected.value).toEqual(a)
+    expect(p.queueIndex.value).toBe(1)
+  })
+
+  const modifiers: SkillPointsConfig['maxModifiers'][] = [
+    [{ amount: 2, sourceParticipantId: 'a' }, { amount: 1 }],
+    null,
+  ]
+  it.each(modifiers.map((maxModifiers) => ({ maxModifiers })))(
+    'preserves authored SP settings, target-free operations and unknown balances with $maxModifiers',
+    ({ maxModifiers }) => {
+      const input = plan()
+      input.skillPoints = {
+        enabled: true,
+        initial: 0,
+        max: 5,
+        onInsufficient: 'mark',
+        storedMax: 0,
+        maxModifiers,
+      }
+      input.events = [
+        {
+          anchor: start,
+          operations: [
+            {
+              id: 'restore',
+              type: 'restoreSkillPoints',
+              source: 'Start',
+              amount: 1,
+              storeOverflow: false,
+            },
+          ],
+        },
+        { anchor: a, operations: [conditionalRefund], skill: { kind: 'skill' } },
+      ]
+      const p = useActionPlanner(plan())
+      expect(p.replacePlan(input)).toBe(true)
+      expect(p.plan.value).toStrictEqual(input)
+      expect(
+        parsePlannerDocument(serializePlannerDocument(p.document.value)).document.plan,
+      ).toStrictEqual(input)
+      expect(p.result.value).toStrictEqual(simulatePlan(input))
+      expect(p.result.value.skillPointsSummary?.endingBalance).toBeNull()
+      expect(p.result.value.diagnostics).toContainEqual(
+        expect.objectContaining({ code: 'sp-unknown' }),
+      )
+    },
+  )
   it('cancels and navigates without committing, including stage and view switches', () => {
     const p = useActionPlanner(plan())
     const before = p.plan.value
@@ -276,7 +605,8 @@ describe('real planner document and drafts', () => {
         ],
       },
     ]
-    const p = useActionPlanner(input)
+    const p = useActionPlanner(plan())
+    expect(p.replacePlan(input)).toBe(true)
     expect(p.result.value.stopReason).toBe('error')
     expect(contextAt(input, p.result.value, a)?.elapsedAV).toBe(50)
     p.select(a)
