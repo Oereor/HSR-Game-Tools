@@ -18,7 +18,7 @@ import { resolveElationContributors } from '../model/aha-config'
 import { CYCLE_RULES } from '../engine/cycle'
 import { Plus, Trash2 } from '@lucide/vue'
 import GameIcon from './GameIcon.vue'
-import { gameData, characterName } from '../data/adapters/game-data'
+import { assetUrl, gameData, characterName } from '../data/adapters/game-data'
 import { buildBattleSetup, setupDraft, type AllySlot, type EnemyDraft } from '../model/battle-setup'
 import EnemySetup from './EnemySetup.vue'
 import UnitPortrait from './UnitPortrait.vue'
@@ -116,12 +116,11 @@ const slotLabel = (slot: Slot) => {
     ? characterName(c, locale.value as ToolLocale)
     : (slot.original?.name ?? t('ui.emptySlot'))
 }
-const spCapCharacters = new Set(['1306', ARCHER_CHARACTER_ID, '1508'])
-const spCapHint = computed(() =>
-  new Intl.ListFormat(locale.value).format(
-    slots.value
-      .filter((slot) => slot.characterId && spCapCharacters.has(slot.characterId))
-      .map(slotLabel),
+const initialStateSlots = computed(() =>
+  slots.value.flatMap((slot, index) =>
+    slot.characterId === ARCHER_CHARACTER_ID || slot.characterId === IMBIBITOR_LUNAE_CHARACTER_ID
+      ? [{ slot, index }]
+      : [],
   ),
 )
 function setSpEnabled(value: boolean) {
@@ -463,72 +462,91 @@ function apply() {
         </div>
       </div>
     </section>
-    <section class="range-section">
-      <h2>{{ t('planner.sp.setup') }}</h2>
-      <div class="field">
-        <label for="sp-enabled">{{ t('planner.sp.enabled') }}</label>
-        <ToggleSwitch
-          input-id="sp-enabled"
-          :model-value="sp.enabled ?? false"
-          @update:model-value="setSpEnabled"
-        />
-      </div>
-      <div class="form-grid">
-        <div v-for="key in spFields" :key="key" class="field">
-          <label :for="`sp-setup-${key}`">{{ t(`planner.sp.${key}`) }}</label>
-          <InputNumber
-            :input-id="`sp-setup-${key}`"
-            :locale="locale"
-            fluid
-            :model-value="sp[key] ?? DEFAULT_SKILL_POINTS[key]"
-            :use-grouping="false"
-            :max-fraction-digits="20"
-            :invalid="errors.includes('sp')"
-            :pt="{
-              pcInputText: {
-                root: { 'aria-describedby': errors.includes('sp') ? 'sp-setup-error' : undefined },
-              },
-            }"
-            @update:model-value="setSpField(key, $event)"
-          />
-        </div>
-      </div>
-      <template v-for="(slot, index) in slots" :key="slot.id || index">
-        <div v-if="sp.enabled && slot.characterId === ARCHER_CHARACTER_ID" class="field">
-          <label :for="`archer-charge-${index}`">{{
-            t('planner.characterEffects.initialCharge')
-          }}</label>
-          <InputNumber
-            :input-id="`archer-charge-${index}`"
-            :model-value="slot.initialArcherCharge ?? 0"
-            :locale="locale"
-            :min="0"
-            :max="ARCHER_CHARGE_CAP"
-            :max-fraction-digits="0"
-            :invalid="errors.includes(`archer-charge-${index}`)"
-            :pt="{ pcInputText: { root: { 'aria-describedby': `archer-charge-help-${index}` } } }"
-            fluid
-            @update:model-value="setInitialCharge(slot, $event)"
-          />
-          <small :id="`archer-charge-help-${index}`" class="fine-print">
-            {{ t('planner.characterEffects.initialChargeHelp', { max: ARCHER_CHARGE_CAP }) }}
-          </small>
-        </div>
-        <div v-if="sp.enabled && slot.characterId === IMBIBITOR_LUNAE_CHARACTER_ID" class="field">
-          <label :for="`lunae-technique-${index}`">
-            {{ t('planner.characterEffects.lunaeTechnique') }}
-          </label>
+    <section class="range-section" aria-labelledby="sp-setup-heading">
+      <div class="section-title sp-setup-header">
+        <h2 id="sp-setup-heading">{{ t('planner.sp.setup') }}</h2>
+        <div class="sp-setup-toggle">
+          <label class="field-label" for="sp-enabled">{{ t('planner.sp.enabled') }}</label>
           <ToggleSwitch
-            :input-id="`lunae-technique-${index}`"
-            :model-value="slot.imbibitorLunaeTechnique ?? false"
-            @update:model-value="setLunaeTechnique(slot, $event)"
+            input-id="sp-enabled"
+            :model-value="sp.enabled ?? false"
+            @update:model-value="setSpEnabled"
           />
         </div>
-      </template>
-      <p v-if="sp.enabled && spCapHint" class="fine-print">
-        {{ t('planner.sp.capHint', { names: spCapHint }) }}
-      </p>
-      <p v-if="errors.includes('sp')" id="sp-setup-error" class="field-error" role="alert">
+      </div>
+      <div v-if="sp.enabled" class="sp-setup-content">
+        <div>
+          <h3 class="sp-setup-subheading">{{ t('planner.sp.baseConfig') }}</h3>
+          <div class="form-grid">
+            <div v-for="key in spFields" :key="key" class="field">
+              <label :for="`sp-setup-${key}`">{{ t(`planner.sp.${key}`) }}</label>
+              <InputNumber
+                :input-id="`sp-setup-${key}`"
+                :locale="locale"
+                fluid
+                size="small"
+                :model-value="sp[key] ?? DEFAULT_SKILL_POINTS[key]"
+                :use-grouping="false"
+                :max-fraction-digits="20"
+                :invalid="errors.includes('sp')"
+                :pt="{
+                  pcInputText: {
+                    root: {
+                      'aria-describedby': errors.includes('sp') ? 'sp-setup-error' : undefined,
+                    },
+                  },
+                }"
+                @update:model-value="setSpField(key, $event)"
+              />
+            </div>
+          </div>
+        </div>
+        <div v-if="initialStateSlots.length">
+          <h3 class="sp-setup-subheading">{{ t('planner.sp.characterInitialState') }}</h3>
+          <div v-for="{ slot, index } in initialStateSlots" :key="slot.id" class="sp-character-row">
+            <UnitPortrait
+              :src="assetUrl(current(slot)?.assetKey)"
+              :name="slotLabel(slot)"
+              compact
+              aria-hidden="true"
+            />
+            <template v-if="slot.characterId === ARCHER_CHARACTER_ID">
+              <label class="field-label" :for="`archer-charge-${index}`">
+                {{ t('planner.characterEffects.initialCharge') }}
+              </label>
+              <InputNumber
+                :input-id="`archer-charge-${index}`"
+                :model-value="slot.initialArcherCharge ?? 0"
+                :locale="locale"
+                :min="0"
+                :max="ARCHER_CHARGE_CAP"
+                :max-fraction-digits="0"
+                :invalid="errors.includes(`archer-charge-${index}`)"
+                class="sp-charge-input"
+                fluid
+                size="small"
+                @update:model-value="setInitialCharge(slot, $event)"
+              />
+            </template>
+            <template v-else>
+              <label class="field-label" :for="`lunae-technique-${index}`">
+                {{ t('planner.characterEffects.lunaeTechnique') }}
+              </label>
+              <ToggleSwitch
+                :input-id="`lunae-technique-${index}`"
+                :model-value="slot.imbibitorLunaeTechnique ?? false"
+                @update:model-value="setLunaeTechnique(slot, $event)"
+              />
+            </template>
+          </div>
+        </div>
+      </div>
+      <p
+        v-if="errors.includes('sp')"
+        id="sp-setup-error"
+        class="field-error sp-setup-error"
+        role="alert"
+      >
         {{ t('planner.sp.invalidSetup') }}
       </p>
     </section>
@@ -572,3 +590,57 @@ function apply() {
     >
   </section>
 </template>
+
+<style scoped>
+.sp-setup-header {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.sp-setup-header h2 {
+  margin: 0;
+}
+
+.sp-setup-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+
+.sp-setup-content {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.sp-setup-subheading {
+  margin-bottom: 8px;
+  color: var(--color-muted);
+}
+
+.sp-setup-content .field {
+  gap: 6px;
+}
+
+.sp-character-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.sp-character-row label {
+  overflow-wrap: anywhere;
+}
+
+.sp-charge-input {
+  width: 6rem;
+}
+
+.sp-setup-error {
+  margin-top: 8px;
+}
+</style>
