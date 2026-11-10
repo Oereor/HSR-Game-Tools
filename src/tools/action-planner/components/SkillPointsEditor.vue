@@ -5,6 +5,7 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { Diamond, Pencil, Plus, Sparkles, Zap } from '@lucide/vue'
 import OperationCardControls from './OperationCardControls.vue'
+import UnitPortrait from './UnitPortrait.vue'
 import type { ToolLocale } from '../../../locales/types'
 import type {
   CharacterEffectOutcome,
@@ -37,6 +38,7 @@ const props = defineProps<{
   warning?: SkillPointWarning
   title: (operation: EffectOperation) => string
   label: (id: string) => string
+  image: (id: string) => string | undefined
   operationContext: (operation: EffectOperation) => SimulationState | undefined
 }>()
 const emit = defineEmits<{
@@ -61,18 +63,17 @@ const tone = (amount: number | bigint) =>
   amount > 0 ? 'advance-color' : amount < 0 ? 'delay-color' : 'sp-neutral'
 const format = (value: number | bigint, signed = false) =>
   formatNumber(value, locale.value as ToolLocale, signed)
-const nodeBalance = computed(() => {
-  const entry = props.entrySkillPoints
-  if (!entry) return undefined
-  const settled = props.settledSkillPoints
-  return {
-    before: format(entry.current),
-    after: settled ? format(settled.current) : undefined,
-    max: format(entry.max),
-  }
+const formatBalance = (
+  before: number | bigint,
+  after: number | bigint | undefined,
+  max: number,
+) => ({
+  before: format(before),
+  after: after === undefined ? undefined : format(after),
+  max: format(max),
 })
-function resourceValue(effect?: CharacterEffectState) {
-  switch (effect?.kind) {
+function resourceValue(effect: CharacterEffectState) {
+  switch (effect.kind) {
     case 'archer':
       return { kind: 'charge', value: effect.charge, cap: ARCHER_CHARGE_CAP }
     case 'imbibitorLunae':
@@ -81,34 +82,32 @@ function resourceValue(effect?: CharacterEffectState) {
       return { kind: 'storedSP', value: effect.storedSP, cap: SPARKLE_STORAGE_CAP }
   }
 }
-const resources = computed(() =>
-  [...(props.entryCharacterEffects ?? [])].flatMap(([id, effect]) => {
-    const anchor = props.anchor
+const resources = computed(() => {
+  const characterResources = [...(props.entryCharacterEffects ?? [])].flatMap(([id, effect]) => {
     const entry = resourceValue(effect)
-    if (
-      !entry ||
-      (anchor.kind !== 'start' &&
-        !(anchor.kind === 'action' && anchor.participantId === id) &&
-        !skillPointOperations.value.some(
-          (op) => op.type === 'characterEffect' && op.sourceParticipantId === id,
-        ))
-    )
-      return []
-    const settled = resourceValue(props.settledCharacterEffects?.get(id))
-    const balance = t('planner.characterEffects.resourceBalance', {
-      name: props.label(id),
-      resource: t(`planner.characterEffects.resource.${entry.kind}`),
-      before: format(entry.value),
-      after: settled?.kind === entry.kind ? format(settled.value) : '—',
-    })
+    const settled = props.settledCharacterEffects?.get(id)
+    const after = settled?.kind === effect.kind ? resourceValue(settled).value : undefined
+    if (entry.value === 0 && after === 0) return []
     return [
       {
         id,
-        label: entry.cap === undefined ? balance : `${balance} / ${format(entry.cap)}`,
+        name: t(`planner.characterEffects.resource.${entry.kind}`),
+        balance: formatBalance(entry.value, after, entry.cap),
       },
     ]
-  }),
-)
+  })
+  const entry = props.entrySkillPoints
+  return [
+    {
+      id: undefined,
+      name: undefined,
+      balance: entry
+        ? formatBalance(entry.current, props.settledSkillPoints?.current, entry.max)
+        : undefined,
+    },
+    ...characterResources,
+  ]
+})
 interface CardDetails {
   tone: ReturnType<typeof tone>
   delta?: string
@@ -200,23 +199,34 @@ const details = computed(
         ><Plus :size="16" :stroke-width="1.75" />{{ t('ui.add') }}</Button
       >
     </div>
-    <p v-if="nodeBalance" class="sp-balance">
-      <span class="sr-only">
-        {{
-          t('planner.sp.nodeBalance', {
-            before: nodeBalance.before,
-            after: nodeBalance.after ?? t('planner.sp.settlementUnavailable'),
-            max: nodeBalance.max,
-          })
-        }}
+    <div class="resource-balances">
+      <span
+        v-for="{ id, name, balance } in resources"
+        :key="id === undefined ? 'sp' : `character:${id}`"
+        class="resource-balance"
+      >
+        <UnitPortrait v-if="id !== undefined" :src="image(id)" :name="label(id)" compact />
+        <Diamond v-else :size="18" :stroke-width="1.75" class="sp-neutral" aria-hidden="true" />
+        <template v-if="balance">
+          <span class="sr-only">
+            {{
+              t('planner.sp.nodeBalance', {
+                resource: name ?? t('planner.sp.setup'),
+                before: balance.before,
+                after: balance.after ?? t('planner.sp.settlementUnavailable'),
+                max: balance.max,
+              })
+            }}
+          </span>
+          <span v-if="name" aria-hidden="true">{{ name }}</span>
+          <span class="resource-value" aria-hidden="true">
+            <strong>{{ balance.before }} → {{ balance.after ?? '—' }}</strong>
+            <span class="sp-cap"> / {{ balance.max }}</span>
+          </span>
+        </template>
+        <span v-else class="muted">{{ t('planner.sp.unavailable') }}</span>
       </span>
-      <strong aria-hidden="true">{{ nodeBalance.before }} → {{ nodeBalance.after ?? '—' }}</strong>
-      <span class="sp-cap" aria-hidden="true"> / {{ nodeBalance.max }}</span>
-    </p>
-    <p v-else class="sp-balance muted">{{ t('planner.sp.unavailable') }}</p>
-    <p v-for="resource in resources" :key="resource.id" class="sp-balance">
-      {{ resource.label }}
-    </p>
+    </div>
     <Message
       v-if="warning"
       :severity="warning === 'sp-negative-first' ? 'warn' : 'secondary'"
@@ -335,14 +345,27 @@ const details = computed(
 </template>
 
 <style scoped>
-.sp-balance {
+.resource-balances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   margin: 0 0 8px;
+  overflow-x: auto;
+}
+.resource-balance {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.resource-value {
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
 }
 .sp-cap {
   color: var(--color-muted);
-  font-size: 0.875em;
 }
 .sp-operation .operation-top {
   align-items: center;

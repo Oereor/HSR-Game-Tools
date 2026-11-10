@@ -52,6 +52,7 @@ const props = defineProps<{
   trackSkillPoints: boolean
   entrySkillPoints?: SkillPointsState
   settledSkillPoints?: SkillPointsState
+  entryCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
   settledCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
   sparkleRefills?: readonly SparkleRefill[]
   effectOutcomes: ReadonlyMap<string, CharacterEffectOutcome>
@@ -221,12 +222,13 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
         :editable="!!context"
         :entry-skill-points="entrySkillPoints"
         :settled-skill-points="settledSkillPoints"
-        :entry-character-effects="context?.characterEffects"
+        :entry-character-effects="entryCharacterEffects"
         :settled-character-effects="settledCharacterEffects"
         :sparkle-refills="sparkleRefills"
         :effect-outcomes="effectOutcomes"
         :operation-warnings="operationWarnings"
         :label="label"
+        :image="image"
         :warning="skillPointWarning"
         :title="title"
         :operation-context="operationContext"

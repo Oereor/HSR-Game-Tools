@@ -314,7 +314,6 @@
         "squama": "Squama Sacrosancta",
         "storedSP": "Stored SP"
       },
-      "resourceBalance": "{name} · {resource} {before} → {after}",
       "resourceChange": "{resource} {before} → {after}",
       "payment": "Nominal cost {nominal} · {substitute} {resource} used · {actual} SP spent",
       "ultimatePreset": "Gain 2 Charge, up to the cap of 4.",
@@ -335,7 +334,7 @@
       "capHint": "Your team includes {names}. Consider raising the cap to match your plan.",
       "invalidSetup": "Enter nonnegative integers. The starting value must be at most the cap.",
       "operations": "Skill point operations",
-      "nodeBalance": "At node entry {before}, after settlement {after}, cap {max}.",
+      "nodeBalance": "{resource} at node entry {before}, after settlement {after}, cap {max}.",
       "settlementUnavailable": "unavailable",
       "editDefault": "Edit default skill point change",
       "unavailable": "Skill point balance unavailable",
@@ -350,12 +349,10 @@
       "presetOption": "{name} ({amount})",
       "nodeWarning": "{node}. {warning}",
       "presets": {
+        "none": "No change",
         "basic": "Basic ATK",
         "skill": "Skill",
-        "spendThree": "Spend 3 skill points",
-        "recoverSix": "Recover 6 skill points",
-        "rin": "Rin Tohsaka Joint Attack",
-        "none": "No change"
+        "archerSkill": "Archer Skill"
       }
     }
   },

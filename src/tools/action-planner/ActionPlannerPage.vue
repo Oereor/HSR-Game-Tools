@@ -106,11 +106,12 @@ const navigatorProps = computed(() => ({
 }))
 const selectedSettlement = computed(() => {
   const { startState, records, snapshots } = result.value
-  if (selected.value.kind === 'start') return { entry: startState, settled: snapshots[0] }
+  if (selected.value.kind === 'start')
+    return { entry: startState ?? context.value, settled: snapshots[0] }
   const key = anchorKey(selected.value)
   const index = records.findIndex((record) => anchorKey(record.anchor) === key)
   const record = records[index]
-  if (!record) return
+  if (!record) return { entry: context.value }
   return {
     entry: record.beforeEffects,
     settled: snapshots[index + 1],
@@ -137,10 +138,11 @@ const inspectorProps = computed(() => ({
   operations: operations.value,
   context: context.value,
   trackSkillPoints: !!plan.value.skillPoints?.enabled,
-  entrySkillPoints: selectedSettlement.value?.entry?.skillPoints,
-  settledSkillPoints: selectedSettlement.value?.settled?.skillPoints,
-  settledCharacterEffects: selectedSettlement.value?.settled?.characterEffects,
-  sparkleRefills: selectedSettlement.value?.sparkleRefills,
+  entrySkillPoints: selectedSettlement.value.entry?.skillPoints,
+  settledSkillPoints: selectedSettlement.value.settled?.skillPoints,
+  entryCharacterEffects: selectedSettlement.value.entry?.characterEffects,
+  settledCharacterEffects: selectedSettlement.value.settled?.characterEffects,
+  sparkleRefills: selectedSettlement.value.sparkleRefills,
   effectOutcomes: effectOutcomes.value,
   operationWarnings: operationWarnings.value,
   skillPointWarning: skillPointWarnings.value.get(anchorKey(selected.value)),

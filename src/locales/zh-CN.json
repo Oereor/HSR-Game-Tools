@@ -314,7 +314,6 @@
         "squama": "逆鳞",
         "storedSP": "储存战技点"
       },
-      "resourceBalance": "{name} · {resource} {before} → {after}",
       "resourceChange": "{resource} {before} → {after}",
       "payment": "名义消耗 {nominal} · {resource}抵扣 {substitute} · 实扣 {actual} 战技点",
       "ultimatePreset": "获得 2 层充能，最多 4 层。",
@@ -335,7 +334,7 @@
       "capHint": "编队包含 {names}，可按计划手动提高上限。",
       "invalidSetup": "初始值和上限须为非负整数，且初始值不能超过上限。",
       "operations": "战技点操作",
-      "nodeBalance": "进入节点时 {before}，节点结算后 {after}，上限 {max}。",
+      "nodeBalance": "{resource}，进入节点时 {before}，结算后 {after}，上限 {max}。",
       "settlementUnavailable": "不可用",
       "editDefault": "编辑默认战技点变化",
       "unavailable": "战技点余额不可用",
@@ -350,12 +349,10 @@
       "presetOption": "{name}（{amount}）",
       "nodeWarning": "{node}。{warning}",
       "presets": {
-        "basic": "普通攻击",
+        "none": "无变化",
+        "basic": "普攻",
         "skill": "战技",
-        "spendThree": "消耗 3 点战技点",
-        "recoverSix": "恢复 6 点战技点",
-        "rin": "远坂凛连携技",
-        "none": "无变化"
+        "archerSkill": "Archer 战技"
       }
     }
   },

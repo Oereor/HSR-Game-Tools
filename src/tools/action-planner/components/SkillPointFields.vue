@@ -11,12 +11,10 @@ const amount = defineModel<number>('amount')
 const props = defineProps<{ preview?: SkillPointsState; invalid: boolean }>()
 const { t, locale } = useI18n()
 const presets = {
+  none: 0,
   basic: 1,
   skill: -1,
-  spendThree: -3,
-  recoverSix: 6,
-  rin: 4,
-  none: 0,
+  archerSkill: -2,
 } as const
 const presetOptions = computed(() =>
   Object.entries(presets).map(([key, amount]) => ({
