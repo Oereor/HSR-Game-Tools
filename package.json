@@ -41,6 +41,8 @@
     "validate:astral-ui": "node --import tsx scripts/ui/sync-astral-ui.ts --check"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/noto-sans-sc": "5.3.1",
     "@lucide/vue": "1.55.0",
     "@primeuix/themes": "2.0.3",
     "@vercel/analytics": "2.0.1",

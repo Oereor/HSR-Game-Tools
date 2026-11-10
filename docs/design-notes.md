@@ -27,6 +27,8 @@ Focus Ring 为 2px、offset 3px；普通控件圆角 6px，业务卡片 6–8px�
 [main.ts](../src/main.ts)固定 `.app-dark` 在 html；PrimeVue 与 Tailwind 使用同一 selector。CSS 层顺序为 theme → base → primevue → components → utilities，body Portal 继承主题 Token。
 [main.css](../src/assets/main.css)提供主题颜色和公共业务样式；首页独立 Scoped CSS，不用宽泛全局选择器影响模拟器。
 
+全站共用 `--font-sans`。英文和数字使用 Inter，简体中文汉字使用 Noto Sans SC，混排按字形回退。字体以同源可变 WOFF2 分片按需加载，等待期间使用后备字体。Tailwind、PrimeVue 和 Astral 控件及挂载到 body 的浮层都沿用此字体栈。
+
 PrimeVue 负责基本控件、Tabs、Dialog、Tooltip 和 Splitter；工具自身负责布局、行动卡、操作卡、头像与语义标识。
 不让 PrimeVue Card 决定信息架构，不批量覆盖内部 `.p-*` 类、不全量注册图标，也不加入新 UI 框架。
 
