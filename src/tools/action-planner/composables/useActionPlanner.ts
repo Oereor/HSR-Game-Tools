@@ -197,6 +197,9 @@ export function useActionPlanner(
       draft.value?.duration.kind,
       draft.value?.participant.kind,
       draft.value?.targetKind,
+      draft.value?.effectId,
+      draft.value?.sourceParticipantId,
+      draft.value?.effectCost,
     ],
     () => {
       invalid.value = []

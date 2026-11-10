@@ -20,7 +20,7 @@
       "cost": {
         "type": "user-input",
         "id": "cost",
-        "value": 1,
+        "value": 3,
         "options": [
           {
             "value": 1,

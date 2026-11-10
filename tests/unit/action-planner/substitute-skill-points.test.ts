@@ -145,6 +145,25 @@ describe('character substitute skill points', () => {
     expect(timeline(disabled)).toEqual(timeline(result))
   })
 
+  it('defaults a new enhanced basic to tier three and preserves the saved tier on cancel', () => {
+    const doc = fixture()
+    const planner = useActionPlanner(doc.plan, doc.metadata)
+    planner.select(action('lunae'))
+    planner.addSkillPoints('postAction')
+    expect(planner.submitPreset(request('imbibitor-lunae-enhanced-basic'))).toBe(true)
+    const operation = planner.operations.value[0]!
+    expect(operation).toMatchObject({ cost: 3, sourceParticipantId: 'lunae', phase: 'postAction' })
+
+    const committed = planner.document.value
+    planner.edit(operation)
+    expect(planner.draft.value!.effectCost).toBe(3)
+    planner.draft.value!.effectCost = 1
+    planner.cancel()
+    expect(planner.document.value).toBe(committed)
+    planner.edit(operation)
+    expect(planner.draft.value!.effectCost).toBe(3)
+  })
+
   it('copies and edits a payment, round-trips it through storage, and preserves orphan identity', () => {
     const doc = fixture()
     doc.plan.actors[1]!.imbibitorLunaeTechnique = true
@@ -154,6 +173,7 @@ describe('character substitute skill points', () => {
     expect(planner.submitPreset(request('imbibitor-lunae-enhanced-basic', { cost: 2 }))).toBe(true)
     const op = planner.operations.value[0]!
     planner.edit(op)
+    expect(planner.draft.value!.effectCost).toBe(2)
     planner.draft.value!.customName = 'First payment'
     expect(planner.submit()).toBe(true)
     expect(planner.duplicateCharacterEffect(op.id)).toBe(true)

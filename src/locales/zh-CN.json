@@ -306,9 +306,9 @@
       "lunaeActiveTarget": "丹恒·饮月正在行动。请在行动后阶段添加 E2 终结技。",
       "lunaeTechnique": "使用丹恒·饮月秘技进入战斗（初始逆鳞 +1）",
       "enhancement": "普攻强化档位",
-      "enhancement1": "强化 1 次（1 战技点）",
-      "enhancement2": "强化 2 次（2 战技点）",
-      "enhancement3": "强化 3 次（3 战技点）",
+      "enhancement1": "1 档",
+      "enhancement2": "2 档",
+      "enhancement3": "3 档",
       "resource": {
         "charge": "充能",
         "squama": "逆鳞",
@@ -320,11 +320,10 @@
       "ultimatePreset": "获得 2 点充能，最多持有 4 点。",
       "followUpPreset": "消耗 1 点充能，恢复 1 个战技点。",
       "initialCharge": "Archer 初始充能",
-      "initialChargeHelp": "使用秘技则设为 2 点，否则 1 点。",
+      "initialChargeHelp": "上限 {max} 点。使用秘技则设为 2 点，否则 1 点。",
       "effect": "角色专属效果",
       "source": "来源角色",
-      "presets": "角色预设",
-      "ambiguous": "有多个参与者匹配此角色，请在操作编辑器中选择来源。"
+      "ambiguous": "编队中有多个匹配角色，无法确定此复合预设的来源。"
     },
     "sp": {
       "setup": "战技点",

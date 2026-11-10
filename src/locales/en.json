@@ -306,9 +306,9 @@
       "lunaeActiveTarget": "Imbibitor Lunae is already acting. Select the after-action phase for the E2 Ultimate.",
       "lunaeTechnique": "Enter battle with Imbibitor Lunae's Technique (+1 Squama Sacrosancta)",
       "enhancement": "Basic ATK enhancements",
-      "enhancement1": "1 enhancement (1 SP)",
-      "enhancement2": "2 enhancements (2 SP)",
-      "enhancement3": "3 enhancements (3 SP)",
+      "enhancement1": "Tier 1",
+      "enhancement2": "Tier 2",
+      "enhancement3": "Tier 3",
       "resource": {
         "charge": "Charge",
         "squama": "Squama Sacrosancta",
@@ -323,8 +323,7 @@
       "initialChargeHelp": "Choose a starting value from 0 to {max}. The unlocked bonus ability and Technique can each grant 1 Charge.",
       "effect": "Character effect",
       "source": "Source character",
-      "presets": "Character presets",
-      "ambiguous": "More than one participant matches this character. Choose a source in the operation editor."
+      "ambiguous": "Multiple participants match this character, so the preset source cannot be determined."
     },
     "sp": {
       "setup": "Skill points",
