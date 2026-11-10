@@ -88,7 +88,23 @@
         "metadata": "方案名称映射与单位或操作不一致。",
         "simulation": "方案推演未能完成，当前配置未被替换。",
         "read": "文件读取失败，请重试。",
-        "changed": "存档再次变化，请重新选择载入或覆盖。"
+        "changed": "存档再次变化，请重新选择载入或覆盖。",
+        "migrationRequired": "旧存档含有需要确认的战技点转换。",
+        "migrationWrite": "无法保存转换后的方案。原存档已保留，可以重试。"
+      },
+      "migrateSaved": "确认迁移",
+      "migrationTitle": "迁移旧版战技点配置",
+      "migrationReview": "可转换的操作将保留。以下旧配置会被改写或省略，可先下载原档。",
+      "migrationSemantics": "旧版战技点已转换为显式操作。缺少配置的节点视为无变化，负余额时仍继续排轴。",
+      "retiredEffectMigration": "已移除停用的角色专属操作，原有手动战技点操作已保留。",
+      "migrationLoss": {
+        "bronyaEffects": "将移除 {count} 条布洛妮娅 E1 回点操作及其自定义名称。",
+        "sparxieEffects": "将移除 {count} 条火花爆点操作及其自定义名称。",
+        "dynamicMax": "{count} 项动态上限改用固定的初始有效上限。",
+        "storage": "省略 {count} 项战技点存储配置，恢复量保留。",
+        "conditionalRestore": "省略 {count} 条条件恢复操作。",
+        "policy": "省略 {count} 项战技点不足策略。负余额时继续排轴。",
+        "inactiveSkill": "省略 {count} 条原本不参与战技点结算的技能标注。"
       }
     },
     "imageMissing": "暂无图标",
@@ -137,7 +153,10 @@
       "increaseFlat": "使 {target} 速度提高 {amount} 点",
       "decreaseFlat": "使 {target} 速度降低 {amount} 点",
       "increasePercent": "使 {target} 速度提高 {amount}%",
-      "decreasePercent": "使 {target} 速度降低 {amount}%"
+      "decreasePercent": "使 {target} 速度降低 {amount}%",
+      "recoverSkillPoints": "恢复战技点",
+      "spendSkillPoints": "消耗战技点",
+      "unchangedSkillPoints": "无变化"
     },
     "metadata": {
       "depart": "离场，不会出现在行动序列上",
@@ -158,6 +177,7 @@
       "once": "单次生效"
     },
     "accessibility": {
+      "duplicate": "复制「{name}」",
       "edit": "编辑操作：{name}",
       "remove": "删除操作：{name}",
       "chooseSlot": "选择角色 {slot}",
@@ -177,7 +197,7 @@
       "name": "阿哈时刻",
       "invalidPreview": "请填写有效速度",
       "migratedWithAha": "Version {version} 方案已升级，自动加入阿哈时刻。行动顺序可能变化，请检查不可达操作。",
-      "migrated": "Version {version} 方案已升级至 Version 3。"
+      "migrated": "Version {version} 方案已升级至当前格式。"
     },
     "eventBaseSpeed": "百分比速度基数（留空使用初始速度）",
     "eventUnlimitedOnly": "战斗事件的速度效果只支持无限持续。",
@@ -266,6 +286,72 @@
         "ambiguous": "编队中存在多个知更鸟·晴歌，无法确定目标。",
         "departed": "知更鸟·晴歌已离场，不能再次进入 Fever 状态。",
         "unavailable": "当前节点无法对知更鸟·晴歌应用 Fever 状态。"
+      }
+    },
+    "characterEffects": {
+      "archer_ultimateCharge": "Archer 终结技",
+      "archer_followUp": "Archer 追击回点",
+      "sparkle_ultimate": "花火终结技",
+      "sparkleUltimatePreset": "恢复 6 个战技点，最多储存 10 点溢出量。",
+      "turnEnd": "回合结束",
+      "sparkleRefill": "{name}自动补充",
+      "sparkleWaste": "溢出丢弃 {amount} 点战技点",
+      "imbibitorLunae_ultimate": "丹恒·饮月终结技",
+      "imbibitorLunae_ultimateE2": "丹恒·饮月终结技（E2）",
+      "lunaeUltimateE2Name": "丹恒·饮月终结技（E2）",
+      "imbibitorLunae_enhancedBasic": "丹恒·饮月强化普攻",
+      "lunaeUltimatePreset": "获得 2 个逆鳞。",
+      "lunaeUltimateE2Preset": "获得 3 个逆鳞，并使丹恒·饮月行动提前 100%。",
+      "lunaeBasicPreset": "选择强化普攻的档位，优先用逆鳞抵扣战技点消耗。",
+      "lunaeActiveTarget": "丹恒·饮月正在行动。请在行动后阶段添加 E2 终结技。",
+      "lunaeTechnique": "饮月秘技入战",
+      "enhancement": "普攻强化档位",
+      "enhancement1": "1 档",
+      "enhancement2": "2 档",
+      "enhancement3": "3 档",
+      "resource": {
+        "charge": "充能",
+        "squama": "逆鳞",
+        "storedSP": "储存战技点"
+      },
+      "storedSPShort": "储存",
+      "resourceChange": "{resource} {before} → {after}",
+      "payment": "视为消耗 {nominal} 个战技点，{resource}抵扣 {substitute} 点",
+      "ultimatePreset": "获得 2 点充能，最多持有 4 点。",
+      "followUpPreset": "消耗 1 点充能，恢复 1 个战技点。",
+      "initialCharge": "Archer 初始充能",
+      "effect": "角色专属效果",
+      "source": "来源角色",
+      "ambiguous": "编队中有多个匹配角色，无法确定此复合预设的来源。"
+    },
+    "sp": {
+      "setup": "战技点",
+      "enabled": "启用跟踪",
+      "baseConfig": "基础配置",
+      "characterInitialState": "角色初始状态",
+      "initial": "初始战技点",
+      "max": "战技点上限",
+      "invalidSetup": "初始值和上限须为非负整数，且初始值不能超过上限。",
+      "operations": "战技点操作",
+      "nodeBalance": "{resource}，进入节点时 {before}，结算后 {after}，上限 {max}。",
+      "settlementUnavailable": "不可用",
+      "editDefault": "编辑默认战技点变化",
+      "unavailable": "战技点余额不可用",
+      "amount": "战技点改变量",
+      "custom": "自定义",
+      "add": "添加战技点变化",
+      "outcome": "战技点 {before} → {after}",
+      "delta": "{amount} SP",
+      "noChange": "无变化（0）",
+      "invalidAmount": "请输入有效整数，可使用正号或负号。",
+      "presetHint": "预设只填写基础战技点变化。",
+      "presetOption": "{name}（{amount}）",
+      "nodeWarning": "{node}。{warning}",
+      "presets": {
+        "none": "无变化",
+        "basic": "普攻",
+        "skill": "战技",
+        "archerSkill": "Archer 战技"
       }
     }
   },
@@ -369,6 +455,8 @@
     },
     "actionLimit": "最大行动次数",
     "eventSpeed": "事件速度",
+    "changeSkillPoints": "战技点变化",
+    "characterEffect": "角色专属效果",
     "customName": "自定义名称",
     "presets": "预设模板",
     "startOnly": "仅可在「战斗开始」时间节点处添加",
@@ -387,7 +475,12 @@
       "missing-target": "操作执行时目标不存在",
       "active-target": "此目标回合内受到的行动提前效果无效",
       "unreached-anchor": "此节点未在当前范围内到达",
-      "no-participants": "尚无队列参与者"
+      "no-participants": "尚无队列参与者",
+      "sp-negative-first": "本次推演首次消耗至负战技点，排轴继续。",
+      "sp-negative": "消耗后战技点为负。",
+      "character-effect-source": "所需角色缺失、身份不符或已离场。",
+      "character-effect-anchor": "此效果只能放在来源角色自己的行动节点。",
+      "archer-no-charge": "Archer 充能不足，无法追击。"
     },
     "path": {
       "Elation": "欢愉",

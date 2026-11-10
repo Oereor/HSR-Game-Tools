@@ -4,8 +4,6 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import {
   Plus,
-  Pencil,
-  Trash2,
   ArrowUp,
   ArrowDown,
   Gauge,
@@ -19,15 +17,25 @@ import {
 import UnitPortrait from './UnitPortrait.vue'
 import SpeedModifierTags from './SpeedModifierTags.vue'
 import { actionSpeedModifierTags, type CountdownSources } from '../model/speed-modifier-tags'
+import OperationCardControls from './OperationCardControls.vue'
 import OperationEditor from './OperationEditor.vue'
 import OperationTargets from './OperationTargets.vue'
-import { effectiveSpeed } from '../engine/queue'
-import { phaseOperations } from '../engine/effect-config'
+import SkillPointsEditor from './SkillPointsEditor.vue'
+import { anchorKey, effectiveSpeed } from '../engine/queue'
+import { isSkillPointOperation, phaseOperations } from '../engine/effect-config'
+import { isTargetedOperation } from '../engine/targeting'
 import type {
+  CharacterEffectOutcome,
+  CharacterEffectState,
+  DiagnosticCode,
   ParticipantInfo,
   EffectOperation,
   EventAnchor,
   SimulationState,
+  EffectPhase,
+  SkillPointWarning,
+  SkillPointsState,
+  SparkleRefill,
 } from '../engine/types'
 import { formatAV, formatNumber, renderMessage } from '../model/presentation'
 import type { ToolLocale } from '../../../locales/types'
@@ -41,6 +49,15 @@ const props = defineProps<{
   inactive?: boolean
   operations: EffectOperation[]
   context?: SimulationState
+  trackSkillPoints: boolean
+  entrySkillPoints?: SkillPointsState
+  settledSkillPoints?: SkillPointsState
+  entryCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
+  settledCharacterEffects?: ReadonlyMap<string, CharacterEffectState>
+  sparkleRefills?: readonly SparkleRefill[]
+  effectOutcomes: ReadonlyMap<string, CharacterEffectOutcome>
+  operationWarnings: ReadonlyMap<string, DiagnosticCode>
+  skillPointWarning?: SkillPointWarning
   preview?: SimulationState
   targets: ParticipantInfo[]
   invalid: string[]
@@ -55,19 +72,24 @@ const draft = defineModel<OperationDraft>('draft')
 const emit = defineEmits<{
   edit: [operation?: EffectOperation]
   remove: [id: string]
+  duplicate: [id: string]
   move: [id: string, delta: -1 | 1]
   cancel: []
   submit: []
   preset: [request: PresetRequest]
+  addSkillPoints: [phase: EffectPhase]
 }>()
 const { t, locale } = useI18n()
+const regularOperations = computed(() =>
+  props.operations.filter((op) => !isSkillPointOperation(op)),
+)
 const groups = computed(() =>
   props.anchor.kind === 'action'
     ? ['preAction', 'postAction'].map((phase) => ({
         phase,
-        operations: phaseOperations(props.operations, phase as 'preAction' | 'postAction'),
+        operations: phaseOperations(regularOperations.value, phase as 'preAction' | 'postAction'),
       }))
-    : [{ phase: '', operations: props.operations }],
+    : [{ phase: '', operations: regularOperations.value }],
 )
 const currentSpeed = computed(() => {
   const anchor = props.anchor
@@ -109,13 +131,15 @@ const icon = (o: EffectOperation) =>
             ? LogOut
             : o.type === 'returnToField'
               ? LogIn
-              : o.participant.kind === 'actor'
-                ? UserRoundPlus
-                : Timer
+              : o.type === 'spawnParticipant'
+                ? o.participant.kind === 'actor'
+                  ? UserRoundPlus
+                  : Timer
+                : Plus
 const metadata = computed(
   () =>
     new Map(
-      props.operations.map((operation) => {
+      regularOperations.value.map((operation) => {
         const state = props.operationContext(operation)
         return [
           operation.id,
@@ -150,6 +174,7 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       :preview="preview"
       :invalid="invalid"
       :preset-issues="presetIssues"
+      :skill-point-warning="skillPointWarning"
       :label="label"
       :image="image"
       @cancel="emit('cancel')"
@@ -189,18 +214,42 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
       <p v-if="!context" class="validation-summary">
         {{ t(inactive ? 'planner.cycle.disabled' : 'ui.contextUnavailable') }}
       </p>
+      <SkillPointsEditor
+        v-if="trackSkillPoints"
+        :key="anchorKey(anchor)"
+        :anchor="anchor"
+        :operations="operations"
+        :editable="!!context"
+        :entry-skill-points="entrySkillPoints"
+        :settled-skill-points="settledSkillPoints"
+        :entry-character-effects="entryCharacterEffects"
+        :settled-character-effects="settledCharacterEffects"
+        :sparkle-refills="sparkleRefills"
+        :effect-outcomes="effectOutcomes"
+        :operation-warnings="operationWarnings"
+        :label="label"
+        :image="image"
+        :warning="skillPointWarning"
+        :title="title"
+        :operation-context="operationContext"
+        @add="emit('addSkillPoints', $event)"
+        @edit="emit('edit', $event)"
+        @move="(id, delta) => emit('move', id, delta)"
+        @remove="emit('remove', $event)"
+        @duplicate="emit('duplicate', $event)"
+      />
       <div class="operations-heading">
         <h3>
           {{ t('ui.operations') }}
           <span class="operation-count">{{
-            formatNumber(operations.length, locale as ToolLocale)
+            formatNumber(regularOperations.length, locale as ToolLocale)
           }}</span>
         </h3>
         <Button size="small" :disabled="!context" @click="emit('edit')"
           ><Plus :size="16" :stroke-width="1.75" />{{ t('ui.add') }}</Button
         >
       </div>
-      <div v-if="!operations.length" class="empty-operations">
+      <div v-if="!regularOperations.length" class="empty-operations">
         <p>{{ t('ui.emptyOperations') }}</p>
       </div>
       <div v-for="group in groups" :key="group.phase" class="operation-group">
@@ -229,51 +278,18 @@ const fieldIcon = (field: MetadataField, operation: EffectOperation) =>
               /><button class="operation-title" :disabled="!context" @click="emit('edit', op)">
                 {{ title(op, operationContext(op)) }}
               </button>
-              <div class="card-controls">
-                <Button
-                  v-tooltip="t('ui.moveUp')"
-                  text
-                  size="small"
-                  severity="secondary"
-                  :disabled="index === 0"
-                  :aria-label="t('ui.moveUp')"
-                  @click="emit('move', op.id, -1)"
-                  ><ArrowUp :size="15" /></Button
-                ><Button
-                  v-tooltip="t('ui.moveDown')"
-                  text
-                  size="small"
-                  severity="secondary"
-                  :disabled="index === group.operations.length - 1"
-                  :aria-label="t('ui.moveDown')"
-                  @click="emit('move', op.id, 1)"
-                  ><ArrowDown :size="15" /></Button
-                ><Button
-                  v-tooltip="t('ui.edit')"
-                  text
-                  size="small"
-                  severity="secondary"
-                  :disabled="!context"
-                  :aria-label="
-                    t('planner.accessibility.edit', { name: title(op, operationContext(op)) })
-                  "
-                  @click="emit('edit', op)"
-                  ><Pencil :size="15" /></Button
-                ><Button
-                  v-tooltip="t('ui.remove')"
-                  text
-                  size="small"
-                  severity="secondary"
-                  :aria-label="
-                    t('planner.accessibility.remove', { name: title(op, operationContext(op)) })
-                  "
-                  @click="emit('remove', op.id)"
-                  ><Trash2 :size="15"
-                /></Button>
-              </div>
+              <OperationCardControls
+                :name="title(op, operationContext(op))"
+                :first="index === 0"
+                :last="index === group.operations.length - 1"
+                :edit-disabled="!context"
+                @move="emit('move', op.id, $event)"
+                @edit="emit('edit', op)"
+                @remove="emit('remove', op.id)"
+              />
             </div>
             <OperationTargets
-              v-if="op.type !== 'spawnParticipant'"
+              v-if="isTargetedOperation(op)"
               :ids="metadataOf(op).targetIds"
               :fallback="renderMessage(metadataOf(op).target!, locale as ToolLocale, t)"
               :participants="metadataOf(op).participants"

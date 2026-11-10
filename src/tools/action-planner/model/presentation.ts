@@ -1,12 +1,86 @@
 import type { MessageDescriptor, MessageTranslator, ToolLocale } from '../../../locales/types'
-import type { EffectOperation, SimulationState } from '../engine/types'
+import type {
+  CharacterEffectOutcome,
+  EffectOperation,
+  SimulationState,
+  SkillPointsState,
+  SparkleRefill,
+} from '../engine/types'
+import { skillPointBalance } from '../engine/skill-points'
 import { operationNameDescriptor } from './naming'
 
-export function formatNumber(value: number, locale: ToolLocale, signed = false): string {
+export function formatNumber(value: number | bigint, locale: ToolLocale, signed = false): string {
   return new Intl.NumberFormat(locale, {
     maximumFractionDigits: 6,
     signDisplay: signed ? 'exceptZero' : 'auto',
   }).format(Object.is(value, -0) ? 0 : value)
+}
+
+export function formatSkillPointOutcome(
+  before: SkillPointsState | undefined,
+  amount: number | undefined,
+  locale: ToolLocale,
+  t: MessageTranslator,
+): string {
+  if (!before || amount === undefined || !Number.isSafeInteger(amount))
+    return t('planner.sp.unavailable')
+  return t('planner.sp.outcome', {
+    before: formatNumber(before.current, locale),
+    after: formatNumber(skillPointBalance(before, amount), locale),
+  })
+}
+
+export function formatCharacterSkillPointChanges(
+  outcome: CharacterEffectOutcome | SparkleRefill,
+  locale: ToolLocale,
+  t: MessageTranslator,
+) {
+  const isRefill = 'storedSP' in outcome
+  const resource = isRefill
+    ? { kind: 'storedSP' as const, ...outcome.storedSP }
+    : outcome.charge
+      ? { kind: 'charge' as const, ...outcome.charge }
+      : outcome.resource
+  const { before, after } = outcome.skillPoints
+  const spDelta = after - before
+  const resourceDelta = resource ? resource.after - resource.before : 0
+  const resourceLabel = resource
+    ? t(
+        resource.kind === 'storedSP'
+          ? 'planner.characterEffects.storedSPShort'
+          : `planner.characterEffects.resource.${resource.kind}`,
+      )
+    : undefined
+  const formatChange = (label: string, before: number | bigint, after: number | bigint) =>
+    t('planner.characterEffects.resourceChange', {
+      resource: label,
+      before: formatNumber(before, locale),
+      after: formatNumber(after, locale),
+    })
+  const { payment, wastedSkillPoints } = isRefill ? {} : outcome
+  return {
+    resource:
+      resource && resourceLabel && resourceDelta
+        ? formatChange(resourceLabel, resource.before, resource.after)
+        : undefined,
+    delta: spDelta
+      ? t('planner.sp.delta', { amount: formatNumber(spDelta, locale, true) })
+      : undefined,
+    balance: spDelta ? formatChange(t('planner.sp.setup'), before, after) : undefined,
+    toneAmount: spDelta || resourceDelta,
+    tooltip:
+      payment && resourceLabel
+        ? t('planner.characterEffects.payment', {
+            nominal: formatNumber(payment.nominalCost, locale),
+            resource: resourceLabel,
+            substitute: formatNumber(payment.substituteUsed, locale),
+          })
+        : wastedSkillPoints
+          ? t('planner.characterEffects.sparkleWaste', {
+              amount: formatNumber(wastedSkillPoints, locale),
+            })
+          : undefined,
+  }
 }
 
 export function renderMessage(

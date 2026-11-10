@@ -1,6 +1,6 @@
 # 行动序列预设维护
 
-预设是人工维护的声明式配置。运行时解释器将其转换为可独立编辑的普通操作和事件，再经完整校验与模拟一次提交。方案文件继续使用 Version 3，不保存预设身份、参数引用、目标快照或嵌套声明。引擎语义见[模拟器架构](architecture/action-order-simulator.md)。
+预设是人工维护的声明式配置。运行时解释器将其转换为操作和事件，再经完整校验与模拟一次提交。Version 13 方案文件保存编译后的计划数据。预设身份、参数引用、目标快照和嵌套声明仅用于编译。引擎语义和文件格式见[模拟器架构](architecture/action-order-simulator.md)。
 
 ## 新增预设
 
@@ -58,23 +58,32 @@
 
 `interaction: "batch"` 应用完整预设：有输入时展示统一参数表单，无输入时直接应用。`interaction: "draft"` 只允许一条操作且不带触发事件，选中后预填普通草稿，用户仍可修改目标、参数并确认。`startOnly: true` 将入口限制在战斗开始。
 
-## 七种操作
+## 操作声明
 
-每条操作使用下表字段，不填写运行时 `id` 或 `phase`。顶层操作继承当前阶段，触发事件中的操作不携带阶段。数组顺序就是执行顺序。
+每条操作使用下表字段，不填写运行时 `id` 或 `phase`。顶层操作继承当前阶段，触发事件中的操作不携带阶段。引擎按执行分组保留各组内的声明顺序。
 
-| type               | 必填字段                               | 说明                                                          |
-| ------------------ | -------------------------------------- | ------------------------------------------------------------- |
-| `advance`          | `target`, `percent`                    | 减少 `10000 × percent / 100` AG，最低为零；percent 有限且非负 |
-| `delay`            | `target`, `percent`                    | 增加相同比例的 AG；percent 有限且非负                         |
-| `immediatelyAct`   | `target`                               | 将 AG 归零并形成新的零 AV 插入批次，与 advance 100% 不同      |
-| `addSpeedModifier` | `target`, `mode`, `amount`, `duration` | mode 为 flat / percent；amount 为有限数，允许减速             |
-| `spawnParticipant` | `participant`                          | 创建 Actor 或 Scheduled Event                                 |
-| `depart`           | `target`                               | 离场冻结 AG                                                   |
-| `returnToField`    | `target`                               | 仅恢复离场目标的调度，保留 AG                                 |
+| type               | 必填字段                               | 说明                                                           |
+| ------------------ | -------------------------------------- | -------------------------------------------------------------- |
+| `advance`          | `target`, `percent`                    | 减少 `10000 × percent / 100` AG，最低为零；percent 有限且非负  |
+| `delay`            | `target`, `percent`                    | 增加相同比例的 AG；percent 有限且非负                          |
+| `immediatelyAct`   | `target`                               | 将 AG 归零并形成新的零 AV 插入批次，与 advance 100% 不同       |
+| `addSpeedModifier` | `target`, `mode`, `amount`, `duration` | mode 为 flat / percent；amount 为有限数，允许减速              |
+| `spawnParticipant` | `participant`                          | 创建 Actor 或 Scheduled Event                                  |
+| `depart`           | `target`                               | 离场冻结 AG                                                    |
+| `returnToField`    | `target`                               | 仅恢复离场目标的调度，保留 AG                                  |
+| `characterEffect`  | `effectId`, `target`                   | 限批量预设顶层操作，目标为 `self`，角色身份须与 Effect ID 匹配 |
 
 速度持续时间使用 `{"kind":"turns","turns":2}`、`{"kind":"turns","turns":null}` 或 `{"kind":"countdown","name":"计时器","speed":70}`。turns 必须为正整数，null 表示无限。涉及定时事件目标的速度效果只支持无限持续，继续由引擎检查。
 
 Actor 的最小结构是 `{"kind":"actor","name":"单位","camp":"ally","baseSpeed":100,"panelSpeed":120}`。可选 category、actionLimit、initialAG；actionLimit 为正整数或 null。Scheduled Event 使用 `{"kind":"scheduledEvent","name":"事件","speed":90}`，可选独立 baseSpeed 和 initialAG。initialAG 默认 10000，允许零和非负分数。
+
+批量预设可声明无目标的 `changeSkillPoints`，包括在 `onTrigger` 事件中声明。唯一业务参数 `amount` 是有符号安全整数字面值。编译后的操作可在战技点区编辑，负余额警告随重放保留。结算顺序见[战技点编辑与推演](architecture/action-order-simulator.md#战技点编辑与推演)。
+
+启用战技点跟踪后，可从战技点编辑器使用 Archer 终结技和追击回点预设。编译将 `self` 保存为 `sourceParticipantId`。充能不足的追击仍可记录为操作，引擎在结算时给出警告。
+
+丹恒·饮月的普通终结技与 E2 终结技分开提供。E2 批量追加专属资源操作和目标为 `self` 的 `advance(100)`。自身行动前若无法拉条，预设拒绝整批并提示切换到行动后。强化普攻通过 `cost` 选择 1、2 或 3 点。
+
+花火终结技预设生成一条 `sparkle.ultimate`，由引擎执行普通战技点恢复和溢出储存。后续回合结束的自动补给由推演生成，只读记录显示在 Inspector 中。
 
 ## 目标与事件
 
@@ -94,6 +103,8 @@ Scheduled Event 的 spawnParticipant 可携带 `onTrigger`，countdown 类型的
 `user-input.value` 为数字、字符串或角色基础速度查询。数字生成 InputNumber，字符串生成 InputText；用户没有修改时使用默认值。`i18n` 可包含 label、hint、placeholder、suffix，全部填写翻译 key。minimum 为包含下界，exclusiveMinimum 为不包含下界；具体操作合法性仍由 TypeScript 和引擎检查。
 
 参数在整份 JSON 中自动收集。多个相同声明只生成一个输入框；同 ID 的不一致声明报错。后续位置推荐使用 `{"type":"ref","id":"speed"}` 引用，允许引用出现在声明之前。
+
+数值型 `user-input` 可声明 `options` 列表。每项包含唯一的数值 `value` 和双语消息键 `labelKey`，默认值和用户提交值均须属于选项。表单使用 Select。
 
 基础速度默认值可写为：
 

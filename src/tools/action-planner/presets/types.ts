@@ -1,4 +1,10 @@
-import type { EventAnchor, EffectPhase, SimulationState } from '../engine/types'
+import type {
+  CharacterEffectId,
+  EffectOperation,
+  EventAnchor,
+  EffectPhase,
+  SimulationState,
+} from '../engine/types'
 import type { PlannerDocument } from '../model/editor'
 
 export type Value =
@@ -36,43 +42,61 @@ export interface Input {
   i18n?: { label?: string; hint?: string; placeholder?: string; suffix?: string }
   minimum?: number
   exclusiveMinimum?: number
+  options?: { value: number; labelKey: string }[]
 }
 export type PresetTarget = 'self' | 'allies' | 'enemies' | 'selected' | { snapshot: string }
-interface OperationOptions {
-  target?: PresetTarget
+interface TargetOptions {
+  target: PresetTarget
   onEmpty?: 'skip'
-  onTrigger?: PresetOperation[]
 }
-export type PresetOperation = OperationOptions &
+type PresetTargetedOperation = TargetOptions &
   (
-    | { type: 'advance' | 'delay'; target: PresetTarget; percent: Value }
-    | { type: 'immediatelyAct' | 'depart' | 'returnToField'; target: PresetTarget }
+    | { type: 'advance' | 'delay'; percent: Value }
+    | { type: 'immediatelyAct' | 'depart' | 'returnToField' }
     | {
         type: 'addSpeedModifier'
-        target: PresetTarget
         mode: 'flat' | 'percent'
         amount: Value
         duration: { kind: 'turns'; turns: Value } | { kind: 'countdown'; name: Value; speed: Value }
       }
+  )
+interface PresetSpawnOperation {
+  type: 'spawnParticipant'
+  participant: {
+    name: Value
+    iconUrl?: Value
+    initialAG?: Value
+  } & (
+    | { kind: 'scheduledEvent'; baseSpeed?: Value; speed: Value }
     | {
-        type: 'spawnParticipant'
-        participant: {
-          name: Value
-          iconUrl?: Value
-          initialAG?: Value
-        } & (
-          | { kind: 'scheduledEvent'; baseSpeed?: Value; speed: Value }
-          | {
-              kind: 'actor'
-              camp: 'ally' | 'enemy'
-              category?: 'character' | 'enemy' | 'summon' | 'memosprite' | 'custom'
-              baseSpeed: Value
-              panelSpeed: Value
-              actionLimit?: Value
-            }
-        )
+        kind: 'actor'
+        camp: 'ally' | 'enemy'
+        category?: 'character' | 'enemy' | 'summon' | 'memosprite' | 'custom'
+        baseSpeed: Value
+        panelSpeed: Value
+        actionLimit?: Value
       }
   )
+}
+type PresetSkillPointOperation = Omit<
+  Extract<EffectOperation, { type: 'changeSkillPoints' }>,
+  'id' | 'phase'
+>
+export type PresetOperation =
+  | (PresetTargetedOperation & { onTrigger?: PresetOperation[] })
+  | (PresetSpawnOperation & { target?: never; onEmpty?: never; onTrigger?: PresetOperation[] })
+  | (PresetSkillPointOperation & { target?: never; onEmpty?: never; onTrigger?: never })
+  | ({
+      type: 'characterEffect'
+      target: 'self'
+      onEmpty?: never
+      onTrigger?: never
+    } & (
+      | { effectId: 'imbibitorLunae.enhancedBasic'; cost: Value }
+      | {
+          effectId: Exclude<CharacterEffectId, 'imbibitorLunae.enhancedBasic'>
+        }
+    ))
 export interface PresetDefinition {
   $schema?: string
   id: string
@@ -98,6 +122,7 @@ export interface PresetContext {
   anchor: EventAnchor
   phase: EffectPhase
   preview?: SimulationState
+  beforeEffects?: SimulationState
   selectedIds?: string[]
   values?: Record<string, unknown>
   translate: Translate

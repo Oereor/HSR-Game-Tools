@@ -11,6 +11,7 @@ import {
 } from '../../../src/tools/action-planner/model/document-file'
 import { operationsAt } from '../../../src/tools/action-planner/model/editor'
 import { simulatePlan } from '../../../src/tools/action-planner/engine/engine'
+import { characterEffectRequiresOwnAction } from '../../../src/tools/action-planner/engine/character-effects'
 import { spawnedParticipantId } from '../../../src/tools/action-planner/engine/queue'
 import type {
   PresetDefinition,
@@ -279,6 +280,10 @@ describe('production preset catalog wiring', () => {
   it.each(production)('applies $id and simulates the resulting ordinary plan', (preset) => {
     const document = fixture()
     document.metadata.characterIds = preset.characterId ? { a: preset.characterId } : {}
+    const characterEffects = preset.operations.filter(
+      (operation) => operation.type === 'characterEffect',
+    )
+    if (characterEffects.length) document.plan.skillPoints = { enabled: true }
     document.plan.actors.push({
       id: 'enemy',
       position: 0,
@@ -293,6 +298,12 @@ describe('production preset catalog wiring', () => {
         { anchor: start, operations: [{ id: 'depart', type: 'depart', target: target('a') }] },
       ]
     const p = planner(document)
+    if (
+      characterEffects.some((operation) => characterEffectRequiresOwnAction(operation.effectId))
+    ) {
+      p.select({ kind: 'action', participantId: 'a', turn: 1 })
+      p.addSkillPoints('postAction')
+    }
     expect(
       p.submitPreset({
         id: preset.id,

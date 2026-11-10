@@ -19,6 +19,8 @@
 货币战争控制台原型也从上述固定 TurnBasedGameData Commit 提取人数计算所需的角色、羁绊、星徽和中文名称，感谢 Dimbreath 的数据整理；来源文件哈希与转换规则见其 [Manifest](../../data/currency-wars/manifest.json)。新增求解器依赖 [highs-js](https://github.com/lovasoa/highs-js) 精确锁定为 `highs@1.15.3`，安装包保留 MIT LICENSE（Copyright 2023 highs-js / 2026 HiGHS）；网页 Worker 现在也使用该求解器，原始通知逐字保留于 [highs-LICENSE.txt](../../public/third-party/highs-LICENSE.txt)，随静态构建分发；展示数据来源及图片哈希见 [展示 Manifest](../../data/currency-wars/visuals-manifest.json)。
 HSR-Database 原 MIT 通知与固定来源 LICENSE 全文相同，StarRailRes 已保留文本也与锁定 Commit 的 LICENSE 完全一致。项目 MIT 决定不删除或替换这些通知；本页不替代许可原文。
 
+站点通过 Fontsource 自托管 Inter（`@fontsource-variable/inter@5.3.0`）和 Noto Sans SC（`@fontsource-variable/noto-sans-sc@5.3.1`）。两套字体采用 SIL Open Font License 1.1，安装包的原始通知随静态构建分发。[Inter 许可](../../public/third-party/Inter-OFL-1.1.txt) · [Noto Sans SC 许可](../../public/third-party/NotoSansSC-OFL-1.1.txt)
+
 ## 游戏内容与构建产物
 
 游戏名称、角色、装备、美术及其他游戏知识产权归各自权利人所有；开源代码或索引仓库的许可不能替代游戏美术再分发授权。

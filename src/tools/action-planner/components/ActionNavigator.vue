@@ -11,6 +11,7 @@ import {
   Flag,
   ChevronLeft,
   ChevronRight,
+  TriangleAlert,
 } from '@lucide/vue'
 import UnitPortrait from './UnitPortrait.vue'
 import SpeedModifierTags from './SpeedModifierTags.vue'
@@ -20,7 +21,7 @@ import {
   type CountdownSources,
 } from '../model/speed-modifier-tags'
 import { anchorKey } from '../engine/queue'
-import type { EventAnchor, NodeRecord, SimulationPlan } from '../engine/types'
+import type { EventAnchor, NodeRecord, SkillPointWarning, SimulationPlan } from '../engine/types'
 import { actionDirections, nodeCamp } from '../model/naming'
 import { operationsAt } from '../model/editor'
 import { formatAV, formatNumber } from '../model/presentation'
@@ -29,6 +30,7 @@ import type { ToolLocale } from '../../../locales/types'
 const props = defineProps<{
   countdownSources: CountdownSources
   records: NodeRecord[]
+  skillPointWarnings: ReadonlyMap<string, SkillPointWarning>
   selected: EventAnchor
   plan: SimulationPlan
   currentQueueView?: CurrentQueueView
@@ -55,6 +57,10 @@ const cards = computed(() => {
     const speedTags = navigatorSpeedModifierTags(card, props.countdownSources, waitingState)
     return {
       ...card,
+      warning:
+        view.value === 'future' || card.isCurrent
+          ? props.skillPointWarnings.get(anchorKey(card.anchor))
+          : undefined,
       speedTags,
       changes: actionDirections(card.anchor, card.actionChanges),
       speedSummary: speedTags
@@ -80,8 +86,9 @@ const cardLabel = (card: {
   id?: string
   total: number
   speedSummary: string
+  warning?: SkillPointWarning
 }) => {
-  const label = t('planner.navigator.node', {
+  const node = t('planner.navigator.node', {
     name: cardName(card),
     node:
       card.anchor.kind === 'action'
@@ -91,6 +98,9 @@ const cardLabel = (card: {
           : t('ui.eventNode'),
     value: formatAV(card.total, locale.value as ToolLocale),
   })
+  const label = card.warning
+    ? t('planner.sp.nodeWarning', { node, warning: t(`ui.diagnostic.${card.warning}`) })
+    : node
   return card.speedSummary
     ? t('planner.speedTag.nodeDescription', { node: label, effects: card.speedSummary })
     : label
@@ -150,7 +160,14 @@ const cardLabel = (card: {
         ></span>
         <span class="event-avatar"><Flag :size="18" :stroke-width="1.75" /></span
         ><span class="node-info"
-          ><span class="node-name">{{ t('ui.start') }}</span></span
+          ><span class="node-name">{{ t('ui.start') }}</span>
+          <TriangleAlert
+            v-if="skillPointWarnings.has('start')"
+            :size="15"
+            class="delay-color"
+            role="img"
+            :aria-label="t('ui.diagnostic.sp-negative-first')"
+          /> </span
         ><SlidersHorizontal
           v-if="operationsAt(plan, { kind: 'start' }).length"
           :size="14"
@@ -214,6 +231,13 @@ const cardLabel = (card: {
                 speed: formatNumber(card.effectiveSpeed, locale as ToolLocale),
               })
             }}</small>
+            <TriangleAlert
+              v-if="card.warning"
+              v-tooltip="t(`ui.diagnostic.${card.warning}`)"
+              :size="card.warning === 'sp-negative-first' ? 16 : 13"
+              :class="card.warning === 'sp-negative-first' ? 'delay-color' : 'muted'"
+              aria-hidden="true"
+            />
             <SlidersHorizontal
               v-if="operationsAt(plan, card.anchor).length"
               :size="13"

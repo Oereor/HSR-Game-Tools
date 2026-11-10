@@ -52,6 +52,7 @@ npm run dev
 
 - [StarRailRes](https://github.com/Mar-7th/StarRailRes)：规范化游戏数据及角色、装备视觉资源。
 - [HSR-Action-Planner](https://github.com/THyanNK/HSR-Action-Planner)：行动序列模拟器早期产品设计的灵感来源，并参考了其实现方式。
+- 特别感谢 [@nv2rdwzksh-eng](https://github.com/nv2rdwzksh-eng) 为本项目的行动序列模拟器贡献了 **战技点跟踪** 功能。
 
 ## 许可与免责声明
 

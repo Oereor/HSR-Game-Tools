@@ -6,16 +6,29 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import SelectButton from 'primevue/selectbutton'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { elationContribution } from '../engine/queue'
+import { DEFAULT_SKILL_POINTS, validSkillPoints } from '../engine/skill-points'
+import {
+  ARCHER_CHARACTER_ID,
+  ARCHER_CHARGE_CAP,
+  IMBIBITOR_LUNAE_CHARACTER_ID,
+} from '../engine/character-effects'
 import { resolveElationContributors } from '../model/aha-config'
 import { CYCLE_RULES } from '../engine/cycle'
 import { Plus, Trash2 } from '@lucide/vue'
 import GameIcon from './GameIcon.vue'
-import { gameData, characterName } from '../data/adapters/game-data'
+import { assetUrl, gameData, characterName } from '../data/adapters/game-data'
 import { buildBattleSetup, setupDraft, type AllySlot, type EnemyDraft } from '../model/battle-setup'
 import EnemySetup from './EnemySetup.vue'
 import UnitPortrait from './UnitPortrait.vue'
-import type { ActorConfig, SimulationPlan, CycleMode, AhaConfig } from '../engine/types'
+import type {
+  ActorConfig,
+  SimulationPlan,
+  CycleMode,
+  AhaConfig,
+  SkillPointsConfig,
+} from '../engine/types'
 import type { ToolLocale } from '../../../locales/types'
 import type { CharacterRecord } from '../data/schema'
 import { createCharacterSearch } from '../model/character-search'
@@ -33,6 +46,7 @@ const emit = defineEmits<{
     characters: Record<string, string>,
     cycleMode: CycleMode,
     aha: AhaConfig,
+    skillPoints?: SkillPointsConfig,
   ]
 }>()
 const { t, locale } = useI18n()
@@ -43,6 +57,8 @@ const maxNodes = ref<number | undefined>()
 const maxAV = ref<number | undefined>()
 const cycleMode = ref<CycleMode>('none')
 const ahaBaseSpeed = ref<number | undefined>()
+const sp = ref<SkillPointsConfig>({})
+const spFields = ['initial', 'max'] as const
 const cycleModes = computed(() =>
   (['none', 'moc', 'aa'] as const).map((value) => ({ value, label: t(`planner.cycle.${value}`) })),
 )
@@ -59,21 +75,24 @@ function load() {
   maxAV.value = props.plan.maxAV
   cycleMode.value = props.plan.cycleMode
   ahaBaseSpeed.value = props.plan.aha.baseSpeed
+  sp.value = { ...props.plan.skillPoints }
   errors.value = []
   dirty.value = false
 }
+// Canonical editor commits clone the plan even when none of the setup inputs change.
 watch(
-  [
-    () => props.plan.actors,
-    () => props.plan.maxNodes,
-    () => props.plan.maxAV,
-    () => props.plan.cycleMode,
-    () => props.plan.aha,
-  ],
+  () =>
+    JSON.stringify([
+      props.plan.actors,
+      props.plan.maxNodes,
+      props.plan.maxAV,
+      props.plan.cycleMode,
+      props.plan.aha,
+      props.plan.skillPoints,
+      props.characterIds,
+    ]),
   load,
-  {
-    immediate: true,
-  },
+  { immediate: true },
 )
 const visible = ref(false)
 const choosing = ref(0)
@@ -96,6 +115,29 @@ const slotLabel = (slot: Slot) => {
   return c
     ? characterName(c, locale.value as ToolLocale)
     : (slot.original?.name ?? t('ui.emptySlot'))
+}
+const initialStateSlots = computed(() =>
+  slots.value.flatMap((slot, index) =>
+    slot.characterId === ARCHER_CHARACTER_ID || slot.characterId === IMBIBITOR_LUNAE_CHARACTER_ID
+      ? [{ slot, index }]
+      : [],
+  ),
+)
+function setSpEnabled(value: boolean) {
+  sp.value.enabled = value
+  dirty.value = true
+}
+function setSpField(key: (typeof spFields)[number], value: number | null | undefined) {
+  sp.value[key] = value ?? undefined
+  dirty.value = true
+}
+function setInitialCharge(slot: Slot, value: number | null | undefined) {
+  slot.initialArcherCharge = value ?? 0
+  dirty.value = true
+}
+function setLunaeTechnique(slot: Slot, value: boolean) {
+  slot.imbibitorLunaeTechnique = value
+  dirty.value = true
 }
 const choiceName = (c: CharacterRecord) =>
   c.form.gender
@@ -173,12 +215,22 @@ function apply() {
     ahaBaseSpeed.value <= 0
   )
     errors.value.push('aha-base')
+  if (!validSkillPoints(sp.value)) errors.value.push('sp')
   if (errors.value.length) return
-  emit('apply', setup.actors, maxNodes.value!, maxAV.value!, setup.characters, cycleMode.value, {
-    ...props.plan.aha,
-    baseSpeed: ahaBaseSpeed.value!,
-    contributorIds: [...ahaContributors.value],
-  })
+  emit(
+    'apply',
+    setup.actors,
+    maxNodes.value!,
+    maxAV.value!,
+    setup.characters,
+    cycleMode.value,
+    {
+      ...props.plan.aha,
+      baseSpeed: ahaBaseSpeed.value!,
+      contributorIds: [...ahaContributors.value],
+    },
+    props.plan.skillPoints !== undefined || Object.keys(sp.value).length ? sp.value : undefined,
+  )
 }
 </script>
 <template>
@@ -410,6 +462,94 @@ function apply() {
         </div>
       </div>
     </section>
+    <section class="range-section" aria-labelledby="sp-setup-heading">
+      <div class="section-title sp-setup-header">
+        <h2 id="sp-setup-heading">{{ t('planner.sp.setup') }}</h2>
+        <div class="sp-setup-toggle">
+          <label class="field-label" for="sp-enabled">{{ t('planner.sp.enabled') }}</label>
+          <ToggleSwitch
+            input-id="sp-enabled"
+            :model-value="sp.enabled ?? false"
+            @update:model-value="setSpEnabled"
+          />
+        </div>
+      </div>
+      <div v-if="sp.enabled" class="sp-setup-content">
+        <div>
+          <h3 class="sp-setup-subheading">{{ t('planner.sp.baseConfig') }}</h3>
+          <div class="form-grid">
+            <div v-for="key in spFields" :key="key" class="field">
+              <label :for="`sp-setup-${key}`">{{ t(`planner.sp.${key}`) }}</label>
+              <InputNumber
+                :input-id="`sp-setup-${key}`"
+                :locale="locale"
+                fluid
+                size="small"
+                :model-value="sp[key] ?? DEFAULT_SKILL_POINTS[key]"
+                :use-grouping="false"
+                :max-fraction-digits="20"
+                :invalid="errors.includes('sp')"
+                :pt="{
+                  pcInputText: {
+                    root: {
+                      'aria-describedby': errors.includes('sp') ? 'sp-setup-error' : undefined,
+                    },
+                  },
+                }"
+                @update:model-value="setSpField(key, $event)"
+              />
+            </div>
+          </div>
+        </div>
+        <div v-if="initialStateSlots.length">
+          <h3 class="sp-setup-subheading">{{ t('planner.sp.characterInitialState') }}</h3>
+          <div v-for="{ slot, index } in initialStateSlots" :key="slot.id" class="sp-character-row">
+            <UnitPortrait
+              :src="assetUrl(current(slot)?.assetKey)"
+              :name="slotLabel(slot)"
+              compact
+              aria-hidden="true"
+            />
+            <template v-if="slot.characterId === ARCHER_CHARACTER_ID">
+              <label class="field-label" :for="`archer-charge-${index}`">
+                {{ t('planner.characterEffects.initialCharge') }}
+              </label>
+              <InputNumber
+                :input-id="`archer-charge-${index}`"
+                :model-value="slot.initialArcherCharge ?? 0"
+                :locale="locale"
+                :min="0"
+                :max="ARCHER_CHARGE_CAP"
+                :max-fraction-digits="0"
+                :invalid="errors.includes(`archer-charge-${index}`)"
+                class="sp-charge-input"
+                fluid
+                size="small"
+                @update:model-value="setInitialCharge(slot, $event)"
+              />
+            </template>
+            <template v-else>
+              <label class="field-label" :for="`lunae-technique-${index}`">
+                {{ t('planner.characterEffects.lunaeTechnique') }}
+              </label>
+              <ToggleSwitch
+                :input-id="`lunae-technique-${index}`"
+                :model-value="slot.imbibitorLunaeTechnique ?? false"
+                @update:model-value="setLunaeTechnique(slot, $event)"
+              />
+            </template>
+          </div>
+        </div>
+      </div>
+      <p
+        v-if="errors.includes('sp')"
+        id="sp-setup-error"
+        class="field-error sp-setup-error"
+        role="alert"
+      >
+        {{ t('planner.sp.invalidSetup') }}
+      </p>
+    </section>
     <div class="setup-footer"><Button :label="t('ui.applySetup')" @click="apply" /></div>
     <Dialog
       v-model:visible="visible"
@@ -450,3 +590,57 @@ function apply() {
     >
   </section>
 </template>
+
+<style scoped>
+.sp-setup-header {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.sp-setup-header h2 {
+  margin: 0;
+}
+
+.sp-setup-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+
+.sp-setup-content {
+  display: grid;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.sp-setup-subheading {
+  margin-bottom: 8px;
+  color: var(--color-muted);
+}
+
+.sp-setup-content .field {
+  gap: 6px;
+}
+
+.sp-character-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.sp-character-row label {
+  overflow-wrap: anywhere;
+}
+
+.sp-charge-input {
+  width: 6rem;
+}
+
+.sp-setup-error {
+  margin-top: 8px;
+}
+</style>

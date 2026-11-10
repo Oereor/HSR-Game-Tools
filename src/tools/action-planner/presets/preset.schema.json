@@ -145,8 +145,41 @@
   "title": "Action Planner Preset",
   "description": "Declarative presets compiled into ordinary planner operations.",
   "definitions": {
+    "numericChoice": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "user-input" },
+        "id": { "type": "string", "minLength": 1 },
+        "value": { "type": "number" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "number" },
+              "labelKey": { "type": "string", "minLength": 1 }
+            },
+            "required": ["value", "labelKey"],
+            "additionalProperties": false
+          }
+        },
+        "i18n": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string", "minLength": 1 },
+            "hint": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["type", "id", "value", "options"],
+      "additionalProperties": false
+    },
     "value": {
       "anyOf": [
+        { "$ref": "#/definitions/numericChoice" },
         {
           "type": "number"
         },
@@ -321,6 +354,7 @@
     },
     "numeric": {
       "anyOf": [
+        { "$ref": "#/definitions/numericChoice" },
         {
           "type": "number"
         },
@@ -617,6 +651,48 @@
     },
     "operation": {
       "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "changeSkillPoints" },
+            "amount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": ["type", "amount"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "characterEffect" },
+            "effectId": {
+              "enum": [
+                "archer.ultimateCharge",
+                "archer.followUp",
+                "imbibitorLunae.ultimate",
+                "imbibitorLunae.ultimateE2",
+                "sparkle.ultimate"
+              ]
+            },
+            "target": { "const": "self" }
+          },
+          "required": ["type", "effectId", "target"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "characterEffect" },
+            "effectId": { "const": "imbibitorLunae.enhancedBasic" },
+            "target": { "const": "self" },
+            "cost": { "$ref": "#/definitions/numeric" }
+          },
+          "required": ["type", "effectId", "target", "cost"],
+          "additionalProperties": false
+        },
         {
           "type": "object",
           "properties": {

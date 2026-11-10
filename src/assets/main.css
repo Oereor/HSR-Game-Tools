@@ -6,6 +6,7 @@
 @custom-variant dark (&:where(.app-dark, .app-dark *));
 
 @theme {
+  --font-sans: 'Inter Variable', 'Noto Sans SC Variable', system-ui, sans-serif;
   --color-page: #17191d;
   --color-surface: #22252b;
   --color-ink: #f1eee7;
@@ -19,7 +20,7 @@
 }
 @layer base {
   :root {
-    font-family: Inter, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    font-family: var(--font-sans);
     color: var(--p-text-color);
     background: var(--color-page);
     color-scheme: dark;
@@ -49,6 +50,11 @@
     outline: 2px solid var(--p-primary-color);
     outline-offset: 3px;
   }
+}
+/* Override Astral's scoped default and cover its menus teleported to body. */
+:root,
+.h-theme {
+  --h-font: var(--font-sans);
 }
 @layer components {
   .plan-management {

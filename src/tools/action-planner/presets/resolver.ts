@@ -1,18 +1,23 @@
 import { applyOperations } from '../engine/operations'
-import { simulatePlan } from '../engine/engine'
+import { previewOperationState, simulatePlan } from '../engine/engine'
+import {
+  characterEffectRequiresOwnAction,
+  characterEffectSourceIssue,
+} from '../engine/character-effects'
+import { isSkillPointOperation, orderOperations } from '../engine/effect-config'
 import {
   anchorKey,
   countdownParticipantId,
   spawnedParticipantId,
   SimulationError,
 } from '../engine/queue'
-import { operationTargets, targetIds } from '../engine/targeting'
+import { isTargetedOperation, operationTargets, targetIds } from '../engine/targeting'
 import { validateOperations } from '../engine/validation'
 import type { ActorConfig, EffectOperation, EventAnchor, PlanEvent, Target } from '../engine/types'
-import { metadataValue } from '../model/editor'
+import { metadataValue, operationsAt } from '../model/editor'
 import { referencedIds } from '../model/document-file'
 import type { CharacterRecord } from '../data/schema'
-import { collectInputs, PresetError, valueResolver } from './values'
+import { collectInputs, isCharacterEffectPreset, PresetError, valueResolver } from './values'
 import {
   PRESET_LIMITS,
   type PresetContext,
@@ -20,7 +25,6 @@ import {
   type PresetOperation,
   type PresetResult,
   type PresetTarget,
-  type Value,
 } from './types'
 
 /** No Vue, localization singleton, filesystem or preset identity branches. */
@@ -33,8 +37,16 @@ export function compilePreset(
   let operationIndex: number | undefined, semanticTarget: PresetTarget | undefined
   const parameters = new Set<string>()
   try {
-    if (!context.preview) throw new PresetError('context')
-    if (definition.startOnly && context.anchor.kind !== 'start') throw new PresetError('startOnly')
+    const { anchor: insertionAnchor, beforeEffects, phase } = context
+    const existing = operationsAt(context.document.plan, insertionAnchor)
+    const characterPreset = isCharacterEffectPreset(definition)
+    const preview =
+      characterPreset && beforeEffects
+        ? previewOperationState(beforeEffects, existing, insertionAnchor, phase, undefined, true)
+        : context.preview
+    if (!preview) throw new PresetError('context')
+    if (characterPreset && !preview.skillPoints) throw new PresetError('skillPointTracking')
+    if (definition.startOnly && insertionAnchor.kind !== 'start') throw new PresetError('startOnly')
     for (const input of collectInputs(definition)) parameters.add(input.id)
     let self: string | undefined
     let selfActor: ActorConfig | undefined
@@ -47,7 +59,7 @@ export function compilePreset(
       )
       if (!actors.length) throw new PresetError('missing')
       if (actors.length !== 1) throw new PresetError('ambiguous')
-      const participant = context.preview.participants.find(
+      const participant = preview.participants.find(
         (p) => p.id === actors[0]!.id && p.kind === 'actor',
       )
       if (!participant) throw new PresetError('unavailable')
@@ -58,6 +70,14 @@ export function compilePreset(
       self = participant.id
       selfActor = actors[0]!
     }
+    const requiresOwnAction = definition.operations.some(
+      (op) => op.type === 'characterEffect' && characterEffectRequiresOwnAction(op.effectId),
+    )
+    if (
+      requiresOwnAction &&
+      (insertionAnchor.kind !== 'action' || insertionAnchor.participantId !== self)
+    )
+      throw new PresetError('characterEffectAnchor')
     const values = valueResolver(
       definition,
       characters,
@@ -67,10 +87,7 @@ export function compilePreset(
     )
     const snapshots = new Map<string, string[]>()
     for (const [name, spec] of Object.entries(definition.snapshots ?? {})) {
-      const ids = targetIds(
-        { kind: spec.target },
-        operationTargets(context.preview, spec.operation),
-      )
+      const ids = targetIds({ kind: spec.target }, operationTargets(preview, spec.operation))
       if (!ids.length) throw new PresetError('target')
       snapshots.set(name, ids)
     }
@@ -115,43 +132,38 @@ export function compilePreset(
       if (depth > PRESET_LIMITS.depth) throw new PresetError('depth')
       const operations: EffectOperation[] = []
       patches.push({ anchor, operations })
-      let state = root && definition.interaction === 'batch' ? context.preview : undefined
-      for (const declaration of declarations) {
+      let state = root && definition.interaction === 'batch' ? preview : undefined
+      let ordinaryGroup = false
+      const ordered = root && characterPreset ? orderOperations(declarations) : declarations
+      for (const declaration of ordered) {
         if (++count > PRESET_LIMITS.operations) throw new PresetError('operations')
         operationIndex = count - 1
         semanticTarget = declaration.target
-        const { onTrigger, onEmpty, target: operationTarget, ...fields } = declaration
-        const operation = {
-          ...(values.tree(fields) as object),
-          id: probeId(),
-          ...(operationTarget ? { target: target(operationTarget) } : {}),
-          ...(anchor.kind === 'action' ? { phase: context.phase } : {}),
-        } as EffectOperation
-        function invalidName(name: unknown, source: Value) {
-          if (typeof name !== 'string' || !name.trim())
-            throw new PresetError(
-              source &&
-                typeof source === 'object' &&
-                (source.type === 'user-input' || source.type === 'ref')
-                ? source.id
-                : 'form',
-            )
-        }
-        if (operation.type === 'spawnParticipant' && declaration.type === 'spawnParticipant')
-          invalidName(operation.participant.name, declaration.participant.name)
-        if (
-          operation.type === 'addSpeedModifier' &&
-          operation.duration.kind === 'countdown' &&
-          declaration.type === 'addSpeedModifier' &&
-          declaration.duration.kind === 'countdown'
+        const { onTrigger, onEmpty, target: operationTarget } = declaration
+        const operation = values.resolveOperation(
+          declaration,
+          { id: probeId(), ...(anchor.kind === 'action' ? { phase } : {}) },
+          target,
         )
-          invalidName(operation.duration.name, declaration.duration.name)
-        if (validateOperations([operation], anchor).length) throw new PresetError('form')
-        if (operation.type === 'spawnParticipant')
-          operation.participant.name = operation.participant.name.trim()
-        if (operation.type === 'addSpeedModifier' && operation.duration.kind === 'countdown')
-          operation.duration.name = operation.duration.name.trim()
-        if (state && operation.type !== 'spawnParticipant') {
+        if (
+          validateOperations([operation], anchor).length ||
+          (definition.interaction === 'draft' && isSkillPointOperation(operation))
+        )
+          throw new PresetError('form')
+        // A mixed character batch appends its first ordinary operation after the
+        // existing ordinary operations, with the complete SP group already settled.
+        if (
+          root &&
+          characterPreset &&
+          beforeEffects &&
+          !ordinaryGroup &&
+          !isSkillPointOperation(operation)
+        ) {
+          state = previewOperationState(beforeEffects, [...existing, ...operations], anchor, phase)
+          if (!state) throw new PresetError('context')
+          ordinaryGroup = true
+        }
+        if (state && isTargetedOperation(operation)) {
           const ids = targetIds(
             operation.target,
             operation.target.kind === 'participants'
@@ -162,13 +174,25 @@ export function compilePreset(
             continue
         }
         if (state) {
-          const applied = applyOperations(state, [operation], anchor)
-          const issue = applied.diagnostics[0]
-          if (issue) {
-            if (issue.code === 'active-target')
-              throw new PresetError(operationTarget === 'self' ? 'activeTarget' : 'activeAlly')
-            throw new PresetError('target')
+          if (operation.type === 'characterEffect') {
+            const issue = characterEffectSourceIssue(state, operation, anchor)
+            if (issue)
+              throw new PresetError(
+                issue === 'character-effect-anchor' ? 'characterEffectAnchor' : 'unavailable',
+              )
           }
+          const applied = applyOperations(state, [operation], anchor)
+          if (applied.diagnostics.some((issue) => issue.severity === 'error'))
+            throw new PresetError('form')
+          // The engine can continue past unusable targets. Preset insertion is atomic.
+          if (applied.diagnostics.some((issue) => issue.code === 'active-target'))
+            throw new PresetError(operationTarget === 'self' ? 'activeTarget' : 'activeAlly')
+          if (
+            applied.diagnostics.some(
+              (issue) => issue.code === 'missing-target' || issue.code === 'invalid-target',
+            )
+          )
+            throw new PresetError('target')
           state = applied.state
         }
         operations.push(operation)
@@ -185,22 +209,25 @@ export function compilePreset(
         }
       }
     }
-    expand(definition.operations, context.anchor, 0, true)
+    expand(definition.operations, insertionAnchor, 0, true)
+    const copyEvents = () =>
+      context.document.plan.events.map((event) => ({
+        ...event,
+        anchor: { ...event.anchor },
+        operations: [...event.operations],
+      }))
     // Future optional groups are inspected with the same replay used for actual
     // submission. Outside the replay budget they remain ordinary no-op-capable
     // group operations; no future target set is guessed from today's roster.
     if (optional.size) {
-      const events = context.document.plan.events.map((event) => ({
-        anchor: event.anchor,
-        operations: [...event.operations],
-      }))
+      const events = copyEvents()
       for (const patch of patches) {
         const existing = events.find((event) => anchorKey(event.anchor) === anchorKey(patch.anchor))
         if (existing) existing.operations.push(...patch.operations)
         else events.push({ anchor: patch.anchor, operations: [...patch.operations] })
       }
       const empty = new Set(
-        simulatePlan({ ...context.document.plan, events })
+        simulatePlan({ ...context.document.plan, events }, context.document.metadata.characterIds)
           .diagnostics.filter(
             (issue) =>
               issue.code === 'missing-target' &&
@@ -240,10 +267,7 @@ export function compilePreset(
       participantIds.set(spawnedParticipantId(old), spawnedParticipantId(id))
       participantIds.set(countdownParticipantId(old), countdownParticipantId(id))
     }
-    const events = context.document.plan.events.map((event) => ({
-      anchor: { ...event.anchor },
-      operations: [...event.operations],
-    }))
+    const events = copyEvents()
     for (const patch of patches) {
       const anchor =
         patch.anchor.kind === 'trigger'

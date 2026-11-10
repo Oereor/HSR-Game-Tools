@@ -17,7 +17,14 @@ import { usePlannerSession } from './composables/usePlannerSession'
 import PlanManagement from './components/PlanManagement.vue'
 import { usePlannerPresentation } from './composables/usePlannerPresentation'
 import { countdownSources } from './model/speed-modifier-tags'
-import type { ActorConfig, CycleMode, AhaConfig } from './engine/types'
+import { anchorKey } from './engine/queue'
+import type {
+  ActorConfig,
+  CycleMode,
+  AhaConfig,
+  SkillPointsConfig,
+  SkillPointWarning,
+} from './engine/types'
 const { t, locale } = useI18n()
 const { planner, persistence, saveStatus } = usePlannerSession()
 const planManagement = ref<InstanceType<typeof PlanManagement>>()
@@ -47,9 +54,11 @@ const {
   presetIssues,
   remove,
   move,
+  duplicateCharacterEffect,
   deleteEvent,
   stepQueue,
   nextId,
+  addSkillPoints,
   operationContext,
   setupRevision,
   documentError,
@@ -69,13 +78,25 @@ function apply(
   characters: Record<string, string>,
   cycleMode: CycleMode,
   aha: AhaConfig,
+  skillPoints?: SkillPointsConfig,
 ) {
-  if (planner.applySetup(actors, nodes, av, characters, cycleMode, aha)) stage.value = 'planning'
+  if (planner.applySetup(actors, nodes, av, characters, cycleMode, aha, skillPoints)) {
+    setupDirty.value = false
+    stage.value = 'planning'
+  }
 }
 const modifierSources = computed(() => countdownSources(plan.value))
+const skillPointWarnings = computed(() => {
+  const warnings = new Map<string, SkillPointWarning>()
+  for (const { anchor, code } of result.value.diagnostics)
+    if (anchor && (code === 'sp-negative-first' || code === 'sp-negative'))
+      warnings.set(anchorKey(anchor), code)
+  return warnings
+})
 const navigatorProps = computed(() => ({
   countdownSources: modifierSources.value,
   records: result.value.records,
+  skillPointWarnings: skillPointWarnings.value,
   selected: selected.value,
   plan: plan.value,
   currentQueueView: currentQueueView.value,
@@ -83,6 +104,32 @@ const navigatorProps = computed(() => ({
   label,
   image,
 }))
+const selectedSettlement = computed(() => {
+  const { startState, records, snapshots } = result.value
+  if (selected.value.kind === 'start')
+    return { entry: startState ?? context.value, settled: snapshots[0] }
+  const key = anchorKey(selected.value)
+  const index = records.findIndex((record) => anchorKey(record.anchor) === key)
+  const record = records[index]
+  if (!record) return { entry: context.value }
+  return {
+    entry: record.beforeEffects,
+    settled: snapshots[index + 1],
+    sparkleRefills: record.kind === 'cycleBoundary' ? undefined : record.sparkleRefills,
+  }
+})
+const effectOutcomes = computed(
+  () =>
+    new Map(result.value.characterEffectOutcomes.map((outcome) => [outcome.operationId, outcome])),
+)
+const operationWarnings = computed(
+  () =>
+    new Map(
+      result.value.diagnostics.flatMap(({ operationId, code }) =>
+        operationId ? [[operationId, code] as const] : [],
+      ),
+    ),
+)
 const inspectorProps = computed(() => ({
   countdownSources: modifierSources.value,
   ahaId: plan.value.aha.id,
@@ -90,6 +137,15 @@ const inspectorProps = computed(() => ({
   inactive: selected.value.kind === 'cycleBoundary' && plan.value.cycleMode === 'none',
   operations: operations.value,
   context: context.value,
+  trackSkillPoints: !!plan.value.skillPoints?.enabled,
+  entrySkillPoints: selectedSettlement.value.entry?.skillPoints,
+  settledSkillPoints: selectedSettlement.value.settled?.skillPoints,
+  entryCharacterEffects: selectedSettlement.value.entry?.characterEffects,
+  settledCharacterEffects: selectedSettlement.value.settled?.characterEffects,
+  sparkleRefills: selectedSettlement.value.sparkleRefills,
+  effectOutcomes: effectOutcomes.value,
+  operationWarnings: operationWarnings.value,
+  skillPointWarning: skillPointWarnings.value.get(anchorKey(selected.value)),
   preview: preview.value,
   targets: targets.value,
   invalid: invalid.value,
@@ -211,9 +267,11 @@ onBeforeUnmount(() => {
                   v-bind="inspectorProps"
                   @edit="edit"
                   @remove="remove"
+                  @duplicate="duplicateCharacterEffect"
                   @move="move"
                   @cancel="cancel"
                   @submit="submit"
+                  @add-skill-points="addSkillPoints"
                   @preset="submitPreset" /></SplitterPanel></Splitter
             ><template v-else
               ><ActionNavigator
@@ -225,9 +283,11 @@ onBeforeUnmount(() => {
                 v-bind="inspectorProps"
                 @edit="edit"
                 @remove="remove"
+                @duplicate="duplicateCharacterEffect"
                 @move="move"
                 @cancel="cancel"
                 @submit="submit"
+                @add-skill-points="addSkillPoints"
                 @preset="submitPreset"
             /></template>
           </div>

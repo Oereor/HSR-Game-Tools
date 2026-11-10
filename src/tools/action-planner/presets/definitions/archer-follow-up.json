@@ -1,0 +1,14 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "archer-follow-up",
+  "order": 8,
+  "characterId": "1015",
+  "selfPresence": "present",
+  "interaction": "batch",
+  "i18n": {
+    "name": "planner.characterEffects.archer_followUp",
+    "description": "planner.characterEffects.followUpPreset"
+  },
+  "icon": { "characterId": "1015" },
+  "operations": [{ "type": "characterEffect", "effectId": "archer.followUp", "target": "self" }]
+}

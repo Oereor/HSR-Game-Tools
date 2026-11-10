@@ -64,7 +64,7 @@ describe('Aha document, identity and editor integration', () => {
       const prepared = preparePlannerDocument(parsed.document, parsed.issues, parsed.migration)
       expect(prepared.migration).toEqual(parsed.migration)
       expect(prepared.result.records.some((r) => r.kind === 'aha')).toBe(true)
-      expect(JSON.parse(serializePlannerDocument(parsed.document)).version).toBe(3)
+      expect(JSON.parse(serializePlannerDocument(parsed.document)).version).toBe(PLANNER_VERSION)
       expect(() =>
         validatePlannerFile({
           ...input,
@@ -110,7 +110,7 @@ describe('Aha document, identity and editor integration', () => {
           ? { id: 'illegal', type, target }
           : { id: 'illegal', type, target, percent: 10 },
       )
-      expect(() => validatePlannerFile(file(doc))).toThrow('structure')
+      expect(() => validatePlannerFile({ ...file(doc), version: 3 })).toThrow('structure')
     },
   )
   it('allocates IDs around actors, operations and orphan anchors/targets without rebinding', () => {
@@ -160,11 +160,11 @@ describe('Aha document, identity and editor integration', () => {
   it('preserves saved Version 3 facts when known identities disagree or resources are missing', () => {
     const doc = elationDocument()
     doc.metadata.characterIds['editor-1'] = '1001'
-    const mismatch = validatePlannerFile(file(doc))
+    const mismatch = validatePlannerFile({ ...file(doc), version: 3 })
     expect(mismatch.document.plan.aha.contributorIds).toEqual(['editor-1'])
     expect(mismatch.issues).toContainEqual({ kind: 'elationMismatch', id: 'editor-1' })
     doc.metadata.characterIds['editor-1'] = 'unavailable'
-    const missing = validatePlannerFile(file(doc))
+    const missing = validatePlannerFile({ ...file(doc), version: 3 })
     expect(missing.document.plan.aha.contributorIds).toEqual(['editor-1'])
     expect(missing.issues).toContainEqual({ kind: 'unknownElation', id: 'editor-1' })
     const old = validatePlannerFile(legacy(doc, 2))
@@ -261,7 +261,7 @@ describe('Aha document, identity and editor integration', () => {
     expect(store.writes).toBe(0)
     expect(store.raw).toBe(source)
     expect(persistence.save(restored.document)).toBe(true)
-    expect(JSON.parse(store.raw).version).toBe(3)
+    expect(JSON.parse(store.raw).version).toBe(PLANNER_VERSION)
     expect(persistence.save(restored.document)).toBe(true)
     store.raw = 'external change'
     expect(persistence.save(restored.document)).toBe(false)

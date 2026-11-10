@@ -1,4 +1,5 @@
 import { isNaturalParticipant } from './types'
+import { cloneCharacterEffects } from './character-effects'
 import type {
   AhaConfig,
   ActorState,
@@ -96,6 +97,10 @@ function cloneModifiers(modifiers: readonly SpeedModifierInstance[]): SpeedModif
 export function cloneState(state: SimulationState): SimulationState {
   return {
     ...state,
+    ...(state.skillPoints ? { skillPoints: { ...state.skillPoints } } : {}),
+    ...(state.characterEffects
+      ? { characterEffects: cloneCharacterEffects(state.characterEffects) }
+      : {}),
     ...(state.cycle ? { cycle: { ...state.cycle } } : {}),
     issuedParticipantIds: new Set(state.issuedParticipantIds),
     participants: state.participants.map((participant) => ({
@@ -136,6 +141,10 @@ export function queueSnapshot(state: SimulationState): QueueSnapshot {
   const boundary = pendingCycleBoundary(state)
   return {
     ...(boundary ? { nextCycleBoundary: boundary } : {}),
+    ...(state.skillPoints ? { skillPoints: { ...state.skillPoints } } : {}),
+    ...(state.characterEffects
+      ? { characterEffects: cloneCharacterEffects(state.characterEffects) }
+      : {}),
     elapsedAV: state.elapsedAV,
     completedNodes: state.completedNodes,
     completedActions: state.completedActions,

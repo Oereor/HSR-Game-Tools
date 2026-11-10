@@ -13,6 +13,7 @@ import { operationMetadata } from '../../../src/tools/action-planner/model/metad
 import { actionDirections, nodeCamp } from '../../../src/tools/action-planner/model/naming'
 import {
   formatAV,
+  formatCharacterSkillPointChanges,
   formatNumber,
   operationName,
   renderMessage,
@@ -126,6 +127,126 @@ describe('site messages and semantic presentation', () => {
         expect(title).toContain(site)
       }
     }
+  })
+
+  it('uses localized defaults for signed skill point amounts and preserves custom names', () => {
+    const { global: composer } = makeI18n()
+    for (const locale of ['zh-CN', 'en'] as const) {
+      composer.locale.value = locale
+      for (const [amount, key] of [
+        [1, 'recoverSkillPoints'],
+        [-1, 'spendSkillPoints'],
+        [0, 'unchangedSkillPoints'],
+      ] as const) {
+        const change = { id: 'skill-points', type: 'changeSkillPoints', amount } as const
+        expect(operationName(change, locale, composer.t, (id) => id)).toBe(
+          composer.t(`planner.operationName.${key}`),
+        )
+        expect(operationName(change, locale, composer.t, (id) => id, undefined, '自定义 SP')).toBe(
+          '自定义 SP',
+        )
+      }
+    }
+  })
+
+  it.each(['zh-CN', 'en'] as const)('formats settled character SP changes in %s', (locale) => {
+    const { global: composer } = makeI18n()
+    composer.locale.value = locale
+    const { t } = composer
+    const source = { operationId: 'effect', sourceParticipantId: 'actor' }
+    const transition = (label: string, before: number | bigint, after: number | bigint) =>
+      t('planner.characterEffects.resourceChange', {
+        resource: t(label),
+        before: formatNumber(before, locale),
+        after: formatNumber(after, locale),
+      })
+    const delta = (amount: bigint) =>
+      t('planner.sp.delta', { amount: formatNumber(amount, locale, true) })
+    const debt = -(2n ** 54n)
+    const lunae = formatCharacterSkillPointChanges(
+      {
+        ...source,
+        effectId: 'imbibitorLunae.enhancedBasic',
+        resource: { kind: 'squama', before: 1, after: 0 },
+        skillPoints: { before: debt, after: debt - 2n },
+        payment: { nominalCost: 3, substituteUsed: 1, actualSpCost: 2 },
+      },
+      locale,
+      t,
+    )
+    expect(lunae).toEqual({
+      resource: transition('planner.characterEffects.resource.squama', 1, 0),
+      delta: delta(-2n),
+      balance: transition('planner.sp.setup', debt, debt - 2n),
+      toneAmount: -2n,
+      tooltip: t('planner.characterEffects.payment', {
+        nominal: '3',
+        substitute: '1',
+        resource: t('planner.characterEffects.resource.squama'),
+      }),
+    })
+    expect(
+      formatCharacterSkillPointChanges(
+        {
+          ...source,
+          effectId: 'archer.followUp',
+          charge: { before: 2, after: 1 },
+          skillPoints: { before: 7n, after: 7n },
+        },
+        locale,
+        t,
+      ),
+    ).toMatchObject({
+      resource: transition('planner.characterEffects.resource.charge', 2, 1),
+      delta: undefined,
+      balance: undefined,
+      toneAmount: -1,
+    })
+    const sparkle = {
+      ...source,
+      effectId: 'sparkle.ultimate',
+      resource: { kind: 'storedSP', before: 10, after: 10 },
+    } as const
+    expect(
+      formatCharacterSkillPointChanges(
+        { ...sparkle, skillPoints: { before: 6n, after: 10n }, wastedSkillPoints: 2 },
+        locale,
+        t,
+      ),
+    ).toMatchObject({
+      resource: undefined,
+      delta: delta(4n),
+      balance: transition('planner.sp.setup', 6n, 10n),
+      tooltip: t('planner.characterEffects.sparkleWaste', { amount: '2' }),
+    })
+    expect(
+      formatCharacterSkillPointChanges(
+        { ...sparkle, skillPoints: { before: 10n, after: 10n } },
+        locale,
+        t,
+      ),
+    ).toEqual({
+      resource: undefined,
+      delta: undefined,
+      balance: undefined,
+      toneAmount: 0,
+      tooltip: undefined,
+    })
+    expect(
+      formatCharacterSkillPointChanges(
+        {
+          sourceParticipantId: 'actor',
+          storedSP: { before: 2, after: 0 },
+          skillPoints: { before: 9n, after: 11n },
+        },
+        locale,
+        t,
+      ),
+    ).toMatchObject({
+      resource: transition('planner.characterEffects.storedSPShort', 2, 0),
+      delta: delta(2n),
+      balance: transition('planner.sp.setup', 9n, 11n),
+    })
   })
 
   it('updates localized names, metadata and errors without changing the plan, draft or simulation', async () => {

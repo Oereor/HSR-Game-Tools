@@ -2,6 +2,7 @@ import {
   emptyDocument,
   parsePlannerDocument,
   serializePlannerDocument,
+  requiresMigrationReview,
   PlannerFileError,
 } from './document-file'
 import type { PlannerDocument } from './editor'
@@ -14,6 +15,14 @@ export interface PlannerStorage {
 export type SaveStatus = 'idle' | 'saved' | 'failed' | 'unavailable' | 'protected' | 'external'
 export interface StorageToken {
   raw: string | null
+}
+
+function parseStoredDocument(source: string) {
+  const parsed = parsePlannerDocument(source)
+  // Storage and file import both require a document the canonical writer can export.
+  if (requiresMigrationReview(parsed.migration)) throw new PlannerFileError('migrationRequired')
+  serializePlannerDocument(parsed.document)
+  return parsed
 }
 
 /** Storage ownership only: the planner remains the sole owner of the edited document. */
@@ -45,7 +54,7 @@ export function createPlannerPersistence(
     baseline = token.raw
     if (token.raw === null) return { document: emptyDocument(), issues: [], migration: undefined }
     try {
-      const parsed = parsePlannerDocument(token.raw)
+      const parsed = parseStoredDocument(token.raw)
       setStatus('saved')
       return parsed
     } catch (error) {
@@ -54,7 +63,11 @@ export function createPlannerPersistence(
       return { document: emptyDocument(), issues: [], migration: undefined }
     }
   }
-  function write(document: PlannerDocument, token: StorageToken) {
+  function write(
+    document: PlannerDocument,
+    token: StorageToken,
+    options?: { keepRecoveryStatus: boolean },
+  ) {
     try {
       const source = serializePlannerDocument(document)
       const latest = read()
@@ -70,7 +83,7 @@ export function createPlannerPersistence(
       setStatus('saved')
       return true
     } catch {
-      setStatus('failed')
+      if (!blocked || !options?.keepRecoveryStatus) setStatus('failed')
       return false
     }
   }
@@ -112,7 +125,7 @@ export function createPlannerPersistence(
       const parsed =
         current.raw === null
           ? { document: emptyDocument(), issues: [], migration: undefined }
-          : parsePlannerDocument(current.raw)
+          : parseStoredDocument(current.raw)
       if (!withoutSaving(() => restore(parsed.document))) return false
       baseline = current.raw
       blocked = false

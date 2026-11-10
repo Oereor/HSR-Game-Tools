@@ -2,11 +2,13 @@ import { anchorKey, orderedParticipants } from '../engine/queue'
 import { operationTargets, targetIds } from '../engine/targeting'
 import type {
   ActionChangeTrace,
+  CharacterEffectId,
   EffectOperation,
   EventAnchor,
   ParticipantInfo,
   SimulationState,
   Target,
+  TargetedOperation,
 } from '../engine/types'
 import type { MessageDescriptor } from '../../../locales/types'
 
@@ -29,7 +31,7 @@ export function participantLabels(
   return labels
 }
 export function namingTargets(
-  operation: Exclude<EffectOperation, { type: 'spawnParticipant' }>,
+  operation: TargetedOperation,
   state?: SimulationState,
 ): string[] | undefined {
   if (!state) return undefined
@@ -61,6 +63,8 @@ export function operationNameDescriptor(
   name: (id: string) => string,
   state?: SimulationState,
 ): MessageDescriptor {
+  if (operation.type === 'characterEffect')
+    return { key: characterEffectNameKey(operation.effectId) }
   if (operation.type === 'spawnParticipant') {
     const p = operation.participant
     const kind =
@@ -74,6 +78,15 @@ export function operationNameDescriptor(
               ? 'createMemosprite'
               : 'createActor'
     return { key: `planner.operationName.${kind}`, params: { name: p.name } }
+  }
+  if (operation.type === 'changeSkillPoints') {
+    const kind =
+      operation.amount > 0
+        ? 'recoverSkillPoints'
+        : operation.amount < 0
+          ? 'spendSkillPoints'
+          : 'unchangedSkillPoints'
+    return { key: `planner.operationName.${kind}` }
   }
   const target = targetDescription(operation.target, name, namingTargets(operation, state))
   if (operation.type === 'advance' || operation.type === 'delay')
@@ -94,6 +107,8 @@ export function operationNameDescriptor(
     params: { target, amount: Math.abs(operation.amount) },
   }
 }
+export const characterEffectNameKey = (id: CharacterEffectId) =>
+  `planner.characterEffects.${id.replaceAll('.', '_')}`
 export function actionDirections(
   anchor: EventAnchor,
   changes: readonly ActionChangeTrace[],

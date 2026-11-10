@@ -1,5 +1,16 @@
 import { anchorKey, countdownParticipantId, HARD_LIMITS, spawnedParticipantId } from './queue'
-import { targetIds, validTargetSelection, validSpeedDurationForTargets } from './targeting'
+import {
+  isTargetedOperation,
+  targetIds,
+  validTargetSelection,
+  validSpeedDurationForTargets,
+} from './targeting'
+import { validSkillPoints } from './skill-points'
+import {
+  CHARACTER_EFFECT_IDS,
+  validEnhancedBasicCost,
+  validInitialArcherCharge,
+} from './character-effects'
 import type {
   Diagnostic,
   EffectOperation,
@@ -70,6 +81,21 @@ export function validateOperations(
         : op.phase !== undefined
     )
       return invalid(op.id)
+    if (op.type === 'changeSkillPoints') {
+      if (!Number.isSafeInteger(op.amount)) return invalid(op.id)
+      continue
+    }
+    if (op.type === 'characterEffect') {
+      if (
+        !oneOf(op.effectId, CHARACTER_EFFECT_IDS) ||
+        !identity(op.sourceParticipantId) ||
+        (op.effectId === 'imbibitorLunae.enhancedBasic'
+          ? !validEnhancedBasicCost(op.cost)
+          : op.cost !== undefined)
+      )
+        return invalid(op.id)
+      continue
+    }
     if (op.type === 'spawnParticipant') {
       if (!validDefinition(op.participant)) return invalid(op.id)
       continue
@@ -169,12 +195,17 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
     plan.maxAV > HARD_LIMITS.maxAV
   )
     return invalid()
+  if (plan.skillPoints !== undefined && !validSkillPoints(plan.skillPoints)) return invalid()
   const positions = new Set<string>()
   for (const actor of plan.actors) {
     if (
       !validDefinition(actor) ||
       actor.kind !== 'actor' ||
       !identity(actor.id) ||
+      (actor.initialArcherCharge !== undefined &&
+        (actor.camp !== 'ally' || !validInitialArcherCharge(actor.initialArcherCharge))) ||
+      (actor.imbibitorLunaeTechnique !== undefined &&
+        (actor.camp !== 'ally' || typeof actor.imbibitorLunaeTechnique !== 'boolean')) ||
       !Number.isSafeInteger(actor.position) ||
       actor.position < 0
     )
@@ -215,7 +246,7 @@ export function validatePlan(plan: SimulationPlan): Diagnostic[] {
         return invalid()
     }
     for (const op of event.operations) {
-      if (op.type === 'spawnParticipant') continue
+      if (!isTargetedOperation(op)) continue
       const ids = targetIds(op.target, catalog)
       const known = ids.flatMap((id) => (participants.get(id) ? [participants.get(id)!] : []))
       if (

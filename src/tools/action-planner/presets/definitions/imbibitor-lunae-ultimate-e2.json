@@ -1,0 +1,30 @@
+{
+  "$schema": "../preset.schema.json",
+  "id": "imbibitor-lunae-ultimate-e2",
+  "order": 11,
+  "characterId": "1213",
+  "selfPresence": "present",
+  "interaction": "batch",
+  "i18n": {
+    "name": "planner.characterEffects.lunaeUltimateE2Name",
+    "description": "planner.characterEffects.lunaeUltimateE2Preset",
+    "unavailable": {
+      "activeTarget": "planner.characterEffects.lunaeActiveTarget"
+    }
+  },
+  "icon": {
+    "characterId": "1213"
+  },
+  "operations": [
+    {
+      "type": "characterEffect",
+      "effectId": "imbibitorLunae.ultimateE2",
+      "target": "self"
+    },
+    {
+      "type": "advance",
+      "target": "self",
+      "percent": 100
+    }
+  ]
+}

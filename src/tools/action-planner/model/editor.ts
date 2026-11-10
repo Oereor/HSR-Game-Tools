@@ -6,7 +6,10 @@ import {
   previewOperationState,
 } from '../engine/engine'
 import { anchorKey, SimulationError } from '../engine/queue'
+import { isSkillPointOperationType } from '../engine/effect-config'
+import { characterEffectSourceIssue, validEnhancedBasicCost } from '../engine/character-effects'
 import {
+  isTargetedOperation,
   operationTargets,
   targetIds,
   validTargetSelection,
@@ -14,6 +17,8 @@ import {
 } from '../engine/targeting'
 import { validateOperations } from '../engine/validation'
 import type {
+  CharacterEffectId,
+  EnhancedBasicCost,
   EffectOperation,
   EffectPhase,
   EventAnchor,
@@ -58,27 +63,34 @@ export interface OperationDraft {
   amount: number | undefined
   duration: SpeedDurationDraft
   participant: ParticipantDraft
+  effectId?: CharacterEffectId
+  effectCost?: EnhancedBasicCost
+  sourceParticipantId?: string
 }
 export function operationDraft(operation?: EffectOperation, customName = ''): OperationDraft {
+  const target = operation && isTargetedOperation(operation) ? operation.target : undefined
   return {
     id: operation?.id || undefined,
     original: operation?.id ? operation : undefined,
     customName,
     type: operation?.type ?? 'advance',
     phase: operation?.phase ?? (operation?.id ? 'preAction' : 'postAction'),
-    targetKind:
-      operation && operation.type !== 'spawnParticipant' ? operation.target.kind : 'participants',
-    selectedIds:
-      operation && operation.type !== 'spawnParticipant' && operation.target.kind === 'participants'
-        ? [...operation.target.participantIds]
-        : [],
+    targetKind: target?.kind ?? 'participants',
+    selectedIds: target?.kind === 'participants' ? [...target.participantIds] : [],
     percent: operation?.type === 'advance' || operation?.type === 'delay' ? operation.percent : 50,
     mode: operation?.type === 'addSpeedModifier' ? operation.mode : 'flat',
-    amount: operation?.type === 'addSpeedModifier' ? operation.amount : 10,
+    amount: operation && 'amount' in operation ? operation.amount : 10,
     duration: speedDurationDraft(
       operation?.type === 'addSpeedModifier' ? operation.duration : undefined,
     ),
     participant: participantDraft(operation?.type === 'spawnParticipant' ? operation : undefined),
+    ...(operation?.type === 'characterEffect'
+      ? {
+          effectId: operation.effectId,
+          sourceParticipantId: operation.sourceParticipantId,
+          effectCost: operation.cost,
+        }
+      : {}),
   }
 }
 export function operationsAt(plan: SimulationPlan, anchor: EventAnchor): EffectOperation[] {
@@ -89,16 +101,20 @@ export function contextAt(
   plan: SimulationPlan,
   result: SimulationResult,
   anchor: EventAnchor,
+  characterIds: Readonly<Record<string, string>> = {},
 ): SimulationState | undefined {
   if (anchor.kind === 'start' && result.startState) return result.startState
   const record = result.records.find((r) => anchorKey(r.anchor) === anchorKey(anchor))
   if (record) return record.beforeEffects
   try {
-    let state = createInitialState(plan)
+    let state = createInitialState(plan, characterIds)
     if (anchor.kind === 'start') return state
     state = applyOperations(state, operationsAt(plan, { kind: 'start' }), { kind: 'start' }).state
-    for (const done of result.records)
-      state = stepSimulation(state, operationsAt(plan, done.anchor)).state
+    const events = new Map(plan.events.map((event) => [anchorKey(event.anchor), event]))
+    for (const done of result.records) {
+      const event = events.get(anchorKey(done.anchor))
+      state = stepSimulation(state, event?.operations ?? []).state
+    }
     const next = nextSimulationEvent(state)
     return next && anchorKey(next.anchor) === anchorKey(anchor)
       ? stepSimulation(state, []).record.beforeEffects
@@ -115,7 +131,14 @@ export function previewDraft(
   draft: OperationDraft,
 ): SimulationState | undefined {
   return context
-    ? previewOperationState(context, operations, anchor, draft.phase, draft.id)
+    ? previewOperationState(
+        context,
+        operations,
+        anchor,
+        draft.phase,
+        draft.id,
+        isSkillPointOperationType(draft.type),
+      )
     : undefined
 }
 /** A provisional value is for naming only; it is never submitted without buildOperation. */
@@ -132,6 +155,18 @@ export function provisionalOperation(
       ? { kind: 'participants', participantIds: [...draft.selectedIds] }
       : { kind: draft.targetKind }
   switch (draft.type) {
+    case 'changeSkillPoints':
+      return { ...common, type: draft.type, amount: draft.amount ?? NaN }
+    case 'characterEffect': {
+      const { effectId, sourceParticipantId } = draft
+      if (!effectId || !sourceParticipantId) return
+      const effect = { ...common, type: 'characterEffect' as const, sourceParticipantId }
+      if (effectId === 'imbibitorLunae.enhancedBasic')
+        return validEnhancedBasicCost(draft.effectCost)
+          ? { ...effect, effectId, cost: draft.effectCost }
+          : undefined
+      return { ...effect, effectId }
+    }
     case 'spawnParticipant':
       return buildParticipantOperation(
         { ...draft.participant, phase: draft.phase },
@@ -163,6 +198,27 @@ export function buildOperation(
   anchor: EventAnchor,
   preview: SimulationState | undefined,
 ): { operation?: EffectOperation; invalid: string[] } {
+  if (draft.type === 'changeSkillPoints') {
+    const operation = provisionalOperation({ ...draft, id }, anchor)!
+    return validateOperations([operation], anchor).length
+      ? { invalid: ['spAmount'] }
+      : { operation, invalid: [] }
+  }
+  if (draft.type === 'characterEffect') {
+    const operation = provisionalOperation({ ...draft, id }, anchor)
+    if (operation?.type !== 'characterEffect' || validateOperations([operation], anchor).length)
+      return { invalid: ['characterEffect'] }
+    const unchangedSource =
+      draft.original?.type === 'characterEffect' &&
+      draft.original.effectId === operation.effectId &&
+      draft.original.sourceParticipantId === operation.sourceParticipantId
+    if (
+      !unchangedSource &&
+      (!preview?.skillPoints || characterEffectSourceIssue(preview, operation, anchor))
+    )
+      return { invalid: ['characterEffect'] }
+    return { operation, invalid: [] }
+  }
   if (!preview) return { invalid: ['context'] }
   if (draft.original?.type === 'spawnParticipant' && draft.type !== 'spawnParticipant')
     return { invalid: ['form'] }
@@ -174,8 +230,8 @@ export function buildOperation(
       draft.original?.type === 'spawnParticipant' ? draft.original : undefined,
     )
   const invalid: string[] = []
-  const operation = provisionalOperation({ ...draft, id }, anchor)!
-  if (operation.type === 'spawnParticipant') return { invalid: ['form'] }
+  const operation = provisionalOperation({ ...draft, id }, anchor)
+  if (!operation || !isTargetedOperation(operation)) return { invalid: ['form'] }
   const participants = operationTargets(preview, operation.type)
   const ids = targetIds(operation.target, participants)
   const selected = participants.filter((p) => ids.includes(p.id))

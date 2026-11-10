@@ -1,7 +1,15 @@
 import { ordinaryNode } from '../../fixtures/action-planner/ordinary-node'
 import { describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, watch } from 'vue'
 import { useActionPlanner } from '../../../src/tools/action-planner/composables/useActionPlanner'
+import {
+  FILE_LIMITS,
+  PLANNER_FORMAT,
+  PLANNER_VERSION,
+  parsePlannerDocument,
+  serializePlannerDocument,
+  validatePlannerFile,
+} from '../../../src/tools/action-planner/model/document-file'
 import {
   contextAt,
   operationDraft,
@@ -33,6 +41,7 @@ import type {
   SimulationPlan,
 } from '../../../src/tools/action-planner/engine/types'
 const a: EventAnchor = { kind: 'action', participantId: 'a', turn: 1 }
+const b: EventAnchor = { kind: 'action', participantId: 'b', turn: 1 }
 const start: EventAnchor = { kind: 'start' }
 const target = (...participantIds: string[]) => ({ kind: 'participants' as const, participantIds })
 const plan = (): SimulationPlan => ({
@@ -151,6 +160,113 @@ describe('real planner document and drafts', () => {
     p.remove('x')
     expect(p.document.value.metadata.customNames).toEqual({})
   })
+  it('publishes and replays the canonical plan and exports stable bytes on repeated replacement', () => {
+    const input = plan()
+    input.actors.push({
+      id: 'enemy',
+      name: 'Enemy',
+      kind: 'actor',
+      camp: 'enemy',
+      baseSpeed: 80,
+      panelSpeed: 300,
+      position: 2,
+      iconUrl: 'https://example.test/enemy.png',
+    })
+    if (spawn.type !== 'spawnParticipant') throw new Error('expected spawn operation')
+    input.events = [
+      {
+        anchor: b,
+        operations: [
+          {
+            ...spawn,
+            phase: 'postAction',
+            participant: { ...spawn.participant, iconUrl: 'https://example.test/summon.png' },
+          },
+        ],
+      },
+    ]
+    const p = useActionPlanner(plan())
+    const atPublication: unknown[] = []
+    const stop = watch(
+      p.document,
+      () => atPublication.push([p.result.value, p.resourceIssues.value]),
+      { flush: 'sync' },
+    )
+    expect(p.replacePlan(input)).toBe(true)
+    stop()
+    const exported = serializePlannerDocument(p.document.value)
+    expect(parsePlannerDocument(exported).document).toStrictEqual(p.document.value)
+    expect(p.plan.value.actors[2]).toMatchObject({ panelSpeed: 80, category: 'enemy' })
+    expect(p.plan.value.actors[2]).not.toHaveProperty('iconUrl')
+    expect(input.actors[2]).toMatchObject({ panelSpeed: 300, iconUrl: expect.any(String) })
+    expect(ordinaryNode(p.result.value.records[0]!).id).toBe('a')
+    expect(p.result.value).toStrictEqual(simulatePlan(p.plan.value))
+    expect(p.resourceIssues.value).toContainEqual({
+      kind: 'unsafeImage',
+      id: spawnedParticipantId(spawn.id),
+    })
+    expect(atPublication).toStrictEqual([[p.result.value, p.resourceIssues.value]])
+    expect(p.replacePlan(p.plan.value)).toBe(true)
+    expect(serializePlannerDocument(p.document.value)).toBe(exported)
+    expect(p.result.value).toStrictEqual(simulatePlan(p.plan.value))
+  })
+
+  it('leaves the committed document and editor state intact on invalid replacement', () => {
+    const p = useActionPlanner(plan())
+    p.stepQueue(1)
+    p.edit()
+    const before = [p.document.value, p.result.value, p.resourceIssues.value, p.draft.value]
+    const invalidPlan = plan()
+    invalidPlan.actors[0]!.panelSpeed = 0
+    expect(p.replacePlan(invalidPlan)).toBe(false)
+    expect(p.documentError.value).toBe('structure')
+    expect(p.document.value).toBe(before[0])
+    expect(p.result.value).toBe(before[1])
+    expect(p.resourceIssues.value).toBe(before[2])
+    expect(p.draft.value).toBe(before[3])
+    expect(p.selected.value).toEqual(a)
+    expect(p.queueIndex.value).toBe(1)
+  })
+
+  it('keeps editor state if setup passes validation but exceeds the canonical export limit', () => {
+    const input = plan()
+    const ids = Array.from(
+      { length: FILE_LIMITS.targets },
+      (_, i) => `missing-${String(i).padStart(3, '0')}`,
+    )
+    input.events = Array.from({ length: 500 }, (_, i) => ({
+      anchor: { kind: 'action', participantId: 'b', turn: i + 1 },
+      operations: [
+        {
+          id: `advance-${i}`,
+          type: 'advance',
+          percent: 10,
+          phase: 'postAction',
+          target: target(...ids),
+        },
+      ],
+    }))
+    const p = useActionPlanner(input)
+    expect(
+      validatePlannerFile({
+        format: PLANNER_FORMAT,
+        version: PLANNER_VERSION,
+        document: p.document.value,
+      }).document.plan.events,
+    ).toHaveLength(500)
+    p.stepQueue(1)
+    p.edit()
+    const before = [p.document.value, p.result.value, p.resourceIssues.value, p.draft.value]
+    expect(p.applySetup(input.actors, input.maxNodes, input.maxAV, {})).toBe(false)
+    expect(p.documentError.value).toBe('limit')
+    expect(p.document.value).toBe(before[0])
+    expect(p.result.value).toBe(before[1])
+    expect(p.resourceIssues.value).toBe(before[2])
+    expect(p.draft.value).toBe(before[3])
+    expect(p.selected.value).toEqual(a)
+    expect(p.queueIndex.value).toBe(1)
+  })
+
   it('cancels and navigates without committing, including stage and view switches', () => {
     const p = useActionPlanner(plan())
     const before = p.plan.value
@@ -276,7 +392,8 @@ describe('real planner document and drafts', () => {
         ],
       },
     ]
-    const p = useActionPlanner(input)
+    const p = useActionPlanner(plan())
+    expect(p.replacePlan(input)).toBe(true)
     expect(p.result.value.stopReason).toBe('error')
     expect(contextAt(input, p.result.value, a)?.elapsedAV).toBe(50)
     p.select(a)

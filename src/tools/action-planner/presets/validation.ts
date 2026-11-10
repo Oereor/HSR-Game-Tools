@@ -3,7 +3,7 @@ import { baseCompile } from '@intlify/message-compiler'
 import schema from './preset.schema.json'
 import type { GameSnapshot } from '../data/schema'
 import { validateOperations } from '../engine/validation'
-import type { EffectOperation } from '../engine/types'
+import { characterEffectRequiresOwnAction, effectCharacterId } from '../engine/character-effects'
 import { collectInputs, PresetError, valueResolver } from './values'
 import { PRESET_LIMITS, type PresetDefinition, type Value } from './types'
 
@@ -56,6 +56,12 @@ export function validatePresets(
       ...Object.values(definition.i18n.unavailable ?? {}),
     ]
     const inputs = collectInputs(definition)
+    for (const input of inputs) {
+      if (!input.options) continue
+      if (new Set(input.options.map((option) => option.value)).size !== input.options.length)
+        throw new PresetError('parameter-conflict')
+      keys.push(...input.options.map((option) => option.labelKey))
+    }
     const parameterIds = new Set(inputs.map((i) => i.id))
     let count = 0
     function walk(value: unknown, depth = 0) {
@@ -103,13 +109,26 @@ export function validatePresets(
       if (depth > PRESET_LIMITS.depth) throw new PresetError('depth')
       for (const op of ops) {
         if (++count > PRESET_LIMITS.operations) throw new PresetError('operations')
+        if (
+          op.type === 'characterEffect' &&
+          (depth !== 0 ||
+            preset.interaction !== 'batch' ||
+            preset.characterId !== effectCharacterId(op.effectId) ||
+            (preset.startOnly && characterEffectRequiresOwnAction(op.effectId)))
+        )
+          throw new PresetError('character-effect')
         if (op.onEmpty && op.target !== 'allies' && op.target !== 'enemies')
           throw new PresetError('onEmpty')
         if (op.onTrigger) operations(op.onTrigger, depth + 1)
       }
     }
     operations(definition.operations)
-    if (definition.interaction === 'draft' && (count !== 1 || definition.operations[0]!.onTrigger))
+    if (
+      definition.interaction === 'draft' &&
+      (count !== 1 ||
+        definition.operations[0]!.onTrigger ||
+        definition.operations[0]!.type === 'changeSkillPoints')
+    )
       throw new PresetError('draft-operation')
     walk(definition)
     for (const preview of definition.previews ?? []) walk({ type: 'i18n', ...preview })
@@ -128,20 +147,15 @@ export function validatePresets(
       )
       function validateDefaults(ops: PresetDefinition['operations']) {
         for (const op of ops) {
-          const { onTrigger } = op
-          const fields = Object.fromEntries(
-            Object.entries(op).filter(([key]) => !['onTrigger', 'onEmpty', 'target'].includes(key)),
+          const resolved = resolver.resolveOperation(
+            op,
+            { id: 'static-check' },
+            () => ({ kind: 'participants', participantIds: ['static-target'] }),
+            'operation-default',
           )
-          const resolved = {
-            ...(resolver.tree(fields) as object),
-            id: 'static-check',
-            ...(op.type === 'spawnParticipant'
-              ? {}
-              : { target: { kind: 'participants', participantIds: ['static-target'] } }),
-          } as EffectOperation
           if (validateOperations([resolved], { kind: 'start' }).length)
             throw new PresetError('operation-default')
-          if (onTrigger) validateDefaults(onTrigger)
+          if (op.onTrigger) validateDefaults(op.onTrigger)
         }
       }
       validateDefaults(definition.operations)

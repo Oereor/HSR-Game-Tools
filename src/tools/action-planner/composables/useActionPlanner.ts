@@ -3,12 +3,16 @@ import { computed, ref, shallowReadonly, shallowRef, watch } from 'vue'
 import { simulatePlan, previewOperationState } from '../engine/engine'
 import { anchorKey, spawnedParticipantId, countdownParticipantId } from '../engine/queue'
 import { validatePlan } from '../engine/validation'
-import { operationTargets } from '../engine/targeting'
+import { isTargetedOperationType, operationTargets } from '../engine/targeting'
+import { isSkillPointOperation } from '../engine/effect-config'
 import type {
   AhaConfig,
   EffectOperation,
+  EffectPhase,
   EventAnchor,
   CycleMode,
+  PlanEvent,
+  SkillPointsConfig,
   SimulationPlan,
 } from '../engine/types'
 import { saveOperation, moveOperation } from '../model/effect-config'
@@ -21,10 +25,7 @@ import type { PresetRequest, PresetResult } from '../presets/types'
 import {
   emptyDocument,
   serializePlannerDocument,
-  validatePlannerFile,
   preparePlannerDocument,
-  PLANNER_FORMAT,
-  PLANNER_VERSION,
   PlannerFileError,
   referencedIds,
   type FileErrorCode,
@@ -35,7 +36,6 @@ import {
   buildOperation,
   contextAt,
   operationDraft,
-  operationsAt,
   previewDraft,
   metadataValue,
   type OperationDraft,
@@ -69,7 +69,7 @@ export function useActionPlanner(
     metadata: initialMetadata,
   })
   const plan = computed(() => document.value.plan)
-  const result = shallowRef(simulatePlan(initialPlan))
+  const result = shallowRef(simulatePlan(initialPlan, initialMetadata.characterIds))
   const selected = ref<EventAnchor>({ kind: 'start' })
   const stage = ref<'setup' | 'planning'>('setup')
   const view = ref<'future' | 'queue'>('future')
@@ -97,8 +97,14 @@ export function useActionPlanner(
     allocatedIds.add(id)
     return id
   }
-  const operations = computed(() => operationsAt(plan.value, selected.value))
-  const context = computed(() => contextAt(plan.value, result.value, selected.value))
+  const selectedEvent = computed(() => {
+    const key = anchorKey(selected.value)
+    return plan.value.events.find((event) => anchorKey(event.anchor) === key)
+  })
+  const operations = computed(() => selectedEvent.value?.operations ?? [])
+  const context = computed(() =>
+    contextAt(plan.value, result.value, selected.value, document.value.metadata.characterIds),
+  )
   const preview = computed(() =>
     draft.value
       ? previewDraft(context.value, operations.value, selected.value, draft.value)
@@ -130,6 +136,7 @@ export function useActionPlanner(
             anchor: selected.value,
             phase: draft.value?.phase ?? 'postAction',
             preview: preview.value,
+            beforeEffects: context.value,
             selectedIds: draft.value?.selectedIds,
             translate: (key) => key,
           },
@@ -146,12 +153,11 @@ export function useActionPlanner(
       }),
     ),
   )
-  const targets = computed(() =>
-    operationTargets(
-      preview.value,
-      draft.value?.type === 'spawnParticipant' ? 'advance' : draft.value?.type,
-    ),
-  )
+  const targets = computed(() => {
+    const type = draft.value?.type
+    if (!type || type === 'spawnParticipant') return operationTargets(preview.value)
+    return isTargetedOperationType(type) ? operationTargets(preview.value, type) : []
+  })
   const unreached = computed(() =>
     plan.value.events.filter(
       (e) =>
@@ -191,6 +197,9 @@ export function useActionPlanner(
       draft.value?.duration.kind,
       draft.value?.participant.kind,
       draft.value?.targetKind,
+      draft.value?.effectId,
+      draft.value?.sourceParticipantId,
+      draft.value?.effectCost,
     ],
     () => {
       invalid.value = []
@@ -203,45 +212,37 @@ export function useActionPlanner(
     }
   }
   function replacePlan(next: SimulationPlan, metadata = document.value.metadata) {
-    const ids = new Set(next.events.flatMap((e) => e.operations.map((o) => o.id)))
-    const candidate: PlannerDocument = {
-      name: document.value.name,
-      plan: next,
-      metadata: {
-        ...metadata,
-        customNames: Object.fromEntries(
-          Object.entries(metadata.customNames).filter(([id]) => ids.has(id)),
-        ),
-        characterIds: Object.fromEntries(
-          Object.entries(metadata.characterIds).filter(([id]) =>
-            next.actors.some((actor) => actor.id === id && actor.camp === 'ally'),
-          ),
-        ),
-      },
-    }
     try {
-      serializePlannerDocument(candidate)
-      const simulated = simulatePlan(next)
-      result.value = simulated
-      document.value = candidate
+      const ids = new Set(next.events.flatMap((event) => event.operations.map((op) => op.id)))
+      const prepared = preparePlannerDocument({
+        name: document.value.name,
+        plan: next,
+        metadata: {
+          ...metadata,
+          customNames: Object.fromEntries(
+            Object.entries(metadata.customNames).filter(([id]) => ids.has(id)),
+          ),
+          characterIds: Object.fromEntries(
+            Object.entries(metadata.characterIds).filter(([id]) =>
+              next.actors.some((actor) => actor.id === id && actor.camp === 'ally'),
+            ),
+          ),
+        },
+      })
+      const cursorKey = anchorKey(queueCursor.value)
+      const resetCursor =
+        queueCursor.value.kind !== 'start' &&
+        !prepared.result.records.some((record) => anchorKey(record.anchor) === cursorKey)
+      referencedIds(prepared.document.plan).forEach((id) => reservedIds.add(id))
+      result.value = prepared.result
+      resourceIssues.value = prepared.issues
       documentError.value = undefined
-      resourceIssues.value = validatePlannerFile({
-        format: PLANNER_FORMAT,
-        version: PLANNER_VERSION,
-        document: candidate,
-      }).issues
-      referencedIds(next).forEach((id) => reservedIds.add(id))
+      if (resetCursor) queueCursor.value = { kind: 'start' }
+      document.value = prepared.document
     } catch (error) {
       documentError.value = error instanceof PlannerFileError ? error.code : 'simulation'
       return false
     }
-    if (
-      queueCursor.value.kind !== 'start' &&
-      !result.value.records.some(
-        (record) => anchorKey(record.anchor) === anchorKey(queueCursor.value),
-      )
-    )
-      queueCursor.value = { kind: 'start' }
     return true
   }
   function applySetup(
@@ -251,6 +252,7 @@ export function useActionPlanner(
     characterIds: Record<string, string>,
     cycleMode: CycleMode = plan.value.cycleMode,
     aha: AhaConfig = plan.value.aha,
+    skillPoints: SkillPointsConfig | undefined = plan.value.skillPoints,
   ) {
     const resolved = resolveElationContributors(actors, characterIds, plan.value.aha.contributorIds)
     const next = {
@@ -259,14 +261,19 @@ export function useActionPlanner(
       maxNodes,
       maxAV,
       cycleMode,
+      skillPoints,
       aha: { ...aha, id: plan.value.aha.id, contributorIds: resolved.contributorIds },
     }
     if (validatePlan(next).length) return false
+    if (
+      !replacePlan(next, {
+        ...document.value.metadata,
+        characterIds,
+      })
+    )
+      return false
     cancel()
-    return replacePlan(next, {
-      ...document.value.metadata,
-      characterIds,
-    })
+    return true
   }
   function edit(operation?: EffectOperation) {
     const next = operationDraft(
@@ -284,10 +291,29 @@ export function useActionPlanner(
     invalid.value = []
   }
   function updateOperations(next: EffectOperation[], metadata = document.value.metadata) {
-    const key = anchorKey(selected.value)
-    const events = plan.value.events.filter((e) => anchorKey(e.anchor) !== key)
-    if (next.length) events.push({ anchor: { ...selected.value }, operations: next })
+    const existing = selectedEvent.value
+    return updateEvent(
+      { ...existing, anchor: existing?.anchor ?? { ...selected.value }, operations: next },
+      metadata,
+    )
+  }
+  function updateEvent(next: PlanEvent, metadata = document.value.metadata) {
+    const key = anchorKey(next.anchor)
+    const events = [...plan.value.events]
+    const index = events.findIndex((event) => anchorKey(event.anchor) === key)
+    if (next.operations.length) {
+      if (index === -1) events.push(next)
+      else events[index] = next
+    } else {
+      if (index === -1) return true
+      events.splice(index, 1)
+    }
     return replacePlan({ ...plan.value, events }, metadata)
+  }
+  function addSkillPoints(phase: EffectPhase) {
+    if (!plan.value.skillPoints?.enabled || !context.value) return
+    draft.value = { ...operationDraft(), type: 'changeSkillPoints', amount: 0, phase }
+    invalid.value = []
   }
   function submit() {
     if (!draft.value) return false
@@ -339,6 +365,7 @@ export function useActionPlanner(
         anchor: selected.value,
         phase: draft.value.phase,
         preview: preview.value,
+        beforeEffects: context.value,
         selectedIds: draft.value.selectedIds,
         values: request.values,
         translate: request.translate,
@@ -402,19 +429,39 @@ export function useActionPlanner(
     }
   }
   function remove(id: string) {
-    cancel()
-    updateOperations(operations.value.filter((o) => o.id !== id))
+    if (updateOperations(operations.value.filter((o) => o.id !== id))) cancel()
   }
   function move(id: string, delta: -1 | 1) {
+    if (updateOperations(moveOperation(operations.value, id, delta, selected.value))) cancel()
+  }
+  function duplicateCharacterEffect(id: string) {
+    const index = operations.value.findIndex((operation) => operation.id === id)
+    const operation = operations.value[index]
+    if (operation?.type !== 'characterEffect') return false
+    const copy = { ...operation, id: nextId() }
+    const next = [...operations.value]
+    next.splice(index + 1, 0, copy)
+    const metadata = document.value.metadata
+    const name = metadataValue(metadata.customNames, id)
+    if (
+      !updateOperations(next, {
+        ...metadata,
+        customNames:
+          name === undefined ? metadata.customNames : { ...metadata.customNames, [copy.id]: name },
+      })
+    )
+      return false
     cancel()
-    updateOperations(moveOperation(operations.value, id, delta, selected.value))
+    return true
   }
   function deleteEvent(anchor: EventAnchor) {
-    cancel()
-    replacePlan({
-      ...plan.value,
-      events: plan.value.events.filter((e) => anchorKey(e.anchor) !== anchorKey(anchor)),
-    })
+    if (
+      replacePlan({
+        ...plan.value,
+        events: plan.value.events.filter((e) => anchorKey(e.anchor) !== anchorKey(anchor)),
+      })
+    )
+      cancel()
   }
   function stepQueue(delta: -1 | 1) {
     if (!currentQueueView.value) return
@@ -479,6 +526,7 @@ export function useActionPlanner(
                 selected.value,
                 operation.phase ?? 'preAction',
                 operation.id,
+                isSkillPointOperation(operation),
               )
             : undefined,
         ]),
@@ -516,6 +564,7 @@ export function useActionPlanner(
     nextId,
     replacePlan,
     applySetup,
+    addSkillPoints,
     select,
     edit,
     cancel,
@@ -523,6 +572,7 @@ export function useActionPlanner(
     submitPreset,
     remove,
     move,
+    duplicateCharacterEffect,
     deleteEvent,
     stepQueue,
     reset,
