@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { Diamond, Pencil, Plus, Sparkles, Zap } from '@lucide/vue'
+import CharacterSkillPointChanges from './CharacterSkillPointChanges.vue'
 import OperationCardControls from './OperationCardControls.vue'
 import UnitPortrait from './UnitPortrait.vue'
 import type { ToolLocale } from '../../../locales/types'
@@ -20,7 +21,11 @@ import type {
   SkillPointOperation,
   SparkleRefill,
 } from '../engine/types'
-import { formatNumber, formatSkillPointOutcome } from '../model/presentation'
+import {
+  formatCharacterSkillPointChanges,
+  formatNumber,
+  formatSkillPointOutcome,
+} from '../model/presentation'
 import { isSkillPointOperation } from '../engine/effect-config'
 import { ARCHER_CHARGE_CAP, SPARKLE_STORAGE_CAP, SQUAMA_CAP } from '../engine/character-effects'
 
@@ -112,6 +117,7 @@ interface CardDetails {
   tone: ReturnType<typeof tone>
   delta?: string
   summary?: string
+  changes?: ReturnType<typeof formatCharacterSkillPointChanges>
   warning?: DiagnosticCode
 }
 const details = computed(
@@ -141,46 +147,16 @@ const details = computed(
               warning: props.operationWarnings.get(op.id),
             },
           ] as const
-        const sp = result.skillPoints.after - result.skillPoints.before
-        const charge = result.charge ? result.charge.after - result.charge.before : 0
-        const resource = result.resource
-        const payment = result.payment
-        const changes = []
-        if (result.charge)
-          changes.push(t('planner.characterEffects.chargeDelta', { amount: format(charge, true) }))
-        if (resource)
-          changes.push(
-            t('planner.characterEffects.resourceChange', {
-              resource: t(`planner.characterEffects.resource.${resource.kind}`),
-              before: format(resource.before),
-              after: format(resource.after),
-            }),
-          )
-        if (payment || op.effectId === 'archer.followUp' || op.effectId === 'sparkle.ultimate')
-          changes.push(t('planner.sp.delta', { amount: format(sp, true) }))
-        const summary =
-          payment && resource
-            ? t('planner.characterEffects.payment', {
-                nominal: format(payment.nominalCost),
-                substitute: format(payment.substituteUsed),
-                resource: t(`planner.characterEffects.resource.${resource.kind}`),
-                actual: format(payment.actualSpCost),
-              })
-            : result.wastedSkillPoints
-              ? t('planner.characterEffects.sparkleWaste', {
-                  amount: format(result.wastedSkillPoints),
-                })
-              : undefined
-        return [
-          op.id,
-          {
-            tone: tone(sp || charge || (resource ? resource.after - resource.before : 0)),
-            delta: changes.join(' · '),
-            summary,
-          },
-        ] as const
+        const changes = formatCharacterSkillPointChanges(result, locale.value as ToolLocale, t)
+        return [op.id, { tone: tone(changes.toneAmount), changes }] as const
       }),
     ),
+)
+const refillCards = computed(() =>
+  props.sparkleRefills?.map((refill) => ({
+    id: refill.sourceParticipantId,
+    changes: formatCharacterSkillPointChanges(refill, locale.value as ToolLocale, t),
+  })),
 )
 </script>
 
@@ -269,7 +245,10 @@ const details = computed(
               :class="details.get(op.id)?.tone"
               aria-hidden="true"
             />
-            <div class="sp-change">
+            <div
+              class="sp-change"
+              :class="{ 'character-sp-change': op.type === 'characterEffect' }"
+            >
               <button
                 type="button"
                 class="operation-title"
@@ -284,6 +263,11 @@ const details = computed(
               <span v-if="details.get(op.id)?.summary" class="fine-print">
                 {{ details.get(op.id)?.summary }}
               </span>
+              <CharacterSkillPointChanges
+                v-if="op.type === 'characterEffect'"
+                :changes="details.get(op.id)?.changes"
+                :tone="details.get(op.id)?.tone"
+              />
             </div>
             <OperationCardControls
               :name="title(op)"
@@ -302,40 +286,25 @@ const details = computed(
         </article>
       </div>
     </div>
-    <div v-if="sparkleRefills?.length" class="operation-group">
+    <div v-if="refillCards?.length" class="operation-group">
       <h3 class="phase-heading">{{ t('planner.characterEffects.turnEnd') }}</h3>
       <div class="operation-list">
         <article
-          v-for="refill in sparkleRefills"
-          :key="refill.sourceParticipantId"
+          v-for="{ id, changes } in refillCards"
+          :key="id"
           class="operation-card sp-operation"
         >
           <div class="operation-top">
             <Sparkles :size="18" :stroke-width="1.75" class="advance-color" aria-hidden="true" />
-            <div class="sp-change">
+            <div class="sp-change character-sp-change">
               <span class="operation-title">
                 {{
                   t('planner.characterEffects.sparkleRefill', {
-                    name: label(refill.sourceParticipantId),
+                    name: label(id),
                   })
                 }}
               </span>
-              <span class="advance-color">
-                {{
-                  t('planner.sp.delta', {
-                    amount: format(refill.skillPoints.after - refill.skillPoints.before, true),
-                  })
-                }}
-              </span>
-              <span class="fine-print">
-                {{
-                  t('planner.characterEffects.resourceChange', {
-                    resource: t('planner.characterEffects.resource.storedSP'),
-                    before: format(refill.storedSP.before),
-                    after: format(refill.storedSP.after),
-                  })
-                }}
-              </span>
+              <CharacterSkillPointChanges :changes="changes" tone="advance-color" />
             </div>
           </div>
         </article>
@@ -385,6 +354,9 @@ const details = computed(
 .sp-change .operation-title {
   flex: initial;
   max-width: 100%;
+}
+.character-sp-change {
+  column-gap: 12px;
 }
 .sp-neutral {
   color: var(--p-yellow-600);
