@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "gameVersion": "4.6.0",
+  "gameVersion": "4.7.0",
   "characters": [
     {
       "id": "1001",
@@ -2266,6 +2266,28 @@
       }
     },
     {
+      "id": "1511",
+      "names": {
+        "zh-CN": "星神★阿哈",
+        "en": "Aeon ★ Aha"
+      },
+      "baseSpeed": 94,
+      "assetKey": "character:1511",
+      "aliases": {
+        "zh-CN": {
+          "official": [],
+          "player": []
+        },
+        "en": {
+          "official": [],
+          "player": []
+        }
+      },
+      "form": {
+        "pathCode": "Elation"
+      }
+    },
+    {
       "id": "1512",
       "names": {
         "zh-CN": "知更鸟•晴歌",
@@ -3063,6 +3085,11 @@
     },
     "character:1510": {
       "path": "game-assets/character/1510.webp",
+      "width": 256,
+      "height": 256
+    },
+    "character:1511": {
+      "path": "game-assets/character/1511.webp",
       "width": 256,
       "height": 256
     },

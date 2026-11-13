@@ -1,12 +1,12 @@
 {
   "files": {
     "catalog.json": {
-      "bytes": 48241,
-      "sha256": "63974b7f4e0d5a6ddd3a171768f64d123fe8f1cfa884ecfeaf55ef6df1104118"
+      "bytes": 48838,
+      "sha256": "95e2b24882f6953482a4f452a61235fa0aab528d5494c0b16eafa740f9ee75b5"
     },
     "gacha-index.json": {
-      "bytes": 20175,
-      "sha256": "ad0bd81343bb949683e3650bb046ececb1be95d6b275269f8fc736873e40d609"
+      "bytes": 21141,
+      "sha256": "1d4481fb5b682720232ed0790e213251c64288b25cc8cc326529ef9c9c75c13f"
     }
   },
   "generatorVersion": 1,
@@ -526,6 +526,12 @@
       "id": "avatar:1510",
       "nameHash": "12653203655511224443",
       "recordKey": "1510"
+    },
+    {
+      "file": "ExcelOutput/AvatarConfig.json",
+      "id": "avatar:1511",
+      "nameHash": "14922431951980054096",
+      "recordKey": "1511"
     },
     {
       "file": "ExcelOutput/AvatarConfig.json",
@@ -1189,6 +1195,12 @@
     },
     {
       "file": "ExcelOutput/EquipmentConfig.json",
+      "id": "light-cone:22009",
+      "nameHash": "3323979517703201137",
+      "recordKey": "22009"
+    },
+    {
+      "file": "ExcelOutput/EquipmentConfig.json",
       "id": "light-cone:23000",
       "nameHash": "15382217452095502614",
       "recordKey": "23000"
@@ -1579,6 +1591,12 @@
     },
     {
       "file": "ExcelOutput/EquipmentConfig.json",
+      "id": "light-cone:23065",
+      "nameHash": "13185461907927069549",
+      "recordKey": "23065"
+    },
+    {
+      "file": "ExcelOutput/EquipmentConfig.json",
       "id": "light-cone:24000",
       "nameHash": "4075116411984711274",
       "recordKey": "24000"
@@ -1622,35 +1640,35 @@
   ],
   "schemaVersion": 1,
   "source": {
-    "commit": "312b4597691e0a29cf9828a15b592757dba86949",
+    "commit": "fe15a954eba1f24bf1bcd4003848710eced44996",
     "repository": "https://github.com/DimbreathBot/TurnBasedGameData",
     "schemaVersion": 1,
     "transformVersion": 1
   },
   "sourceFiles": {
     "ExcelOutput/AvatarConfig.json": {
-      "bytes": 240466,
-      "sha256": "d8f3c9f55078611ad010751f82333735eb7bc732e22df6b8ad235021658e0456"
+      "bytes": 238214,
+      "sha256": "58743b34a9cd522e340def25b1f284b2b4de4a2989ca303c2406b5b5ef938249"
     },
     "ExcelOutput/AvatarConfigLD.json": {
-      "bytes": 10780,
-      "sha256": "4ad4896dc0384f141419a9989b3893c1ee9a1a090394e5d2f658752cda5bde64"
+      "bytes": 10529,
+      "sha256": "cd8311ab6c4d048acc6c0dcd3008030c24a3d2e595f44eab62cbf156a27eab24"
     },
     "ExcelOutput/EquipmentConfig.json": {
-      "bytes": 132304,
-      "sha256": "74ea91580ab4a251ee16c3b491be46465f37ec2f6178982a92a6cbf4c0086ebc"
+      "bytes": 127288,
+      "sha256": "c380d8e1b31c01bcb4ff1f7f782da1ad265ed58cc9458bf0fb8ca198e407c794"
     },
     "ExcelOutput/GachaBasicInfo.json": {
-      "bytes": 192478,
-      "sha256": "07a7a9de1d843295b16ff5c0813ea4633ec87914b033d2c39cc5186a47eba794"
+      "bytes": 195029,
+      "sha256": "4e0e6505c9d965934125bdf93f62a125dc0bd60ffc74b02275295be15e4705d3"
     },
     "TextMap/TextMapCHS.json": {
-      "bytes": 52399646,
-      "sha256": "a9028313c772e684c91359b467b398a1ded2079de67a191dff80d9adf43dfca4"
+      "bytes": 54499453,
+      "sha256": "d35c053373302d4afb0ad942710ffdf2758c84aa9f64992b5ba789c30ae3307a"
     },
     "TextMap/TextMapEN.json": {
-      "bytes": 59061007,
-      "sha256": "aa0c181739dd056fae03823294f65657130226ad732b92ceed07849b8bf14717"
+      "bytes": 61480598,
+      "sha256": "c6f8ae1dbaf753e1c28a44fdb9d700e2100ca50d2d3b839408e0137241eeb810"
     }
   }
 }

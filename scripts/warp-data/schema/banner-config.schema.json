@@ -127,6 +127,7 @@
         "avatar:1508",
         "avatar:1509",
         "avatar:1510",
+        "avatar:1511",
         "avatar:1512",
         "avatar:1513",
         "avatar:8001",
@@ -204,6 +205,7 @@
         "**远坂凛 · Rin Tohsaka** — 角色 / Avatar · 5★ · `avatar:1508`",
         "**吉尔伽美什 · Gilgamesh** — 角色 / Avatar · 5★ · `avatar:1509`",
         "**姬子•启行 · Himeko • Nova** — 角色 / Avatar · 5★ · `avatar:1510`",
+        "**星神★阿哈 · Aeon ★ Aha** — 角色 / Avatar · 5★ · `avatar:1511`",
         "**知更鸟•晴歌 · Robin • Summeretto** — 角色 / Avatar · 5★ · `avatar:1512`",
         "**砂金•戏浪 · Aventurine • Waveflair** — 角色 / Avatar · 5★ · `avatar:1513`",
         "**{NICKNAME} · {NICKNAME}** — 角色 / Avatar · 5★ · `avatar:8001`",
@@ -350,7 +352,8 @@
         "light-cone:22005",
         "light-cone:22006",
         "light-cone:22007",
-        "light-cone:22008"
+        "light-cone:22008",
+        "light-cone:22009"
       ],
       "markdownEnumDescriptions": [
         "**一场术后对话 · Post-Op Conversation** — 光锥 / Light Cone · 4★ · `light-cone:21000`",
@@ -425,7 +428,8 @@
         "**永远的迷境饭 · The Forever Victual** — 光锥 / Light Cone · 4★ · `light-cone:22005`",
         "**飞向粉色的明天 · Fly Into a Pink Tomorrow** — 光锥 / Light Cone · 4★ · `light-cone:22006`",
         "**未来，有我们一起 · Tomorrow, Together** — 光锥 / Light Cone · 4★ · `light-cone:22007`",
-        "**向着地平线的终点 · Race to the Horizon** — 光锥 / Light Cone · 4★ · `light-cone:22008`"
+        "**向着地平线的终点 · Race to the Horizon** — 光锥 / Light Cone · 4★ · `light-cone:22008`",
+        "**在世界尽头相会吧！ · See You at the World's End!** — 光锥 / Light Cone · 4★ · `light-cone:22009`"
       ],
       "type": "string"
     },
@@ -496,6 +500,7 @@
         "light-cone:23062",
         "light-cone:23063",
         "light-cone:23064",
+        "light-cone:23065",
         "light-cone:24000",
         "light-cone:24001",
         "light-cone:24002",
@@ -570,6 +575,7 @@
         "**所见即我 · I Am As You Behold** — 光锥 / Light Cone · 5★ · `light-cone:23062`",
         "**你将起身歌唱 · Rise and Sing** — 光锥 / Light Cone · 5★ · `light-cone:23063`",
         "**向浪花掷下盛夏 · Summer Rides the Surf** — 光锥 / Light Cone · 5★ · `light-cone:23064`",
+        "**当第一声「阿哈」响起 · Upon the First Echo of \"Aha\"** — 光锥 / Light Cone · 5★ · `light-cone:23065`",
         "**记一位星神的陨落 · On the Fall of an Aeon** — 光锥 / Light Cone · 5★ · `light-cone:24000`",
         "**星海巡航 · Cruising in the Stellar Sea** — 光锥 / Light Cone · 5★ · `light-cone:24001`",
         "**记忆的质料 · Texture of Memories** — 光锥 / Light Cone · 5★ · `light-cone:24002`",
@@ -734,7 +740,8 @@
         "light-cone:22005",
         "light-cone:22006",
         "light-cone:22007",
-        "light-cone:22008"
+        "light-cone:22008",
+        "light-cone:22009"
       ],
       "markdownEnumDescriptions": [
         "**三月七 · March 7th** — 角色 / Avatar · 4★ · `avatar:1001`",
@@ -832,7 +839,8 @@
         "**永远的迷境饭 · The Forever Victual** — 光锥 / Light Cone · 4★ · `light-cone:22005`",
         "**飞向粉色的明天 · Fly Into a Pink Tomorrow** — 光锥 / Light Cone · 4★ · `light-cone:22006`",
         "**未来，有我们一起 · Tomorrow, Together** — 光锥 / Light Cone · 4★ · `light-cone:22007`",
-        "**向着地平线的终点 · Race to the Horizon** — 光锥 / Light Cone · 4★ · `light-cone:22008`"
+        "**向着地平线的终点 · Race to the Horizon** — 光锥 / Light Cone · 4★ · `light-cone:22008`",
+        "**在世界尽头相会吧！ · See You at the World's End!** — 光锥 / Light Cone · 4★ · `light-cone:22009`"
       ],
       "type": "string"
     },
@@ -901,6 +909,7 @@
         "avatar:1508",
         "avatar:1509",
         "avatar:1510",
+        "avatar:1511",
         "avatar:1512",
         "avatar:1513",
         "avatar:8001",
@@ -978,6 +987,7 @@
         "light-cone:23062",
         "light-cone:23063",
         "light-cone:23064",
+        "light-cone:23065",
         "light-cone:24000",
         "light-cone:24001",
         "light-cone:24002",
@@ -1050,6 +1060,7 @@
         "**远坂凛 · Rin Tohsaka** — 角色 / Avatar · 5★ · `avatar:1508`",
         "**吉尔伽美什 · Gilgamesh** — 角色 / Avatar · 5★ · `avatar:1509`",
         "**姬子•启行 · Himeko • Nova** — 角色 / Avatar · 5★ · `avatar:1510`",
+        "**星神★阿哈 · Aeon ★ Aha** — 角色 / Avatar · 5★ · `avatar:1511`",
         "**知更鸟•晴歌 · Robin • Summeretto** — 角色 / Avatar · 5★ · `avatar:1512`",
         "**砂金•戏浪 · Aventurine • Waveflair** — 角色 / Avatar · 5★ · `avatar:1513`",
         "**{NICKNAME} · {NICKNAME}** — 角色 / Avatar · 5★ · `avatar:8001`",
@@ -1127,6 +1138,7 @@
         "**所见即我 · I Am As You Behold** — 光锥 / Light Cone · 5★ · `light-cone:23062`",
         "**你将起身歌唱 · Rise and Sing** — 光锥 / Light Cone · 5★ · `light-cone:23063`",
         "**向浪花掷下盛夏 · Summer Rides the Surf** — 光锥 / Light Cone · 5★ · `light-cone:23064`",
+        "**当第一声「阿哈」响起 · Upon the First Echo of \"Aha\"** — 光锥 / Light Cone · 5★ · `light-cone:23065`",
         "**记一位星神的陨落 · On the Fall of an Aeon** — 光锥 / Light Cone · 5★ · `light-cone:24000`",
         "**星海巡航 · Cruising in the Stellar Sea** — 光锥 / Light Cone · 5★ · `light-cone:24001`",
         "**记忆的质料 · Texture of Memories** — 光锥 / Light Cone · 5★ · `light-cone:24002`",
@@ -1320,7 +1332,14 @@
                   "2138",
                   "2139",
                   "2140",
-                  "2141"
+                  "2141",
+                  "2142",
+                  "2143",
+                  "2144",
+                  "2145",
+                  "2146",
+                  "2147",
+                  "2148"
                 ],
                 "type": "string"
               },
@@ -1535,7 +1554,14 @@
                   "3138",
                   "3139",
                   "3140",
-                  "3141"
+                  "3141",
+                  "3142",
+                  "3143",
+                  "3144",
+                  "3145",
+                  "3146",
+                  "3147",
+                  "3148"
                 ],
                 "type": "string"
               },
@@ -2038,7 +2064,7 @@
       "type": "array"
     },
     "sourceCommit": {
-      "const": "312b4597691e0a29cf9828a15b592757dba86949"
+      "const": "fe15a954eba1f24bf1bcd4003848710eced44996"
     }
   },
   "required": [

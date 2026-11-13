@@ -785,6 +785,22 @@
       },
       "artworkPath": "game-assets/warp/f3d5d9f133201859911efe376f9274d4e9b24838e495c845387d58a8cc774443.webp"
     },
+    "avatar:1506": {
+      "path": "Elation",
+      "element": "Imaginary",
+      "portraitPath": "game-assets/character/1506.webp",
+      "revealArtwork": {
+        "path": "game-assets/warp/36e4feda0432c74ad1d5ee4c83018a75b621802ab04550f69be3e14c6d6ab4ed.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
+        "path": "game-assets/warp/36e4feda0432c74ad1d5ee4c83018a75b621802ab04550f69be3e14c6d6ab4ed.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "artworkPath": "game-assets/warp/e6c726cd0d0e8bb2179fc0444e75a785f6d44f8c3968f2da44b0d7d8d17a378e.webp"
+    },
     "avatar:1507": {
       "path": "Warlock",
       "element": "Fire",
@@ -848,6 +864,22 @@
         "height": 2048
       },
       "artworkPath": "game-assets/warp/7e891f65c465f9113debe2807edfc0548662b9805020f8ad863ab73b1811b29f.webp"
+    },
+    "avatar:1511": {
+      "path": "Elation",
+      "element": "Quantum",
+      "portraitPath": "game-assets/character/1511.webp",
+      "revealArtwork": {
+        "path": "game-assets/warp/d3fcff168158395c8e72ba0fb65ba1422deacc1f9f5b6ed0154577c25cb728ce.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "resultPortrait": {
+        "path": "game-assets/warp/d3fcff168158395c8e72ba0fb65ba1422deacc1f9f5b6ed0154577c25cb728ce.webp",
+        "width": 2048,
+        "height": 2048
+      },
+      "artworkPath": "game-assets/warp/902a55c707bb499933d2efae704cfc0477167e0945c5bbbd756385577c92fc82.webp"
     },
     "avatar:1512": {
       "path": "Memory",
@@ -1945,6 +1977,20 @@
       },
       "artworkPath": "game-assets/warp/8addde65cfd08f8abc73b447020872db67c782bcee560fecbf62fd37b59c7d01.webp"
     },
+    "light-cone:23057": {
+      "path": "Elation",
+      "revealArtwork": {
+        "path": "game-assets/warp/b8af1a2b8d5ecb963a594ee6642bd58d1dc91d8a641baf135027aef4213dd662.webp",
+        "width": 904,
+        "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/3db2b98af44eeaa8fb1f3e22604be27be1a508e6014eab75c3a4d5e613ecc16e.webp",
+        "width": 348,
+        "height": 408
+      },
+      "artworkPath": "game-assets/warp/2a70a99d868c55eabdb41fe1f77bc5056fa55000a73a53e16733a41cd3ad8136.webp"
+    },
     "light-cone:23058": {
       "path": "Elation",
       "revealArtwork": {
@@ -2042,6 +2088,20 @@
         "height": 408
       },
       "artworkPath": "game-assets/warp/a203779e0fe72d1fbc4b648175f0d6a975d0be05cfe74fba388b9ef908bb5c52.webp"
+    },
+    "light-cone:23065": {
+      "path": "Elation",
+      "revealArtwork": {
+        "path": "game-assets/warp/f094a1e6afdd69dab48828c84fa22e7d94facfa8a1ebe088e1980069e636c1fd.webp",
+        "width": 904,
+        "height": 1260
+      },
+      "lightConePreview": {
+        "path": "game-assets/warp/fd18283c818344a7ca9b7020e3133adaeeef4d9afa18ead350356abd2be717c3.webp",
+        "width": 348,
+        "height": 408
+      },
+      "artworkPath": "game-assets/warp/a29686fff7442294075faf95c6f7ab00e1b54c85d43e7163a3b99ce70fbfc1b5.webp"
     }
   },
   "paths": {

@@ -31,8 +31,8 @@
 | [source-lock.json](../scripts/game-data/source-lock.json)            | 来源仓库、固定 Commit、人工审阅的 Character ID 和转换参数 |
 | [overlays.json](../scripts/game-data/overlays.json)                  | 有限名称、别名与工具预设的维护输入及来源记录              |
 
-当前锁定快照为游戏版本 4.6.0，包含 98 个角色、3 个预设和 101 张 WebP。数量是该快照的核对结果，不是永久 Schema 约束。
-来源 Commit 为 `dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487`；快照文件及必要资源保持可跟踪，缓存、staging 和备份由 .gitignore 排除。
+当前锁定快照为游戏版本 4.7.0，包含 99 个角色、3 个预设和 102 张 WebP。
+来源 Commit 为 `03907e798b46f9eb109a1f882055cdf49ce3d374`。快照文件及必要资源保持可跟踪，缓存、staging 和备份由 .gitignore 排除。
 
 当前角色图片为 256×256，装备图片为 128×128。更新器统一按 Source Lock 的 `maxSize: 256` 等比缩放且不放大；128×128 是当前资源的实际尺寸，不是单独的装备尺寸上限。
 转换版本、质量和 alphaQuality 由 Source Lock 管理，Manifest 记录实际 Sharp 版本和生成时间。
@@ -90,9 +90,9 @@ Warp 与上述排轴快照独立维护。数据管线提供目录、人工配置
 
 ### 来源与身份
 
-当前来源为 TurnBasedGameData Commit `312b4597691e0a29cf9828a15b592757dba86949`。仅提取 AvatarConfig、AvatarConfigLD、EquipmentConfig 的 ID、类型、星级和中英文名称；名称经原始 Hash 关联 CHS／EN TextMap。Node 24 reviver 的 `context.source` 保留整数 Hash 的原始十进制字符，禁止使用 Number 舍入后的值作关联键。
+当前来源为 TurnBasedGameData Commit `fe15a954eba1f24bf1bcd4003848710eced44996`。仅提取 AvatarConfig、AvatarConfigLD、EquipmentConfig 的 ID、类型、星级和中英文名称。名称经原始 Hash 关联 CHS／EN TextMap。Node 24 reviver 的 `context.source` 保留整数 Hash 的原始十进制字符，禁止使用 Number 舍入后的值作关联键。
 
-目录当前有 98 个角色和 170 个光锥。包含非跃迁形态、玩家名称占位符和其他未审阅抽取资格的条目；目录存在和原始 Release 字段均不能证明可抽取。只清除已核实的 `<unbreak>` 显示标签并规范空白，保留 `{NICKNAME}`。同名物品、不同形态和不同类型的相同数字 ID 均不合并，例如 `avatar:1001` 与 `avatar:1224`。
+目录当前有 99 个角色和 172 个光锥。包含非跃迁形态、玩家名称占位符和其他未审阅抽取资格的条目；目录存在和原始 Release 字段均不能证明可抽取。只清除已核实的 `<unbreak>` 显示标签并规范空白，保留 `{NICKNAME}`。同名物品、不同形态和不同类型的相同数字 ID 均不合并，例如 `avatar:1001` 与 `avatar:1224`。
 
 GachaBasicInfo 只投影 GachaID 和类型；索引包含 Newbie 的 `unsupported` 标记，但本轮禁止配置新手池。它不提供或推断完整成员、UP、日期或权重。没有可信游戏版本字段时以固定 Commit 标识版本，不借用排轴的游戏版本。维护 Manifest 保留六份输入文件的实际字节数／SHA-256、逐项来源表、记录键和名称 Hash。
 
@@ -114,7 +114,7 @@ npm run generate:warp-schema
 - `sharedPools`：每项含唯一 `id`、`fiveStarType`（`avatar`／`light-cone`／`mixed`）、非空且不重复的 `threeStar`／`fourStar`／`fiveStar` ID 数组和非空 `evidence` 来源定位。三星只能是三星光锥，四星可混合角色与光锥，五星受声明类型约束；mixed 五星集合必须同时包含两类物品。
 - `banners`：每项含唯一 `gachaId`、`kind`、`pityGroup`、`sharedPool` 引用和 `evidence`。普通角色／光锥 Event 须填写一个同类型五星 `up5` 和恰好三个同类型且不同的四星 `up4`；Fate 只填写五星 UP；Ordinary 不允许 UP 字段。
 - `kind` 的五种值为 `event-avatar`、`event-light-cone`、`fate-avatar`、`fate-light-cone`、`ordinary`；`pityGroup` 分别固定为 `pity:<kind>`，作为[纯引擎](architecture/warp-simulator.md)的独立继承组键。数据管线只维护身份元数据，计数、保证与转移由引擎负责。Banner 的 `gacha:<GachaID>` 由生成器派生，不使用 UI GroupID 作继承组。
-- `pending`：未核实类别与缺失原因。当前有一个维护者已配置的真珠 Banner（GachaID `2139`）和五个保留待办；待办不放宽任何有效 Banner 校验。清除待办是维护者对名单完备性的审阅，不是官方规则认证。
+- `pending` 记录未核实类别与缺失原因。当前 45 个已配置卡池共引用 142 件物品，待办为 0。
 
 每个 Banner 只需引用已审阅共享池、填写 GachaID／UP 等少量字段及来源；不得复制物品名称或元数据建立身份。候选集合和 UP 是分开的维护输入，数据管线不自动加入、剔除或赋权。名单的历史资格、完整性和来源真实性仍需维护者审阅。`sharedPool.fiveStar` 是资格集合，不代表玩家已选七名角色；Phase 1D 角色 Resolver 要求调用方显式提供七名合法选择，并按 v0.3 组成八个回退槽位。光锥与 Ordinary 的具体解析约束见[引擎契约](architecture/warp-simulator.md#候选与-up)，不改变维护 Schema 或人工名单。
 
@@ -154,7 +154,7 @@ npm run find:warp-item -- light-cone:21000
 
 独立[展示目录](../src/tools/warp-simulator/data/visuals/)包含 `catalog.json` 和 `manifest.json`，替代 Phase 1E 的手工 `presentation.json`。其输入是当前 Warp Runtime Snapshot 的可达物品，不以完整来源目录作为抽取资格。展示只增补 canonical ID 对应的命途、角色属性、图片及双语图标信息，不改写业务 Snapshot、Banner 或引擎。
 
-[Source Lock](../scripts/warp-visuals/source-lock.json)固定 StarRailRes Commit `dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487` 及转换参数。显式更新读取该 Commit 的 Git 对象，不要求 HEAD 位于该 Commit，也不使用工作区修改／未跟踪内容；指定目录必须是 Git 根且锁定对象存在，不 fetch、不切分支、不写来源仓库。只解析 cn／en 的 characters、light_cones、paths、elements 八份索引，逐项核对 ID、星级与双语身份。
+[Source Lock](../scripts/warp-visuals/source-lock.json)固定 StarRailRes Commit `03907e798b46f9eb109a1f882055cdf49ce3d374` 及转换参数。显式更新读取该 Commit 的 Git 对象，不要求 HEAD 位于该 Commit，也不使用工作区修改／未跟踪内容；指定目录必须是 Git 根且锁定对象存在，不 fetch、不切分支、不写来源仓库。只解析 cn／en 的 characters、light_cones、paths、elements 八份索引，逐项核对 ID、星级与双语身份。
 
 ```bash
 npm run update:warp-visuals -- --source local --root "/absolute/path/StarRailRes"
@@ -163,13 +163,13 @@ npm run validate:warp-visuals
 
 命途关联使用 `Warrior`、`Knight`、`Priest` 等内部 ID，名称不是身份键。角色立绘和光锥封面只使用索引给出的已存在路径；必要头像从现有规范化共享资源登记中复用，更新时核对共享 Manifest 的来源 Commit、文件哈希及图片尺寸。运行时不导入排轴模块。
 
-新增图片只写 `public/game-assets/warp/`，以内容及转换参数哈希命名并去重。Source Lock 转换版本为 5，来源 Commit 与 Sharp 0.35.3 不变。原轻量角色最长边 768、光锥 640、quality 82，图标／旧星级及独立演出参数保持原样。新增 `result-portrait` 用途固定读取角色索引对应的 image/character_portrait/<ID>.png，resultPortraitSize 为 source、quality 88、alphaQuality 100，不降采样、不裁透明边界、不放大。转换 inside 边界至少为原图最长边；原图已落在既有 2048 高清边界内时保留该转换键，以复用完全相同的输出。源图更大时采用原始最长边，输出尺寸必须逐轴等于源尺寸。Catalog 的角色专用 resultPortrait 保存 path／width／height，Manifest v3 同步记录用途和来源。
+新增跃迁图片写入 `public/game-assets/warp/`，以内容及转换参数哈希命名并去重。Source Lock 转换版本为 5，使用 Sharp 0.35.3。轻量角色图最长边 768、光锥 640、quality 82。`result-portrait` 固定读取角色索引对应的 image/character_portrait/<ID>.png，resultPortraitSize 为 source、quality 88、alphaQuality 100，不降采样、不裁透明边界、不放大。转换 inside 边界至少为原图最长边；原图已落在既有 2048 高清边界内时保留该转换键，以复用完全相同的输出。源图更大时采用原始最长边，输出尺寸必须逐轴等于源尺寸。Catalog 的角色专用 resultPortrait 保存 path／width／height，Manifest v3 同步记录用途和来源。
 
 裁切星级 `card-stars` 使用 Sharp 零阈值透明检测，和原始 RGBA 非零 Alpha 边界交叉核对。只裁掉完全透明区域，验证每颗星的重复单元及三档源高度／内容一致，再等比缩至内容高 64px、四边各加 2px 透明安全边，quality 90、alphaQuality 100、不放大。输出为 196×68、260×68、324×68，统一内容缩放比例；裁切矩形之外不得存在有效 Alpha，空图、异常比例或重复单元不一致会阻止发布。原始仓库只读，不运行时裁图。Catalog 的可选 cardStars[3/4/5] 保存 path／width／height，供结果卡和最终 Artwork 信息面板选择；历史、详情继续使用原星级。缺少裁切图时中性占位，不回退到带长空白的旧星级。源图变更需重新审阅这些边界和重复单元，不盲用历史裁切值。
 
 V3 五星 Identity 使用独立用途 `reveal-star-big`：固定读取同一锁定 Commit 的 `icon/deco/StarBig.png`，转换参数新增 revealStarBigSize 279、quality 90、alphaQuality 100，保留 279×279 完整透明画布，不裁切、不放大。Catalog 可选 revealStarBig 保存 path／width／height，Adapter 同名字段仅向五星提供 url／width／height，五个实例共用一个 URL。Manifest v3 校验源路径、用途、无裁切、转换键、尺寸、哈希及引用覆盖；旧 Star3／4／5、revealStars 和 cardStars 保留。缺失源图有明确诊断，运行时失败仅显示中性占位，不用长条星级替代。来源与新增资源记录见 [V3 动画报告](investigations/warp-simulator/phase-1m-five-star-reveal-animation.md)。
 
-当前 138 件物品自有图片共 392 张、75,039,558 bytes，另复用 55 张共享头像；83 张光锥 preview 共 4,036,930 bytes。2026-10-21 新增 55 个 resultPortrait 映射，均为 2048×2048，复用既有高清 WebP，因此图片数量、字节数和文件哈希均未改变。运行时角色卡现在按需解码高清画布，单张 2048×2048 RGBA 约 16 MiB，实际浏览器内存由缓存及解码实现决定；不预加载整个图鉴。光锥 preview 仍为原生 348×408、最长边上限 408、quality 88、alphaQuality 100，保持完整透明画布；单件保持像素／DPR 限制，总览允许卡内裁切。校验器继续离线检查源／输出尺寸、用途、来源、哈希及引用覆盖；维护测量见[纠正性重构记录](investigations/warp-simulator/result-display-correction-2026-10-21.md)。
+当前 142 件物品的自有图片共 402 张、77,999,192 bytes，另复用 57 张共享头像。57 个角色的 resultPortrait 均为 2048×2048，与对应的 revealArtwork 共用 WebP。运行时角色卡按需解码高清画布，单张 2048×2048 RGBA 约 16 MiB，实际浏览器内存由缓存及解码实现决定。85 张光锥 preview 共 4,137,462 bytes，保留 348×408 的原生透明画布，最长边上限 408、quality 88、alphaQuality 100。单件保持像素／DPR 限制，总览允许卡内裁切。校验器离线检查源／输出尺寸、用途、来源、哈希及引用覆盖。历史测量见[纠正性重构记录](investigations/warp-simulator/result-display-correction-2026-10-21.md)。
 
 Manifest schemaVersion 3 记录源仓库及 Commit、八份索引和所用图片的来源文件／SHA-256／字节数／原始尺寸、每项转换用途及转换键、共享投影来源、业务快照哈希、生成时间、Sharp 与转换版本、输出路径／尺寸／哈希／字节数及缺失诊断。card-stars 另记实际裁切矩形，新键含源 SHA-256、配方标识、透明阈值、矩形、内容高度、安全边、quality 和 alphaQuality；其他用途保留旧键。validator 将每种用途与 Source Lock 参数对应，检查安全路径、裁切边界／比例／统一源高度、精确输出尺寸、不放大、映射尺寸、引用覆盖、来源及严格文件清单。普通 validator 不读源图，Alpha 完整性由显式生成及合成测试核对。命途和属性名称来自双语索引，物品名称仍来自 Warp Snapshot。属性保留原始六位颜色；对比度修正仅在展示 Adapter 中完成，光锥不生成属性。
 

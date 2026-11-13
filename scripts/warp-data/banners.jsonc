@@ -1,7 +1,7 @@
 {
   "$schema": "./schema/banner-config.schema.json",
   "schemaVersion": 1,
-  "sourceCommit": "312b4597691e0a29cf9828a15b592757dba86949",
+  "sourceCommit": "fe15a954eba1f24bf1bcd4003848710eced44996",
   // Catalog entries are NOT an eligibility list. Add only reviewed, evidenced lists.
   // Create a shared pool first, regenerate the schema, then reference its ID in a banner.
   "sharedPools": [
@@ -667,6 +667,42 @@
       "up4": ["light-cone:21045", "light-cone:21019", "light-cone:21006"],
       "evidence": ["4.4 版本光锥活动跃迁"],
     },
+    {
+      "gachaId": "2142",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up5": "avatar:1511",
+      "up4": ["avatar:1009", "avatar:1110", "avatar:1207"],
+      "evidence": ["v4.7 角色活动跃迁"],
+    },
+    {
+      "gachaId": "3142",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up5": "light-cone:23065",
+      "up4": ["light-cone:21016", "light-cone:21020", "light-cone:21047"],
+      "evidence": ["v4.7 光锥活动跃迁"],
+    },
+    {
+      "gachaId": "2143",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up5": "avatar:1506",
+      "up4": ["avatar:1009", "avatar:1110", "avatar:1207"],
+      "evidence": ["v4.7 角色活动跃迁"],
+    },
+    {
+      "gachaId": "3143",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up5": "light-cone:23057",
+      "up4": ["light-cone:21016", "light-cone:21020", "light-cone:21047"],
+      "evidence": ["v4.7 光锥活动跃迁"],
+    }
   ],
   "pending": [
     

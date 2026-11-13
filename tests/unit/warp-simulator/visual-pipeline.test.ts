@@ -222,7 +222,7 @@ describe('explicit Warp visual updater', () => {
       ).length,
       missing: 0,
     })
-    expect(await validateGameFiles(root)).toMatchObject({ assets: 101, missing: 0 })
+    expect(await validateGameFiles(root)).toMatchObject({ assets: 102, missing: 0 })
   })
   it('projects canonical identities, deduplicates equal inputs and leaves shared images untouched', async () => {
     const f = await fixture(),

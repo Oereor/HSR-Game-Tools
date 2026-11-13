@@ -775,6 +775,15 @@
       "rarity": 5
     },
     {
+      "id": "avatar:1511",
+      "kind": "avatar",
+      "names": {
+        "en": "Aeon ★ Aha",
+        "zh-CN": "星神★阿哈"
+      },
+      "rarity": 5
+    },
+    {
       "id": "avatar:1512",
       "kind": "avatar",
       "names": {
@@ -1765,6 +1774,15 @@
       "rarity": 4
     },
     {
+      "id": "light-cone:22009",
+      "kind": "light-cone",
+      "names": {
+        "en": "See You at the World's End!",
+        "zh-CN": "在世界尽头相会吧！"
+      },
+      "rarity": 4
+    },
+    {
       "id": "light-cone:23000",
       "kind": "light-cone",
       "names": {
@@ -2346,6 +2364,15 @@
       "names": {
         "en": "Summer Rides the Surf",
         "zh-CN": "向浪花掷下盛夏"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23065",
+      "kind": "light-cone",
+      "names": {
+        "en": "Upon the First Echo of \"Aha\"",
+        "zh-CN": "当第一声「阿哈」响起"
       },
       "rarity": 5
     },

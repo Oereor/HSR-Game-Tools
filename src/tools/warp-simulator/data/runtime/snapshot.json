@@ -216,6 +216,32 @@
       "up5": "avatar:1507"
     },
     {
+      "gachaId": "2142",
+      "id": "gacha:2142",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up4": [
+        "avatar:1009",
+        "avatar:1110",
+        "avatar:1207"
+      ],
+      "up5": "avatar:1511"
+    },
+    {
+      "gachaId": "2143",
+      "id": "gacha:2143",
+      "kind": "event-avatar",
+      "pityGroup": "pity:event-avatar",
+      "sharedPool": "event-avatar-default",
+      "up4": [
+        "avatar:1009",
+        "avatar:1110",
+        "avatar:1207"
+      ],
+      "up5": "avatar:1506"
+    },
+    {
       "gachaId": "3126",
       "id": "gacha:3126",
       "kind": "event-light-cone",
@@ -422,6 +448,32 @@
         "light-cone:21044"
       ],
       "up5": "light-cone:23059"
+    },
+    {
+      "gachaId": "3142",
+      "id": "gacha:3142",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up4": [
+        "light-cone:21016",
+        "light-cone:21020",
+        "light-cone:21047"
+      ],
+      "up5": "light-cone:23065"
+    },
+    {
+      "gachaId": "3143",
+      "id": "gacha:3143",
+      "kind": "event-light-cone",
+      "pityGroup": "pity:event-light-cone",
+      "sharedPool": "event-light-cone-default",
+      "up4": [
+        "light-cone:21016",
+        "light-cone:21020",
+        "light-cone:21047"
+      ],
+      "up5": "light-cone:23057"
     },
     {
       "gachaId": "5001",
@@ -931,6 +983,15 @@
       "rarity": 5
     },
     {
+      "id": "avatar:1506",
+      "kind": "avatar",
+      "names": {
+        "en": "Silver Wolf LV.999",
+        "zh-CN": "银狼LV.999"
+      },
+      "rarity": 5
+    },
+    {
       "id": "avatar:1507",
       "kind": "avatar",
       "names": {
@@ -963,6 +1024,15 @@
       "names": {
         "en": "Himeko • Nova",
         "zh-CN": "姬子•启行"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "avatar:1511",
+      "kind": "avatar",
+      "names": {
+        "en": "Aeon ★ Aha",
+        "zh-CN": "星神★阿哈"
       },
       "rarity": 5
     },
@@ -1669,6 +1739,15 @@
       "rarity": 5
     },
     {
+      "id": "light-cone:23057",
+      "kind": "light-cone",
+      "names": {
+        "en": "Welcome to the Cosmic City",
+        "zh-CN": "欢迎来到银河城"
+      },
+      "rarity": 5
+    },
+    {
       "id": "light-cone:23058",
       "kind": "light-cone",
       "names": {
@@ -1728,6 +1807,15 @@
       "names": {
         "en": "Summer Rides the Surf",
         "zh-CN": "向浪花掷下盛夏"
+      },
+      "rarity": 5
+    },
+    {
+      "id": "light-cone:23065",
+      "kind": "light-cone",
+      "names": {
+        "en": "Upon the First Echo of \"Aha\"",
+        "zh-CN": "当第一声「阿哈」响起"
       },
       "rarity": 5
     }
