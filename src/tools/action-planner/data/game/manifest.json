@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "gameVersion": "4.6.0",
+  "gameVersion": "4.7.0",
   "source": {
     "repository": "https://github.com/Mar-7th/StarRailRes.git",
-    "commit": "dbe8cdfcfb0bf657b9fe1cf92d5537f118ccb487"
+    "commit": "03907e798b46f9eb109a1f882055cdf49ce3d374"
   },
-  "generatedAt": "2026-10-13T00:43:01.895Z",
+  "generatedAt": "2026-11-13T00:18:32.034Z",
   "transform": {
     "version": 2,
     "maxSize": 256,
@@ -359,6 +359,10 @@
       "sha256": "404f1d3cd44276f5c9e7ee489b71af12ed2eb1de6534397746ca41f042ba982d",
       "bytes": 32440
     },
+    "public/game-assets/character/1511.webp": {
+      "sha256": "e6ce90fb132935d3958f19622000ff74704b9d17508aa6c1f012ec1d6bda468a",
+      "bytes": 36176
+    },
     "public/game-assets/character/1512.webp": {
       "sha256": "ba5e115fe3d167682a8fea95212ab872580b9f4adfbe7ab77e4965b20209a6ba",
       "bytes": 35384
@@ -420,8 +424,8 @@
       "bytes": 10782
     },
     "src/tools/action-planner/data/game/catalog.json": {
-      "sha256": "921853d55ce60a03b928edaa85cd7f61ba9840cfbc83f226211550e1a226e828",
-      "bytes": 63169
+      "sha256": "2a71e33676f764546cfb7a763a57f7c01a7530fdb528a66934e258827be76607",
+      "bytes": 63708
     }
   },
   "missingAssets": [],
