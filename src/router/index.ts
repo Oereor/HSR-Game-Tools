@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePage from '../views/HomePage.vue'
+import { goldenScapegoatRoute } from '../tools/golden-scapegoat/route'
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -19,6 +20,7 @@ export const router = createRouter({
       component: () => import('../tools/currency-wars/CurrencyWarsPage.vue'),
       meta: { title: 'currencyWars.title' },
     },
+    goldenScapegoatRoute,
     {
       path: '/:pathMatch(.*)*',
       component: () => import('../views/NotFoundPage.vue'),

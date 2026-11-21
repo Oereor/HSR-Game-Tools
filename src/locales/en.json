@@ -20,6 +20,10 @@
         "title": "Warp Simulator",
         "description": "Choose a banner and characters, simulate warps, and review your pull history."
       },
+      "goldenScapegoat": {
+        "title": "Golden Scapegoat Solver",
+        "description": "Draw a puzzle, find the fewest moves, and replay both sheep and their switches."
+      },
       "relic": {
         "title": "Relic Simulator",
         "description": "Simulate Relic generation and enhancement."
@@ -742,6 +746,134 @@
       "cardUnassigned": "Unassigned",
       "both": "Frontline / Backline",
       "unknownPosition": "Unknown position"
+    }
+  },
+  "goldenScapegoat": {
+    "title": "Golden Scapegoat Solver",
+    "editor": "Edit Map",
+    "board": "Puzzle Board",
+    "replay": "Replay",
+    "clear": "Blank Map",
+    "import": "Import JSON",
+    "export": "Export JSON",
+    "add": "Add",
+    "remove": "Delete Group",
+    "dismiss": "Dismiss",
+    "k": "Recorded Moves (K)",
+    "element": "Element",
+    "place": "Place",
+    "erase": "Erase",
+    "ladderFirst": "Select the first ladder endpoint.",
+    "ladderSecond": "Selected {at}. Pick the other endpoint in the same column.",
+    "platformGroups": "Platform Groups · A",
+    "portalPairs": "Portal Pairs · P",
+    "none": "Select",
+    "defaultEnabled": "Enabled by default",
+    "activatedEnabled": "Enabled while pressed",
+    "ends": "{count} / 2 endpoints placed",
+    "searchSettings": "Search Limits",
+    "stateLimit": "Maximum visited states",
+    "timeLimit": "Time limit (seconds)",
+    "solve": "Find Solution",
+    "cancel": "Cancel",
+    "viewport": "Viewport and Zoom",
+    "fit": "Locate Map",
+    "zoom": "Cell Zoom",
+    "view": {
+      "x": "Left X",
+      "y": "Top Y",
+      "width": "Columns",
+      "height": "Rows"
+    },
+    "demo": {
+      "label": "Demo Maps",
+      "platform": "Demo Map · Holding the Bridge",
+      "portal": "Demo Map · Ladder and Portal"
+    },
+    "copyArrow": "Copy Arrows",
+    "copyWasd": "Copy WASD",
+    "copied": "Copied",
+    "copyFailed": "Copy failed. You can select and copy the sequence manually.",
+    "first": "Start",
+    "previous": "Previous",
+    "next": "Next",
+    "last": "End",
+    "step": "Step {current} / {total}",
+    "replayProgress": "Black sheep replay {current} / {total}",
+    "stepEvents": "Step Events",
+    "coordinate": "({x}, {y})",
+    "groupState": "{group} · {state}",
+    "pressed": "Switch held",
+    "sheep": {
+      "gold": "Gold sheep",
+      "black": "Black sheep",
+      "goldToken": "Au",
+      "blackToken": "B"
+    },
+    "phase": {
+      "recording": "Recording",
+      "replaying": "Black sheep replaying",
+      "postReplay": "Replay instructions ended"
+    },
+    "states": {
+      "on": "Enabled",
+      "off": "Disabled",
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "tools": {
+      "floor": "Fixed platform",
+      "ladder": "Ladder",
+      "platform": "Moving platform",
+      "platformSwitch": "Platform switch",
+      "portal": "Portal endpoint",
+      "portalSwitch": "Portal switch",
+      "start": "Start S",
+      "goal": "Goal G"
+    },
+    "result": {
+      "idle": "Ready to search",
+      "searching": "Searching for the shortest path…",
+      "cancelled": "Search cancelled.",
+      "workerError": "The solver failed to run. Try again.",
+      "solved": "Shortest solution · {steps} moves",
+      "unsolvable": "No solution. Exhausted the search after {visited} visited states.",
+      "states": "State limit reached after {visited} visited states. Solution unknown.",
+      "time": "Time limit reached after {visited} visited states. Solution unknown.",
+      "memory": "Search or replay memory limit reached after {visited} visited states. Solution unknown.",
+      "unsupported_cycle": "An environmental sequence did not settle. Visited {visited} states. Solution unknown."
+    },
+    "events": {
+      "move": "{sheep} moved from {from} to {to}",
+      "fall": "{sheep} fell from {from} to {to}",
+      "teleport": "{sheep} teleported from {from} to {to}",
+      "spawn": "The black sheep appeared at {at}",
+      "void": "{sheep} fell out of the map at {at}",
+      "portalLoop": "{sheep} vanished in a teleport loop at {at}",
+      "collision": "The sheep collided at {at}",
+      "goal": "The gold sheep reached the goal at {at}"
+    },
+    "issues": {
+      "json": "Could not read valid JSON.",
+      "fileLimit": "The map file exceeds 1 MiB.",
+      "format": "A map field is missing or invalid.",
+      "version": "Only version 1 maps are supported.",
+      "coordinate": "Coordinates must be integers between −1,000,000 and 1,000,000.",
+      "k": "K must be a positive safe integer.",
+      "duplicateId": "This group ID is already in use.",
+      "duplicateCell": "This element already occupies the cell.",
+      "duplicateSupport": "A cell can have one support platform.",
+      "ladder": "A ladder needs two different endpoints in one column.",
+      "ladderExit": "This cell already has a ladder exit in this direction.",
+      "portalEnds": "A portal pair can have up to two endpoints.",
+      "portalEndpoint": "This cell already has a portal endpoint.",
+      "platformController": "Moving platform cells cannot contain switches.",
+      "portalController": "Switches at portal endpoints are unsupported here. The in-game rule is unverified.",
+      "start": "Place start S.",
+      "goal": "Place goal G.",
+      "pairIncomplete": "Place both endpoints for this portal pair.",
+      "placePairFull": "This pair already has two endpoints. Erase one first.",
+      "selectGroup": "Create or select the linked group first."
     }
   }
 }

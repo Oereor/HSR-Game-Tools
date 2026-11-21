@@ -25,6 +25,10 @@
 
 网页入口为 `/currency-wars`，也可使用控制台 `npm run currency-wars`。使用真实游戏快照和 HiGHS 整数规划，优先最大化羁绊任务完成数，其次减少星徽消耗。网页通过 Worker 求解，展示角色头像、费用和星徽分配；正式任务列表已录入 25 项。规则与限制见[使用指南](docs/currency-wars.md)。
 
+### 黄金替罪羊求解器 / Golden Scapegoat Solver
+
+入口为 `/golden-scapegoat`。绘制地图或导入 JSON 后，可以自动搜索最短路径并逐步回放。地图格式、演示和假设见[使用指南](docs/golden-scapegoat.md)。
+
 ## 技术栈
 
 Vue 3、TypeScript、Vite、Vue Router、PrimeVue、Tailwind CSS 4、vue-i18n、Lucide Icons，以及 Node.js 24 / npm。
