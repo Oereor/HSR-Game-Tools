@@ -74,7 +74,9 @@ describe('turns, gravity and replay', () => {
         k: 2,
         floors: [at(0), at(1), at(1, 2), at(2, 2), at(3, 2)],
         ladders: [{ top: at(1), bottom: at(1, 2) }],
-        portalPairs: [{ id: 'p', ends: [at(7), at(8)], controllers: [at(0)] }],
+        portalPairs: [
+          { id: 'p', initiallyOpen: false, ends: [at(7), at(8)], controllers: [at(0)] },
+        ],
       }),
     )
     const first = step(board, initialState(board).nextState, 'right')
@@ -114,7 +116,9 @@ describe('turns, gravity and replay', () => {
       map({
         k: 1,
         floors: [at(0), at(1), at(3)],
-        portalPairs: [{ id: 'p', ends: [at(1), at(3)], controllers: [at(0)] }],
+        portalPairs: [
+          { id: 'p', initiallyOpen: false, ends: [at(1), at(3)], controllers: [at(0)] },
+        ],
       }),
     )
     const result = step(board, initialState(board).nextState, 'right')
@@ -227,6 +231,25 @@ describe('activity platforms', () => {
 })
 
 describe('contacts and portals', () => {
+  it('opens the configured pairs before settling frame zero', () => {
+    const config = map({
+      floors: [at(0), at(1), at(2)],
+      portalPairs: [
+        { id: 'first', initiallyOpen: true, ends: [at(1), at(2)], controllers: [] },
+        { id: 'closed', initiallyOpen: false, ends: [at(3), at(4)], controllers: [] },
+        { id: 'last', initiallyOpen: true, ends: [at(5), at(6)], controllers: [] },
+      ],
+    })
+    const initial = initialState(compileMap(config))
+    expect(initial.nextState.openPortals).toEqual([0, 2])
+
+    const board = compileMap({ ...config, start: at(1) })
+    const frame = initialState(board)
+    expect(frame).toMatchObject({ nextState: { gold: at(2), turn: 0 }, outcome: 'stable' })
+    expect(frame.events).toContainEqual({ type: 'portal', pair: 0, open: false })
+    expect(boardStatus(board, frame.nextState).portals).toEqual(new Set([2]))
+  })
+
   it('checks same-cell, horizontal swap, ladder swap and contact during a fall', () => {
     const board = compileMap(
       map({
@@ -247,7 +270,7 @@ describe('contacts and portals', () => {
     const board = compileMap(
       map({
         floors: [at(0), at(1), at(4), at(5)],
-        portalPairs: [{ id: 'p', ends: [at(1), at(5)], controllers: [] }],
+        portalPairs: [{ id: 'p', initiallyOpen: false, ends: [at(1), at(5)], controllers: [] }],
       }),
     )
     const before = { ...replay(at(0), at(4), 'right'), openPortals: [0] }
@@ -261,7 +284,9 @@ describe('contacts and portals', () => {
     const board = compileMap(
       map({
         floors: [at(0), at(1), at(4), at(6)],
-        portalPairs: [{ id: 'p', ends: [at(4), at(6)], controllers: [at(1)] }],
+        portalPairs: [
+          { id: 'p', initiallyOpen: false, ends: [at(4), at(6)], controllers: [at(1)] },
+        ],
       }),
     )
     const result = step(board, state({ black: at(4), phase: 'postReplay' }), 'right')
@@ -282,7 +307,9 @@ describe('contacts and portals', () => {
       map({
         floors: [at(0), at(1), at(4), at(6)],
         goal: at(6),
-        portalPairs: [{ id: 'p', ends: [at(1), at(6)], controllers: [at(4)] }],
+        portalPairs: [
+          { id: 'p', initiallyOpen: false, ends: [at(1), at(6)], controllers: [at(4)] },
+        ],
       }),
     )
     const before = state({ black: at(4), phase: 'postReplay', openPortals: [0] })
@@ -350,7 +377,9 @@ describe('MVP event ordering', () => {
     const board = compileMap(
       map({
         floors: [at(0), at(1, 3), at(4)],
-        portalPairs: [{ id: 'p', ends: [at(1, 2), at(4)], controllers: [at(1, 1)] }],
+        portalPairs: [
+          { id: 'p', initiallyOpen: false, ends: [at(1, 2), at(4)], controllers: [at(1, 1)] },
+        ],
       }),
     )
     const closed = step(board, state(), 'right')

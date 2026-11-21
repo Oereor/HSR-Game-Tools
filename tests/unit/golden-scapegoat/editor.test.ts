@@ -11,7 +11,7 @@ it('builds a layered map from an empty editor and round-trips it', () => {
     cells: [],
     controllers: [],
   })
-  map.portalPairs.push({ id: 'gate', ends: [], controllers: [] })
+  map.portalPairs.push({ id: 'gate', initiallyOpen: true, ends: [], controllers: [] })
   const place = (tool: EditTool, x: number, y: number, group?: string) => {
     const result = editMap(map, tool, { x, y }, false, group, null)
     expect(result.issue).toBeUndefined()
@@ -34,6 +34,7 @@ it('builds a layered map from an empty editor and round-trips it', () => {
 
   const erased = editMap(map, 'portal', { x: 1, y: 0 }, true, 'gate', null).map!
   expect(erased.platformGroups).toBe(map.platformGroups)
+  expect(erased.portalPairs[0].initiallyOpen).toBe(true)
   expect(readinessIssues(erased)).toMatchObject([{ code: 'pairIncomplete' }])
   expect(map.portalPairs[0].ends).toHaveLength(2)
 })

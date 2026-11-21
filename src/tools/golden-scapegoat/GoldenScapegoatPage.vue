@@ -254,11 +254,21 @@ function addPortal() {
   const id = nextGroupId('portal', map.value.portalPairs)
   commit({
     ...map.value,
-    portalPairs: [...map.value.portalPairs, { id, ends: [], controllers: [] }],
+    portalPairs: [
+      ...map.value.portalPairs,
+      { id, initiallyOpen: false, ends: [], controllers: [] },
+    ],
   })
   portalId.value = id
   erase.value = false
   tool.value = 'portal'
+}
+
+function updatePortal(initiallyOpen: boolean) {
+  const portalPairs = map.value.portalPairs.map((pair) =>
+    pair.id === portalId.value ? { ...pair, initiallyOpen } : pair,
+  )
+  commit({ ...map.value, portalPairs })
 }
 
 function removePortal() {
@@ -552,6 +562,17 @@ onBeforeUnmount(() => {
               size="small"
               @click="removePortal"
             />
+          </div>
+          <div v-if="selectedPortal" class="checks">
+            <label for="goat-initially-open-portal"
+              ><Checkbox
+                input-id="goat-initially-open-portal"
+                binary
+                :model-value="selectedPortal.initiallyOpen"
+                @update:model-value="updatePortal"
+              />
+              {{ t(`${g}.initiallyOpen`) }}</label
+            >
           </div>
           <p v-if="selectedPortal" class="hint">
             {{ t(`${g}.ends`, { count: selectedPortal.ends.length }) }}

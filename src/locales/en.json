@@ -770,6 +770,7 @@
     "none": "Select",
     "defaultEnabled": "Enabled by default",
     "activatedEnabled": "Enabled while pressed",
+    "initiallyOpen": "Initially open",
     "ends": "{count} / 2 endpoints placed",
     "searchSettings": "Search Limits",
     "stateLimit": "Maximum visited states",

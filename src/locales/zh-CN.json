@@ -770,6 +770,7 @@
     "none": "请选择",
     "defaultEnabled": "默认可站立",
     "activatedEnabled": "踩住机关时可站立",
+    "initiallyOpen": "初始开启",
     "ends": "已放置 {count} / 2 个端点",
     "searchSettings": "搜索限制",
     "stateLimit": "最大访问状态数",

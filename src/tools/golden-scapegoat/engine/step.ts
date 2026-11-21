@@ -44,6 +44,7 @@ export interface Board {
   platforms: Map<string, number>
   groups: ReadyMap['platformGroups']
   portalAt: Map<string, { pair: number; exit: Cell }>
+  initiallyOpenPortals: readonly number[]
   controls: Map<string, Controls>
   ladders: Record<'up' | 'down', Map<string, Cell>>
   rows: Map<number, number[]>
@@ -57,6 +58,7 @@ export function compileMap(map: ReadyMap): Board {
   const floors = new Set(map.floors.map(cellKey))
   const platforms = new Map<string, number>()
   const portalAt: Board['portalAt'] = new Map()
+  const initiallyOpenPortals: number[] = []
   const controls: Board['controls'] = new Map()
   const ladders: Board['ladders'] = { up: new Map(), down: new Map() }
   const rowSets = new Map<number, Set<number>>()
@@ -76,6 +78,7 @@ export function compileMap(map: ReadyMap): Board {
     group.controllers.forEach((point) => addController(point, 'platforms', index))
   })
   map.portalPairs.forEach((pair, index) => {
+    if (pair.initiallyOpen) initiallyOpenPortals.push(index)
     const [a, b] = pair.ends
     portalAt.set(cellKey(a), { pair: index, exit: b })
     portalAt.set(cellKey(b), { pair: index, exit: a })
@@ -102,6 +105,7 @@ export function compileMap(map: ReadyMap): Board {
     platforms,
     groups: map.platformGroups,
     portalAt,
+    initiallyOpenPortals,
     controls,
     ladders,
     rows,
@@ -302,7 +306,14 @@ function settle(
 export function initialState(board: Board): Transition {
   return settle(
     board,
-    { gold: board.start, black: null, openPortals: [], phase: 'recording', history: [], turn: 0 },
+    {
+      gold: board.start,
+      black: null,
+      openPortals: board.initiallyOpenPortals,
+      phase: 'recording',
+      history: [],
+      turn: 0,
+    },
     { gold: null, black: null },
     [],
   )

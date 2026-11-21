@@ -25,6 +25,8 @@ export const demos = {
     goal: at(5, 1),
     floors: [at(0, 2), at(0, 0), at(1, 0), at(4, 1), at(5, 1)],
     ladders: [{ top: at(0, 0), bottom: at(0, 2) }],
-    portalPairs: [{ id: 'gate', ends: [at(1, 0), at(4, 1)], controllers: [at(0, 0)] }],
+    portalPairs: [
+      { id: 'gate', initiallyOpen: false, ends: [at(1, 0), at(4, 1)], controllers: [at(0, 0)] },
+    ],
   },
 } satisfies Record<string, ReadyMap>

@@ -73,7 +73,9 @@ const tiles = computed(() => {
     const platformOn =
       platform !== undefined &&
       (props.status?.platforms[platform] ?? props.map.platformGroups[platform].defaultEnabled)
-    const portalOn = portal !== undefined && props.status?.portals.has(portal)
+    const portalOn =
+      portal !== undefined &&
+      (props.status?.portals.has(portal) ?? props.map.portalPairs[portal].initiallyOpen)
     const labels = [t(`${g}.coordinate`, point)]
     if (floor) labels.push(t(`${g}.tools.floor`))
     if (ladder) labels.push(t(`${g}.tools.ladder`))

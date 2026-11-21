@@ -13,6 +13,7 @@ export interface PlatformGroup {
 
 export interface PortalPair {
   id: string
+  initiallyOpen: boolean
   ends: Cell[]
   controllers: Cell[]
 }
@@ -191,11 +192,14 @@ export function validateMap(value: unknown): { map?: PuzzleMap; issues: MapIssue
       return { top, bottom }
     }),
     portalPairs: groups(root.portalPairs, '$.portalPairs', (item, at) => {
-      const pair = record(item, at, ['id', 'ends', 'controllers'])
+      const pair = record(item, at, ['id', 'initiallyOpen', 'ends', 'controllers'])
+      const initiallyOpen = Object.hasOwn(pair, 'initiallyOpen') ? pair.initiallyOpen : false
+      if (typeof initiallyOpen !== 'boolean') report('format', `${at}.initiallyOpen`)
       const ends = cells(pair.ends, `${at}.ends`)
       if (ends.length > 2) report('portalEnds', `${at}.ends`)
       return {
         id: typeof pair.id === 'string' ? pair.id : '',
+        initiallyOpen: initiallyOpen === true,
         ends,
         controllers: cells(pair.controllers, `${at}.controllers`),
       }

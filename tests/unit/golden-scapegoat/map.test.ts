@@ -11,7 +11,7 @@ import {
 it('round-trips both drafts and complete maps with stable link IDs', () => {
   const draft = {
     ...emptyMap(),
-    portalPairs: [{ id: 'alpha', ends: [{ x: -99, y: 4 }], controllers: [] }],
+    portalPairs: [{ id: 'alpha', initiallyOpen: true, ends: [{ x: -99, y: 4 }], controllers: [] }],
   }
   for (const map of [draft, ...Object.values(demos)]) {
     const output = readMap(writeMap(map)!)
@@ -23,6 +23,28 @@ it('round-trips both drafts and complete maps with stable link IDs', () => {
     'pairIncomplete',
   ])
   expect(readinessIssues(demos.platform)).toEqual([])
+})
+
+it('defaults a legacy portal pair to closed and exports the normalized value', () => {
+  const legacy = {
+    ...emptyMap(),
+    portalPairs: [{ id: 'legacy', ends: [], controllers: [] }],
+  }
+  const { map, issues } = readMap(JSON.stringify(legacy))
+  expect(issues).toEqual([])
+  expect(map?.portalPairs[0].initiallyOpen).toBe(false)
+  expect(JSON.parse(writeMap(map!)!).portalPairs[0].initiallyOpen).toBe(false)
+})
+
+it.each([null, 'true', 1])('rejects a non-boolean initial portal value %j', (initiallyOpen) => {
+  const { map, issues } = readMap(
+    JSON.stringify({
+      ...emptyMap(),
+      portalPairs: [{ id: 'p', initiallyOpen, ends: [], controllers: [] }],
+    }),
+  )
+  expect(map).toBeUndefined()
+  expect(issues).toEqual([{ code: 'format', path: '$.portalPairs[0].initiallyOpen' }])
 })
 
 it('reports bad schema, duplicate support and ladder exits, and distinguishes the two controller overlaps', () => {
@@ -46,7 +68,7 @@ it('reports bad schema, duplicate support and ladder exits, and distinguishes th
       { top, bottom: { x: 0, y: 3 } },
       { top, bottom: { x: 0, y: 4 } },
     ],
-    portalPairs: [{ id: 'p', ends: [at], controllers: [moving] }],
+    portalPairs: [{ id: 'p', initiallyOpen: false, ends: [at], controllers: [moving] }],
   }
   expect(validateMap(map).issues).toEqual([
     { code: 'duplicateSupport', path: '$.platformGroups[0].cells', cell: moving },
