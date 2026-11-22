@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Copy, Keyboard } from '@lucide/vue'
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Copy,
+  Keyboard,
+  Triangle,
+} from '@lucide/vue'
 import Button from 'primevue/button'
 import { cellKey, type Cell, type ReadyMap } from '../engine/map'
 import type { SearchResult } from '../engine/solve'
@@ -19,6 +27,7 @@ const emit = defineEmits<{ frame: [index: number, intent: 'next' | 'jump'] }>()
 const { t } = useI18n()
 const g = 'goldenScapegoat'
 const pageSize = 60
+const directionRotation = { up: '0deg', right: '90deg', down: '180deg', left: '270deg' }
 const page = ref(0)
 const sequenceScroll = ref<HTMLOListElement>()
 const copied = ref(false)
@@ -223,7 +232,13 @@ function eventText(event: GameEvent) {
             >
               <span class="gold-action-row" aria-hidden="true">
                 <span class="step-number">{{ item.step }}</span>
-                <b class="gold-action">{{ actionSequence([item.gold], 'arrow') }}</b>
+                <Triangle
+                  class="gold-action"
+                  :size="16"
+                  :stroke-width="0"
+                  fill="currentColor"
+                  :style="{ rotate: directionRotation[item.gold] }"
+                />
               </span>
               <span class="black-action-row" aria-hidden="true">
                 <span
@@ -233,7 +248,12 @@ function eventText(event: GameEvent) {
                   "
                   :class="{ 'invalid-action': !item.black.moved }"
                 >
-                  {{ actionSequence([item.black.direction], 'arrow') }}
+                  <Triangle
+                    :size="12"
+                    :stroke-width="0"
+                    fill="currentColor"
+                    :style="{ rotate: directionRotation[item.black.direction] }"
+                  />
                 </span>
               </span>
             </Button>
@@ -354,9 +374,9 @@ h2 {
   overscroll-behavior: contain;
 }
 .sequence-step {
-  --step-tint: 17%;
   display: grid;
-  grid-template-rows: 5fr 3fr;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   place-items: stretch;
   gap: 0;
   inline-size: 100%;
@@ -366,22 +386,15 @@ h2 {
   overflow: hidden;
   font-variant-numeric: tabular-nums;
 }
-.sequence-step:hover {
-  --step-tint: 24%;
-}
 .sequence-step[aria-current='step'] {
-  --step-tint: 33%;
   border-color: var(--color-accent);
 }
 .gold-action-row,
 .black-action-row {
   display: grid;
   place-items: center;
-  color: color-mix(in srgb, var(--step-color) 40%, var(--color-ink));
-  background: color-mix(in srgb, var(--step-color) var(--step-tint), var(--color-surface));
 }
 .gold-action-row {
-  --step-color: var(--color-accent);
   align-content: center;
   gap: 1px;
 }
@@ -390,16 +403,14 @@ h2 {
   line-height: 1;
 }
 .gold-action {
-  font-size: 1.25rem;
-  line-height: 1;
+  color: var(--color-accent);
 }
 .black-action-row {
-  --step-color: var(--color-advance);
-  font-size: 0.875rem;
-  line-height: 1;
+  border-block-start: 1px solid var(--color-line);
+  color: var(--color-advance);
 }
 .black-action-row .invalid-action {
-  opacity: 0.78;
+  color: var(--color-muted);
 }
 .page-controls {
   justify-content: center;
