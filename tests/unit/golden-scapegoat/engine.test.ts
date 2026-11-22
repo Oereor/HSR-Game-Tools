@@ -88,7 +88,7 @@ describe('turns, gravity and replay', () => {
       phase: 'replaying',
       history: ['right', 'down'],
     })
-    expect(second.events.map((event) => event.type)).toEqual(['move', 'spawn'])
+    expect(second.events.map((event) => event.type)).toEqual(['move', 'spawn', 'controller'])
     const third = step(board, second.nextState, 'right')
     expect(third.nextState).toMatchObject({ black: at(1), turn: 3, history: ['down'] })
     const fourth = step(board, third.nextState, 'right')
@@ -148,31 +148,54 @@ describe('turns, gravity and replay', () => {
 })
 
 describe('activity platforms', () => {
-  const config = (defaultEnabled = false, activatedEnabled = true) => ({
-    id: 'a',
-    defaultEnabled,
-    activatedEnabled,
-    cells: [at(6)],
-    controllers: [at(1), at(2)],
-  })
-  const scenario = (group = config()) =>
+  const scenario = () =>
     compileMap(
       map({
-        floors: [at(0), at(1), at(2), at(3), at(5), at(6, 4), at(7)],
-        platformGroups: [group],
+        floors: [at(0), at(1), at(2), at(3), at(5), at(6, 4), at(7), at(8, 4)],
+        platformGroups: [
+          {
+            id: 'a',
+            controllers: [at(1), at(2)],
+            platforms: [
+              { id: 'bridge', cells: [at(6)], enabledWhenPressed: true },
+              { id: 'ledge', cells: [at(8), at(9)], enabledWhenPressed: false },
+            ],
+          },
+        ],
       }),
     )
 
-  it('supports gold immediately when black steps on the controller in the same turn', () => {
+  it('switches both polarities together and supports gold that lands on the appearing platform', () => {
     const board = scenario()
     const result = step(board, replay(at(5), at(0), 'right'), 'right')
     expect(result.nextState).toMatchObject({ gold: at(6), black: at(1) })
+    expect(boardStatus(board, result.nextState).platforms).toEqual([[true, false]])
+    expect(result.events.slice(2)).toEqual([
+      { type: 'controller', at: at(1), pressed: true },
+      { type: 'platform', group: 0, platform: 0, enabled: true },
+      { type: 'platform', group: 0, platform: 1, enabled: false },
+    ])
     expect(result.events).not.toContainEqual(expect.objectContaining({ type: 'fall' }))
+    const falling = step(board, replay(at(7), at(0), 'right'), 'right')
+    expect(falling.nextState).toMatchObject({ gold: at(8, 4), black: at(1) })
+    expect(falling.events.at(-1)).toEqual({
+      type: 'fall',
+      sheep: 'gold',
+      from: at(8),
+      to: at(8, 4),
+    })
   })
 
-  it('drops gold when black leaves the last controller during the same turn', () => {
-    const result = step(scenario(), replay(at(5), at(1), 'left'), 'right')
+  it('restores both polarities and drops gold when black leaves the last controller', () => {
+    const board = scenario()
+    const result = step(board, replay(at(5), at(1), 'left'), 'right')
     expect(result.nextState).toMatchObject({ gold: at(6, 4), black: at(0) })
+    expect(boardStatus(board, result.nextState).platforms).toEqual([[false, true]])
+    expect(result.events.slice(2, 5)).toEqual([
+      { type: 'controller', at: at(1), pressed: false },
+      { type: 'platform', group: 0, platform: 0, enabled: false },
+      { type: 'platform', group: 0, platform: 1, enabled: true },
+    ])
   })
 
   it('leaves a sheep that already stepped off the disappearing platform at its new position', () => {
@@ -181,14 +204,20 @@ describe('activity platforms', () => {
     expect(result.events).not.toContainEqual(expect.objectContaining({ type: 'fall' }))
   })
 
-  it('applies OR and inverse configuration', () => {
-    const board = scenario(config(true, false))
-    expect(boardStatus(board, state()).platforms).toEqual([true])
-    expect(boardStatus(board, state({ gold: at(1) })).platforms).toEqual([false])
-    expect(boardStatus(board, state({ black: at(2) })).platforms).toEqual([false])
-    const result = step(board, replay(at(1), at(2), 'right'), 'left')
-    expect(boardStatus(board, result.nextState).platforms).toEqual([true])
-    expect(boardStatus(board, state({ gold: at(1), black: at(2) })).platforms).toEqual([false])
+  it('keeps both platform states when another controller is occupied or takes over', () => {
+    const board = scenario()
+    expect(boardStatus(board, state()).platforms).toEqual([[false, true]])
+    expect(boardStatus(board, state({ gold: at(1) })).platforms).toEqual([[true, false]])
+    expect(boardStatus(board, state({ black: at(2) })).platforms).toEqual([[true, false]])
+    expect(boardStatus(board, state({ gold: at(1), black: at(2) })).platforms).toEqual([
+      [true, false],
+    ])
+    const result = step(board, replay(at(1), at(3), 'left'), 'left')
+    expect(boardStatus(board, result.nextState).platforms).toEqual([[true, false]])
+    expect(result.events.slice(2)).toEqual([
+      { type: 'controller', at: at(1), pressed: false },
+      { type: 'controller', at: at(2), pressed: true },
+    ])
   })
 
   it('finishes a cascade in one turn, including passive black falling after replay', () => {
@@ -198,17 +227,13 @@ describe('activity platforms', () => {
         platformGroups: [
           {
             id: 'black',
-            defaultEnabled: false,
-            activatedEnabled: true,
-            cells: [at(3)],
             controllers: [at(0)],
+            platforms: [{ id: 'ledge', cells: [at(3)], enabledWhenPressed: true }],
           },
           {
             id: 'gold',
-            defaultEnabled: true,
-            activatedEnabled: false,
-            cells: [at(1)],
             controllers: [at(3, 2)],
+            platforms: [{ id: 'ledge', cells: [at(1)], enabledWhenPressed: false }],
           },
         ],
       }),
@@ -222,8 +247,10 @@ describe('activity platforms', () => {
     })
     expect(cascade.events.map((event) => event.type)).toEqual([
       'move',
+      'controller',
       'platform',
       'fall',
+      'controller',
       'platform',
       'fall',
     ])
@@ -352,7 +379,11 @@ describe('BFS and replay', () => {
     })
     const cells = Array.from({ length: 4100 }, (_, i) => at(-1, i))
     const platformGroups = [
-      { id: 'deep', defaultEnabled: false, activatedEnabled: true, cells, controllers: [] },
+      {
+        id: 'deep',
+        controllers: [],
+        platforms: [{ id: 'column', cells, enabledWhenPressed: true }],
+      },
     ]
     expect(solve(compileMap(map({ platformGroups })))).toMatchObject({
       status: 'unsupported_cycle',

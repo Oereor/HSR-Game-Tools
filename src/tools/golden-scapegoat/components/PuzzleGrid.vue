@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { cellKey, sameCell, type Cell, type PuzzleMap } from '../engine/map'
+import { cellKey, platformEnabled, sameCell, type Cell, type PuzzleMap } from '../engine/map'
 import type { boardStatus, GameState } from '../engine/step'
+import { groupDetail, visibleLadderCells, type GridWindow, type GroupChoice } from '../presentation'
 
 const props = defineProps<{
   map: PuzzleMap
-  origin: Cell
-  width: number
-  height: number
+  view: GridWindow
   size: number
   editable: boolean
   anchor: Cell | null
+  platformGroups: GroupChoice[]
+  portalGroups: GroupChoice[]
   snapshot?: GameState
   status?: ReturnType<typeof boardStatus>
 }>()
@@ -20,82 +21,121 @@ const { t } = useI18n()
 const grid = ref<HTMLElement>()
 const focusIndex = ref(0)
 const g = 'goldenScapegoat'
+const available = ref({ width: 0, height: 0 })
+const cellSize = computed(() => {
+  if (props.editable || !available.value.width) return props.size
+  return Math.max(
+    32,
+    Math.min(
+      72,
+      Math.floor(available.value.width / props.view.width) - 2,
+      Math.floor(available.value.height / props.view.height) - 2,
+    ),
+  )
+})
+
+function measure() {
+  if (!grid.value) return
+  available.value = {
+    width: grid.value.clientWidth - 8,
+    height: Math.floor(window.innerHeight * 0.68) - 8,
+  }
+}
+
+let observer: ResizeObserver | undefined
+onMounted(() => {
+  measure()
+  if (typeof ResizeObserver !== 'undefined') {
+    observer = new ResizeObserver(measure)
+    observer.observe(grid.value!)
+  }
+  window.addEventListener('resize', measure)
+})
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  window.removeEventListener('resize', measure)
+})
+
 const lookups = computed(() => {
   const floors = new Set(props.map.floors.map(cellKey))
-  const platforms = new Map<string, number>()
+  const platforms = new Map<string, { group: number; index: number }>()
   const portals = new Map<string, number>()
-  const switches = new Map<string, { token: string; type: 'platformSwitch' | 'portalSwitch' }[]>()
-  function addSwitch(point: Cell, token: string, type: 'platformSwitch' | 'portalSwitch') {
+  const switches = new Map<string, { group: GroupChoice; label: string }[]>()
+  function addSwitch(point: Cell, group: GroupChoice) {
     const key = cellKey(point)
     const links = switches.get(key) ?? []
-    links.push({ token, type })
+    links.push({
+      group,
+      label: t(`${g}.groups.controller`, { group: groupDetail(group, t) }),
+    })
     switches.set(key, links)
   }
-  props.map.platformGroups.forEach((group, index) => {
-    group.cells.forEach((cell) => platforms.set(cellKey(cell), index))
-    group.controllers.forEach((cell) => addSwitch(cell, `A${index + 1}`, 'platformSwitch'))
+  props.map.platformGroups.forEach((group, i) => {
+    group.platforms.forEach((platform, index) => {
+      platform.cells.forEach((cell) => platforms.set(cellKey(cell), { group: i, index }))
+    })
+    group.controllers.forEach((cell) => addSwitch(cell, props.platformGroups[i]))
   })
   props.map.portalPairs.forEach((pair, index) => {
     pair.ends.forEach((cell) => portals.set(cellKey(cell), index))
-    pair.controllers.forEach((cell) => addSwitch(cell, `P${index + 1}`, 'portalSwitch'))
+    pair.controllers.forEach((cell) => addSwitch(cell, props.portalGroups[index]))
   })
-
-  // Project only the visible rows, even for ladders that span a large map.
-  const ladderCells = new Set<string>()
-  const { x, y } = props.origin
-  for (const { top, bottom } of props.map.ladders) {
-    if (top.x < x || top.x >= x + props.width) continue
-    const last = Math.min(bottom.y, y + props.height - 1)
-    for (let row = Math.max(y, top.y); row <= last; row++)
-      ladderCells.add(cellKey({ x: top.x, y: row }))
-  }
-  return { floors, platforms, portals, switches, ladderCells }
+  return { floors, platforms, portals, switches }
 })
 
+const ladderCells = computed(() => visibleLadderCells(props.map.ladders, props.view))
 const tiles = computed(() => {
-  const { floors, platforms, portals, switches, ladderCells } = lookups.value
-  return Array.from({ length: props.width * props.height }, (_, index) => {
-    const point = {
-      x: props.origin.x + (index % props.width),
-      y: props.origin.y + Math.floor(index / props.width),
-    }
+  const { floors, platforms, portals, switches } = lookups.value
+  const { x, y, width, height } = props.view
+  return Array.from({ length: width * height }, (_, index) => {
+    const point = { x: x + (index % width), y: y + Math.floor(index / width) }
     const key = cellKey(point)
     const platform = platforms.get(key)
     const portal = portals.get(key)
     const floor = floors.has(key)
-    const ladder = ladderCells.has(key)
+    const ladder = ladderCells.value.has(key)
     const start = sameCell(props.map.start, point)
     const goal = sameCell(props.map.goal, point)
     const gold = sameCell(props.snapshot?.gold ?? null, point)
     const black = sameCell(props.snapshot?.black ?? null, point)
     const controls = switches.get(key)
     const pressed = props.status?.pressed.has(key)
-    const platformOn =
-      platform !== undefined &&
-      (props.status?.platforms[platform] ?? props.map.platformGroups[platform].defaultEnabled)
-    const portalOn =
-      portal !== undefined &&
-      (props.status?.portals.has(portal) ?? props.map.portalPairs[portal].initiallyOpen)
     const labels = [t(`${g}.coordinate`, point)]
     if (floor) labels.push(t(`${g}.tools.floor`))
     if (ladder) labels.push(t(`${g}.tools.ladder`))
-    if (platform !== undefined)
+
+    let platformStyle
+    if (platform) {
+      const group = props.platformGroups[platform.group]
+      const config = props.map.platformGroups[platform.group].platforms[platform.index]
+      const on =
+        props.status?.platforms[platform.group][platform.index] ?? platformEnabled(config, false)
+      platformStyle = { color: group.color, on }
       labels.push(
-        t(`${g}.groupState`, {
-          group: `A${platform + 1}`,
-          state: t(`${g}.states.${platformOn ? 'on' : 'off'}`),
+        t(`${g}.groups.platformTile`, {
+          group: groupDetail(group, t),
+          platform: config.id,
+          polarity: t(
+            `${g}.tools.${config.enabledWhenPressed ? 'platformPressed' : 'platformReleased'}`,
+          ),
+          state: t(`${g}.states.${on ? 'on' : 'off'}`),
         }),
       )
-    if (portal !== undefined)
-      labels.push(
-        t(`${g}.groupState`, {
-          group: `P${portal + 1}`,
-          state: t(`${g}.states.${portalOn ? 'open' : 'closed'}`),
-        }),
-      )
-    for (const control of controls ?? []) {
-      labels.push(`${t(`${g}.tools.${control.type}`)} ${control.token}`)
     }
+
+    let portalStyle
+    if (portal !== undefined) {
+      const group = props.portalGroups[portal]
+      const on = props.status?.portals.has(portal) ?? props.map.portalPairs[portal].initiallyOpen
+      portalStyle = { color: group.color, on }
+      labels.push(
+        t(`${g}.groupState`, {
+          group: groupDetail(group, t),
+          state: t(`${g}.states.${on ? 'open' : 'closed'}`),
+        }),
+      )
+    }
+    for (const control of controls ?? []) labels.push(control.label)
     if (pressed) labels.push(t(`${g}.pressed`))
     if (start) labels.push(t(`${g}.tools.start`))
     if (goal) labels.push(t(`${g}.tools.goal`))
@@ -106,10 +146,8 @@ const tiles = computed(() => {
       key,
       floor,
       ladder,
-      platform,
-      platformOn,
-      portal,
-      portalOn,
+      platformStyle,
+      portalStyle,
       start,
       goal,
       gold,
@@ -124,21 +162,22 @@ const tiles = computed(() => {
 })
 
 async function navigate(event: KeyboardEvent, index: number) {
-  const column = index % props.width
-  const row = Math.floor(index / props.width)
+  const { width, height } = props.view
+  const column = index % width
+  const row = Math.floor(index / width)
   let next = index
   switch (event.key) {
     case 'ArrowLeft':
       if (column > 0) next--
       break
     case 'ArrowRight':
-      if (column < props.width - 1) next++
+      if (column < width - 1) next++
       break
     case 'ArrowUp':
-      if (row > 0) next -= props.width
+      if (row > 0) next -= width
       break
     case 'ArrowDown':
-      if (row < props.height - 1) next += props.width
+      if (row < height - 1) next += width
       break
     default:
       return
@@ -148,6 +187,7 @@ async function navigate(event: KeyboardEvent, index: number) {
   await nextTick()
   grid.value?.querySelector<HTMLButtonElement>(`[data-index="${next}"]`)?.focus()
 }
+
 function revealSheep() {
   const scroller = grid.value
   const gold = scroller?.querySelector('[data-gold="true"]')?.getBoundingClientRect()
@@ -177,23 +217,50 @@ function revealSheep() {
   })
 }
 
-defineExpose({ revealSheep })
+let editScroll = { left: 0, top: 0 }
+watch(
+  () => props.editable,
+  (editable) => {
+    if (!editable && grid.value)
+      editScroll = { left: grid.value.scrollLeft, top: grid.value.scrollTop }
+    if (editable)
+      void nextTick(() => {
+        if (props.editable) grid.value?.scrollTo(editScroll)
+      })
+  },
+)
+watch(
+  [() => props.snapshot, cellSize],
+  () => {
+    if (!props.editable) revealSheep()
+  },
+  { flush: 'post' },
+)
 </script>
 
 <template>
   <div ref="grid" class="board-scroll">
     <div
       class="board"
+      :class="{ 'board-edit': editable }"
       role="group"
       :aria-label="t(`${g}.board`)"
-      :style="{ '--width': width, '--size': `${size}px` }"
+      :style="{ '--width': view.width, '--size': `${cellSize}px` }"
     >
-      <span class="axis" aria-hidden="true">x/y</span>
-      <span v-for="column in width" :key="column" class="axis column-axis" aria-hidden="true">{{
-        origin.x + column - 1
-      }}</span>
+      <template v-if="editable">
+        <span class="axis" aria-hidden="true">x/y</span>
+        <span
+          v-for="column in view.width"
+          :key="column"
+          class="axis column-axis"
+          aria-hidden="true"
+          >{{ view.x + column - 1 }}</span
+        >
+      </template>
       <template v-for="(tile, index) in tiles" :key="tile.key">
-        <span v-if="index % width === 0" class="axis" aria-hidden="true">{{ tile.point.y }}</span>
+        <span v-if="editable && index % view.width === 0" class="axis" aria-hidden="true">{{
+          tile.point.y
+        }}</span>
         <component
           :is="editable ? 'button' : 'div'"
           class="tile"
@@ -213,23 +280,26 @@ defineExpose({ revealSheep })
           @focus="focusIndex = index"
           @keydown="editable && navigate($event, index)"
         >
-          <span v-if="tile.start || tile.goal" class="markers" aria-hidden="true"
-            >{{ tile.start ? 'S' : '' }}{{ tile.goal ? 'G' : '' }}</span
-          >
+          <span v-if="tile.start" class="marker start" aria-hidden="true">S</span>
+          <span v-if="tile.goal" class="marker goal" aria-hidden="true">G</span>
           <span
-            v-if="tile.portal !== undefined"
+            v-if="tile.portalStyle"
             class="portal"
-            :class="{ open: tile.portalOn }"
+            :class="{ open: tile.portalStyle.on }"
+            :style="{ '--group-color': tile.portalStyle.color }"
             aria-hidden="true"
-            >P{{ tile.portal + 1 }}</span
-          >
+          />
           <span
             v-if="tile.controls?.length"
             class="switches"
             :class="{ pressed: tile.pressed }"
             aria-hidden="true"
           >
-            {{ tile.controls.map(({ token }) => token).join('·') }}
+            <span
+              v-for="control in tile.controls"
+              :key="`${control.group.kind}:${control.group.id}`"
+              :style="{ '--group-color': control.group.color }"
+            />
           </span>
           <span v-if="tile.gold || tile.black" class="sheep" aria-hidden="true">
             <b v-if="tile.gold" class="gold">{{ t(`${g}.sheep.goldToken`) }}</b>
@@ -237,12 +307,12 @@ defineExpose({ revealSheep })
           </span>
           <span v-if="tile.floor" class="floor" aria-hidden="true" />
           <span
-            v-if="tile.platform !== undefined"
+            v-if="tile.platformStyle"
             class="platform"
-            :class="{ enabled: tile.platformOn }"
+            :class="{ enabled: tile.platformStyle.on }"
+            :style="{ '--group-color': tile.platformStyle.color }"
             aria-hidden="true"
-            >A{{ tile.platform + 1 }}</span
-          >
+          />
         </component>
       </template>
     </div>
@@ -257,10 +327,13 @@ defineExpose({ revealSheep })
 }
 .board {
   display: grid;
-  grid-template-columns: max-content repeat(var(--width), var(--size));
+  grid-template-columns: repeat(var(--width), var(--size));
   gap: 2px;
   inline-size: max-content;
   margin-inline: auto;
+}
+.board-edit {
+  grid-template-columns: max-content repeat(var(--width), var(--size));
 }
 .axis {
   display: grid;
@@ -282,8 +355,6 @@ defineExpose({ revealSheep })
   background: var(--color-page);
   border: 1px solid var(--color-line);
   border-radius: 4px;
-  font-size: 10px;
-  line-height: 1.05;
 }
 button.tile:hover,
 .tile-anchor {
@@ -314,53 +385,61 @@ button.tile:hover,
   background: var(--color-muted);
 }
 .platform {
-  min-block-size: 8px;
-  border: 1px dashed var(--color-accent);
-  color: var(--color-ink);
-  text-align: center;
+  block-size: 6px;
+  border: 1px dashed var(--group-color);
 }
 .platform.enabled {
-  background: var(--color-accent);
-  color: var(--color-page);
+  background: var(--group-color);
   border-style: solid;
 }
-.markers,
-.portal,
-.switches {
+.marker {
   position: absolute;
-  padding: 1px 2px;
+  z-index: 1;
+  inset-block-start: 1px;
+  padding-inline: 2px;
   border-radius: 2px;
-}
-.markers {
-  inset: 2px auto auto 2px;
-  background: var(--color-ally);
-  color: var(--color-page);
+  background: var(--color-page);
+  font-size: 10px;
+  line-height: 1.25;
   font-weight: 750;
 }
-.portal {
-  inset: 2px 2px auto auto;
-  border: 1px dashed var(--color-advance);
+.start {
+  inset-inline-start: 1px;
   color: var(--color-advance);
 }
+.goal {
+  inset-inline-end: 1px;
+  color: var(--color-ally);
+}
+.portal {
+  position: absolute;
+  inset: 13% 20% 23%;
+  border: 2px dashed var(--group-color);
+  border-radius: 45% 45% 2px 2px;
+}
 .portal.open {
-  background: var(--color-advance);
-  color: var(--color-page);
   border-style: solid;
+  background: color-mix(in srgb, var(--group-color) 20%, transparent);
 }
 .switches {
-  inset: auto 2px 7px;
+  position: absolute;
+  inset: auto 3px 7px;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 2px;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  background: var(--color-surface);
-  border: 1px solid var(--color-muted);
-  color: var(--color-ink);
-  text-align: center;
 }
-.switches.pressed {
-  background: var(--color-ally);
-  border-color: var(--color-ally);
-  color: var(--color-page);
+.switches span {
+  min-inline-size: 5px;
+  inline-size: 10px;
+  block-size: 5px;
+  border: 1px solid var(--group-color);
+  border-radius: 3px;
+  background: var(--color-page);
+}
+.switches.pressed span {
+  background: var(--group-color);
 }
 .sheep {
   position: absolute;
@@ -375,9 +454,9 @@ button.tile:hover,
   display: grid;
   place-items: center;
   border-radius: 50%;
-  inline-size: 19px;
-  block-size: 19px;
-  font-size: 11px;
+  inline-size: clamp(17px, calc(var(--size) * 0.55), 32px);
+  aspect-ratio: 1;
+  font-size: clamp(10px, calc(var(--size) * 0.29), 16px);
 }
 .gold {
   background: var(--color-accent);

@@ -752,24 +752,14 @@
     "title": "黄金替罪羊求解器",
     "editor": "编辑地图",
     "board": "关卡地图",
-    "replay": "回放",
+    "replay": "解法回放",
     "clear": "空白地图",
     "import": "导入 JSON",
     "export": "导出 JSON",
-    "add": "新建",
-    "remove": "删除组",
     "dismiss": "关闭提示",
     "k": "记录步数 K",
-    "element": "放置元素",
-    "place": "放置",
-    "erase": "擦除",
     "ladderFirst": "选择梯子的第一个端点。",
     "ladderSecond": "已选 {at}，请选择同列另一端。",
-    "platformGroups": "活动平台组 · A",
-    "portalPairs": "传送门配对 · P",
-    "none": "请选择",
-    "defaultEnabled": "默认可站立",
-    "activatedEnabled": "踩住机关时可站立",
     "initiallyOpen": "初始开启",
     "ends": "已放置 {count} / 2 个端点",
     "searchSettings": "搜索限制",
@@ -794,13 +784,12 @@
     "copyArrow": "复制方向箭头",
     "copyWasd": "复制 WASD",
     "copied": "已复制",
-    "copyFailed": "复制失败，可手动选择并复制方向序列。",
+    "copyFailed": "复制失败。可在下方选择并复制完整序列。",
     "first": "起始帧",
     "previous": "上一步",
     "next": "下一步",
     "last": "最后一帧",
     "step": "第 {current} / {total} 步",
-    "replayProgress": "黑羊回放 {current} / {total}",
     "stepEvents": "本步事件",
     "coordinate": "({x}, {y})",
     "groupState": "{group} · {state}",
@@ -813,11 +802,12 @@
     },
     "phase": {
       "recording": "记录金羊操作",
-      "replaying": "黑羊回放中",
-      "postReplay": "回放指令已结束"
+      "replaying": "黑羊同步回放",
+      "postReplay": "黑羊停止主动移动",
+      "initial": "初始帧"
     },
     "states": {
-      "on": "可站立",
+      "on": "存在",
       "off": "已消失",
       "open": "开启",
       "closed": "关闭"
@@ -825,15 +815,16 @@
     "tools": {
       "floor": "固定平台",
       "ladder": "梯子",
-      "platform": "活动平台",
       "platformSwitch": "平台机关",
       "portal": "传送门端点",
       "portalSwitch": "传送门机关",
       "start": "起点 S",
-      "goal": "终点 G"
+      "goal": "终点 G",
+      "erase": "擦除",
+      "platformPressed": "按下时存在",
+      "platformReleased": "松开时存在"
     },
     "result": {
-      "idle": "等待求解",
       "searching": "正在搜索最短路径…",
       "cancelled": "搜索已取消。",
       "workerError": "求解服务运行失败，请重试。",
@@ -852,16 +843,19 @@
       "void": "{sheep}在 {at} 坠出地图",
       "portalLoop": "{sheep}在 {at} 因反复传送而消失",
       "collision": "两羊在 {at} 碰撞",
-      "goal": "金羊抵达终点 {at}"
+      "goal": "金羊抵达终点 {at}",
+      "controllerPressed": "踩下 {at} 的机关 · {groups}",
+      "controllerReleased": "松开 {at} 的机关 · {groups}",
+      "platform": "{group} · {platform} · {state}"
     },
     "issues": {
       "json": "无法读取有效的 JSON。",
       "fileLimit": "地图文件超过 1 MiB。",
       "format": "地图字段缺失或格式无效。",
-      "version": "只支持版本 1 地图。",
+      "version": "支持版本 1 和版本 2 的地图。",
       "coordinate": "坐标必须是 −1,000,000 至 1,000,000 的整数。",
       "k": "K 必须是可精确表示的正整数。",
-      "duplicateId": "组 ID 重复。",
+      "duplicateId": "同一列表内的 ID 重复。",
       "duplicateCell": "同一元素重复占用该格。",
       "duplicateSupport": "一格只能放置一种支撑平台。",
       "ladder": "梯子需要同列的两个不同端点。",
@@ -874,7 +868,30 @@
       "goal": "请放置终点 G。",
       "pairIncomplete": "请补齐该对传送门的两个端点。",
       "placePairFull": "该配对已有两个端点，请先擦除一个。",
-      "selectGroup": "请先新建或选择关联组。"
+      "selectGroup": "请选择关联组。",
+      "legacyPlatformPolarity": "旧版活动平台在按下和松开时的状态相同，无法迁移到两种触发极性。请检查原文件中的平台组。"
+    },
+    "sequence": "操作序列",
+    "jumpStep": "第 {step} 步 · {arrow} · {phase}",
+    "page": "第 {current} / {total} 页",
+    "previousPage": "上一页操作",
+    "nextPage": "下一页操作",
+    "palette": {
+      "basic": "基础画笔",
+      "groups": "机关分组",
+      "extras": "其他导入分组",
+      "brushes": "分组画笔",
+      "eraseHint": "点击格子清除该格的所有元素和关联梯段。",
+      "polarityHint": "用所需极性的画笔点击已有平台，即可修改整个平台。"
+    },
+    "groups": {
+      "platformSlot": "活动平台 {number}",
+      "portalSlot": "传送门 {number}",
+      "platformNamed": "活动平台 · {id}",
+      "portalNamed": "传送门 · {id}",
+      "detail": "{name} · {id}",
+      "controller": "{group}的机关",
+      "platformTile": "{group} · {platform} · {polarity} · {state}"
     }
   }
 }

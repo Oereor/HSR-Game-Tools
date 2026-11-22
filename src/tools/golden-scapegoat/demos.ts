@@ -11,10 +11,8 @@ export const demos = {
     platformGroups: [
       {
         id: 'bridge',
-        defaultEnabled: false,
-        activatedEnabled: true,
-        cells: [at(2, 0)],
         controllers: [at(1, 0)],
+        platforms: [{ id: 'bridge-span', cells: [at(2, 0)], enabledWhenPressed: true }],
       },
     ],
   },

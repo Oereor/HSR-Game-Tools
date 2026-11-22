@@ -1,4 +1,12 @@
-import { authoredCells, cellKey, sameCell, type Cell, type ReadyMap } from './map'
+import {
+  authoredCells,
+  cellKey,
+  platformEnabled,
+  sameCell,
+  type Cell,
+  type ControlledPlatform,
+  type ReadyMap,
+} from './map'
 
 export const directions = ['left', 'right', 'up', 'down'] as const
 export type Direction = (typeof directions)[number]
@@ -19,7 +27,8 @@ export type Event =
   | { type: 'move' | 'fall' | 'teleport'; sheep: Sheep; from: Cell; to: Cell }
   | { type: 'spawn'; at: Cell }
   | { type: 'lost'; sheep: Sheep; at: Cell; cause: 'void' | 'portalLoop' }
-  | { type: 'platform'; group: number; enabled: boolean }
+  | { type: 'controller'; at: Cell; pressed: boolean }
+  | { type: 'platform'; group: number; platform: number; enabled: boolean }
   | { type: 'portal'; pair: number; open: boolean }
   | { type: 'collision' | 'goal'; at: Cell }
 export type Outcome = 'stable' | 'invalid' | 'solved' | 'failed' | 'unsupported_cycle'
@@ -32,6 +41,7 @@ export interface Transition {
 
 type Positions = Pick<GameState, Sheep>
 interface Controls {
+  at: Cell
   platforms: number[]
   portals: number[]
 }
@@ -41,7 +51,7 @@ export interface Board {
   goal: Cell
   k: number
   floors: Set<string>
-  platforms: Map<string, number>
+  platforms: Map<string, { group: number; platform: ControlledPlatform }>
   groups: ReadyMap['platformGroups']
   portalAt: Map<string, { pair: number; exit: Cell }>
   initiallyOpenPortals: readonly number[]
@@ -56,7 +66,7 @@ const sheep = ['gold', 'black'] as const
 /** Compile once for a search or replay. The transition never edits this index. */
 export function compileMap(map: ReadyMap): Board {
   const floors = new Set(map.floors.map(cellKey))
-  const platforms = new Map<string, number>()
+  const platforms: Board['platforms'] = new Map()
   const portalAt: Board['portalAt'] = new Map()
   const initiallyOpenPortals: number[] = []
   const controls: Board['controls'] = new Map()
@@ -64,22 +74,26 @@ export function compileMap(map: ReadyMap): Board {
   const rowSets = new Map<number, Set<number>>()
   let bottom = map.start.y
 
-  function addController(point: Cell, type: keyof Controls, index: number) {
+  function addController(point: Cell, type: 'platforms' | 'portals', index: number) {
     const key = cellKey(point)
     // A controller needs a fixed floor to be pressed. Active floors cannot host one.
     if (!floors.has(key)) return
-    const links = controls.get(key) ?? { platforms: [], portals: [] }
+    const links = controls.get(key) ?? { at: point, platforms: [], portals: [] }
     links[type].push(index)
     controls.set(key, links)
   }
 
   map.platformGroups.forEach((group, index) => {
-    group.cells.forEach((point) => platforms.set(cellKey(point), index))
+    for (const platform of group.platforms) {
+      const support = { group: index, platform }
+      platform.cells.forEach((point) => platforms.set(cellKey(point), support))
+    }
     group.controllers.forEach((point) => addController(point, 'platforms', index))
   })
   map.portalPairs.forEach((pair, index) => {
-    if (pair.initiallyOpen) initiallyOpenPortals.push(index)
     const [a, b] = pair.ends
+    if (!a || !b) return
+    if (pair.initiallyOpen) initiallyOpenPortals.push(index)
     portalAt.set(cellKey(a), { pair: index, exit: b })
     portalAt.set(cellKey(b), { pair: index, exit: a })
     pair.controllers.forEach((point) => addController(point, 'portals', index))
@@ -130,16 +144,13 @@ function occupancy(board: Board, positions: Positions) {
   return { pressed, platforms, portals }
 }
 
-function enabled(board: Board, group: number, pressed: Set<number>) {
-  const config = board.groups[group]
-  return pressed.has(group) ? config.activatedEnabled : config.defaultEnabled
-}
-
 export function boardStatus(board: Board, state: GameState) {
   const { pressed, platforms } = occupancy(board, state)
   return {
     pressed: new Set(pressed.keys()),
-    platforms: board.groups.map((_, index) => enabled(board, index, platforms)),
+    platforms: board.groups.map((group, index) =>
+      group.platforms.map((platform) => platformEnabled(platform, platforms.has(index))),
+    ),
     portals: new Set(state.openPortals),
   }
 }
@@ -216,11 +227,25 @@ function settle(
     }
 
     const current = occupancy(board, positions)
+    for (const [key, control] of prior.pressed) {
+      if (!current.pressed.has(key))
+        events.push({ type: 'controller', at: control.at, pressed: false })
+    }
+    for (const [key, control] of current.pressed) {
+      if (!prior.pressed.has(key))
+        events.push({ type: 'controller', at: control.at, pressed: true })
+    }
     for (const group of new Set([...prior.platforms, ...current.platforms])) {
-      const value = enabled(board, group, current.platforms)
-      if (value !== enabled(board, group, prior.platforms)) {
-        events.push({ type: 'platform', group, enabled: value })
-      }
+      const pressed = current.platforms.has(group)
+      if (pressed === prior.platforms.has(group)) continue
+      board.groups[group].platforms.forEach((config, platform) => {
+        events.push({
+          type: 'platform',
+          group,
+          platform,
+          enabled: platformEnabled(config, pressed),
+        })
+      })
     }
     for (const [key, control] of current.pressed) {
       if (!prior.pressed.has(key)) control.portals.forEach((pair) => setPortal(pair, true))
@@ -273,9 +298,10 @@ function settle(
       const point = positions[who]
       if (!point) return false
       const key = cellKey(point)
-      const group = board.platforms.get(key)
+      const support = board.platforms.get(key)
       return (
-        !board.floors.has(key) && (group === undefined || !enabled(board, group, current.platforms))
+        !board.floors.has(key) &&
+        (!support || !platformEnabled(support.platform, current.platforms.has(support.group)))
       )
     })
     if (!falling.length) return finish('stable')
