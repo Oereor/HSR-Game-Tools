@@ -883,8 +883,10 @@
     "palette": {
       "groups": "机关分组",
       "extras": "其他导入分组",
-      "brushes": "分组画笔",
-      "polarity": "平台触发极性",
+      "brushes": "绘制内容",
+      "polarity": "激活条件",
+      "activeWhenPressed": "按下时存在",
+      "activeWhenReleased": "松开时存在",
       "toolbar": "地图工具栏",
       "markers": "起点与终点",
       "terrain": "基础地形",
@@ -901,7 +903,7 @@
     },
     "recordRule": "{steps} 步后，过去的自己将成为敌人",
     "todo": {
-      "title": "待完成",
+      "title": "待完成 · {count} 项",
       "k": "填写记录步数 K。"
     }
   }

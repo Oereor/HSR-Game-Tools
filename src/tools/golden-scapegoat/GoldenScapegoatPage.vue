@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputNumber from 'primevue/inputnumber'
+import Panel from 'primevue/panel'
 import ButtonGroup from 'primevue/buttongroup'
 import Tabs from 'primevue/tabs'
 import TabList from 'primevue/tablist'
@@ -76,6 +77,7 @@ const anchor = ref<Cell | null>(null)
 const demo = ref<keyof typeof demos>()
 const kInput = ref<number | null>(null)
 const invalidK = ref(false)
+const todoCollapsed = ref(false)
 const fileInput = ref<HTMLInputElement>()
 const issues = shallowRef<EditIssue[]>([])
 let importGeneration = 0
@@ -120,12 +122,52 @@ const selectedPortal = computed(() => {
   return group?.kind === 'portal' ? map.value.portalPairs[group.index] : undefined
 })
 
-function todoMessage(issue: MapIssue) {
-  if (issue.code === 'k' && !invalidK.value) return t(`${g}.todo.k`)
-  const choices = issue.group?.kind === 'platform' ? platforms.value : portals.value
-  const group = issue.group ? groupDetail(choices.byIndex[issue.group.index], t) : ''
-  const at = issue.cell ? t(`${g}.coordinate`, { ...issue.cell }) : ''
-  return t(`${g}.issues.${issue.code}`, { group, at })
+const recordStepsIssue = computed(() => t(`${g}.${invalidK.value ? 'issues.k' : 'todo.k'}`))
+const todoItems = computed(() =>
+  readiness.value.issues.map((issue) => {
+    const groups = issue.group?.kind === 'platform' ? platforms.value : portals.value
+    const group = issue.group && groups.byIndex[issue.group.index]
+    return {
+      label:
+        issue.code === 'k'
+          ? recordStepsIssue.value
+          : t(`${g}.issues.${issue.code}`, {
+              group: group ? groupDetail(group, t) : '',
+              at: issue.cell ? t(`${g}.coordinate`, { ...issue.cell }) : '',
+            }),
+      action: todoAction(issue.code, group),
+    }
+  }),
+)
+
+function todoAction(code: MapIssue['code'], group?: GroupChoice): (() => void) | undefined {
+  switch (code) {
+    case 'start':
+    case 'goal':
+      return () => selectBasic(code)
+    case 'k':
+      return () => document.getElementById('goat-k')?.focus()
+    case 'ladderTopSupport':
+    case 'ladderBottomSupport':
+    case 'portalSupport':
+      return () => selectBasic('floor')
+    case 'platformMissingController':
+      if (group?.kind === 'platform') {
+        return () => {
+          selectGroup(group)
+          selectGroupTool('platformSwitch')
+        }
+      }
+      break
+    case 'pairIncomplete':
+      if (group?.kind === 'portal') {
+        return () => {
+          selectGroup(group)
+          selectGroupTool('portal')
+        }
+      }
+      break
+  }
 }
 
 const feedback = computed(() => {
@@ -203,6 +245,7 @@ function load(next: PuzzleMap) {
   commit(next)
   kInput.value = next.k
   invalidK.value = false
+  todoCollapsed.value = false
   selectBasic('floor')
   anchor.value = null
   fitMap()
@@ -470,28 +513,44 @@ onBeforeUnmount(() => {
                         @portal-open="updatePortal"
                         @cancel-ladder="anchor = null"
                       />
-                      <div aria-live="polite">
-                        <section
-                          v-if="readiness.issues.length"
-                          class="todo"
-                          aria-labelledby="goat-todo"
-                        >
-                          <h2 id="goat-todo">{{ t(`${g}.todo.title`) }}</h2>
-                          <ul class="hint readiness">
-                            <li
-                              v-for="(issue, index) in readiness.issues"
-                              :id="issue.code === 'k' ? 'goat-k-issue' : undefined"
-                              :key="index"
-                            >
-                              {{ todoMessage(issue) }}
-                            </li>
-                          </ul>
-                        </section>
-                      </div>
                     </div>
                     <div class="hint inspector-feedback" role="status">{{ feedback }}</div>
                   </div>
-                  <div class="solve-section" @paste.capture="checkKPaste">
+                  <footer class="solve-section" @paste.capture="checkKPaste">
+                    <Panel
+                      v-if="todoItems.length"
+                      v-model:collapsed="todoCollapsed"
+                      :header="t(`${g}.todo.title`, { count: todoItems.length })"
+                      toggleable
+                      :toggle-button-props="{
+                        id: 'goat-todo-toggle',
+                        size: 'small',
+                        severity: 'secondary',
+                        text: true,
+                      }"
+                      :pt="{
+                        header: { class: 'todo-header' },
+                        title: { class: 'todo-title', 'aria-live': 'polite' },
+                        content: { class: 'todo-content' },
+                      }"
+                    >
+                      <ul class="readiness" role="list">
+                        <li v-for="(item, index) in todoItems" :key="index">
+                          <Button
+                            v-if="item.action"
+                            :label="item.label"
+                            class="todo-action"
+                            size="small"
+                            text
+                            @click="item.action"
+                          />
+                          <span v-else class="todo-text">{{ item.label }}</span>
+                        </li>
+                      </ul>
+                    </Panel>
+                    <span v-if="map.k === null" id="goat-k-issue" class="sr-only">
+                      {{ recordStepsIssue }}
+                    </span>
                     <i18n-t
                       :keypath="`${g}.recordRule`"
                       tag="label"
@@ -537,7 +596,7 @@ onBeforeUnmount(() => {
                       fluid
                       @click="begin"
                     />
-                  </div>
+                  </footer>
                 </aside>
               </template>
             </EditorWorkspace>
@@ -634,8 +693,7 @@ onBeforeUnmount(() => {
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 6px;
 }
-.map-heading h2,
-.todo h2 {
+.map-heading h2 {
   font-size: 0.875rem;
   font-weight: 650;
 }
@@ -675,7 +733,6 @@ onBeforeUnmount(() => {
 .inspector-main {
   display: grid;
   align-content: start;
-  gap: 10px;
   min-block-size: 0;
   overflow: auto;
   padding: 2px 4px 10px 2px;
@@ -706,10 +763,36 @@ onBeforeUnmount(() => {
 .inspector-feedback:not(:empty) {
   padding-block-end: 8px;
 }
+.solve-section :deep(.todo-header) {
+  padding: 4px 8px;
+}
+.solve-section :deep(.todo-title) {
+  font-size: 0.875rem;
+}
+.solve-section :deep(.todo-content) {
+  padding: 0 6px 6px;
+}
 .readiness {
-  list-style: disc;
-  padding-inline-start: 1.2em;
+  max-block-size: 6rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  font-size: 0.8125rem;
   overflow-wrap: anywhere;
+}
+.todo-action,
+.todo-text {
+  inline-size: 100%;
+  padding: 3px 4px;
+  font-size: inherit;
+  text-align: start;
+}
+.todo-action {
+  justify-content: flex-start;
+}
+.todo-text {
+  display: block;
+  color: var(--color-muted);
 }
 .notice,
 .replay-map,
@@ -719,8 +802,8 @@ onBeforeUnmount(() => {
   border: 1px solid var(--color-line);
   border-radius: 8px;
 }
-:deep(.editor-stack .inspector-upper) {
-  block-size: clamp(7.5rem, 20dvh, 10rem);
+:deep(.editor-stack > .inspector-pane) {
+  block-size: clamp(21rem, 50dvh, 24rem);
 }
 .notice {
   padding: 7px 10px;

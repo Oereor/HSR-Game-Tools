@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
-import RadioButton from 'primevue/radiobutton'
 import SelectButton from 'primevue/selectbutton'
 import ToggleSwitch from 'primevue/toggleswitch'
 import type { Brush, PlatformTool, PortalTool } from '../editor'
@@ -23,7 +22,15 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const g = 'goldenScapegoat'
-const polarityOptions = ['platformPressed', 'platformReleased'] as const
+const polarityOptions = computed(() => [
+  { value: 'platformPressed', label: t(`${g}.palette.activeWhenPressed`) },
+  { value: 'platformReleased', label: t(`${g}.palette.activeWhenReleased`) },
+])
+const equalSegments = {
+  pcToggleButton: {
+    root: { style: { flex: '1 1 0', minInlineSize: '0', whiteSpace: 'normal' } },
+  },
+}
 const groupMode = computed(() =>
   props.brush.tool === 'platformSwitch' || props.brush.tool === 'portalSwitch' ? 'switch' : 'place',
 )
@@ -42,6 +49,10 @@ function changeGroupMode(mode: unknown) {
   } else {
     emit('tool', mode === 'place' ? 'portal' : 'portalSwitch')
   }
+}
+
+function changePolarity(tool: unknown) {
+  if (tool === 'platformPressed' || tool === 'platformReleased') emit('tool', tool)
 }
 </script>
 
@@ -69,64 +80,92 @@ function changeGroupMode(mode: unknown) {
     :style="{ '--group-color': group.color }"
     aria-labelledby="goat-group-settings"
   >
-    <h2 id="goat-group-settings" class="group-title">{{ groupDetail(group, t) }}</h2>
-    <SelectButton
-      :model-value="groupMode"
-      :options="groupModes"
-      option-label="label"
-      option-value="value"
-      :allow-empty="false"
-      :aria-label="t(`${g}.palette.brushes`)"
-      size="small"
-      @update:model-value="changeGroupMode"
-    />
-    <fieldset v-if="group.kind === 'platform' && groupMode === 'place'" class="polarities">
-      <legend class="sr-only">{{ t(`${g}.palette.polarity`) }}</legend>
-      <label v-for="tool in polarityOptions" :key="tool" :for="`goat-${tool}`">
-        <RadioButton
-          :input-id="`goat-${tool}`"
-          name="goat-platform-polarity"
-          :model-value="platformPolarity"
-          :value="tool"
-          size="small"
-          @update:model-value="emit('tool', tool)"
-        />
-        {{ t(`${g}.tools.${tool}`) }}
-      </label>
-    </fieldset>
-    <div v-else-if="portal" class="portal-settings">
-      <label for="goat-initially-open">
-        <ToggleSwitch
-          input-id="goat-initially-open"
-          :model-value="portal.initiallyOpen"
-          @update:model-value="emit('portalOpen', $event)"
-        />
-        {{ t(`${g}.initiallyOpen`) }}
-      </label>
-      <span class="hint" :aria-label="t(`${g}.ends`, { count: portal.ends.length })" role="status">
+    <header class="group-heading">
+      <h2 id="goat-group-settings" class="group-title">
+        {{ groupDetail(group, t) }}
+      </h2>
+      <span
+        v-if="portal"
+        class="hint endpoint-count"
+        role="status"
+        :aria-label="t(`${g}.ends`, { count: portal.ends.length })"
+      >
         {{ portal.ends.length }} / 2
       </span>
+    </header>
+    <div class="property-field">
+      <span id="goat-draw-content" class="property-label">{{ t(`${g}.palette.brushes`) }}</span>
+      <SelectButton
+        :model-value="groupMode"
+        :options="groupModes"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        aria-labelledby="goat-draw-content"
+        size="small"
+        fluid
+        :pt="equalSegments"
+        @update:model-value="changeGroupMode"
+      />
+    </div>
+    <div v-if="group.kind === 'platform' && groupMode === 'place'" class="property-field">
+      <span id="goat-platform-activation" class="property-label">{{
+        t(`${g}.palette.polarity`)
+      }}</span>
+      <SelectButton
+        :model-value="platformPolarity"
+        :options="polarityOptions"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        aria-labelledby="goat-platform-activation"
+        size="small"
+        fluid
+        :pt="equalSegments"
+        @update:model-value="changePolarity"
+      />
+    </div>
+    <div v-else-if="portal" class="portal-settings">
+      <label class="property-label" for="goat-initially-open">{{ t(`${g}.initiallyOpen`) }}</label>
+      <ToggleSwitch
+        input-id="goat-initially-open"
+        :model-value="portal.initiallyOpen"
+        @update:model-value="emit('portalOpen', $event)"
+      />
     </div>
   </section>
 </template>
 
 <style scoped>
-.context,
-.polarities {
-  display: grid;
-  gap: 8px;
-}
 .context {
-  border-inline-start: 2px solid var(--group-color);
-  padding-inline-start: 10px;
+  display: grid;
+  gap: 12px;
+}
+.property-field {
+  display: grid;
+  gap: 4px;
+}
+.property-label {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
 }
 .group-title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   font-size: 0.875rem;
   font-weight: 650;
   overflow-wrap: anywhere;
 }
+.group-title::before {
+  content: '';
+  flex: 0 0 8px;
+  block-size: 8px;
+  border-radius: 2px;
+  background: var(--group-color);
+}
 .ladder-help,
-.context label,
+.group-heading,
 .portal-settings {
   display: flex;
   align-items: center;
@@ -136,8 +175,13 @@ function changeGroupMode(mode: unknown) {
 .ladder-help {
   flex-wrap: wrap;
 }
-.portal-settings {
+.portal-settings,
+.group-heading {
   justify-content: space-between;
+}
+.endpoint-count {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 .hint {
   color: var(--color-muted);

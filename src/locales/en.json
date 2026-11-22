@@ -883,8 +883,10 @@
     "palette": {
       "groups": "Mechanism groups",
       "extras": "Other imported groups",
-      "brushes": "Group brushes",
-      "polarity": "Platform polarity",
+      "brushes": "Draw",
+      "polarity": "Activation",
+      "activeWhenPressed": "When pressed",
+      "activeWhenReleased": "When released",
       "toolbar": "Map tools",
       "markers": "Start and goal",
       "terrain": "Terrain",
@@ -901,7 +903,7 @@
     },
     "recordRule": "After {steps} moves, your past self becomes your enemy.",
     "todo": {
-      "title": "To Do",
+      "title": "To Do · {count}",
       "k": "Enter the number of recorded moves."
     }
   }
