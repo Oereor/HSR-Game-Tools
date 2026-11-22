@@ -3,13 +3,13 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from '@lucide/vue'
 import Button from 'primevue/button'
-import { cellKey, type Cell, type PuzzleMap } from '../engine/map'
+import { cellKey, type Cell, type ReadyMap } from '../engine/map'
 import type { SearchResult } from '../engine/solve'
 import type { Event as GameEvent } from '../engine/step'
 import { actionSequence, groupDetail, operationPhase, type GroupChoice } from '../presentation'
 
 const props = defineProps<{
-  map: PuzzleMap
+  map: ReadyMap
   solution: Extract<SearchResult, { status: 'solved' }>
   frameIndex: number
   platformGroups: GroupChoice[]

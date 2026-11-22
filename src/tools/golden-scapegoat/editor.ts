@@ -1,4 +1,11 @@
-import { layoutIssues, sameCell, type Cell, type MapIssue, type PuzzleMap } from './engine/map'
+import {
+  layoutIssues,
+  sameCell,
+  validRecordSteps,
+  type Cell,
+  type MapIssue,
+  type PuzzleMap,
+} from './engine/map'
 
 export const basicTools = ['floor', 'ladder', 'start', 'goal', 'erase'] as const
 export const platformTools = ['platformPressed', 'platformReleased', 'platformSwitch'] as const
@@ -9,8 +16,7 @@ export type BasicTool = (typeof basicTools)[number]
 export type PlatformTool = (typeof platformTools)[number]
 export type PortalTool = (typeof portalTools)[number]
 export type Brush = { tool: BasicTool } | { tool: PlatformTool | PortalTool; groupId: string }
-export type EditIssue =
-  MapIssue | { code: 'placePairFull' | 'selectGroup'; path: string; cell: Cell }
+export type EditIssue = MapIssue | { code: 'selectGroup'; path: string; cell: Cell }
 interface EditResult {
   map?: PuzzleMap
   issue?: EditIssue
@@ -30,6 +36,13 @@ export function ensureGroup(map: PuzzleMap, kind: GroupKind, id: string): Puzzle
     ...map,
     portalPairs: [...map.portalPairs, { id, initiallyOpen: true, ends: [], controllers: [] }],
   }
+}
+
+export function parseRecordSteps(text: string): number | null {
+  const digits = text.trim()
+  if (!/^\d+$/.test(digits)) return null
+  const value = Number(digits)
+  return validRecordSteps(value) ? value : null
 }
 
 function eraseCell(map: PuzzleMap, cell: Cell): EditResult {
@@ -131,9 +144,6 @@ export function editMap(
       const layer = brush.tool === 'portal' ? 'ends' : 'controllers'
       const pair = map.portalPairs[index]
       if (pair[layer].some((point) => sameCell(point, cell))) return {}
-      if (layer === 'ends' && pair.ends.length === 2) {
-        return { issue: { code: 'placePairFull', path: `$.portalPairs[${index}].ends`, cell } }
-      }
       const next = { ...pair, [layer]: [...pair[layer], cell] }
       draft.portalPairs = map.portalPairs.map((row, i) => (i === index ? next : row))
       break

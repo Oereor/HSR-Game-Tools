@@ -5,6 +5,7 @@ const at = (x: number, y: number) => ({ x, y })
 export const demos = {
   platform: {
     ...emptyMap(),
+    k: 1,
     start: at(0, 0),
     goal: at(3, 0),
     floors: [at(0, 0), at(1, 0), at(3, 0)],

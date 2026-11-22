@@ -796,9 +796,7 @@
     "pressed": "Switch held",
     "sheep": {
       "gold": "Gold sheep",
-      "black": "Black sheep",
-      "goldToken": "Au",
-      "blackToken": "B"
+      "black": "Black sheep"
     },
     "phase": {
       "recording": "Gold sheep recording",
@@ -816,13 +814,15 @@
       "floor": "Fixed platform",
       "ladder": "Ladder",
       "platformSwitch": "Platform switch",
-      "portal": "Portal endpoint",
+      "portal": "Place Endpoint",
       "portalSwitch": "Portal switch",
       "start": "Start S",
       "goal": "Goal G",
       "erase": "Erase",
-      "platformPressed": "Present when pressed",
-      "platformReleased": "Present when released"
+      "platformPressed": "Present when the switch is pressed",
+      "platformReleased": "Present when the switch is released",
+      "placePlatform": "Place Platform",
+      "placeController": "Place Switch"
     },
     "result": {
       "searching": "Searching for the shortest path…",
@@ -863,13 +863,16 @@
       "portalEnds": "A portal pair can have up to two endpoints.",
       "portalEndpoint": "This cell already has a portal endpoint.",
       "platformController": "Moving platform cells cannot contain switches.",
-      "portalController": "Switches at portal endpoints are unsupported here. The in-game rule is unverified.",
+      "portalController": "A portal endpoint cannot share a cell with its own switch.",
       "start": "Place start S.",
       "goal": "Place goal G.",
-      "pairIncomplete": "Place both endpoints for this portal pair.",
-      "placePairFull": "This pair already has two endpoints. Erase one first.",
+      "pairIncomplete": "Place both endpoints for {group}.",
       "selectGroup": "Select the linked group.",
-      "legacyPlatformPolarity": "A legacy platform group has the same state when pressed and released, so it cannot be migrated to a switch polarity. Check the group in the original file."
+      "legacyPlatformPolarity": "A legacy platform group has the same state when pressed and released, so it cannot be migrated to a switch polarity. Check the group in the original file.",
+      "platformMissingController": "Place a switch for {group}.",
+      "ladderTopSupport": "Add support at the top of the ladder {at}.",
+      "ladderBottomSupport": "Add support at the bottom of the ladder {at}.",
+      "portalSupport": "Add support at the {group} endpoint {at}."
     },
     "sequence": "Move sequence",
     "jumpStep": "Step {step} · {arrow} · {phase}",
@@ -882,7 +885,8 @@
       "extras": "Other imported groups",
       "brushes": "Group brushes",
       "eraseHint": "Select a cell to erase all its elements and any ladder that touches it.",
-      "polarityHint": "Apply a polarity brush to any cell of an existing platform to update the whole platform."
+      "polarityHint": "Apply a polarity brush to any cell of an existing platform to update the whole platform.",
+      "polarity": "Platform polarity"
     },
     "groups": {
       "platformSlot": "Platform {number}",
@@ -892,6 +896,13 @@
       "detail": "{name} · {id}",
       "controller": "{group} switch",
       "platformTile": "{group} · {platform} · {polarity} · {state}"
+    },
+    "recordRule": "After {steps} moves, your past self becomes your enemy.",
+    "todo": {
+      "title": "To Do",
+      "ready": "Map ready",
+      "k": "Enter the number of recorded moves.",
+      "limits": "Check the state and time limits."
     }
   }
 }

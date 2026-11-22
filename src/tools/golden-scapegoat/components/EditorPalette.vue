@@ -3,12 +3,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Eraser, Flag, Layers2, RectangleHorizontal, Signpost } from '@lucide/vue'
 import Button from 'primevue/button'
-import Checkbox from 'primevue/checkbox'
+import RadioButton from 'primevue/radiobutton'
 import Select from 'primevue/select'
+import SelectButton from 'primevue/selectbutton'
+import ToggleSwitch from 'primevue/toggleswitch'
 import {
   basicTools,
-  platformTools,
-  portalTools,
   type BasicTool,
   type Brush,
   type PlatformTool,
@@ -23,6 +23,7 @@ const props = defineProps<{
   slots: GroupChoice[]
   extras: GroupChoice[]
   portal?: PortalPair
+  platformPolarity: 'platformPressed' | 'platformReleased'
   anchor: Cell | null
 }>()
 const emit = defineEmits<{
@@ -38,6 +39,26 @@ const extraOptions = computed(() =>
   props.extras.map((choice) => ({ choice, label: groupDetail(choice, t) })),
 )
 const activeExtra = computed(() => extraOptions.value.find(({ choice }) => choice === props.group))
+const polarityOptions = ['platformPressed', 'platformReleased'] as const
+const groupMode = computed(() =>
+  props.brush.tool === 'platformSwitch' || props.brush.tool === 'portalSwitch' ? 'switch' : 'place',
+)
+const groupModes = computed(() => [
+  {
+    value: 'place',
+    label: t(`${g}.tools.${props.group?.kind === 'platform' ? 'placePlatform' : 'portal'}`),
+  },
+  { value: 'switch', label: t(`${g}.tools.placeController`) },
+])
+
+function changeGroupMode(mode: unknown) {
+  if (!props.group || (mode !== 'place' && mode !== 'switch')) return
+  if (props.group.kind === 'platform') {
+    emit('tool', mode === 'place' ? props.platformPolarity : 'platformSwitch')
+  } else {
+    emit('tool', mode === 'place' ? 'portal' : 'portalSwitch')
+  }
+}
 const icons = {
   floor: RectangleHorizontal,
   ladder: Layers2,
@@ -95,7 +116,7 @@ const icons = {
       @update:model-value="emit('group', $event.choice)"
     />
 
-    <p v-if="brush.tool === 'ladder'" class="context hint" aria-live="polite">
+    <p v-if="brush.tool === 'ladder'" class="hint" aria-live="polite">
       {{
         anchor
           ? t(`${g}.ladderSecond`, { at: t(`${g}.coordinate`, { ...anchor }) })
@@ -109,34 +130,57 @@ const icons = {
         @click="emit('cancelLadder')"
       />
     </p>
-    <p v-else-if="brush.tool === 'erase'" class="context hint">{{ t(`${g}.palette.eraseHint`) }}</p>
-    <div v-else-if="group" class="context" :style="{ '--group-color': group.color }">
-      <strong class="group-title">{{ groupDetail(group, t) }}</strong>
-      <div class="tool-buttons" role="group" :aria-label="t(`${g}.palette.brushes`)">
-        <Button
-          v-for="tool in group.kind === 'platform' ? platformTools : portalTools"
-          :key="tool"
-          :label="t(`${g}.tools.${tool}`)"
-          size="small"
-          :severity="brush.tool === tool ? 'primary' : 'secondary'"
-          :aria-pressed="brush.tool === tool"
-          @click="emit('tool', tool)"
-        />
-      </div>
-      <p v-if="group.kind === 'platform'" class="hint">{{ t(`${g}.palette.polarityHint`) }}</p>
-      <template v-else-if="portal">
+    <p v-else-if="brush.tool === 'erase'" class="hint">{{ t(`${g}.palette.eraseHint`) }}</p>
+    <section
+      v-else-if="group"
+      class="context"
+      :style="{ '--group-color': group.color }"
+      aria-labelledby="goat-group-settings"
+    >
+      <h2 id="goat-group-settings" class="group-title">{{ groupDetail(group, t) }}</h2>
+      <SelectButton
+        :model-value="groupMode"
+        :options="groupModes"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        :aria-label="t(`${g}.palette.brushes`)"
+        size="small"
+        @update:model-value="changeGroupMode"
+      />
+      <fieldset v-if="group.kind === 'platform' && groupMode === 'place'" class="polarities">
+        <legend class="sr-only">{{ t(`${g}.palette.polarity`) }}</legend>
+        <label v-for="tool in polarityOptions" :key="tool" :for="`goat-${tool}`">
+          <RadioButton
+            :input-id="`goat-${tool}`"
+            name="goat-platform-polarity"
+            :model-value="platformPolarity"
+            :value="tool"
+            size="small"
+            @update:model-value="emit('tool', tool)"
+          />
+          {{ t(`${g}.tools.${tool}`) }}
+        </label>
+        <p class="hint">{{ t(`${g}.palette.polarityHint`) }}</p>
+      </fieldset>
+      <div v-else-if="portal" class="portal-settings">
         <label class="initial-state" for="goat-initially-open">
-          <Checkbox
+          <ToggleSwitch
             input-id="goat-initially-open"
-            binary
             :model-value="portal.initiallyOpen"
             @update:model-value="emit('portalOpen', $event)"
           />
           {{ t(`${g}.initiallyOpen`) }}
         </label>
-        <p class="hint">{{ t(`${g}.ends`, { count: portal.ends.length }) }}</p>
-      </template>
-    </div>
+        <span
+          class="hint"
+          :aria-label="t(`${g}.ends`, { count: portal.ends.length })"
+          role="status"
+        >
+          {{ portal.ends.length }} / 2
+        </span>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -180,13 +224,23 @@ const icons = {
 }
 .group-title {
   font-size: 0.875rem;
+  font-weight: 650;
   overflow-wrap: anywhere;
 }
-.initial-state {
+.polarities {
+  display: grid;
+  gap: 6px;
+}
+.initial-state,
+.polarities label,
+.portal-settings {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 0.875rem;
+}
+.portal-settings {
+  justify-content: space-between;
 }
 .hint {
   color: var(--color-muted);

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Flag, Signpost } from '@lucide/vue'
+import SheepMarker from './SheepMarker.vue'
 import { cellKey, platformEnabled, sameCell, type Cell, type PuzzleMap } from '../engine/map'
 import type { boardStatus, GameState } from '../engine/step'
 import { groupDetail, visibleLadderCells, type GridWindow, type GroupChoice } from '../presentation'
@@ -264,7 +266,12 @@ watch(
         <component
           :is="editable ? 'button' : 'div'"
           class="tile"
-          :class="{ 'tile-anchor': tile.anchor, 'tile-ladder': tile.ladder }"
+          :class="{
+            'tile-anchor': tile.anchor,
+            'tile-ladder': tile.ladder,
+            'tile-marked': tile.start || tile.goal,
+            'tile-switches': tile.controls?.length,
+          }"
           :type="editable ? 'button' : undefined"
           :role="!editable && tile.hasContents ? 'img' : undefined"
           :aria-hidden="!editable && !tile.hasContents ? true : undefined"
@@ -280,8 +287,8 @@ watch(
           @focus="focusIndex = index"
           @keydown="editable && navigate($event, index)"
         >
-          <span v-if="tile.start" class="marker start" aria-hidden="true">S</span>
-          <span v-if="tile.goal" class="marker goal" aria-hidden="true">G</span>
+          <Signpost v-if="tile.start" class="marker start" aria-hidden="true" focusable="false" />
+          <Flag v-if="tile.goal" class="marker goal" aria-hidden="true" focusable="false" />
           <span
             v-if="tile.portalStyle"
             class="portal"
@@ -302,8 +309,8 @@ watch(
             />
           </span>
           <span v-if="tile.gold || tile.black" class="sheep" aria-hidden="true">
-            <b v-if="tile.gold" class="gold">{{ t(`${g}.sheep.goldToken`) }}</b>
-            <b v-if="tile.black" class="black">{{ t(`${g}.sheep.blackToken`) }}</b>
+            <SheepMarker v-if="tile.gold" sheep="gold" class="sheep-marker" />
+            <SheepMarker v-if="tile.black" sheep="black" class="sheep-marker" />
           </span>
           <span v-if="tile.floor" class="floor" aria-hidden="true" />
           <span
@@ -348,6 +355,9 @@ watch(
   overflow: hidden;
 }
 .tile {
+  --marker-size: clamp(12px, calc(var(--size) * 0.32), 21px);
+  --piece-top: 2px;
+  --piece-bottom: 7px;
   position: relative;
   isolation: isolate;
   inline-size: var(--size);
@@ -355,6 +365,12 @@ watch(
   background: var(--color-page);
   border: 1px solid var(--color-line);
   border-radius: 4px;
+}
+.tile-marked {
+  --piece-top: calc(var(--marker-size) - 1px);
+}
+.tile-switches {
+  --piece-bottom: 12px;
 }
 button.tile:hover,
 .tile-anchor {
@@ -396,12 +412,9 @@ button.tile:hover,
   position: absolute;
   z-index: 1;
   inset-block-start: 1px;
-  padding-inline: 2px;
-  border-radius: 2px;
-  background: var(--color-page);
-  font-size: 10px;
-  line-height: 1.25;
-  font-weight: 750;
+  inline-size: var(--marker-size);
+  block-size: var(--marker-size);
+  pointer-events: none;
 }
 .start {
   inset-inline-start: 1px;
@@ -413,7 +426,7 @@ button.tile:hover,
 }
 .portal {
   position: absolute;
-  inset: 13% 20% 23%;
+  inset: max(var(--piece-top), 13%) 15% 7px;
   border: 2px dashed var(--group-color);
   border-radius: 45% 45% 2px 2px;
 }
@@ -443,28 +456,17 @@ button.tile:hover,
 }
 .sheep {
   position: absolute;
-  inset: 0;
+  inset: var(--piece-top) 2px var(--piece-bottom);
   display: flex;
   gap: 2px;
   align-items: center;
   justify-content: center;
   pointer-events: none;
 }
-.sheep b {
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  inline-size: clamp(17px, calc(var(--size) * 0.55), 32px);
-  aspect-ratio: 1;
-  font-size: clamp(10px, calc(var(--size) * 0.29), 16px);
-}
-.gold {
-  background: var(--color-accent);
-  color: var(--color-page);
-}
-.black {
-  background: var(--color-page);
-  color: var(--color-ink);
-  border: 1px solid var(--color-ink);
+.sheep-marker {
+  min-inline-size: 0;
+  inline-size: clamp(15px, calc(var(--size) * 0.52), 34px);
+  block-size: 100%;
+  max-block-size: 34px;
 }
 </style>

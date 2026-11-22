@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { demos } from '../../../src/tools/golden-scapegoat/demos'
-import { emptyMap, type ReadyMap } from '../../../src/tools/golden-scapegoat/engine/map'
+import {
+  emptyMap,
+  prepareMap,
+  readMap,
+  type ReadyMap,
+} from '../../../src/tools/golden-scapegoat/engine/map'
 import { solve } from '../../../src/tools/golden-scapegoat/engine/solve'
 import {
   boardStatus,
@@ -32,6 +37,41 @@ const state = (config: Partial<GameState> = {}): GameState => ({
 })
 const replay = (gold: GameState['gold'], black: GameState['black'], action: Direction) =>
   state({ gold, black, history: [action], phase: 'replaying', turn: 3 })
+
+it('triggers overlapping switches before teleporting and keeps the other portal open for use', () => {
+  const shared = at(1)
+  const authored = map({
+    floors: [0, 1, 3, 4, 6].map((x) => at(x)),
+    platformGroups: [
+      {
+        id: 'a',
+        controllers: [shared],
+        platforms: [{ id: 'span', cells: [at(5)], enabledWhenPressed: true }],
+      },
+    ],
+    portalPairs: [
+      { id: 'p1', initiallyOpen: true, ends: [shared, at(3)], controllers: [] },
+      { id: 'p2', initiallyOpen: false, ends: [at(4), at(6)], controllers: [shared] },
+    ],
+  })
+  const imported = readMap(JSON.stringify(authored))
+  expect(imported.issues).toEqual([])
+  const ready = prepareMap(imported.map!)
+  expect(ready.issues).toEqual([])
+  const board = compileMap(ready.map!)
+  const first = step(board, initialState(board).nextState, 'right')
+  expect(first.nextState).toMatchObject({ gold: at(3), openPortals: [1] })
+  expect(first.events.slice(1, 5)).toEqual([
+    { type: 'controller', at: shared, pressed: true },
+    { type: 'platform', group: 0, platform: 0, enabled: true },
+    { type: 'portal', pair: 1, open: true },
+    { type: 'teleport', sheep: 'gold', from: shared, to: at(3) },
+  ])
+  expect(first.events).toContainEqual({ type: 'platform', group: 0, platform: 0, enabled: false })
+  const second = step(board, first.nextState, 'right')
+  expect(second.nextState).toMatchObject({ gold: at(6), openPortals: [] })
+  expect(second.events).toContainEqual({ type: 'teleport', sheep: 'gold', from: at(4), to: at(6) })
+})
 
 describe('turns, gravity and replay', () => {
   it('rejects invalid gold input without advancing black, but counts a ladder as one move', () => {

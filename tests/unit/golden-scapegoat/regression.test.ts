@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { expect, it } from 'vitest'
-import { readMap, readinessIssues } from '../../../src/tools/golden-scapegoat/engine/map'
+import { prepareMap, readMap } from '../../../src/tools/golden-scapegoat/engine/map'
 import { solve } from '../../../src/tools/golden-scapegoat/engine/solve'
 import {
   compileMap,
@@ -16,10 +16,11 @@ function regressionBoard() {
   )
   const { map, issues } = readMap(readFileSync(source, 'utf8'))
   expect(issues).toEqual([])
-  if (!map?.start || !map.goal) throw new Error('The regression map needs a start and goal')
-  expect(readinessIssues(map)).toEqual([])
-  expect(map.k).toBe(5)
-  return compileMap({ ...map, start: map.start, goal: map.goal })
+  if (!map) throw new Error('Could not read the regression map')
+  const ready = prepareMap(map)
+  expect(ready.issues).toEqual([])
+  expect(ready.map?.k).toBe(5)
+  return compileMap(ready.map!)
 }
 
 it('follows the known game solution through the portal, spawn, ladder and platforms', () => {

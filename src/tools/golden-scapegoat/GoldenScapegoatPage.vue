@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import Slider from 'primevue/slider'
 import { createSearchSession } from './browser/session'
@@ -13,6 +14,7 @@ import { demos } from './demos'
 import {
   editMap,
   ensureGroup,
+  parseRecordSteps,
   type BasicTool,
   type Brush,
   type EditIssue,
@@ -24,18 +26,19 @@ import {
   coordinateLimit,
   emptyMap,
   mapFileLimit,
-  readinessIssues,
+  prepareMap,
   readMap,
   writeMap,
   type Cell,
+  type MapIssue,
   type PuzzleMap,
-  type ReadyMap,
 } from './engine/map'
 import { defaultLimits, maximumLimits } from './engine/solve'
 import { boardStatus, compileMap } from './engine/step'
 import {
   clampOrigin,
   groupChoices,
+  groupDetail,
   mapBounds,
   replayWindow,
   windowLimit,
@@ -48,10 +51,11 @@ const map = shallowRef<PuzzleMap>(emptyMap())
 const editView = ref({ x: 0, y: 0, width: 12, height: 8, size: 44 })
 const viewFields = ['x', 'y', 'width', 'height'] as const
 const brush = shallowRef<Brush>({ tool: 'floor' })
+const platformPolarity = ref<'platformPressed' | 'platformReleased'>('platformPressed')
 const groupSelection = shallowRef<Pick<GroupChoice, 'kind' | 'id'>>()
 const anchor = ref<Cell | null>(null)
 const demo = ref<keyof typeof demos>()
-const k = ref<number | null>(map.value.k)
+const kText = ref('')
 const stateLimit = ref<number | null>(defaultLimits.states)
 const timeLimit = ref<number | null>(defaultLimits.milliseconds / 1000)
 const fileInput = ref<HTMLInputElement>()
@@ -68,10 +72,9 @@ const solution = computed(() => (status.value.status === 'solved' ? status.value
 const snapshot = computed(() =>
   mode.value === 'replay' ? solution.value?.frames[frameIndex.value]?.nextState : undefined,
 )
-const ready = computed(() => readinessIssues(map.value))
-const compiled = computed(() =>
-  !ready.value.length ? compileMap(map.value as ReadyMap) : undefined,
-)
+const readiness = computed(() => prepareMap(map.value))
+const readyMap = computed(() => readiness.value.map)
+const compiled = computed(() => (readyMap.value ? compileMap(readyMap.value) : undefined))
 const frameStatus = computed(() =>
   snapshot.value && compiled.value ? boardStatus(compiled.value, snapshot.value) : undefined,
 )
@@ -79,7 +82,7 @@ const bounds = computed(() => mapBounds(authoredCells(map.value)))
 const view = computed(() =>
   snapshot.value ? replayWindow(bounds.value, snapshot.value) : editView.value,
 )
-const validK = computed(() => k.value !== null && Number.isSafeInteger(k.value) && k.value > 0)
+const missingK = computed(() => !kText.value.trim())
 const validLimits = computed(
   () =>
     stateLimit.value !== null &&
@@ -112,6 +115,14 @@ const selectedPortal = computed(() => {
   const group = selectedGroup.value
   return group?.kind === 'portal' ? map.value.portalPairs[group.index] : undefined
 })
+
+function todoMessage(issue: MapIssue) {
+  if (issue.code === 'k' && missingK.value) return t(`${g}.todo.k`)
+  const choices = issue.group?.kind === 'platform' ? platforms.value : portals.value
+  const group = issue.group ? groupDetail(choices.byIndex[issue.group.index], t) : ''
+  const at = issue.cell ? t(`${g}.coordinate`, { ...issue.cell }) : ''
+  return t(`${g}.issues.${issue.code}`, { group, at })
+}
 
 const feedback = computed(() => {
   const result = status.value
@@ -166,6 +177,7 @@ function selectBasic(tool: BasicTool) {
 function selectGroup(choice: GroupChoice) {
   if (selectedGroup.value === choice) return
   commit(ensureGroup(map.value, choice.kind, choice.id))
+  platformPolarity.value = 'platformPressed'
   groupSelection.value = { kind: choice.kind, id: choice.id }
   brush.value = {
     tool: choice.kind === 'platform' ? 'platformPressed' : 'portal',
@@ -175,6 +187,7 @@ function selectGroup(choice: GroupChoice) {
 }
 
 function selectGroupTool(tool: PlatformTool | PortalTool) {
+  if (tool === 'platformPressed' || tool === 'platformReleased') platformPolarity.value = tool
   if (selectedGroup.value) brush.value = { tool, groupId: selectedGroup.value.id }
 }
 
@@ -190,7 +203,7 @@ function updatePortal(initiallyOpen: boolean) {
 function load(next: PuzzleMap) {
   if (next === map.value) return
   commit(next)
-  k.value = next.k
+  kText.value = next.k === null ? '' : String(next.k)
   selectBasic('floor')
   anchor.value = null
   fitMap()
@@ -201,14 +214,10 @@ function loadDemo(value: keyof typeof demos) {
   demo.value = value
 }
 
-function changeK(value: number | null) {
-  if (value !== null && Number.isSafeInteger(value) && value > 0) {
-    if (value !== map.value.k) commit({ ...map.value, k: value })
-  } else {
-    search.reset()
-    mode.value = 'edit'
-  }
-  k.value = value
+function changeK(value?: string) {
+  kText.value = value ?? ''
+  const k = parseRecordSteps(kText.value)
+  if (k !== map.value.k) commit({ ...map.value, k })
 }
 
 function editCell(point: Cell) {
@@ -257,9 +266,10 @@ function exportMap() {
 }
 
 function begin() {
-  if (ready.value.length || !validK.value || !validLimits.value) return
+  const ready = readyMap.value
+  if (!ready || !validLimits.value) return
   frameIndex.value = 0
-  search.start(map.value as ReadyMap, {
+  search.start(ready, {
     states: stateLimit.value!,
     milliseconds: timeLimit.value! * 1000,
   })
@@ -333,13 +343,7 @@ onBeforeUnmount(() => {
         size="small"
         @click="fileInput?.click()"
       />
-      <Button
-        :label="t(`${g}.export`)"
-        severity="secondary"
-        size="small"
-        :disabled="!validK"
-        @click="exportMap"
-      />
+      <Button :label="t(`${g}.export`)" severity="secondary" size="small" @click="exportMap" />
     </div>
 
     <div v-if="issues.length" class="notice" role="alert">
@@ -354,23 +358,58 @@ onBeforeUnmount(() => {
 
     <div class="workspace" :class="`workspace-${mode}`">
       <aside v-if="mode === 'edit'" class="panel settings" :aria-label="t(`${g}.editor`)">
-        <div class="solve-row">
-          <label for="goat-k">
-            {{ t(`${g}.k`) }}
-            <InputNumber
-              input-id="goat-k"
-              :model-value="k"
-              :min="1"
-              :use-grouping="false"
-              fluid
-              size="small"
-              :invalid="!validK"
-              :pt="{
-                pcInputText: { root: { 'aria-describedby': !validK ? 'goat-k-error' : undefined } },
-              }"
-              @update:model-value="changeK"
-            />
-          </label>
+        <section class="todo" aria-labelledby="goat-todo">
+          <h2 id="goat-todo">{{ t(`${g}.todo.title`) }}</h2>
+          <div aria-live="polite">
+            <ul v-if="readiness.issues.length || !validLimits" class="hint readiness">
+              <li
+                v-for="(issue, index) in readiness.issues"
+                :id="issue.code === 'k' ? 'goat-k-issue' : undefined"
+                :key="index"
+              >
+                {{ todoMessage(issue) }}
+              </li>
+              <li v-if="!validLimits">{{ t(`${g}.todo.limits`) }}</li>
+            </ul>
+            <p v-else class="hint">{{ t(`${g}.todo.ready`) }}</p>
+          </div>
+        </section>
+        <EditorPalette
+          :brush="brush"
+          :group="selectedGroup"
+          :slots="slots"
+          :extras="extras"
+          :portal="selectedPortal"
+          :platform-polarity="platformPolarity"
+          :anchor="anchor"
+          @basic="selectBasic"
+          @group="selectGroup"
+          @tool="selectGroupTool"
+          @portal-open="updatePortal"
+          @cancel-ladder="anchor = null"
+        />
+        <section class="settings-detail solve-section">
+          <i18n-t
+            :keypath="`${g}.recordRule`"
+            tag="label"
+            for="goat-k"
+            scope="global"
+            class="record-rule"
+          >
+            <template #steps>
+              <InputText
+                id="goat-k"
+                class="step-input"
+                :model-value="kText"
+                inputmode="numeric"
+                size="small"
+                :aria-label="t(`${g}.k`)"
+                :aria-describedby="map.k === null ? 'goat-k-issue' : undefined"
+                :invalid="map.k === null && !missingK"
+                @update:model-value="changeK"
+              />
+            </template>
+          </i18n-t>
           <Button
             v-if="status.status === 'searching'"
             :label="t(`${g}.cancel`)"
@@ -380,61 +419,40 @@ onBeforeUnmount(() => {
           <Button
             v-else
             :label="t(`${g}.solve`)"
-            :disabled="!!ready.length || !validK || !validLimits"
+            :disabled="!readyMap || !validLimits"
             @click="begin"
           />
-        </div>
-        <p v-if="!validK" id="goat-k-error" class="error">{{ t(`${g}.issues.k`) }}</p>
-        <div role="status">
-          <p v-if="status.status !== 'idle'" class="hint">{{ feedback }}</p>
-        </div>
-        <ul v-if="ready.length" class="hint readiness">
-          <li v-for="issue in ready" :key="issue.path">
-            {{ t(`${g}.issues.${issue.code}`) }}
-            <code v-if="issue.code === 'pairIncomplete'">{{ issue.path }}</code>
-          </li>
-        </ul>
-
-        <EditorPalette
-          :brush="brush"
-          :group="selectedGroup"
-          :slots="slots"
-          :extras="extras"
-          :portal="selectedPortal"
-          :anchor="anchor"
-          @basic="selectBasic"
-          @group="selectGroup"
-          @tool="selectGroupTool"
-          @portal-open="updatePortal"
-          @cancel-ladder="anchor = null"
-        />
-        <details class="settings-detail">
-          <summary>{{ t(`${g}.searchSettings`) }}</summary>
-          <div class="numeric-fields">
-            <label for="goat-max-states">
-              {{ t(`${g}.stateLimit`) }}
-              <InputNumber
-                v-model="stateLimit"
-                input-id="goat-max-states"
-                :min="1"
-                :max="maximumLimits.states"
-                size="small"
-                fluid
-              />
-            </label>
-            <label for="goat-max-time">
-              {{ t(`${g}.timeLimit`) }}
-              <InputNumber
-                v-model="timeLimit"
-                input-id="goat-max-time"
-                :min="1"
-                :max="maximumLimits.milliseconds / 1000"
-                size="small"
-                fluid
-              />
-            </label>
+          <div role="status">
+            <p v-if="status.status !== 'idle'" class="hint">{{ feedback }}</p>
           </div>
-        </details>
+          <details>
+            <summary>{{ t(`${g}.searchSettings`) }}</summary>
+            <div class="numeric-fields">
+              <label for="goat-max-states">
+                {{ t(`${g}.stateLimit`) }}
+                <InputNumber
+                  v-model="stateLimit"
+                  input-id="goat-max-states"
+                  :min="1"
+                  :max="maximumLimits.states"
+                  size="small"
+                  fluid
+                />
+              </label>
+              <label for="goat-max-time">
+                {{ t(`${g}.timeLimit`) }}
+                <InputNumber
+                  v-model="timeLimit"
+                  input-id="goat-max-time"
+                  :min="1"
+                  :max="maximumLimits.milliseconds / 1000"
+                  size="small"
+                  fluid
+                />
+              </label>
+            </div>
+          </details>
+        </section>
       </aside>
 
       <section class="panel grid-panel" :aria-label="t(`${g}.board`)">
@@ -475,9 +493,13 @@ onBeforeUnmount(() => {
         </details>
       </section>
 
-      <aside v-if="mode === 'replay' && solution" class="panel" :aria-label="t(`${g}.replay`)">
+      <aside
+        v-if="mode === 'replay' && solution && readyMap"
+        class="panel"
+        :aria-label="t(`${g}.replay`)"
+      >
         <ReplayPanel
-          :map="map"
+          :map="readyMap"
           :solution="solution"
           :frame-index="frameIndex"
           :platform-groups="platforms.byIndex"
@@ -533,16 +555,26 @@ h1 {
   background: var(--color-surface);
 }
 .settings,
+.todo,
+.solve-section,
 .grid-panel,
 .numeric-fields {
   display: grid;
   gap: 8px;
 }
-.solve-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 8px;
+.todo {
+  border-block-end: 1px solid var(--color-line);
+  padding-block-end: 8px;
+}
+.todo h2 {
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+.record-rule {
+  line-height: 1.6;
+}
+.step-input {
+  inline-size: 5.5rem;
 }
 label,
 summary {
@@ -556,7 +588,6 @@ summary {
   cursor: pointer;
 }
 .hint,
-.error,
 .notice li {
   font-size: 0.8125rem;
 }
@@ -569,8 +600,10 @@ summary {
 .readiness {
   list-style: disc;
   padding-inline-start: 1.2em;
+  max-block-size: 8.5rem;
+  overflow: auto;
+  overflow-wrap: anywhere;
 }
-.error,
 .notice code {
   color: var(--color-delay);
 }

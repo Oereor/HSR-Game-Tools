@@ -29,7 +29,7 @@ export interface Ladder {
 
 export interface PuzzleMap {
   version: 2
-  k: number
+  k: number | null
   start: Cell | null
   goal: Cell | null
   floors: Cell[]
@@ -38,7 +38,9 @@ export interface PuzzleMap {
   portalPairs: PortalPair[]
 }
 
-export type ReadyMap = PuzzleMap & { start: Cell; goal: Cell }
+export type ReadyMap = PuzzleMap & { k: number; start: Cell; goal: Cell }
+export const validRecordSteps = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value > 0
 export const coordinateLimit = 1_000_000
 export const mapFileLimit = 1024 * 1024
 export const cellKey = ({ x, y }: Cell) => `${x},${y}`
@@ -49,7 +51,7 @@ export const platformEnabled = (platform: ControlledPlatform, pressed: boolean) 
 export function emptyMap(): PuzzleMap {
   return {
     version: 2,
-    k: 1,
+    k: null,
     start: null,
     goal: null,
     floors: [],
@@ -72,9 +74,13 @@ export type MapIssueCode =
   | 'duplicateSupport'
   | 'ladder'
   | 'ladderExit'
+  | 'ladderTopSupport'
+  | 'ladderBottomSupport'
   | 'portalEnds'
   | 'portalEndpoint'
+  | 'portalSupport'
   | 'platformController'
+  | 'platformMissingController'
   | 'portalController'
   | 'start'
   | 'goal'
@@ -84,6 +90,7 @@ export interface MapIssue {
   code: MapIssueCode
   path: string
   cell?: Cell
+  group?: { kind: 'platform' | 'portal'; index: number }
 }
 
 export function validateMap(value: unknown): { map?: PuzzleMap; issues: MapIssue[] } {
@@ -205,8 +212,8 @@ export function validateMap(value: unknown): { map?: PuzzleMap; issues: MapIssue
     report('version', '$.version')
     return { issues }
   }
-  const k = typeof root.k === 'number' ? root.k : 0
-  if (!Number.isSafeInteger(k) || k < 1) report('k', '$.k')
+  const k = validRecordSteps(root.k) ? root.k : null
+  if (k === null && (legacy || root.k !== null)) report('k', '$.k')
   const map: PuzzleMap = {
     version: 2,
     k,
@@ -230,7 +237,6 @@ export function validateMap(value: unknown): { map?: PuzzleMap; issues: MapIssue
         legacy && !Object.hasOwn(pair, 'initiallyOpen') ? false : pair.initiallyOpen
       if (typeof initiallyOpen !== 'boolean') report('format', `${at}.initiallyOpen`)
       const ends = cells(pair.ends, `${at}.ends`)
-      if (ends.length > 2) report('portalEnds', `${at}.ends`)
       return {
         id: typeof pair.id === 'string' ? pair.id : '',
         initiallyOpen: initiallyOpen === true,
@@ -243,20 +249,24 @@ export function validateMap(value: unknown): { map?: PuzzleMap; issues: MapIssue
   return { map, issues: layoutIssues(map) }
 }
 
-export function layoutIssues(map: PuzzleMap): MapIssue[] {
+function inspectLayout(map: PuzzleMap) {
   const issues: MapIssue[] = []
-  const supports = new Set(map.floors.map(cellKey))
+  const supports = new Set<string>()
   const moving = new Set<string>()
   const ends = new Set<string>()
   const exits = new Set<string>()
+  function addSupport(cell: Cell, path: string) {
+    const key = cellKey(cell)
+    if (supports.has(key)) issues.push({ code: 'duplicateSupport', path, cell })
+    supports.add(key)
+  }
+  map.floors.forEach((cell) => addSupport(cell, '$.floors'))
   map.platformGroups.forEach((group, index) =>
     group.platforms.forEach((platform, platformIndex) => {
       const path = `$.platformGroups[${index}].platforms[${platformIndex}].cells`
       platform.cells.forEach((cell) => {
-        const key = cellKey(cell)
-        if (supports.has(key)) issues.push({ code: 'duplicateSupport', path, cell })
-        supports.add(key)
-        moving.add(key)
+        addSupport(cell, path)
+        moving.add(cellKey(cell))
       })
     }),
   )
@@ -272,38 +282,77 @@ export function layoutIssues(map: PuzzleMap): MapIssue[] {
       exits.add(key)
     }
   })
-  map.portalPairs.forEach((pair, index) =>
+  map.portalPairs.forEach((pair, index) => {
+    const path = `$.portalPairs[${index}].ends`
+    if (pair.ends.length > 2) issues.push({ code: 'portalEnds', path, cell: pair.ends[2] })
     pair.ends.forEach((cell) => {
       const key = cellKey(cell)
-      if (ends.has(key))
-        issues.push({ code: 'portalEndpoint', path: `$.portalPairs[${index}].ends`, cell })
+      if (ends.has(key)) issues.push({ code: 'portalEndpoint', path, cell })
       ends.add(key)
-    }),
-  )
-  const checkControllers = (controllers: Cell[], path: string) =>
+    })
+  })
+  const checkControllers = (controllers: Cell[], path: string, ownEnds?: Set<string>) =>
     controllers.forEach((cell) => {
       const key = cellKey(cell)
       if (moving.has(key)) issues.push({ code: 'platformController', path, cell })
-      if (ends.has(key)) issues.push({ code: 'portalController', path, cell })
+      if (ownEnds?.has(key)) issues.push({ code: 'portalController', path, cell })
     })
   map.platformGroups.forEach((group, i) =>
     checkControllers(group.controllers, `$.platformGroups[${i}].controllers`),
   )
   map.portalPairs.forEach((pair, i) =>
-    checkControllers(pair.controllers, `$.portalPairs[${i}].controllers`),
+    checkControllers(
+      pair.controllers,
+      `$.portalPairs[${i}].controllers`,
+      new Set(pair.ends.map(cellKey)),
+    ),
   )
-  return issues
+  return { issues, supports }
+}
+
+export function layoutIssues(map: PuzzleMap): MapIssue[] {
+  return inspectLayout(map).issues
 }
 
 export function readinessIssues(map: PuzzleMap): MapIssue[] {
-  const issues: MapIssue[] = []
-  if (!map.start) issues.push({ code: 'start', path: '$.start' })
-  if (!map.goal) issues.push({ code: 'goal', path: '$.goal' })
-  map.portalPairs.forEach((pair, i) => {
-    if (pair.ends.length !== 2 && (pair.ends.length || pair.controllers.length))
-      issues.push({ code: 'pairIncomplete', path: `$.portalPairs[${i}].ends` })
+  return prepareMap(map).issues
+}
+
+export function prepareMap(map: PuzzleMap): { map?: ReadyMap; issues: MapIssue[] } {
+  const { issues, supports } = inspectLayout(map)
+  const { k, start, goal } = map
+  if (!start) issues.push({ code: 'start', path: '$.start' })
+  if (!goal) issues.push({ code: 'goal', path: '$.goal' })
+  if (!validRecordSteps(k)) issues.push({ code: 'k', path: '$.k' })
+  map.platformGroups.forEach((group, index) => {
+    if (group.platforms.length && !group.controllers.length) {
+      issues.push({
+        code: 'platformMissingController',
+        path: `$.platformGroups[${index}].controllers`,
+        group: { kind: 'platform', index },
+      })
+    }
   })
-  return issues
+  map.ladders.forEach(({ top, bottom }, index) => {
+    const path = `$.ladders[${index}]`
+    if (!supports.has(cellKey(top)))
+      issues.push({ code: 'ladderTopSupport', path: `${path}.top`, cell: top })
+    if (!supports.has(cellKey(bottom)))
+      issues.push({ code: 'ladderBottomSupport', path: `${path}.bottom`, cell: bottom })
+  })
+  map.portalPairs.forEach((pair, index) => {
+    const path = `$.portalPairs[${index}].ends`
+    const group = { kind: 'portal', index } as const
+    if (pair.ends.length < 2 && (pair.ends.length || pair.controllers.length))
+      issues.push({ code: 'pairIncomplete', path, group })
+    pair.ends.forEach((cell, end) => {
+      if (!supports.has(cellKey(cell)))
+        issues.push({ code: 'portalSupport', path: `${path}[${end}]`, cell, group })
+    })
+  })
+  return issues.length || k === null || start === null || goal === null
+    ? { issues }
+    : { map: { ...map, k, start, goal }, issues }
 }
 
 export function readMap(source: string): ReturnType<typeof validateMap> {
