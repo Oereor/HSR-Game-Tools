@@ -3,8 +3,8 @@ import { cellKey, coordinateLimit, type Cell, type Ladder } from './engine/map'
 import type { Direction, GameState, Phase } from './engine/step'
 
 const groupColors = {
-  platform: ['var(--color-accent)', 'var(--color-ally)'],
-  portal: ['var(--color-advance)', 'var(--p-purple-400, #b998ea)'],
+  platform: ['var(--color-event)', 'var(--color-advance)'],
+  portal: ['var(--color-delay)', 'var(--color-ally)'],
 } as const
 
 export interface GroupChoice {
@@ -64,10 +64,31 @@ export interface GridWindow {
   height: number
 }
 
+export interface BoardScroll {
+  left: number
+  top: number
+}
+
 export const windowLimit = 32
 
 export function clampOrigin(value: number, span: number) {
   return Math.max(-coordinateLimit, Math.min(value, coordinateLimit - span + 1))
+}
+
+export function panEditWindow(view: GridWindow, direction: Direction): Cell {
+  const horizontal = direction === 'left' || direction === 'right'
+  const sign = direction === 'right' || direction === 'down' ? 1 : -1
+  if (horizontal) {
+    return { x: clampOrigin(view.x + sign * Math.floor(view.width / 2), view.width), y: view.y }
+  }
+  return { x: view.x, y: clampOrigin(view.y + sign * Math.floor(view.height / 2), view.height) }
+}
+
+export function locateEditWindow(view: GridWindow, bounds: GridWindow, start: Cell | null): Cell {
+  const x = bounds.width <= view.width || !start ? bounds.x : start.x - Math.floor(view.width / 2)
+  const y =
+    bounds.height <= view.height || !start ? bounds.y : start.y - Math.floor(view.height / 2)
+  return { x: clampOrigin(x, view.width), y: clampOrigin(y, view.height) }
 }
 
 export function mapBounds(points: Cell[]): GridWindow {

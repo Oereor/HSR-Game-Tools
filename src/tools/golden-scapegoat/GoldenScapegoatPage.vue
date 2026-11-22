@@ -3,11 +3,19 @@ import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from 'primevue/button'
 import InputNumber from 'primevue/inputnumber'
-import InputText from 'primevue/inputtext'
+import ButtonGroup from 'primevue/buttongroup'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
+import TabPanels from 'primevue/tabpanels'
+import TabPanel from 'primevue/tabpanel'
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, LocateFixed } from '@lucide/vue'
 import Select from 'primevue/select'
 import Slider from 'primevue/slider'
 import { createSearchSession } from './browser/session'
-import EditorPalette from './components/EditorPalette.vue'
+import EditorProperties from './components/EditorProperties.vue'
+import EditorToolbar from './components/EditorToolbar.vue'
+import EditorWorkspace from './components/EditorWorkspace.vue'
 import PuzzleGrid from './components/PuzzleGrid.vue'
 import ReplayPanel from './components/ReplayPanel.vue'
 import { demos } from './demos'
@@ -23,25 +31,28 @@ import {
 } from './editor'
 import {
   authoredCells,
-  coordinateLimit,
   emptyMap,
   mapFileLimit,
   prepareMap,
   readMap,
+  validRecordSteps,
   writeMap,
   type Cell,
   type MapIssue,
   type PuzzleMap,
 } from './engine/map'
-import { defaultLimits, maximumLimits } from './engine/solve'
-import { boardStatus, compileMap } from './engine/step'
+import { defaultLimits } from './engine/solve'
+import { boardStatus, compileMap, type Direction } from './engine/step'
 import {
   clampOrigin,
   groupChoices,
   groupDetail,
+  locateEditWindow,
   mapBounds,
+  panEditWindow,
   replayWindow,
   windowLimit,
+  type BoardScroll,
   type GroupChoice,
 } from './presentation'
 
@@ -49,15 +60,22 @@ const { t } = useI18n()
 const g = 'goldenScapegoat'
 const map = shallowRef<PuzzleMap>(emptyMap())
 const editView = ref({ x: 0, y: 0, width: 12, height: 8, size: 44 })
-const viewFields = ['x', 'y', 'width', 'height'] as const
+const viewFields = ['width', 'height'] as const
+const panControls = [
+  { direction: 'left', icon: ArrowLeft },
+  { direction: 'up', icon: ArrowUp },
+  { direction: 'down', icon: ArrowDown },
+  { direction: 'right', icon: ArrowRight },
+] as const
+const editScroll = shallowRef<BoardScroll>()
+const replayScroll = shallowRef<BoardScroll>()
 const brush = shallowRef<Brush>({ tool: 'floor' })
 const platformPolarity = ref<'platformPressed' | 'platformReleased'>('platformPressed')
 const groupSelection = shallowRef<Pick<GroupChoice, 'kind' | 'id'>>()
 const anchor = ref<Cell | null>(null)
 const demo = ref<keyof typeof demos>()
-const kText = ref('')
-const stateLimit = ref<number | null>(defaultLimits.states)
-const timeLimit = ref<number | null>(defaultLimits.milliseconds / 1000)
+const kInput = ref<number | null>(null)
+const invalidK = ref(false)
 const fileInput = ref<HTMLInputElement>()
 const issues = shallowRef<EditIssue[]>([])
 let importGeneration = 0
@@ -69,9 +87,7 @@ const { status } = search
 const mode = ref<'edit' | 'replay'>('edit')
 const frameIndex = ref(0)
 const solution = computed(() => (status.value.status === 'solved' ? status.value : undefined))
-const snapshot = computed(() =>
-  mode.value === 'replay' ? solution.value?.frames[frameIndex.value]?.nextState : undefined,
-)
+const snapshot = computed(() => solution.value?.frames[frameIndex.value]?.nextState)
 const readiness = computed(() => prepareMap(map.value))
 const readyMap = computed(() => readiness.value.map)
 const compiled = computed(() => (readyMap.value ? compileMap(readyMap.value) : undefined))
@@ -79,20 +95,8 @@ const frameStatus = computed(() =>
   snapshot.value && compiled.value ? boardStatus(compiled.value, snapshot.value) : undefined,
 )
 const bounds = computed(() => mapBounds(authoredCells(map.value)))
-const view = computed(() =>
-  snapshot.value ? replayWindow(bounds.value, snapshot.value) : editView.value,
-)
-const missingK = computed(() => !kText.value.trim())
-const validLimits = computed(
-  () =>
-    stateLimit.value !== null &&
-    Number.isSafeInteger(stateLimit.value) &&
-    stateLimit.value >= 1 &&
-    stateLimit.value <= maximumLimits.states &&
-    timeLimit.value !== null &&
-    Number.isInteger(timeLimit.value) &&
-    timeLimit.value >= 1 &&
-    timeLimit.value <= maximumLimits.milliseconds / 1000,
+const replayView = computed(() =>
+  snapshot.value ? replayWindow(bounds.value, snapshot.value) : undefined,
 )
 
 const demoOptions = computed(() =>
@@ -117,7 +121,7 @@ const selectedPortal = computed(() => {
 })
 
 function todoMessage(issue: MapIssue) {
-  if (issue.code === 'k' && missingK.value) return t(`${g}.todo.k`)
+  if (issue.code === 'k' && !invalidK.value) return t(`${g}.todo.k`)
   const choices = issue.group?.kind === 'platform' ? platforms.value : portals.value
   const group = issue.group ? groupDetail(choices.byIndex[issue.group.index], t) : ''
   const at = issue.cell ? t(`${g}.coordinate`, { ...issue.cell }) : ''
@@ -136,25 +140,18 @@ const feedback = computed(() => {
 
 function updateView(field: (typeof viewFields)[number], value: number | null) {
   if (value === null) return
-  if (field === 'width' || field === 'height')
-    editView.value[field] = Math.min(windowLimit, Math.max(4, Math.round(value)))
-  else editView.value[field] = Math.round(value)
+  editView.value[field] = Math.min(windowLimit, Math.max(4, Math.round(value)))
   editView.value.x = clampOrigin(editView.value.x, editView.value.width)
   editView.value.y = clampOrigin(editView.value.y, editView.value.height)
 }
 
+function panMap(direction: Direction) {
+  Object.assign(editView.value, panEditWindow(editView.value, direction))
+}
+
 function fitMap() {
-  const { x, y, width, height } = bounds.value
-  updateView('width', Math.max(editView.value.width, width))
-  updateView('height', Math.max(editView.value.height, height))
-  updateView(
-    'x',
-    width <= windowLimit ? x : (map.value.start?.x ?? x) - Math.floor(windowLimit / 2),
-  )
-  updateView(
-    'y',
-    height <= windowLimit ? y : (map.value.start?.y ?? y) - Math.floor(windowLimit / 2),
-  )
+  Object.assign(editView.value, locateEditWindow(editView.value, bounds.value, map.value.start))
+  editScroll.value = { left: 0, top: 0 }
 }
 
 function commit(next: PuzzleMap) {
@@ -164,6 +161,7 @@ function commit(next: PuzzleMap) {
   demo.value = undefined
   mode.value = 'edit'
   frameIndex.value = 0
+  replayScroll.value = undefined
   issues.value = []
   search.reset()
 }
@@ -203,7 +201,8 @@ function updatePortal(initiallyOpen: boolean) {
 function load(next: PuzzleMap) {
   if (next === map.value) return
   commit(next)
-  kText.value = next.k === null ? '' : String(next.k)
+  kInput.value = next.k
+  invalidK.value = false
   selectBasic('floor')
   anchor.value = null
   fitMap()
@@ -214,10 +213,20 @@ function loadDemo(value: keyof typeof demos) {
   demo.value = value
 }
 
-function changeK(value?: string) {
-  kText.value = value ?? ''
-  const k = parseRecordSteps(kText.value)
+function changeK(value: unknown) {
+  const k = validRecordSteps(value) ? value : null
+  kInput.value = typeof value === 'number' && Number.isFinite(value) ? value : null
+  invalidK.value = k === null && value != null && value !== ''
   if (k !== map.value.k) commit({ ...map.value, k })
+}
+
+function checkKPaste(event: ClipboardEvent) {
+  if (!(event.target instanceof HTMLInputElement) || event.target.id !== 'goat-k') return
+  const text = event.clipboardData?.getData('text')
+  if (text === undefined || parseRecordSteps(text) !== null) return
+  event.preventDefault()
+  event.stopPropagation()
+  changeK(text.trim())
 }
 
 function editCell(point: Cell) {
@@ -267,12 +276,14 @@ function exportMap() {
 
 function begin() {
   const ready = readyMap.value
-  if (!ready || !validLimits.value) return
+  if (!ready) return
   frameIndex.value = 0
-  search.start(ready, {
-    states: stateLimit.value!,
-    milliseconds: timeLimit.value! * 1000,
-  })
+  replayScroll.value = undefined
+  search.start(ready, defaultLimits)
+}
+
+function switchMode(value: string | number) {
+  if (value === 'edit' || (value === 'replay' && solution.value)) mode.value = value
 }
 
 function showFrame(index: number) {
@@ -294,220 +305,277 @@ onBeforeUnmount(() => {
   <article class="goat-page">
     <header class="page-header">
       <h1>{{ t(`${g}.title`) }}</h1>
-      <div class="controls">
-        <Button
-          :label="t(`${g}.editor`)"
+      <div v-if="mode === 'edit'" class="map-actions">
+        <Select
+          :model-value="demo"
+          :options="demoOptions"
+          option-label="label"
+          option-value="value"
+          :placeholder="t(`${g}.demo.label`)"
+          :aria-label="t(`${g}.demo.label`)"
           size="small"
-          :severity="mode === 'edit' ? 'primary' : 'secondary'"
-          :aria-pressed="mode === 'edit'"
-          @click="mode = 'edit'"
+          @update:model-value="loadDemo"
         />
         <Button
-          :label="t(`${g}.replay`)"
+          :label="t(`${g}.clear`)"
+          severity="secondary"
+          text
           size="small"
-          :severity="mode === 'replay' ? 'primary' : 'secondary'"
-          :aria-pressed="mode === 'replay'"
-          :disabled="!solution"
-          @click="showFrame(frameIndex)"
+          @click="load(emptyMap())"
+        />
+        <input
+          ref="fileInput"
+          type="file"
+          accept=".json,application/json"
+          hidden
+          @change="importMap"
+        />
+        <Button
+          :label="t(`${g}.import`)"
+          severity="secondary"
+          text
+          size="small"
+          @click="fileInput?.click()"
+        />
+        <Button
+          :label="t(`${g}.export`)"
+          severity="secondary"
+          text
+          size="small"
+          @click="exportMap"
         />
       </div>
     </header>
 
-    <div v-if="mode === 'edit'" class="controls map-actions">
-      <Select
-        :model-value="demo"
-        :options="demoOptions"
-        option-label="label"
-        option-value="value"
-        :placeholder="t(`${g}.demo.label`)"
-        :aria-label="t(`${g}.demo.label`)"
-        size="small"
-        @update:model-value="loadDemo"
-      />
-      <Button
-        :label="t(`${g}.clear`)"
-        severity="secondary"
-        size="small"
-        @click="load(emptyMap())"
-      />
-      <input
-        ref="fileInput"
-        type="file"
-        accept=".json,application/json"
-        hidden
-        @change="importMap"
-      />
-      <Button
-        :label="t(`${g}.import`)"
-        severity="secondary"
-        size="small"
-        @click="fileInput?.click()"
-      />
-      <Button :label="t(`${g}.export`)" severity="secondary" size="small" @click="exportMap" />
-    </div>
-
-    <div v-if="issues.length" class="notice" role="alert">
-      <ul>
-        <li v-for="(issue, index) in issues" :key="index">
-          {{ t(`${g}.issues.${issue.code}`) }} <code>{{ issue.path }}</code>
-          <span v-if="issue.cell"> {{ t(`${g}.coordinate`, { ...issue.cell }) }}</span>
-        </li>
-      </ul>
-      <Button :label="t(`${g}.dismiss`)" text size="small" @click="issues = []" />
-    </div>
-
-    <div class="workspace" :class="`workspace-${mode}`">
-      <aside v-if="mode === 'edit'" class="panel settings" :aria-label="t(`${g}.editor`)">
-        <section class="todo" aria-labelledby="goat-todo">
-          <h2 id="goat-todo">{{ t(`${g}.todo.title`) }}</h2>
-          <div aria-live="polite">
-            <ul v-if="readiness.issues.length || !validLimits" class="hint readiness">
-              <li
-                v-for="(issue, index) in readiness.issues"
-                :id="issue.code === 'k' ? 'goat-k-issue' : undefined"
-                :key="index"
-              >
-                {{ todoMessage(issue) }}
-              </li>
-              <li v-if="!validLimits">{{ t(`${g}.todo.limits`) }}</li>
-            </ul>
-            <p v-else class="hint">{{ t(`${g}.todo.ready`) }}</p>
-          </div>
-        </section>
-        <EditorPalette
-          :brush="brush"
-          :group="selectedGroup"
-          :slots="slots"
-          :extras="extras"
-          :portal="selectedPortal"
-          :platform-polarity="platformPolarity"
-          :anchor="anchor"
-          @basic="selectBasic"
-          @group="selectGroup"
-          @tool="selectGroupTool"
-          @portal-open="updatePortal"
-          @cancel-ladder="anchor = null"
-        />
-        <section class="settings-detail solve-section">
-          <i18n-t
-            :keypath="`${g}.recordRule`"
-            tag="label"
-            for="goat-k"
-            scope="global"
-            class="record-rule"
-          >
-            <template #steps>
-              <InputText
-                id="goat-k"
-                class="step-input"
-                :model-value="kText"
-                inputmode="numeric"
+    <Tabs :value="mode" @update:value="switchMode">
+      <TabList :aria-label="t('ui.stage')">
+        <Tab value="edit">{{ t(`${g}.editor`) }}</Tab>
+        <Tab value="replay" :disabled="!solution">{{ t(`${g}.replay`) }}</Tab>
+      </TabList>
+      <TabPanels class="workspace-tabs">
+        <TabPanel value="edit">
+          <div class="edit-content">
+            <div v-if="issues.length" class="notice" role="alert">
+              <ul>
+                <li v-for="(issue, index) in issues" :key="index">
+                  {{ t(`${g}.issues.${issue.code}`) }} <code>{{ issue.path }}</code>
+                  <span v-if="issue.cell"> {{ t(`${g}.coordinate`, { ...issue.cell }) }}</span>
+                </li>
+              </ul>
+              <Button
+                :label="t(`${g}.dismiss`)"
+                severity="secondary"
+                text
                 size="small"
-                :aria-label="t(`${g}.k`)"
-                :aria-describedby="map.k === null ? 'goat-k-issue' : undefined"
-                :invalid="map.k === null && !missingK"
-                @update:model-value="changeK"
+                @click="issues = []"
               />
-            </template>
-          </i18n-t>
-          <Button
-            v-if="status.status === 'searching'"
-            :label="t(`${g}.cancel`)"
-            severity="secondary"
-            @click="search.cancel"
-          />
-          <Button
-            v-else
-            :label="t(`${g}.solve`)"
-            :disabled="!readyMap || !validLimits"
-            @click="begin"
-          />
-          <div role="status">
-            <p v-if="status.status !== 'idle'" class="hint">{{ feedback }}</p>
-          </div>
-          <details>
-            <summary>{{ t(`${g}.searchSettings`) }}</summary>
-            <div class="numeric-fields">
-              <label for="goat-max-states">
-                {{ t(`${g}.stateLimit`) }}
-                <InputNumber
-                  v-model="stateLimit"
-                  input-id="goat-max-states"
-                  :min="1"
-                  :max="maximumLimits.states"
-                  size="small"
-                  fluid
-                />
-              </label>
-              <label for="goat-max-time">
-                {{ t(`${g}.timeLimit`) }}
-                <InputNumber
-                  v-model="timeLimit"
-                  input-id="goat-max-time"
-                  :min="1"
-                  :max="maximumLimits.milliseconds / 1000"
-                  size="small"
-                  fluid
-                />
-              </label>
             </div>
-          </details>
-        </section>
-      </aside>
-
-      <section class="panel grid-panel" :aria-label="t(`${g}.board`)">
-        <PuzzleGrid
-          :map="map"
-          :view="view"
-          :size="editView.size"
-          :editable="mode === 'edit'"
-          :anchor="mode === 'edit' ? anchor : null"
-          :snapshot="snapshot"
-          :status="frameStatus"
-          :platform-groups="platforms.byIndex"
-          :portal-groups="portals.byIndex"
-          @cell="editCell"
-        />
-        <details v-if="mode === 'edit'" class="settings-detail">
-          <summary>{{ t(`${g}.viewport`) }}</summary>
-          <div class="viewport-fields numeric-fields">
-            <label v-for="field in viewFields" :key="field" :for="`goat-view-${field}`">
-              {{ t(`${g}.view.${field}`) }}
-              <InputNumber
-                :input-id="`goat-view-${field}`"
-                :model-value="editView[field]"
-                :min="field === 'x' || field === 'y' ? -coordinateLimit : 4"
-                :max="field === 'x' || field === 'y' ? coordinateLimit : windowLimit"
-                size="small"
-                fluid
-                :use-grouping="false"
-                @update:model-value="updateView(field, $event)"
-              />
-            </label>
-            <label class="zoom">
-              {{ t(`${g}.zoom`) }}
-              <Slider v-model="editView.size" :min="32" :max="72" :aria-label="t(`${g}.zoom`)" />
-            </label>
-            <Button :label="t(`${g}.fit`)" severity="secondary" size="small" @click="fitMap" />
+            <EditorToolbar
+              :brush="brush"
+              :group="selectedGroup"
+              :slots="slots"
+              :extras="extras"
+              @basic="selectBasic"
+              @group="selectGroup"
+            />
+            <EditorWorkspace>
+              <template #map>
+                <section class="map-pane" aria-labelledby="goat-map">
+                  <header class="map-heading">
+                    <h2 id="goat-map">{{ t(`${g}.board`) }}</h2>
+                    <div class="viewport-controls">
+                      <label v-for="field in viewFields" :key="field" :for="`goat-view-${field}`">
+                        {{ t(`${g}.view.${field}`) }}
+                        <InputNumber
+                          :input-id="`goat-view-${field}`"
+                          :model-value="editView[field]"
+                          :min="4"
+                          :max="windowLimit"
+                          size="small"
+                          fluid
+                          :allow-empty="false"
+                          :use-grouping="false"
+                          class="viewport-number"
+                          @update:model-value="updateView(field, $event)"
+                        />
+                      </label>
+                      <div class="zoom">
+                        <span id="goat-zoom">{{ t(`${g}.zoom`) }}</span>
+                        <Slider
+                          v-model="editView.size"
+                          :min="32"
+                          :max="72"
+                          aria-labelledby="goat-zoom"
+                        />
+                      </div>
+                    </div>
+                  </header>
+                  <PuzzleGrid
+                    class="edit-grid"
+                    :map="map"
+                    :view="editView"
+                    :size="editView.size"
+                    :active="mode === 'edit'"
+                    editable
+                    :anchor="anchor"
+                    :platform-groups="platforms.byIndex"
+                    :portal-groups="portals.byIndex"
+                    :scroll-position="editScroll"
+                    @cell="editCell"
+                    @scroll-change="editScroll = $event"
+                  />
+                  <div class="board-navigation">
+                    <ButtonGroup :aria-label="t(`${g}.view.navigation`)">
+                      <Button
+                        v-for="{ direction, icon } in panControls"
+                        :key="direction"
+                        type="button"
+                        severity="secondary"
+                        size="small"
+                        outlined
+                        :title="t(`${g}.view.pan.${direction}`)"
+                        :aria-label="t(`${g}.view.pan.${direction}`)"
+                        @click="panMap(direction)"
+                      >
+                        <template #icon
+                          ><component :is="icon" :size="15" aria-hidden="true"
+                        /></template>
+                      </Button>
+                      <Button
+                        type="button"
+                        severity="secondary"
+                        size="small"
+                        outlined
+                        :title="t(`${g}.fit`)"
+                        :aria-label="t(`${g}.fit`)"
+                        @click="fitMap"
+                      >
+                        <template #icon><LocateFixed :size="15" aria-hidden="true" /></template>
+                      </Button>
+                    </ButtonGroup>
+                  </div>
+                </section>
+              </template>
+              <template #inspector>
+                <aside class="inspector-pane" :aria-label="t('ui.inspector')">
+                  <div class="inspector-upper">
+                    <div class="inspector-main">
+                      <EditorProperties
+                        :brush="brush"
+                        :group="selectedGroup"
+                        :portal="selectedPortal"
+                        :platform-polarity="platformPolarity"
+                        :anchor="anchor"
+                        @tool="selectGroupTool"
+                        @portal-open="updatePortal"
+                        @cancel-ladder="anchor = null"
+                      />
+                      <div aria-live="polite">
+                        <section
+                          v-if="readiness.issues.length"
+                          class="todo"
+                          aria-labelledby="goat-todo"
+                        >
+                          <h2 id="goat-todo">{{ t(`${g}.todo.title`) }}</h2>
+                          <ul class="hint readiness">
+                            <li
+                              v-for="(issue, index) in readiness.issues"
+                              :id="issue.code === 'k' ? 'goat-k-issue' : undefined"
+                              :key="index"
+                            >
+                              {{ todoMessage(issue) }}
+                            </li>
+                          </ul>
+                        </section>
+                      </div>
+                    </div>
+                    <div class="hint inspector-feedback" role="status">{{ feedback }}</div>
+                  </div>
+                  <div class="solve-section" @paste.capture="checkKPaste">
+                    <i18n-t
+                      :keypath="`${g}.recordRule`"
+                      tag="label"
+                      for="goat-k"
+                      scope="global"
+                      class="record-rule"
+                    >
+                      <template #steps>
+                        <InputNumber
+                          input-id="goat-k"
+                          class="step-input"
+                          size="small"
+                          fluid
+                          :model-value="kInput"
+                          :allow-empty="true"
+                          :use-grouping="false"
+                          :max-fraction-digits="20"
+                          :aria-label="t(`${g}.k`)"
+                          :pt="{
+                            pcInputText: {
+                              root: {
+                                'aria-describedby': map.k === null ? 'goat-k-issue' : undefined,
+                              },
+                            },
+                          }"
+                          :invalid="invalidK"
+                          @input="changeK($event.value)"
+                          @update:model-value="changeK"
+                        />
+                      </template>
+                    </i18n-t>
+                    <Button
+                      v-if="status.status === 'searching'"
+                      :label="t(`${g}.cancel`)"
+                      severity="secondary"
+                      fluid
+                      @click="search.cancel"
+                    />
+                    <Button
+                      v-else
+                      :label="t(`${g}.solve`)"
+                      :disabled="!readyMap"
+                      fluid
+                      @click="begin"
+                    />
+                  </div>
+                </aside>
+              </template>
+            </EditorWorkspace>
           </div>
-        </details>
-      </section>
+        </TabPanel>
 
-      <aside
-        v-if="mode === 'replay' && solution && readyMap"
-        class="panel"
-        :aria-label="t(`${g}.replay`)"
-      >
-        <ReplayPanel
-          :map="readyMap"
-          :solution="solution"
-          :frame-index="frameIndex"
-          :platform-groups="platforms.byIndex"
-          :portal-groups="portals.byIndex"
-          @frame="showFrame"
-        />
-      </aside>
-    </div>
+        <TabPanel value="replay">
+          <div v-if="solution && readyMap && replayView" class="replay-workspace">
+            <section class="replay-map" :aria-label="t(`${g}.board`)">
+              <PuzzleGrid
+                :map="readyMap"
+                :view="replayView"
+                :size="44"
+                :active="mode === 'replay'"
+                :editable="false"
+                :anchor="null"
+                :platform-groups="platforms.byIndex"
+                :portal-groups="portals.byIndex"
+                :snapshot="snapshot"
+                :status="frameStatus"
+                :scroll-position="replayScroll"
+                @scroll-change="replayScroll = $event"
+              />
+            </section>
+            <aside class="replay-aside" :aria-label="t(`${g}.replay`)">
+              <ReplayPanel
+                :map="readyMap"
+                :solution="solution"
+                :frame-index="frameIndex"
+                :platform-groups="platforms.byIndex"
+                :portal-groups="portals.byIndex"
+                @frame="showFrame"
+              />
+            </aside>
+          </div>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   </article>
 </template>
 
@@ -515,127 +583,163 @@ onBeforeUnmount(() => {
 .goat-page {
   max-inline-size: 1440px;
   margin-inline: auto;
-  padding: clamp(14px, 3vw, 36px);
+  padding: clamp(12px, 2.5vw, 30px);
 }
 .page-header,
-.controls {
+.map-actions,
+.map-heading,
+.viewport-controls {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
-.page-header {
+.page-header,
+.map-heading {
   justify-content: space-between;
-  margin-block-end: 12px;
 }
-.map-actions {
-  margin-block-end: 12px;
+.page-header {
+  margin-block-end: 10px;
 }
-h1 {
-  color: var(--color-ink);
-  font-size: clamp(1.35rem, 4vw, 1.8rem);
-  font-weight: 700;
+.page-header h1 {
+  font-size: clamp(1.3rem, 4vw, 1.75rem);
 }
-.workspace {
+.map-actions :deep([data-pc-name='select']) {
+  max-inline-size: 100%;
+}
+.workspace-tabs {
+  padding: 10px 0 0;
+  background: transparent;
+}
+.edit-content,
+.replay-workspace {
   display: grid;
-  gap: 12px;
-  align-items: start;
+  min-inline-size: 0;
+  gap: 10px;
 }
-.workspace-edit {
-  grid-template-columns: minmax(255px, 310px) minmax(0, 1fr);
-}
-.workspace-replay {
-  grid-template-columns: minmax(0, 1fr) minmax(295px, 370px);
-}
-.panel {
+.map-pane,
+.inspector-pane,
+.replay-map,
+.replay-aside {
   min-inline-size: 0;
   padding: 12px;
-  border: 1px solid var(--color-line);
-  border-radius: 8px;
   background: var(--color-surface);
 }
-.settings,
-.todo,
-.solve-section,
-.grid-panel,
-.numeric-fields {
+.map-pane,
+.inspector-pane {
   display: grid;
-  gap: 8px;
+  min-block-size: 0;
 }
-.todo {
-  border-block-end: 1px solid var(--color-line);
-  padding-block-end: 8px;
+.map-pane {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 6px;
 }
+.map-heading h2,
 .todo h2 {
   font-size: 0.875rem;
   font-weight: 650;
 }
+.viewport-controls label,
+.zoom,
 .record-rule {
-  line-height: 1.6;
-}
-.step-input {
-  inline-size: 5.5rem;
-}
-label,
-summary {
   font-size: 0.875rem;
 }
-.settings-detail {
-  border-block-start: 1px solid var(--color-line);
-  padding-block-start: 8px;
+.viewport-controls label,
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
-summary {
-  cursor: pointer;
+.viewport-number {
+  inline-size: 3.35rem;
+}
+.zoom :deep([data-pc-name='slider']) {
+  inline-size: clamp(48px, 8vw, 82px);
+  margin-inline: 5px;
+}
+.edit-grid {
+  min-block-size: 0;
+}
+.board-navigation {
+  display: flex;
+  justify-content: flex-end;
+}
+.inspector-pane {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+.inspector-upper {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-block-size: 0;
+}
+.inspector-main {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-block-size: 0;
+  overflow: auto;
+  padding: 2px 4px 10px 2px;
+  overscroll-behavior: contain;
+}
+.solve-section {
+  display: grid;
+  gap: 8px;
+  padding-block-start: 10px;
+  border-block-start: 1px solid var(--color-line);
+}
+.record-rule {
+  line-height: 1.75;
+}
+.step-input {
+  inline-size: 5rem;
+  vertical-align: middle;
 }
 .hint,
-.notice li {
+.notice {
+  color: var(--color-muted);
   font-size: 0.8125rem;
 }
-.hint {
-  color: var(--color-muted);
+.inspector-feedback {
+  max-block-size: 4.5em;
+  overflow: auto;
 }
-.settings [role='status']:empty {
-  display: none;
+.inspector-feedback:not(:empty) {
+  padding-block-end: 8px;
 }
 .readiness {
   list-style: disc;
   padding-inline-start: 1.2em;
-  max-block-size: 8.5rem;
-  overflow: auto;
   overflow-wrap: anywhere;
+}
+.notice,
+.replay-map,
+.replay-aside,
+:deep(.editor-stack > .map-pane),
+:deep(.editor-stack > .inspector-pane) {
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+}
+:deep(.editor-stack .inspector-upper) {
+  block-size: clamp(7.5rem, 20dvh, 10rem);
+}
+.notice {
+  padding: 7px 10px;
+  border-color: var(--color-delay);
+}
+.notice ul {
+  max-block-size: 9rem;
+  overflow: auto;
 }
 .notice code {
   color: var(--color-delay);
-}
-.notice {
-  margin-block-end: 12px;
-  padding: 8px 12px;
-  border: 1px solid var(--color-delay);
-  border-radius: 6px;
-}
-.notice ul {
-  max-block-size: 14rem;
-  overflow: auto;
-}
-.numeric-fields {
-  margin-block-start: 8px;
-}
-.viewport-fields {
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
-  align-items: end;
-}
-.zoom {
-  padding-inline: 6px;
-  padding-block-end: 9px;
-}
-.zoom > :deep([data-pc-name='slider']) {
-  margin-block-start: 12px;
-}
-code {
   overflow-wrap: anywhere;
 }
-@media (max-width: 780px) {
-  .workspace {
+.replay-workspace {
+  grid-template-columns: minmax(0, 1fr) minmax(295px, 350px);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .replay-workspace {
     grid-template-columns: minmax(0, 1fr);
   }
 }

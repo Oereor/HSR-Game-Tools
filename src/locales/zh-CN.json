@@ -762,19 +762,20 @@
     "ladderSecond": "已选 {at}，请选择同列另一端。",
     "initiallyOpen": "初始开启",
     "ends": "已放置 {count} / 2 个端点",
-    "searchSettings": "搜索限制",
-    "stateLimit": "最大访问状态数",
-    "timeLimit": "搜索时间上限（秒）",
     "solve": "开始求解",
     "cancel": "取消",
-    "viewport": "视窗与缩放",
     "fit": "定位地图",
-    "zoom": "格子缩放",
+    "zoom": "格子大小",
     "view": {
-      "x": "左侧坐标 X",
-      "y": "顶部坐标 Y",
       "width": "列数",
-      "height": "行数"
+      "height": "行数",
+      "navigation": "平移或定位棋盘",
+      "pan": {
+        "left": "向左平移地图",
+        "right": "向右平移地图",
+        "up": "向上平移地图",
+        "down": "向下平移地图"
+      }
     },
     "demo": {
       "label": "演示地图",
@@ -880,13 +881,14 @@
     "previousPage": "上一页操作",
     "nextPage": "下一页操作",
     "palette": {
-      "basic": "基础画笔",
       "groups": "机关分组",
       "extras": "其他导入分组",
       "brushes": "分组画笔",
-      "eraseHint": "点击格子清除该格的所有元素和关联梯段。",
-      "polarityHint": "用所需极性的画笔点击已有平台，即可修改整个平台。",
-      "polarity": "平台触发极性"
+      "polarity": "平台触发极性",
+      "toolbar": "地图工具栏",
+      "markers": "起点与终点",
+      "terrain": "基础地形",
+      "edits": "编辑操作"
     },
     "groups": {
       "platformSlot": "活动平台 {number}",
@@ -900,9 +902,7 @@
     "recordRule": "{steps} 步后，过去的自己将成为敌人",
     "todo": {
       "title": "待完成",
-      "ready": "地图已就绪",
-      "k": "填写记录步数 K。",
-      "limits": "检查搜索限制中的状态数与时间。"
+      "k": "填写记录步数 K。"
     }
   }
 }

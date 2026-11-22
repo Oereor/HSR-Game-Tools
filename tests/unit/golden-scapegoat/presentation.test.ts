@@ -2,11 +2,39 @@ import { expect, it } from 'vitest'
 import {
   actionSequence,
   groupChoices,
+  locateEditWindow,
   mapBounds,
   operationPhase,
+  panEditWindow,
   replayWindow,
   visibleLadderCells,
 } from '../../../src/tools/golden-scapegoat/presentation'
+
+it('pans by half the visible window, keeping the orthogonal axis and dimensions', () => {
+  const view = { x: 3, y: -2, width: 11, height: 6 }
+  expect(panEditWindow(view, 'left')).toEqual({ x: -2, y: -2 })
+  expect(panEditWindow(view, 'right')).toEqual({ x: 8, y: -2 })
+  expect(panEditWindow(view, 'up')).toEqual({ x: 3, y: -5 })
+  expect(panEditWindow(view, 'down')).toEqual({ x: 3, y: 1 })
+  expect(view).toEqual({ x: 3, y: -2, width: 11, height: 6 })
+})
+
+it('clamps the whole editor window and locates maps around their bounds or start', () => {
+  const edge = { x: -999_998, y: 999_989, width: 12, height: 8 }
+  expect(panEditWindow(edge, 'left')).toEqual({ x: -1_000_000, y: 999_989 })
+  expect(panEditWindow(edge, 'down')).toEqual({ x: -999_998, y: 999_993 })
+  const small = mapBounds([
+    { x: -7, y: 3 },
+    { x: -2, y: 4 },
+  ])
+  expect(locateEditWindow(edge, small, { x: -2, y: 4 })).toEqual({ x: -7, y: 3 })
+  const large = mapBounds([
+    { x: -71, y: 3 },
+    { x: 24, y: 4 },
+  ])
+  expect(locateEditWindow(edge, large, { x: 19, y: 4 })).toEqual({ x: 13, y: 3 })
+  expect(locateEditWindow(edge, large, null)).toEqual({ x: -71, y: 3 })
+})
 
 it('projects ladder rows after the upper endpoint through the lower endpoint', () => {
   const ladders = [

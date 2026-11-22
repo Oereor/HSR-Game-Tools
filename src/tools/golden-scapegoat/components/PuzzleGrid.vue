@@ -5,20 +5,28 @@ import { Flag, Signpost } from '@lucide/vue'
 import SheepMarker from './SheepMarker.vue'
 import { cellKey, platformEnabled, sameCell, type Cell, type PuzzleMap } from '../engine/map'
 import type { boardStatus, GameState } from '../engine/step'
-import { groupDetail, visibleLadderCells, type GridWindow, type GroupChoice } from '../presentation'
+import {
+  groupDetail,
+  visibleLadderCells,
+  type BoardScroll,
+  type GridWindow,
+  type GroupChoice,
+} from '../presentation'
 
 const props = defineProps<{
   map: PuzzleMap
   view: GridWindow
   size: number
+  active: boolean
   editable: boolean
   anchor: Cell | null
   platformGroups: GroupChoice[]
   portalGroups: GroupChoice[]
   snapshot?: GameState
   status?: ReturnType<typeof boardStatus>
+  scrollPosition?: BoardScroll
 }>()
-const emit = defineEmits<{ cell: [point: Cell] }>()
+const emit = defineEmits<{ cell: [point: Cell]; scrollChange: [position: BoardScroll] }>()
 const { t } = useI18n()
 const grid = ref<HTMLElement>()
 const focusIndex = ref(0)
@@ -37,7 +45,7 @@ const cellSize = computed(() => {
 })
 
 function measure() {
-  if (!grid.value) return
+  if (!props.active || !grid.value?.clientWidth) return
   available.value = {
     width: grid.value.clientWidth - 8,
     height: Math.floor(window.innerHeight * 0.68) - 8,
@@ -47,6 +55,8 @@ function measure() {
 let observer: ResizeObserver | undefined
 onMounted(() => {
   measure()
+  if (props.scrollPosition) restoreScroll()
+  else if (props.active && !props.editable) revealSheep()
   if (typeof ResizeObserver !== 'undefined') {
     observer = new ResizeObserver(measure)
     observer.observe(grid.value!)
@@ -219,29 +229,43 @@ function revealSheep() {
   })
 }
 
-let editScroll = { left: 0, top: 0 }
+function saveScroll() {
+  const scroller = grid.value
+  if (!props.active || !scroller?.clientWidth) return
+  const { scrollLeft: left, scrollTop: top } = scroller
+  if (left !== props.scrollPosition?.left || top !== props.scrollPosition?.top)
+    emit('scrollChange', { left, top })
+}
+
+function restoreScroll() {
+  const scroller = grid.value
+  const position = props.scrollPosition
+  if (!props.active || !scroller?.clientWidth || !position) return
+  if (scroller.scrollLeft !== position.left || scroller.scrollTop !== position.top)
+    scroller.scrollTo(position)
+}
+
+watch(() => props.scrollPosition, restoreScroll, { flush: 'post' })
 watch(
-  () => props.editable,
-  (editable) => {
-    if (!editable && grid.value)
-      editScroll = { left: grid.value.scrollLeft, top: grid.value.scrollTop }
-    if (editable)
-      void nextTick(() => {
-        if (props.editable) grid.value?.scrollTo(editScroll)
-      })
+  () => props.active,
+  (active) => {
+    if (!active) return
+    measure()
+    restoreScroll()
   },
+  { flush: 'post' },
 )
 watch(
   [() => props.snapshot, cellSize],
   () => {
-    if (!props.editable) revealSheep()
+    if (props.active && !props.editable) revealSheep()
   },
   { flush: 'post' },
 )
 </script>
 
 <template>
-  <div ref="grid" class="board-scroll">
+  <div ref="grid" class="board-scroll" @scroll.passive="saveScroll">
     <div
       class="board"
       :class="{ 'board-edit': editable }"

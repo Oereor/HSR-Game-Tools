@@ -762,19 +762,20 @@
     "ladderSecond": "Selected {at}. Pick the other endpoint in the same column.",
     "initiallyOpen": "Initially open",
     "ends": "{count} / 2 endpoints placed",
-    "searchSettings": "Search Limits",
-    "stateLimit": "Maximum visited states",
-    "timeLimit": "Time limit (seconds)",
     "solve": "Find Solution",
     "cancel": "Cancel",
-    "viewport": "Viewport and Zoom",
     "fit": "Locate Map",
-    "zoom": "Cell Zoom",
+    "zoom": "Cell Size",
     "view": {
-      "x": "Left X",
-      "y": "Top Y",
       "width": "Columns",
-      "height": "Rows"
+      "height": "Rows",
+      "navigation": "Pan or locate the board",
+      "pan": {
+        "left": "Pan the map left",
+        "right": "Pan the map right",
+        "up": "Pan the map up",
+        "down": "Pan the map down"
+      }
     },
     "demo": {
       "label": "Demo Maps",
@@ -880,13 +881,14 @@
     "previousPage": "Previous moves page",
     "nextPage": "Next moves page",
     "palette": {
-      "basic": "Basic brushes",
       "groups": "Mechanism groups",
       "extras": "Other imported groups",
       "brushes": "Group brushes",
-      "eraseHint": "Select a cell to erase all its elements and any ladder that touches it.",
-      "polarityHint": "Apply a polarity brush to any cell of an existing platform to update the whole platform.",
-      "polarity": "Platform polarity"
+      "polarity": "Platform polarity",
+      "toolbar": "Map tools",
+      "markers": "Start and goal",
+      "terrain": "Terrain",
+      "edits": "Editing actions"
     },
     "groups": {
       "platformSlot": "Platform {number}",
@@ -900,9 +902,7 @@
     "recordRule": "After {steps} moves, your past self becomes your enemy.",
     "todo": {
       "title": "To Do",
-      "ready": "Map ready",
-      "k": "Enter the number of recorded moves.",
-      "limits": "Check the state and time limits."
+      "k": "Enter the number of recorded moves."
     }
   }
 }
