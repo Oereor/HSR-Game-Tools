@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "k": 5,
+  "start": {
+    "x": 2,
+    "y": 1
+  },
+  "goal": {
+    "x": 7,
+    "y": 1
+  },
+  "floors": [
+    {
+      "x": 1,
+      "y": 1
+    },
+    {
+      "x": 2,
+      "y": 1
+    },
+    {
+      "x": 3,
+      "y": 1
+    },
+    {
+      "x": 1,
+      "y": 3
+    },
+    {
+      "x": 2,
+      "y": 3
+    },
+    {
+      "x": 3,
+      "y": 3
+    },
+    {
+      "x": 4,
+      "y": 3
+    },
+    {
+      "x": 5,
+      "y": 3
+    },
+    {
+      "x": 6,
+      "y": 3
+    },
+    {
+      "x": 5,
+      "y": 1
+    },
+    {
+      "x": 7,
+      "y": 1
+    }
+  ],
+  "platformGroups": [
+    {
+      "id": "platform-1",
+      "defaultEnabled": false,
+      "activatedEnabled": true,
+      "cells": [
+        {
+          "x": 4,
+          "y": 1
+        }
+      ],
+      "controllers": [
+        {
+          "x": 4,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": "platform-2",
+      "defaultEnabled": false,
+      "activatedEnabled": true,
+      "cells": [
+        {
+          "x": 6,
+          "y": 1
+        }
+      ],
+      "controllers": [
+        {
+          "x": 2,
+          "y": 3
+        }
+      ]
+    }
+  ],
+  "ladders": [
+    {
+      "top": {
+        "x": 3,
+        "y": 1
+      },
+      "bottom": {
+        "x": 3,
+        "y": 3
+      }
+    }
+  ],
+  "portalPairs": [
+    {
+      "id": "portal-1",
+      "ends": [
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 6,
+          "y": 3
+        }
+      ],
+      "controllers": [
+        {
+          "x": 5,
+          "y": 3
+        }
+      ],
+      "initiallyOpen": true
+    }
+  ]
+}
