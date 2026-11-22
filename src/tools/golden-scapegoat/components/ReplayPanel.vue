@@ -179,83 +179,97 @@ function eventText(event: GameEvent) {
 
 <template>
   <div class="replay">
-    <header class="replay-heading">
-      <i18n-t :keypath="`${g}.result.solved`" tag="h2" scope="global">
-        <template #steps
-          ><strong class="shortest-count">{{ total }}</strong></template
-        >
-      </i18n-t>
-      <div class="copy-buttons">
-        <Button
-          v-for="option in copyOptions"
-          :key="option.format"
-          v-tooltip="t(`${g}.${option.message}`)"
-          severity="secondary"
-          size="small"
-          text
-          :aria-label="t(`${g}.${option.message}`)"
-          :disabled="total === 0"
-          @click="copy(option.format)"
-        >
-          <template #icon><component :is="option.icon" :size="17" aria-hidden="true" /></template>
-        </Button>
-      </div>
-    </header>
-    <span v-if="copied" class="hint" role="status">{{ t(`${g}.copied`) }}</span>
-    <label v-if="fallback" class="hint">
-      {{ t(`${g}.copyFailed`) }}
-      <textarea readonly rows="2" :value="actionSequence(solution.actions, fallback)" />
-    </label>
-
-    <section v-if="total" class="sequence" :aria-label="t(`${g}.sequence`)">
-      <ol ref="sequenceScroll" role="list" class="steps" :start="page * pageSize + 1">
-        <li v-for="item in visibleSteps" :key="item.step">
-          <Button
-            class="sequence-step"
-            :severity="item.step === frameIndex ? 'primary' : 'secondary'"
-            size="small"
-            :aria-current="item.step === frameIndex ? 'step' : undefined"
-            :aria-label="operationLabel(item)"
-            @click="emit('frame', item.step, 'jump')"
+    <div class="replay-top">
+      <header class="replay-heading">
+        <i18n-t :keypath="`${g}.result.solved`" tag="h2" scope="global">
+          <template #steps
+            ><strong class="shortest-count">{{ total }}</strong></template
           >
-            <span class="step-number" aria-hidden="true">{{ item.step }}</span>
-            <b class="gold-action" aria-hidden="true">{{ actionSequence([item.gold], 'arrow') }}</b>
-            <span class="black-action-row" aria-hidden="true">
-              <span
-                v-if="item.black"
-                v-tooltip="item.black.moved ? t(`${g}.sheep.black`) : t(`${g}.invalidReplayAction`)"
-                :class="{ 'invalid-action': !item.black.moved }"
-              >
-                {{ actionSequence([item.black.direction], 'arrow') }}
-              </span>
-            </span>
+        </i18n-t>
+        <div class="copy-buttons">
+          <Button
+            v-for="option in copyOptions"
+            :key="option.format"
+            v-tooltip="t(`${g}.${option.message}`)"
+            severity="secondary"
+            size="small"
+            text
+            :aria-label="t(`${g}.${option.message}`)"
+            :disabled="total === 0"
+            @click="copy(option.format)"
+          >
+            <template #icon><component :is="option.icon" :size="17" aria-hidden="true" /></template>
           </Button>
-        </li>
-      </ol>
-      <div v-if="lastPage" class="page-controls">
-        <Button
-          severity="secondary"
-          size="small"
-          :aria-label="t(`${g}.previousPage`)"
-          :title="t(`${g}.previousPage`)"
-          :disabled="page === 0"
-          @click="page--"
-        >
-          <template #icon><ChevronLeft :size="16" aria-hidden="true" /></template>
-        </Button>
-        <span class="hint">{{ t(`${g}.page`, { current: page + 1, total: lastPage + 1 }) }}</span>
-        <Button
-          severity="secondary"
-          size="small"
-          :aria-label="t(`${g}.nextPage`)"
-          :title="t(`${g}.nextPage`)"
-          :disabled="page === lastPage"
-          @click="page++"
-        >
-          <template #icon><ChevronRight :size="16" aria-hidden="true" /></template>
-        </Button>
-      </div>
-    </section>
+        </div>
+      </header>
+      <span v-if="copied" class="hint" role="status">{{ t(`${g}.copied`) }}</span>
+      <label v-if="fallback" class="hint">
+        {{ t(`${g}.copyFailed`) }}
+        <textarea readonly rows="2" :value="actionSequence(solution.actions, fallback)" />
+      </label>
+    </div>
+
+    <div class="replay-body">
+      <section v-if="total" class="sequence" :aria-label="t(`${g}.sequence`)">
+        <ol ref="sequenceScroll" role="list" class="steps" :start="page * pageSize + 1">
+          <li v-for="item in visibleSteps" :key="item.step">
+            <Button
+              class="sequence-step"
+              severity="secondary"
+              size="small"
+              :aria-current="item.step === frameIndex ? 'step' : undefined"
+              :aria-label="operationLabel(item)"
+              @click="emit('frame', item.step, 'jump')"
+            >
+              <span class="gold-action-row" aria-hidden="true">
+                <span class="step-number">{{ item.step }}</span>
+                <b class="gold-action">{{ actionSequence([item.gold], 'arrow') }}</b>
+              </span>
+              <span class="black-action-row" aria-hidden="true">
+                <span
+                  v-if="item.black"
+                  v-tooltip="
+                    item.black.moved ? t(`${g}.sheep.black`) : t(`${g}.invalidReplayAction`)
+                  "
+                  :class="{ 'invalid-action': !item.black.moved }"
+                >
+                  {{ actionSequence([item.black.direction], 'arrow') }}
+                </span>
+              </span>
+            </Button>
+          </li>
+        </ol>
+        <div v-if="lastPage" class="page-controls">
+          <Button
+            severity="secondary"
+            size="small"
+            :aria-label="t(`${g}.previousPage`)"
+            :title="t(`${g}.previousPage`)"
+            :disabled="page === 0"
+            @click="page--"
+          >
+            <template #icon><ChevronLeft :size="16" aria-hidden="true" /></template>
+          </Button>
+          <span class="hint">{{ t(`${g}.page`, { current: page + 1, total: lastPage + 1 }) }}</span>
+          <Button
+            severity="secondary"
+            size="small"
+            :aria-label="t(`${g}.nextPage`)"
+            :title="t(`${g}.nextPage`)"
+            :disabled="page === lastPage"
+            @click="page++"
+          >
+            <template #icon><ChevronRight :size="16" aria-hidden="true" /></template>
+          </Button>
+        </div>
+      </section>
+      <details v-if="detailEvents.length" :key="frameIndex" class="events hint">
+        <summary>{{ t(`${g}.stepEvents`) }}</summary>
+        <ol>
+          <li v-for="(event, index) in detailEvents" :key="index">{{ eventText(event) }}</li>
+        </ol>
+      </details>
+    </div>
 
     <div class="replay-footer">
       <p class="current-step" aria-live="polite">
@@ -268,39 +282,38 @@ function eventText(event: GameEvent) {
           v-tooltip="t(`${g}.${button.id}`)"
           severity="secondary"
           size="small"
+          fluid
           :aria-label="t(`${g}.${button.id}`)"
           :disabled="button.disabled"
           @click="emit('frame', button.target, button.id === 'next' ? 'next' : 'jump')"
         >
-          <template #icon><component :is="button.icon" :size="17" aria-hidden="true" /></template>
+          <template #icon><component :is="button.icon" :size="20" aria-hidden="true" /></template>
         </Button>
       </div>
-      <p class="positions hint" aria-live="polite">
-        <span>{{ t(`${g}.sheep.gold`) }} {{ coord(frame.nextState.gold) }}</span>
-        <span>{{ t(`${g}.sheep.black`) }} {{ coord(frame.nextState.black) }}</span>
-      </p>
-      <details v-if="detailEvents.length" :key="frameIndex" class="events hint">
-        <summary>{{ t(`${g}.stepEvents`) }}</summary>
-        <ol>
-          <li v-for="(event, index) in detailEvents" :key="index">{{ eventText(event) }}</li>
-        </ol>
-      </details>
     </div>
   </div>
 </template>
 
 <style scoped>
 .replay {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-block-size: 0;
   min-inline-size: 0;
   gap: 8px;
 }
+.replay-top {
+  display: grid;
+  gap: 8px;
+}
+.replay-body {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+}
 .replay-heading,
 .copy-buttons,
-.page-controls,
-.positions {
+.page-controls {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -341,15 +354,36 @@ h2 {
   overscroll-behavior: contain;
 }
 .sequence-step {
+  --step-tint: 17%;
   display: grid;
-  grid-template-rows: 0.75rem 1.25rem 1rem;
-  justify-items: center;
-  align-items: center;
+  grid-template-rows: 5fr 3fr;
+  place-items: stretch;
   gap: 0;
   inline-size: 100%;
   block-size: 3.625rem;
-  padding: 3px;
+  padding: 0;
+  border-color: var(--color-line);
+  overflow: hidden;
   font-variant-numeric: tabular-nums;
+}
+.sequence-step:hover {
+  --step-tint: 24%;
+}
+.sequence-step[aria-current='step'] {
+  --step-tint: 33%;
+  border-color: var(--color-accent);
+}
+.gold-action-row,
+.black-action-row {
+  display: grid;
+  place-items: center;
+  color: color-mix(in srgb, var(--step-color) 40%, var(--color-ink));
+  background: color-mix(in srgb, var(--step-color) var(--step-tint), var(--color-surface));
+}
+.gold-action-row {
+  --step-color: var(--color-accent);
+  align-content: center;
+  gap: 1px;
 }
 .step-number {
   font-size: 0.625rem;
@@ -360,18 +394,12 @@ h2 {
   line-height: 1;
 }
 .black-action-row {
-  inline-size: 75%;
-  block-size: 100%;
-  border-block-start: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  --step-color: var(--color-advance);
   font-size: 0.875rem;
   line-height: 1;
-  text-align: center;
-}
-.black-action-row > span {
-  display: block;
 }
 .black-action-row .invalid-action {
-  opacity: 0.62;
+  opacity: 0.78;
 }
 .page-controls {
   justify-content: center;
@@ -389,27 +417,31 @@ h2 {
 .navigation {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  gap: 4px;
 }
 .navigation > button {
+  width: 100%;
+  min-inline-size: 0;
   min-block-size: 2.5rem;
-}
-.positions {
-  flex-wrap: wrap;
-  gap: 4px 12px;
 }
 .hint {
   color: var(--color-muted);
   font-size: 0.8125rem;
 }
+.events {
+  flex: none;
+  max-block-size: min(7.5rem, 48%);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
 .events summary {
+  position: sticky;
+  inset-block-start: 0;
+  background: var(--color-surface);
   cursor: pointer;
 }
 .events ol {
-  max-block-size: 6rem;
   padding-inline-start: 1.4rem;
-  overflow: auto;
-  overscroll-behavior: contain;
   list-style: decimal;
   overflow-wrap: anywhere;
 }
