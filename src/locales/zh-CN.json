@@ -876,7 +876,10 @@
       "portalSupport": "为{group}的端点 {at} 补上平台。"
     },
     "sequence": "操作序列",
-    "jumpStep": "第 {step} 步 · {arrow} · {phase}",
+    "jumpStep": "第 {step} 步 · {actions}",
+    "stepAction": "{sheep}向{direction}",
+    "invalidReplayAction": "黑羊操作无效",
+    "directions": { "left": "左", "right": "右", "up": "上", "down": "下" },
     "page": "第 {current} / {total} 页",
     "previousPage": "上一页操作",
     "nextPage": "下一页操作",

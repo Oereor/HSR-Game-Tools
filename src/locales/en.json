@@ -876,7 +876,10 @@
       "portalSupport": "Add support at the {group} endpoint {at}."
     },
     "sequence": "Move sequence",
-    "jumpStep": "Step {step} · {arrow} · {phase}",
+    "jumpStep": "Step {step} · {actions}",
+    "stepAction": "{sheep} {direction}",
+    "invalidReplayAction": "Invalid black sheep move",
+    "directions": { "left": "left", "right": "right", "up": "up", "down": "down" },
     "page": "Page {current} / {total}",
     "previousPage": "Previous moves page",
     "nextPage": "Next moves page",

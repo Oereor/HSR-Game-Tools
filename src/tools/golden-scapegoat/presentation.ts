@@ -1,6 +1,7 @@
 import type { GroupKind } from './editor'
 import { cellKey, coordinateLimit, type Cell, type Ladder } from './engine/map'
 import type { Direction, GameState, Phase } from './engine/step'
+import type { SearchResult } from './engine/solve'
 
 const groupColors = {
   platform: ['var(--color-event)', 'var(--color-advance)'],
@@ -148,4 +149,27 @@ export function actionSequence(actions: Direction[], format: 'arrow' | 'wasd') {
 export function operationPhase(step: number, k: number): Phase {
   if (step <= k) return 'recording'
   return step - k <= k ? 'replaying' : 'postReplay'
+}
+
+export function replayOperation(
+  solution: Pick<Extract<SearchResult, { status: 'solved' }>, 'actions' | 'frames'>,
+  step: number,
+  k: number,
+) {
+  const before = solution.frames[step - 1].nextState
+  const direction =
+    operationPhase(step, k) === 'replaying' && before.black && before.phase === 'replaying'
+      ? before.history[0]
+      : undefined
+  return {
+    gold: solution.actions[step - 1],
+    black: direction
+      ? {
+          direction,
+          moved: solution.frames[step].events.some(
+            (event) => event.type === 'move' && event.sheep === 'black',
+          ),
+        }
+      : undefined,
+  }
 }

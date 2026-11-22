@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Flag, Signpost } from '@lucide/vue'
 import SheepMarker from './SheepMarker.vue'
+import { animateReplayStage } from '../browser/replay-animation'
 import { cellKey, platformEnabled, sameCell, type Cell, type PuzzleMap } from '../engine/map'
-import type { boardStatus, GameState } from '../engine/step'
+import type { GameState, Sheep } from '../engine/step'
 import {
   groupDetail,
   visibleLadderCells,
@@ -12,6 +13,13 @@ import {
   type GridWindow,
   type GroupChoice,
 } from '../presentation'
+import {
+  createReplayPlayback,
+  replayEnvironment,
+  replayMotionStages,
+  type BoardStatus,
+  type ReplayMotionRequest,
+} from '../replay-motion'
 
 const props = defineProps<{
   map: PuzzleMap
@@ -23,37 +31,56 @@ const props = defineProps<{
   platformGroups: GroupChoice[]
   portalGroups: GroupChoice[]
   snapshot?: GameState
-  status?: ReturnType<typeof boardStatus>
+  status?: BoardStatus
+  motion?: ReplayMotionRequest
   scrollPosition?: BoardScroll
 }>()
 const emit = defineEmits<{ cell: [point: Cell]; scrollChange: [position: BoardScroll] }>()
 const { t } = useI18n()
 const grid = ref<HTMLElement>()
+const goldMarker = ref<HTMLElement>()
+const blackMarker = ref<HTMLElement>()
 const focusIndex = ref(0)
 const g = 'goldenScapegoat'
+const tileGap = 2
 const available = ref({ width: 0, height: 0 })
+const visualStatus = shallowRef<BoardStatus>()
+const playback = createReplayPlayback()
+let motionPreference: MediaQueryList | undefined
+let gridWidth = 0
+let gridHeight = 0
 const cellSize = computed(() => {
   if (props.editable || !available.value.width) return props.size
   return Math.max(
     32,
     Math.min(
       72,
-      Math.floor(available.value.width / props.view.width) - 2,
-      Math.floor(available.value.height / props.view.height) - 2,
+      Math.floor(available.value.width / props.view.width) - tileGap,
+      Math.floor(available.value.height / props.view.height) - tileGap,
     ),
   )
 })
 
 function measure() {
-  if (!props.active || !grid.value?.clientWidth) return
+  const scroller = grid.value
+  if (!props.active || !scroller?.clientWidth) return
+  if (gridWidth !== scroller.clientWidth || gridHeight !== scroller.clientHeight) {
+    if (playback.cancel()) finishMotion()
+    gridWidth = scroller.clientWidth
+    gridHeight = scroller.clientHeight
+  }
   available.value = {
-    width: grid.value.clientWidth - 8,
+    width: gridWidth - 8,
     height: Math.floor(window.innerHeight * 0.68) - 8,
   }
 }
 
 let observer: ResizeObserver | undefined
 onMounted(() => {
+  if (!props.editable) {
+    motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    motionPreference.addEventListener('change', onMotionPreference)
+  }
   measure()
   if (props.scrollPosition) restoreScroll()
   else if (props.active && !props.editable) revealSheep()
@@ -64,6 +91,8 @@ onMounted(() => {
   window.addEventListener('resize', measure)
 })
 onBeforeUnmount(() => {
+  playback.cancel()
+  motionPreference?.removeEventListener('change', onMotionPreference)
   observer?.disconnect()
   window.removeEventListener('resize', measure)
 })
@@ -112,6 +141,7 @@ const tiles = computed(() => {
     const black = sameCell(props.snapshot?.black ?? null, point)
     const controls = switches.get(key)
     const pressed = props.status?.pressed.has(key)
+    const visuallyPressed = visualStatus.value ? visualStatus.value.pressed.has(key) : pressed
     const labels = [t(`${g}.coordinate`, point)]
     if (floor) labels.push(t(`${g}.tools.floor`))
     if (ladder) labels.push(t(`${g}.tools.ladder`))
@@ -122,7 +152,8 @@ const tiles = computed(() => {
       const config = props.map.platformGroups[platform.group].platforms[platform.index]
       const on =
         props.status?.platforms[platform.group][platform.index] ?? platformEnabled(config, false)
-      platformStyle = { color: group.color, on }
+      const visualOn = visualStatus.value?.platforms[platform.group][platform.index] ?? on
+      platformStyle = { color: group.color, on: visualOn }
       labels.push(
         t(`${g}.groups.platformTile`, {
           group: groupDetail(group, t),
@@ -139,7 +170,8 @@ const tiles = computed(() => {
     if (portal !== undefined) {
       const group = props.portalGroups[portal]
       const on = props.status?.portals.has(portal) ?? props.map.portalPairs[portal].initiallyOpen
-      portalStyle = { color: group.color, on }
+      const visualOn = visualStatus.value ? visualStatus.value.portals.has(portal) : on
+      portalStyle = { color: group.color, on: visualOn }
       labels.push(
         t(`${g}.groupState`, {
           group: groupDetail(group, t),
@@ -165,7 +197,7 @@ const tiles = computed(() => {
       gold,
       black,
       controls,
-      pressed,
+      pressed: visuallyPressed,
       anchor: sameCell(point, props.anchor),
       label: labels.join(' · '),
       hasContents: labels.length > 1,
@@ -229,6 +261,64 @@ function revealSheep() {
   })
 }
 
+function finishMotion() {
+  visualStatus.value = undefined
+  void nextTick(() => {
+    if (props.active && !visualStatus.value) revealSheep()
+  })
+}
+
+function onMotionPreference(event: MediaQueryListEvent) {
+  if (event.matches && playback.cancel()) finishMotion()
+}
+
+function placeMarker(point: Cell, who: Sheep, shared: boolean) {
+  const size = cellSize.value
+  const iconSize = Math.max(15, Math.min(34, size * 0.52))
+  const marked = sameCell(props.map.start, point) || sameCell(props.map.goal, point)
+  const top = marked ? Math.max(12, Math.min(21, size * 0.32)) - 1 : 2
+  const bottom = lookups.value.switches.has(cellKey(point)) ? 12 : 7
+  const width = shared ? Math.min(iconSize, (size - 8) / 2) : iconSize
+  const height = Math.min(34, size - 2 - top - bottom)
+  const offset = shared ? ((width + 2) / 2) * (who === 'gold' ? -1 : 1) : 0
+  const x = (point.x - props.view.x) * (size + tileGap) + size / 2 + offset
+  const y = (point.y - props.view.y) * (size + tileGap) + (size + top - bottom) / 2
+  return {
+    transform: `translate(${x}px, ${y}px) scale(${Math.min(width, height) / iconSize})`,
+    opacity: point.y >= props.view.y + props.view.height ? '0' : '1',
+  }
+}
+
+function playMotion(request: ReplayMotionRequest) {
+  const gold = goldMarker.value
+  const black = blackMarker.value
+  if (!gold?.animate || !black?.animate || motionPreference?.matches) return
+  const stages = replayMotionStages(request.before, request.transition, props.view)
+  if (!stages) return
+
+  let status = request.status
+  let positions = { gold: request.before.gold, black: request.before.black }
+  visualStatus.value = status
+  void playback
+    .play(
+      stages,
+      async (stage, signal) => {
+        if (stage.type === 'environment') {
+          status = replayEnvironment(status, stage.events)
+          visualStatus.value = status
+          return
+        }
+        await nextTick()
+        await animateReplayStage({ gold, black }, positions, stage, placeMarker, signal)
+        positions = stage.positions
+      },
+      finishMotion,
+    )
+    .catch(() => {
+      // An unavailable animation leaves the engine snapshot on screen.
+    })
+}
+
 function saveScroll() {
   const scroller = grid.value
   if (!props.active || !scroller?.clientWidth) return
@@ -256,9 +346,32 @@ watch(
   { flush: 'post' },
 )
 watch(
-  [() => props.snapshot, cellSize],
-  () => {
-    if (props.active && !props.editable) revealSheep()
+  [
+    () => props.motion,
+    () => props.active,
+    () => props.snapshot,
+    cellSize,
+    () => props.view.x,
+    () => props.view.y,
+    () => props.view.width,
+    () => props.view.height,
+  ],
+  (
+    [request, active, snapshot, size],
+    [previousRequest, wasActive, previousSnapshot, previousSize],
+  ) => {
+    if (playback.cancel()) {
+      finishMotion()
+      return
+    }
+    if (!active || props.editable) return
+    if (request && request !== previousRequest && request.transition.nextState === snapshot)
+      playMotion(request)
+    if (
+      !visualStatus.value &&
+      (snapshot !== previousSnapshot || (wasActive && size !== previousSize))
+    )
+      revealSheep()
   },
   { flush: 'post' },
 )
@@ -271,7 +384,7 @@ watch(
       :class="{ 'board-edit': editable }"
       role="group"
       :aria-label="t(`${g}.board`)"
-      :style="{ '--width': view.width, '--size': `${cellSize}px` }"
+      :style="{ '--width': view.width, '--size': `${cellSize}px`, '--tile-gap': `${tileGap}px` }"
     >
       <template v-if="editable">
         <span class="axis" aria-hidden="true">x/y</span>
@@ -332,7 +445,7 @@ watch(
               :style="{ '--group-color': control.group.color }"
             />
           </span>
-          <span v-if="tile.gold || tile.black" class="sheep" aria-hidden="true">
+          <span v-if="(tile.gold || tile.black) && !visualStatus" class="sheep" aria-hidden="true">
             <SheepMarker v-if="tile.gold" sheep="gold" class="sheep-marker" />
             <SheepMarker v-if="tile.black" sheep="black" class="sheep-marker" />
           </span>
@@ -346,6 +459,10 @@ watch(
           />
         </component>
       </template>
+      <div v-if="!editable" v-show="visualStatus" class="sheep-layer" aria-hidden="true">
+        <span ref="goldMarker" class="moving-sheep"><SheepMarker sheep="gold" /></span>
+        <span ref="blackMarker" class="moving-sheep"><SheepMarker sheep="black" /></span>
+      </div>
     </div>
   </div>
 </template>
@@ -357,9 +474,11 @@ watch(
   padding: 4px;
 }
 .board {
+  --sheep-size: clamp(15px, calc(var(--size) * 0.52), 34px);
+  position: relative;
   display: grid;
   grid-template-columns: repeat(var(--width), var(--size));
-  gap: 2px;
+  gap: var(--tile-gap);
   inline-size: max-content;
   margin-inline: auto;
 }
@@ -489,8 +608,27 @@ button.tile:hover,
 }
 .sheep-marker {
   min-inline-size: 0;
-  inline-size: clamp(15px, calc(var(--size) * 0.52), 34px);
+  inline-size: var(--sheep-size);
   block-size: 100%;
   max-block-size: 34px;
+}
+.sheep-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.moving-sheep {
+  position: absolute;
+  inset-block-start: calc(var(--sheep-size) / -2);
+  inset-inline-start: calc(var(--sheep-size) / -2);
+  inline-size: var(--sheep-size);
+  block-size: var(--sheep-size);
+  opacity: 0;
+}
+.moving-sheep svg {
+  inline-size: 100%;
+  block-size: 100%;
 }
 </style>

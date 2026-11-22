@@ -56,6 +56,7 @@ import {
   type BoardScroll,
   type GroupChoice,
 } from './presentation'
+import { sameReplayWindow, type ReplayMotionRequest } from './replay-motion'
 
 const { t } = useI18n()
 const g = 'goldenScapegoat'
@@ -88,6 +89,7 @@ const search = createSearchSession(
 const { status } = search
 const mode = ref<'edit' | 'replay'>('edit')
 const frameIndex = ref(0)
+const replayMotion = shallowRef<ReplayMotionRequest>()
 const solution = computed(() => (status.value.status === 'solved' ? status.value : undefined))
 const snapshot = computed(() => solution.value?.frames[frameIndex.value]?.nextState)
 const readiness = computed(() => prepareMap(map.value))
@@ -203,6 +205,7 @@ function commit(next: PuzzleMap) {
   demo.value = undefined
   mode.value = 'edit'
   frameIndex.value = 0
+  replayMotion.value = undefined
   replayScroll.value = undefined
   issues.value = []
   search.reset()
@@ -321,17 +324,35 @@ function begin() {
   const ready = readyMap.value
   if (!ready) return
   frameIndex.value = 0
+  replayMotion.value = undefined
   replayScroll.value = undefined
   search.start(ready, defaultLimits)
 }
 
 function switchMode(value: string | number) {
-  if (value === 'edit' || (value === 'replay' && solution.value)) mode.value = value
+  if (value === 'edit' || (value === 'replay' && solution.value)) {
+    if (value !== mode.value) replayMotion.value = undefined
+    mode.value = value
+  }
 }
 
-function showFrame(index: number) {
-  if (!solution.value) return
-  frameIndex.value = Math.min(solution.value.actions.length, Math.max(0, index))
+function showFrame(index: number, intent: 'next' | 'jump' = 'jump') {
+  const result = solution.value
+  if (!result) return
+  const target = Math.min(result.actions.length, Math.max(0, index))
+  const before = snapshot.value
+  const transition = result.frames[target]
+  replayMotion.value =
+    intent === 'next' &&
+    mode.value === 'replay' &&
+    target === frameIndex.value + 1 &&
+    before &&
+    frameStatus.value &&
+    replayView.value &&
+    sameReplayWindow(replayView.value, replayWindow(bounds.value, transition.nextState))
+      ? { before, transition, status: frameStatus.value }
+      : undefined
+  frameIndex.value = target
   mode.value = 'replay'
 }
 
@@ -604,34 +625,43 @@ onBeforeUnmount(() => {
         </TabPanel>
 
         <TabPanel value="replay">
-          <div v-if="solution && readyMap && replayView" class="replay-workspace">
-            <section class="replay-map" :aria-label="t(`${g}.board`)">
-              <PuzzleGrid
-                :map="readyMap"
-                :view="replayView"
-                :size="44"
-                :active="mode === 'replay'"
-                :editable="false"
-                :anchor="null"
-                :platform-groups="platforms.byIndex"
-                :portal-groups="portals.byIndex"
-                :snapshot="snapshot"
-                :status="frameStatus"
-                :scroll-position="replayScroll"
-                @scroll-change="replayScroll = $event"
-              />
-            </section>
-            <aside class="replay-aside" :aria-label="t(`${g}.replay`)">
-              <ReplayPanel
-                :map="readyMap"
-                :solution="solution"
-                :frame-index="frameIndex"
-                :platform-groups="platforms.byIndex"
-                :portal-groups="portals.byIndex"
-                @frame="showFrame"
-              />
-            </aside>
-          </div>
+          <EditorWorkspace v-if="solution && readyMap && replayView">
+            <template #map>
+              <section class="map-pane replay-map" aria-labelledby="goat-replay-map">
+                <header class="map-heading">
+                  <h2 id="goat-replay-map">{{ t(`${g}.board`) }}</h2>
+                </header>
+                <PuzzleGrid
+                  class="replay-grid"
+                  :map="readyMap"
+                  :view="replayView"
+                  :size="44"
+                  :active="mode === 'replay'"
+                  :editable="false"
+                  :anchor="null"
+                  :platform-groups="platforms.byIndex"
+                  :portal-groups="portals.byIndex"
+                  :snapshot="snapshot"
+                  :status="frameStatus"
+                  :motion="replayMotion"
+                  :scroll-position="replayScroll"
+                  @scroll-change="replayScroll = $event"
+                />
+              </section>
+            </template>
+            <template #inspector>
+              <aside class="inspector-pane replay-aside" :aria-label="t('ui.inspector')">
+                <ReplayPanel
+                  :map="readyMap"
+                  :solution="solution"
+                  :frame-index="frameIndex"
+                  :platform-groups="platforms.byIndex"
+                  :portal-groups="portals.byIndex"
+                  @frame="showFrame"
+                />
+              </aside>
+            </template>
+          </EditorWorkspace>
         </TabPanel>
       </TabPanels>
     </Tabs>
@@ -670,16 +700,13 @@ onBeforeUnmount(() => {
   padding: 10px 0 0;
   background: transparent;
 }
-.edit-content,
-.replay-workspace {
+.edit-content {
   display: grid;
   min-inline-size: 0;
   gap: 10px;
 }
 .map-pane,
-.inspector-pane,
-.replay-map,
-.replay-aside {
+.inspector-pane {
   min-inline-size: 0;
   padding: 12px;
   background: var(--color-surface);
@@ -692,6 +719,9 @@ onBeforeUnmount(() => {
 .map-pane {
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 6px;
+}
+.replay-map {
+  grid-template-rows: auto minmax(0, 1fr);
 }
 .map-heading h2 {
   font-size: 0.875rem;
@@ -715,7 +745,8 @@ onBeforeUnmount(() => {
   inline-size: clamp(48px, 8vw, 82px);
   margin-inline: 5px;
 }
-.edit-grid {
+.edit-grid,
+.replay-grid {
   min-block-size: 0;
 }
 .board-navigation {
@@ -724,6 +755,9 @@ onBeforeUnmount(() => {
 }
 .inspector-pane {
   grid-template-rows: minmax(0, 1fr) auto;
+}
+.replay-aside {
+  grid-template-rows: minmax(0, 1fr);
 }
 .inspector-upper {
   display: grid;
@@ -795,8 +829,6 @@ onBeforeUnmount(() => {
   color: var(--color-muted);
 }
 .notice,
-.replay-map,
-.replay-aside,
 :deep(.editor-stack > .map-pane),
 :deep(.editor-stack > .inspector-pane) {
   border: 1px solid var(--color-line);
@@ -816,14 +848,5 @@ onBeforeUnmount(() => {
 .notice code {
   color: var(--color-delay);
   overflow-wrap: anywhere;
-}
-.replay-workspace {
-  grid-template-columns: minmax(0, 1fr) minmax(295px, 350px);
-  align-items: start;
-}
-@media (max-width: 900px) {
-  .replay-workspace {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 </style>
