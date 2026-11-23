@@ -417,24 +417,24 @@ onBeforeUnmount(() => {
           <span>{{ t(`${g}.replay`) }}</span>
         </Tab>
       </TabList>
+      <div v-if="issues.length" class="notice" role="alert">
+        <ul>
+          <li v-for="(issue, index) in issues" :key="index">
+            {{ t(`${g}.issues.${issue.code}`) }} <code>{{ issue.path }}</code>
+            <span v-if="issue.cell"> {{ t(`${g}.coordinate`, { ...issue.cell }) }}</span>
+          </li>
+        </ul>
+        <Button
+          :label="t(`${g}.dismiss`)"
+          severity="secondary"
+          text
+          size="small"
+          @click="issues = []"
+        />
+      </div>
       <TabPanels class="workspace-tabs">
         <TabPanel value="edit">
           <div class="edit-content">
-            <div v-if="issues.length" class="notice" role="alert">
-              <ul>
-                <li v-for="(issue, index) in issues" :key="index">
-                  {{ t(`${g}.issues.${issue.code}`) }} <code>{{ issue.path }}</code>
-                  <span v-if="issue.cell"> {{ t(`${g}.coordinate`, { ...issue.cell }) }}</span>
-                </li>
-              </ul>
-              <Button
-                :label="t(`${g}.dismiss`)"
-                severity="secondary"
-                text
-                size="small"
-                @click="issues = []"
-              />
-            </div>
             <EditorToolbar
               :brush="brush"
               :group="selectedGroup"
@@ -834,6 +834,7 @@ onBeforeUnmount(() => {
   block-size: clamp(21rem, 50dvh, 24rem);
 }
 .notice {
+  margin-block-start: 10px;
   padding: 7px 10px;
   border-color: var(--color-delay);
 }
