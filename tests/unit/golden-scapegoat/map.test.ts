@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { demos } from '../../../src/tools/golden-scapegoat/demos'
+import { demos } from '../../fixtures/golden-scapegoat/demo-maps'
 import {
   emptyMap,
   layoutIssues,

@@ -1,4 +1,4 @@
-import { emptyMap, type ReadyMap } from './engine/map'
+import { emptyMap, type ReadyMap } from '../../../src/tools/golden-scapegoat/engine/map'
 
 const at = (x: number, y: number) => ({ x, y })
 

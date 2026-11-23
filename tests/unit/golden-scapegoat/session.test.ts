@@ -4,7 +4,7 @@ import {
   type SolveReply,
   type WorkerPort,
 } from '../../../src/tools/golden-scapegoat/browser/session'
-import { demos } from '../../../src/tools/golden-scapegoat/demos'
+import { demos } from '../../fixtures/golden-scapegoat/demo-maps'
 import { defaultLimits } from '../../../src/tools/golden-scapegoat/engine/solve'
 
 function worker() {

@@ -753,9 +753,10 @@
     "editor": "编辑地图",
     "board": "关卡地图",
     "replay": "解法回放",
-    "clear": "空白地图",
-    "import": "导入 JSON",
-    "export": "导出 JSON",
+    "loadDemo": "载入演示地图",
+    "newMap": "新建地图",
+    "import": "导入",
+    "export": "导出",
     "dismiss": "关闭提示",
     "k": "记录步数 K",
     "ladderFirst": "选择梯子的第一个端点。",
@@ -776,11 +777,6 @@
         "up": "向上平移地图",
         "down": "向下平移地图"
       }
-    },
-    "demo": {
-      "label": "演示地图",
-      "platform": "演示地图 · 黑羊撑桥",
-      "portal": "演示地图 · 梯子与传送门"
     },
     "copyArrow": "复制方向箭头",
     "copyWasd": "复制 WASD",

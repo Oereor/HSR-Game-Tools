@@ -10,8 +10,19 @@ import TabList from 'primevue/tablist'
 import Tab from 'primevue/tab'
 import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, LocateFixed } from '@lucide/vue'
-import Select from 'primevue/select'
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Download,
+  FilePlus,
+  ListVideo,
+  LocateFixed,
+  MapPinned,
+  PencilRuler,
+  Upload,
+} from '@lucide/vue'
 import Slider from 'primevue/slider'
 import { createSearchSession } from './browser/session'
 import EditorProperties from './components/EditorProperties.vue'
@@ -19,7 +30,6 @@ import EditorToolbar from './components/EditorToolbar.vue'
 import EditorWorkspace from './components/EditorWorkspace.vue'
 import PuzzleGrid from './components/PuzzleGrid.vue'
 import ReplayPanel from './components/ReplayPanel.vue'
-import { demos } from './demos'
 import {
   editMap,
   ensureGroup,
@@ -36,6 +46,7 @@ import {
   mapFileLimit,
   prepareMap,
   readMap,
+  validateMap,
   validRecordSteps,
   writeMap,
   type Cell,
@@ -57,6 +68,7 @@ import {
   type GroupChoice,
 } from './presentation'
 import { sameReplayWindow, type ReplayMotionRequest } from './replay-motion'
+import sample5 from './sample5.json'
 
 const { t } = useI18n()
 const g = 'goldenScapegoat'
@@ -75,11 +87,16 @@ const brush = shallowRef<Brush>({ tool: 'floor' })
 const platformPolarity = ref<'platformPressed' | 'platformReleased'>('platformPressed')
 const groupSelection = shallowRef<Pick<GroupChoice, 'kind' | 'id'>>()
 const anchor = ref<Cell | null>(null)
-const demo = ref<keyof typeof demos>()
 const kInput = ref<number | null>(null)
 const invalidK = ref(false)
 const todoCollapsed = ref(false)
 const fileInput = ref<HTMLInputElement>()
+const mapActions = [
+  { label: 'loadDemo', icon: MapPinned, run: loadDemo },
+  { label: 'newMap', icon: FilePlus, run: () => load(emptyMap()) },
+  { label: 'import', icon: Upload, run: () => fileInput.value?.click() },
+  { label: 'export', icon: Download, run: exportMap },
+] as const
 const issues = shallowRef<EditIssue[]>([])
 let importGeneration = 0
 
@@ -103,12 +120,6 @@ const replayView = computed(() =>
   snapshot.value ? replayWindow(bounds.value, snapshot.value) : undefined,
 )
 
-const demoOptions = computed(() =>
-  (Object.keys(demos) as (keyof typeof demos)[]).map((value) => ({
-    value,
-    label: t(`${g}.demo.${value}`),
-  })),
-)
 const platforms = computed(() => groupChoices('platform', map.value.platformGroups))
 const portals = computed(() => groupChoices('portal', map.value.portalPairs))
 const slots = computed(() => [...platforms.value.slots, ...portals.value.slots])
@@ -202,7 +213,6 @@ function commit(next: PuzzleMap) {
   if (next === map.value) return
   importGeneration++
   map.value = next
-  demo.value = undefined
   mode.value = 'edit'
   frameIndex.value = 0
   replayMotion.value = undefined
@@ -254,9 +264,10 @@ function load(next: PuzzleMap) {
   fitMap()
 }
 
-function loadDemo(value: keyof typeof demos) {
-  load(demos[value])
-  demo.value = value
+function loadDemo() {
+  const result = validateMap(sample5)
+  if (result.map && !result.issues.length) load(result.map)
+  else issues.value = result.issues
 }
 
 function changeK(value: unknown) {
@@ -369,24 +380,7 @@ onBeforeUnmount(() => {
   <article class="goat-page">
     <header class="page-header">
       <h1>{{ t(`${g}.title`) }}</h1>
-      <div v-if="mode === 'edit'" class="map-actions">
-        <Select
-          :model-value="demo"
-          :options="demoOptions"
-          option-label="label"
-          option-value="value"
-          :placeholder="t(`${g}.demo.label`)"
-          :aria-label="t(`${g}.demo.label`)"
-          size="small"
-          @update:model-value="loadDemo"
-        />
-        <Button
-          :label="t(`${g}.clear`)"
-          severity="secondary"
-          text
-          size="small"
-          @click="load(emptyMap())"
-        />
+      <div class="map-actions">
         <input
           ref="fileInput"
           type="file"
@@ -395,26 +389,32 @@ onBeforeUnmount(() => {
           @change="importMap"
         />
         <Button
-          :label="t(`${g}.import`)"
+          v-for="{ label, icon, run } in mapActions"
+          :key="label"
+          type="button"
+          :label="t(`${g}.${label}`)"
           severity="secondary"
           text
           size="small"
-          @click="fileInput?.click()"
-        />
-        <Button
-          :label="t(`${g}.export`)"
-          severity="secondary"
-          text
-          size="small"
-          @click="exportMap"
-        />
+          @click="run"
+        >
+          <template #icon>
+            <component :is="icon" :size="16" :stroke-width="1.75" aria-hidden="true" />
+          </template>
+        </Button>
       </div>
     </header>
 
     <Tabs :value="mode" @update:value="switchMode">
       <TabList :aria-label="t('ui.stage')">
-        <Tab value="edit">{{ t(`${g}.editor`) }}</Tab>
-        <Tab value="replay" :disabled="!solution">{{ t(`${g}.replay`) }}</Tab>
+        <Tab value="edit" class="inline-flex items-center gap-2">
+          <PencilRuler :size="18" :stroke-width="1.75" aria-hidden="true" />
+          <span>{{ t(`${g}.editor`) }}</span>
+        </Tab>
+        <Tab value="replay" class="inline-flex items-center gap-2" :disabled="!solution">
+          <ListVideo :size="18" :stroke-width="1.75" aria-hidden="true" />
+          <span>{{ t(`${g}.replay`) }}</span>
+        </Tab>
       </TabList>
       <TabPanels class="workspace-tabs">
         <TabPanel value="edit">
@@ -692,9 +692,6 @@ onBeforeUnmount(() => {
 }
 .page-header h1 {
   font-size: clamp(1.3rem, 4vw, 1.75rem);
-}
-.map-actions :deep([data-pc-name='select']) {
-  max-inline-size: 100%;
 }
 .workspace-tabs {
   padding: 10px 0 0;

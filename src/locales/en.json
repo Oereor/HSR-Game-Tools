@@ -753,9 +753,10 @@
     "editor": "Edit Map",
     "board": "Puzzle Board",
     "replay": "Solution Replay",
-    "clear": "Blank Map",
-    "import": "Import JSON",
-    "export": "Export JSON",
+    "loadDemo": "Load Demo Map",
+    "newMap": "New Map",
+    "import": "Import",
+    "export": "Export",
     "dismiss": "Dismiss",
     "k": "Recorded Moves (K)",
     "ladderFirst": "Select the first ladder endpoint.",
@@ -776,11 +777,6 @@
         "up": "Pan the map up",
         "down": "Pan the map down"
       }
-    },
-    "demo": {
-      "label": "Demo Maps",
-      "platform": "Demo Map · Holding the Bridge",
-      "portal": "Demo Map · Ladder and Portal"
     },
     "copyArrow": "Copy Arrows",
     "copyWasd": "Copy WASD",
