@@ -230,8 +230,8 @@ function eventText(event: GameEvent) {
               :aria-label="operationLabel(item)"
               @click="emit('frame', item.step, 'jump')"
             >
+              <span class="step-number" aria-hidden="true">{{ item.step }}</span>
               <span class="gold-action-row" aria-hidden="true">
-                <span class="step-number">{{ item.step }}</span>
                 <Triangle
                   class="gold-action"
                   :size="16"
@@ -374,6 +374,7 @@ h2 {
   overscroll-behavior: contain;
 }
 .sequence-step {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: repeat(2, minmax(0, 1fr));
@@ -394,12 +395,12 @@ h2 {
   display: grid;
   place-items: center;
 }
-.gold-action-row {
-  align-content: center;
-  gap: 1px;
-}
 .step-number {
-  font-size: 0.625rem;
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: 4px;
+  color: var(--color-muted);
+  font-size: 0.5625rem;
   line-height: 1;
 }
 .gold-action {
