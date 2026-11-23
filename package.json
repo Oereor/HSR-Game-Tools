@@ -20,6 +20,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "type-check": "vue-tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
     "test": "vitest run",
+    "test:e2e:golden-scapegoat": "playwright test --config tests/e2e/golden-scapegoat/playwright.config.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -56,6 +57,7 @@
   },
   "devDependencies": {
     "@intlify/message-compiler": "11.4.14",
+    "@playwright/test": "1.62.1",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "24.19.0",
     "@vitejs/plugin-vue": "6.0.10",
