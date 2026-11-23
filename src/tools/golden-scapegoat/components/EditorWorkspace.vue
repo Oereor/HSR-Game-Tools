@@ -19,14 +19,26 @@ const mapSize = computed(() =>
 )
 
 let observer: ResizeObserver | undefined
+let resizeFrame: number | undefined
 onMounted(() => {
   const element = workspace.value!
   observer = new ResizeObserver(([entry]) => {
-    if (entry.contentRect.width > 0) workspaceWidth.value = entry.contentRect.width
+    const { width } = entry.contentRect
+    if (resizeFrame !== undefined) cancelAnimationFrame(resizeFrame)
+    resizeFrame = undefined
+    if (width <= 0 || width === workspaceWidth.value) return
+    // Switching layouts changes the nested board's size. Update after observer delivery.
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = undefined
+      workspaceWidth.value = width
+    })
   })
   observer.observe(element)
 })
-onBeforeUnmount(() => observer?.disconnect())
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  if (resizeFrame !== undefined) cancelAnimationFrame(resizeFrame)
+})
 </script>
 
 <template>

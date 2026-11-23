@@ -753,9 +753,10 @@
     "editor": "编辑地图",
     "board": "关卡地图",
     "replay": "解法回放",
-    "clear": "空白地图",
-    "import": "导入 JSON",
-    "export": "导出 JSON",
+    "loadDemo": "载入演示地图",
+    "newMap": "新建地图",
+    "import": "导入",
+    "export": "导出",
     "dismiss": "关闭提示",
     "k": "记录步数 K",
     "ladderFirst": "选择梯子的第一个端点。",
@@ -777,11 +778,6 @@
         "down": "向下平移地图"
       }
     },
-    "demo": {
-      "label": "演示地图",
-      "platform": "演示地图 · 黑羊撑桥",
-      "portal": "演示地图 · 梯子与传送门"
-    },
     "copyArrow": "复制方向箭头",
     "copyWasd": "复制 WASD",
     "copied": "已复制",
@@ -791,7 +787,6 @@
     "next": "下一步",
     "last": "最后一帧",
     "step": "第 {current} / {total} 步",
-    "stepEvents": "本步事件",
     "coordinate": "({x}, {y})",
     "groupState": "{group} · {state}",
     "pressed": "机关被踩住",
@@ -835,19 +830,6 @@
       "time": "达到时间上限。已访问 {visited} 个状态，解未知。",
       "memory": "达到搜索或回放内存上限。已访问 {visited} 个状态，解未知。",
       "unsupported_cycle": "遇到无法完成结算的环境变化。已访问 {visited} 个状态，解未知。"
-    },
-    "events": {
-      "move": "{sheep}从 {from} 移到 {to}",
-      "fall": "{sheep}从 {from} 坠落到 {to}",
-      "teleport": "{sheep}从 {from} 传送到 {to}",
-      "spawn": "黑羊在 {at} 出现",
-      "void": "{sheep}在 {at} 坠出地图",
-      "portalLoop": "{sheep}在 {at} 因反复传送而消失",
-      "collision": "两羊在 {at} 碰撞",
-      "goal": "金羊抵达终点 {at}",
-      "controllerPressed": "踩下 {at} 的机关 · {groups}",
-      "controllerReleased": "松开 {at} 的机关 · {groups}",
-      "platform": "{group} · {platform} · {state}"
     },
     "issues": {
       "json": "无法读取有效的 JSON。",

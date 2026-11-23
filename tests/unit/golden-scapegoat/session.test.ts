@@ -4,7 +4,7 @@ import {
   type SolveReply,
   type WorkerPort,
 } from '../../../src/tools/golden-scapegoat/browser/session'
-import { demos } from '../../../src/tools/golden-scapegoat/demos'
+import { demos } from '../../fixtures/golden-scapegoat/demo-maps'
 import { defaultLimits } from '../../../src/tools/golden-scapegoat/engine/solve'
 
 function worker() {
@@ -47,9 +47,16 @@ it('clears an active attempt on map edits or unmount and reports startup errors 
   expect(port.terminate).toHaveBeenCalledOnce()
   expect(session.status.value).toEqual({ status: 'idle' })
 
-  const unavailable = createSearchSession(() => {
-    throw new Error('Worker not available')
-  })
-  unavailable.start(demos.platform, defaultLimits)
-  expect(unavailable.status.value).toEqual({ status: 'workerError' })
+  const cause = new Error('Worker not available')
+  const log = vi.spyOn(console, 'error').mockImplementation(() => {})
+  try {
+    const unavailable = createSearchSession(() => {
+      throw cause
+    })
+    unavailable.start(demos.platform, defaultLimits)
+    expect(unavailable.status.value).toEqual({ status: 'workerError' })
+    expect(log).toHaveBeenCalledWith('[golden-scapegoat] Worker failed during creation', cause)
+  } finally {
+    log.mockRestore()
+  }
 })

@@ -8,6 +8,7 @@ dist-subpath/
 .warp-data-backup/
 public/game-assets/
 src/tools/action-planner/data/game/
+src/tools/golden-scapegoat/sample5.json
 src/tools/warp-simulator/data/runtime/
 scripts/warp-data/generated/
 scripts/warp-data/schema/

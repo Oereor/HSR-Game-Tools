@@ -1,13 +1,19 @@
 import { readFileSync } from 'node:fs'
 import { expect, it } from 'vitest'
-import { prepareMap, readMap } from '../../../src/tools/golden-scapegoat/engine/map'
+import { authoredCells, prepareMap, readMap } from '../../../src/tools/golden-scapegoat/engine/map'
 import { solve } from '../../../src/tools/golden-scapegoat/engine/solve'
 import {
+  boardStatus,
   compileMap,
   initialState,
   step,
   type Direction,
 } from '../../../src/tools/golden-scapegoat/engine/step'
+import { mapBounds, replayWindow } from '../../../src/tools/golden-scapegoat/presentation'
+import {
+  replayEnvironment,
+  replayMotionStages,
+} from '../../../src/tools/golden-scapegoat/replay-motion'
 
 function regressionBoard() {
   const source = new URL(
@@ -76,4 +82,58 @@ it('solves the real map and reproduces every returned replay frame with step', (
     expect(result.frames[index + 1], `replay step ${index + 1} (${action})`).toEqual(frame)
   }
   expect(frame).toMatchObject({ nextState: { gold: { x: 7, y: 1 } }, outcome: 'solved' })
+})
+
+it('keeps the demo portal open in the snapshot and animation after black disappears', () => {
+  const source = new URL('../../../src/tools/golden-scapegoat/sample5.json', import.meta.url)
+  const imported = readMap(readFileSync(source, 'utf8'))
+  expect(imported.issues).toEqual([])
+  if (!imported.map) throw new Error('Could not read the demo map')
+  const { map, issues } = prepareMap(imported.map)
+  expect(issues).toEqual([])
+  if (!map) throw new Error('Demo map is not ready')
+
+  const board = compileMap(map)
+  const result = solve(board)
+  if (result.status !== 'solved') throw new Error(`Demo map was not solved: ${result.status}`)
+  const frames = [initialState(board)]
+  for (const action of result.actions) {
+    frames.push(step(board, frames[frames.length - 1].nextState, action))
+  }
+  expect(frames).toEqual(result.frames)
+  expect(frames).toHaveLength(11)
+
+  const before = frames[8].nextState
+  const loss = frames[9]
+  expect(loss).toMatchObject({
+    outcome: 'stable',
+    nextState: { gold: { x: 5, y: 4 }, black: null, openPortals: [0], turn: 9 },
+  })
+  expect(loss.events).toContainEqual({
+    type: 'lost',
+    sheep: 'black',
+    at: { x: 4, y: 4 },
+    cause: 'portalLoop',
+  })
+  const snapshot = boardStatus(board, loss.nextState)
+  expect(snapshot.pressed.has('5,4')).toBe(true)
+  expect(snapshot.portals).toEqual(new Set([0]))
+  const stages = replayMotionStages(
+    before,
+    loss,
+    replayWindow(mapBounds(authoredCells(map)), before),
+  )
+  if (!stages) throw new Error('Expected animation stages for the portal loop')
+  let animated = boardStatus(board, before)
+  for (const stage of stages) {
+    if (stage.type === 'environment') animated = replayEnvironment(animated, stage.events)
+  }
+  expect(animated).toEqual(snapshot)
+
+  const end = frames[10]
+  expect(end).toMatchObject({
+    outcome: 'solved',
+    nextState: { gold: map.goal, black: null, openPortals: [0], turn: 10 },
+  })
+  expect(boardStatus(board, end.nextState).pressed.has('5,4')).toBe(false)
 })

@@ -11,17 +11,13 @@ import {
   Triangle,
 } from '@lucide/vue'
 import Button from 'primevue/button'
-import { cellKey, type Cell, type ReadyMap } from '../engine/map'
 import type { SearchResult } from '../engine/solve'
-import type { Event as GameEvent } from '../engine/step'
-import { actionSequence, groupDetail, replayOperation, type GroupChoice } from '../presentation'
+import { actionSequence, replayOperation } from '../presentation'
 
 const props = defineProps<{
-  map: ReadyMap
+  k: number
   solution: Extract<SearchResult, { status: 'solved' }>
   frameIndex: number
-  platformGroups: GroupChoice[]
-  portalGroups: GroupChoice[]
 }>()
 const emit = defineEmits<{ frame: [index: number, intent: 'next' | 'jump'] }>()
 const { t } = useI18n()
@@ -39,13 +35,11 @@ const copyOptions = [
 let copyRequest = 0
 const total = computed(() => props.solution.actions.length)
 const lastPage = computed(() => Math.max(0, Math.ceil(total.value / pageSize) - 1))
-const frame = computed(() => props.solution.frames[props.frameIndex])
-const detailEvents = computed(() => frame.value.events.filter(({ type }) => type !== 'move'))
 const visibleSteps = computed(() => {
   const start = page.value * pageSize
   return props.solution.actions.slice(start, start + pageSize).map((_, index) => {
     const step = start + index + 1
-    return { step, ...replayOperation(props.solution, step, props.map.k) }
+    return { step, ...replayOperation(props.solution, step, props.k) }
   })
 })
 watch(
@@ -123,67 +117,6 @@ function operationLabel(item: (typeof visibleSteps.value)[number]) {
   }
   return t(`${g}.jumpStep`, { step: item.step, actions: actions.join(' · ') })
 }
-
-const controllerGroups = computed(() => {
-  const cells = new Map<string, GroupChoice[]>()
-  function add(controllers: Cell[], group: GroupChoice) {
-    for (const point of controllers) {
-      const key = cellKey(point)
-      const groups = cells.get(key) ?? []
-      groups.push(group)
-      cells.set(key, groups)
-    }
-  }
-  props.map.platformGroups.forEach(({ controllers }, index) =>
-    add(controllers, props.platformGroups[index]),
-  )
-  props.map.portalPairs.forEach(({ controllers }, index) =>
-    add(controllers, props.portalGroups[index]),
-  )
-  return cells
-})
-
-const coord = (point: Cell | null) => (point ? t(`${g}.coordinate`, { ...point }) : '—')
-function eventText(event: GameEvent) {
-  switch (event.type) {
-    case 'move':
-    case 'fall':
-    case 'teleport':
-      return t(`${g}.events.${event.type}`, {
-        sheep: t(`${g}.sheep.${event.sheep}`),
-        from: coord(event.from),
-        to: coord(event.to),
-      })
-    case 'lost':
-      return t(`${g}.events.${event.cause}`, {
-        sheep: t(`${g}.sheep.${event.sheep}`),
-        at: coord(event.at),
-      })
-    case 'controller':
-      return t(`${g}.events.${event.pressed ? 'controllerPressed' : 'controllerReleased'}`, {
-        at: coord(event.at),
-        groups: controllerGroups.value
-          .get(cellKey(event.at))
-          ?.map((group) => groupDetail(group, t))
-          .join(' · '),
-      })
-    case 'platform':
-      return t(`${g}.events.platform`, {
-        group: groupDetail(props.platformGroups[event.group], t),
-        platform: props.map.platformGroups[event.group].platforms[event.platform].id,
-        state: t(`${g}.states.${event.enabled ? 'on' : 'off'}`),
-      })
-    case 'portal':
-      return t(`${g}.groupState`, {
-        group: groupDetail(props.portalGroups[event.pair], t),
-        state: t(`${g}.states.${event.open ? 'open' : 'closed'}`),
-      })
-    case 'spawn':
-    case 'collision':
-    case 'goal':
-      return t(`${g}.events.${event.type}`, { at: coord(event.at) })
-  }
-}
 </script>
 
 <template>
@@ -218,78 +151,68 @@ function eventText(event: GameEvent) {
       </label>
     </div>
 
-    <div class="replay-body">
-      <section v-if="total" class="sequence" :aria-label="t(`${g}.sequence`)">
-        <ol ref="sequenceScroll" role="list" class="steps" :start="page * pageSize + 1">
-          <li v-for="item in visibleSteps" :key="item.step">
-            <Button
-              class="sequence-step"
-              severity="secondary"
-              size="small"
-              :aria-current="item.step === frameIndex ? 'step' : undefined"
-              :aria-label="operationLabel(item)"
-              @click="emit('frame', item.step, 'jump')"
-            >
-              <span class="gold-action-row" aria-hidden="true">
-                <span class="step-number">{{ item.step }}</span>
+    <section v-if="total" class="sequence" :aria-label="t(`${g}.sequence`)">
+      <ol ref="sequenceScroll" role="list" class="steps" :start="page * pageSize + 1">
+        <li v-for="item in visibleSteps" :key="item.step">
+          <Button
+            class="sequence-step"
+            severity="secondary"
+            size="small"
+            :aria-current="item.step === frameIndex ? 'step' : undefined"
+            :aria-label="operationLabel(item)"
+            @click="emit('frame', item.step, 'jump')"
+          >
+            <span class="step-number" aria-hidden="true">{{ item.step }}</span>
+            <span class="gold-action-row" aria-hidden="true">
+              <Triangle
+                class="gold-action"
+                :size="16"
+                :stroke-width="0"
+                fill="currentColor"
+                :style="{ rotate: directionRotation[item.gold] }"
+              />
+            </span>
+            <span class="black-action-row" aria-hidden="true">
+              <span
+                v-if="item.black"
+                v-tooltip="item.black.moved ? t(`${g}.sheep.black`) : t(`${g}.invalidReplayAction`)"
+                :class="{ 'invalid-action': !item.black.moved }"
+              >
                 <Triangle
-                  class="gold-action"
-                  :size="16"
+                  :size="12"
                   :stroke-width="0"
                   fill="currentColor"
-                  :style="{ rotate: directionRotation[item.gold] }"
+                  :style="{ rotate: directionRotation[item.black.direction] }"
                 />
               </span>
-              <span class="black-action-row" aria-hidden="true">
-                <span
-                  v-if="item.black"
-                  v-tooltip="
-                    item.black.moved ? t(`${g}.sheep.black`) : t(`${g}.invalidReplayAction`)
-                  "
-                  :class="{ 'invalid-action': !item.black.moved }"
-                >
-                  <Triangle
-                    :size="12"
-                    :stroke-width="0"
-                    fill="currentColor"
-                    :style="{ rotate: directionRotation[item.black.direction] }"
-                  />
-                </span>
-              </span>
-            </Button>
-          </li>
-        </ol>
-        <div v-if="lastPage" class="page-controls">
-          <Button
-            severity="secondary"
-            size="small"
-            :aria-label="t(`${g}.previousPage`)"
-            :title="t(`${g}.previousPage`)"
-            :disabled="page === 0"
-            @click="page--"
-          >
-            <template #icon><ChevronLeft :size="16" aria-hidden="true" /></template>
+            </span>
           </Button>
-          <span class="hint">{{ t(`${g}.page`, { current: page + 1, total: lastPage + 1 }) }}</span>
-          <Button
-            severity="secondary"
-            size="small"
-            :aria-label="t(`${g}.nextPage`)"
-            :title="t(`${g}.nextPage`)"
-            :disabled="page === lastPage"
-            @click="page++"
-          >
-            <template #icon><ChevronRight :size="16" aria-hidden="true" /></template>
-          </Button>
-        </div>
-      </section>
-      <details v-if="detailEvents.length" :key="frameIndex" class="events hint">
-        <summary>{{ t(`${g}.stepEvents`) }}</summary>
-        <ol>
-          <li v-for="(event, index) in detailEvents" :key="index">{{ eventText(event) }}</li>
-        </ol>
-      </details>
-    </div>
+        </li>
+      </ol>
+      <div v-if="lastPage" class="page-controls">
+        <Button
+          severity="secondary"
+          size="small"
+          :aria-label="t(`${g}.previousPage`)"
+          :title="t(`${g}.previousPage`)"
+          :disabled="page === 0"
+          @click="page--"
+        >
+          <template #icon><ChevronLeft :size="16" aria-hidden="true" /></template>
+        </Button>
+        <span class="hint">{{ t(`${g}.page`, { current: page + 1, total: lastPage + 1 }) }}</span>
+        <Button
+          severity="secondary"
+          size="small"
+          :aria-label="t(`${g}.nextPage`)"
+          :title="t(`${g}.nextPage`)"
+          :disabled="page === lastPage"
+          @click="page++"
+        >
+          <template #icon><ChevronRight :size="16" aria-hidden="true" /></template>
+        </Button>
+      </div>
+    </section>
 
     <div class="replay-footer">
       <p class="current-step" aria-live="polite">
@@ -326,11 +249,6 @@ function eventText(event: GameEvent) {
   display: grid;
   gap: 8px;
 }
-.replay-body {
-  display: flex;
-  flex-direction: column;
-  min-block-size: 0;
-}
 .replay-heading,
 .copy-buttons,
 .page-controls {
@@ -360,7 +278,6 @@ h2 {
 .sequence {
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
-  flex: 1;
   gap: 6px;
   min-block-size: 0;
 }
@@ -374,6 +291,7 @@ h2 {
   overscroll-behavior: contain;
 }
 .sequence-step {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: repeat(2, minmax(0, 1fr));
@@ -394,12 +312,12 @@ h2 {
   display: grid;
   place-items: center;
 }
-.gold-action-row {
-  align-content: center;
-  gap: 1px;
-}
 .step-number {
-  font-size: 0.625rem;
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-start: 4px;
+  color: var(--color-muted);
+  font-size: 0.5625rem;
   line-height: 1;
 }
 .gold-action {
@@ -416,6 +334,7 @@ h2 {
   justify-content: center;
 }
 .replay-footer {
+  grid-row: 3;
   display: grid;
   gap: 6px;
   border-block-start: 1px solid var(--color-line);
@@ -438,23 +357,6 @@ h2 {
 .hint {
   color: var(--color-muted);
   font-size: 0.8125rem;
-}
-.events {
-  flex: none;
-  max-block-size: min(7.5rem, 48%);
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-.events summary {
-  position: sticky;
-  inset-block-start: 0;
-  background: var(--color-surface);
-  cursor: pointer;
-}
-.events ol {
-  padding-inline-start: 1.4rem;
-  list-style: decimal;
-  overflow-wrap: anywhere;
 }
 textarea {
   display: block;

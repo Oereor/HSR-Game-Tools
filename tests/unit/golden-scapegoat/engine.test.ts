@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { demos } from '../../../src/tools/golden-scapegoat/demos'
+import { demos } from '../../fixtures/golden-scapegoat/demo-maps'
 import {
   emptyMap,
   prepareMap,
@@ -347,7 +347,7 @@ describe('contacts and portals', () => {
     })
   })
 
-  it('opens on a new press when black already occupies a closed endpoint, then removes looping black', () => {
+  it('removes looping black and leaves the reopened portal open after gold releases the switch', () => {
     const board = compileMap(
       map({
         floors: [at(0), at(1), at(4), at(6)],
@@ -359,7 +359,7 @@ describe('contacts and portals', () => {
     const result = step(board, state({ black: at(4), phase: 'postReplay' }), 'right')
     expect(result).toMatchObject({
       outcome: 'stable',
-      nextState: { gold: at(1), black: null, openPortals: [] },
+      nextState: { gold: at(1), black: null, openPortals: [0], turn: 1 },
     })
     expect(result.events).toContainEqual({
       type: 'lost',
@@ -367,6 +367,14 @@ describe('contacts and portals', () => {
       cause: 'portalLoop',
       at: at(4),
     })
+    expect(boardStatus(board, result.nextState).pressed).toEqual(new Set(['1,0']))
+
+    const released = step(board, result.nextState, 'left')
+    expect(released).toMatchObject({
+      outcome: 'stable',
+      nextState: { gold: at(0), black: null, openPortals: [0], turn: 2 },
+    })
+    expect(boardStatus(board, released.nextState).pressed.size).toBe(0)
   })
 
   it('evaluates goal on arrival before a return teleport or simultaneous collision', () => {
