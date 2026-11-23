@@ -787,7 +787,6 @@
     "next": "Next",
     "last": "End",
     "step": "Step {current} / {total}",
-    "stepEvents": "Step Events",
     "coordinate": "({x}, {y})",
     "groupState": "{group} · {state}",
     "pressed": "Switch held",
@@ -831,19 +830,6 @@
       "time": "Time limit reached after {visited} visited states. Solution unknown.",
       "memory": "Search or replay memory limit reached after {visited} visited states. Solution unknown.",
       "unsupported_cycle": "An environmental sequence did not settle. Visited {visited} states. Solution unknown."
-    },
-    "events": {
-      "move": "{sheep} moved from {from} to {to}",
-      "fall": "{sheep} fell from {from} to {to}",
-      "teleport": "{sheep} teleported from {from} to {to}",
-      "spawn": "The black sheep appeared at {at}",
-      "void": "{sheep} fell out of the map at {at}",
-      "portalLoop": "{sheep} vanished in a teleport loop at {at}",
-      "collision": "The sheep collided at {at}",
-      "goal": "The gold sheep reached the goal at {at}",
-      "controllerPressed": "Switch pressed at {at} · {groups}",
-      "controllerReleased": "Switch released at {at} · {groups}",
-      "platform": "{group} · {platform} · {state}"
     },
     "issues": {
       "json": "Could not read valid JSON.",

@@ -652,11 +652,9 @@ onBeforeUnmount(() => {
             <template #inspector>
               <aside class="inspector-pane replay-aside" :aria-label="t('ui.inspector')">
                 <ReplayPanel
-                  :map="readyMap"
+                  :k="readyMap.k"
                   :solution="solution"
                   :frame-index="frameIndex"
-                  :platform-groups="platforms.byIndex"
-                  :portal-groups="portals.byIndex"
                   @frame="showFrame"
                 />
               </aside>
