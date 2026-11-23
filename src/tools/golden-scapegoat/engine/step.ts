@@ -265,7 +265,6 @@ function settle(
     if (single && current.portals.has(single.pair)) {
       const key = `${single.pair}:${single.who}:${cellKey(single.from)}`
       if (heldTransfers.has(key)) {
-        setPortal(single.pair, false)
         positions[single.who] = null
         events.push({ type: 'lost', sheep: single.who, at: single.from, cause: 'portalLoop' })
         heldTransfers.clear()
